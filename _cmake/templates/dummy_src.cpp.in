@@ -1,0 +1,8 @@
+/*
+-- Dummy code file (to check compilation of header-only libraries) --
+*/
+${PROJECT_GENERATED_INCLUDES}
+
+int _dummy() {
+  return 42;
+}
