@@ -1,0 +1,15 @@
+#*******************************************************************************
+# Author : NAME
+#*******************************************************************************
+cmake_minimum_required(VERSION 3.14)
+include("${CMAKE_CURRENT_SOURCE_DIR}/_cmake/cwork.cmake")
+project("solution_name" VERSION 1.0.0)
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │  Solution settings                                               │
+# └──────────────────────────────────────────────────────────────────┘
+cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_cmake"
+    project_name1
+    project_name2
+    project_name3_that_depends_on_projects_higher_in_list
+)

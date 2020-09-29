@@ -1,0 +1,22 @@
+#*******************************************************************************
+# Author : NAME
+# ------------------------------------------------------------------------------
+# PROJECT DESCRIPTION
+#*******************************************************************************
+cmake_minimum_required(VERSION 3.14)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../_cmake/cwork.cmake")
+cwork_set_default_solution("solution_name" "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+project("${CWORK_SOLUTION_NAME}.frame_limiter" VERSION 1.0.0 LANGUAGES C CXX)
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │  Dependencies                                                    │
+# └──────────────────────────────────────────────────────────────────┘
+cwork_set_external_libs("private" external_project1 external_project2)
+cwork_set_internal_libs(other_project1_of_same_solution other_project2_of_same_solution)
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │  Project settings                                                │
+# └──────────────────────────────────────────────────────────────────┘
+cwork_set_subproject_type("tools")
+cwork_create_project("executable" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
+                     "include" "src" "test")
