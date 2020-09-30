@@ -1,0 +1,80 @@
+version: 0.1.{build}-{branch}
+clone_folder: C:\projects\pandora_toolbox
+platform: x64
+
+for:
+  -
+    branches:
+      only:
+        - master
+        - develop
+        - /release.*/
+    configuration: Release
+    environment:
+      matrix:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+          APPVEYOR_JOB_NAME: windows-msvc2019
+          BUILD_DIR: msvc19
+          BUILD_TYPE: Release
+          COMPILER: MSVC19
+          PLATFORM: x64
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          APPVEYOR_JOB_NAME: windows-msvc2017
+          BUILD_DIR: msvc17
+          BUILD_TYPE: Debug
+          COMPILER: MSVC17
+          PLATFORM: x64
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          APPVEYOR_JOB_NAME: windows-mingw64
+          BUILD_DIR: mingw64
+          BUILD_TYPE: Debug
+          COMPILER: MinGW-w64
+  -
+    branches:
+      only:
+        - /test.*/
+        - /feat.*/
+        - /fix.*/
+        - /infra.*/
+    configuration: Debug
+    environment:
+      matrix:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+          APPVEYOR_JOB_NAME: windows-msvc2019
+          BUILD_DIR: msvc19
+          BUILD_TYPE: Debug
+          COMPILER: MSVC19
+          PLATFORM: x64
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          APPVEYOR_JOB_NAME: windows-msvc2017
+          BUILD_DIR: msvc17
+          BUILD_TYPE: Debug
+          COMPILER: MSVC17
+          PLATFORM: x64
+
+install:
+  - call _scripts/ci/install_dependencies.bat
+  - if [%COMPILER%]==[LLVM/Clang] set PATH=%APPVEYOR_BUILD_FOLDER%\deps\bin;C:\Program Files\LLVM\bin;%ProgramFiles(x86)%\LLVM\bin;C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
+  - if [%COMPILER%]==[MinGW-w64] set PATH=C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%APPVEYOR_BUILD_FOLDER%\deps\bin;C:\MinGW\bin;%PATH%
+  # workaround: rename sh: its PATH interferes with MinGW's
+  - if [%COMPILER%]==[MinGW-w64] rename "C:\Program Files\Git\usr\bin\sh.exe" "sh_.exe"
+
+build_script:
+  - cd C:\projects\pandora_toolbox
+  - call _scripts/update_version.bat
+  - mkdir _build
+  - cd _build
+  - mkdir %BUILD_DIR%
+  - cd ..
+  # build project
+  - if [%COMPILER%]==[MSVC19] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR%
+  - if [%COMPILER%]==[MSVC17] cmake -G "Visual Studio 15 2017" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR% -DBUILD_CPP_REVISION="14"
+  - if [%COMPILER%]==[LLVM/Clang] cmake -G "Ninja" -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=clang.exe -DCMAKE_CXX_COMPILER=clang++.exe -DCMAKE_LINKER=lld-link.exe -DCMAKE_MAKE_PROGRAM=ninja.exe -DCMAKE_CXX_FLAGS="-target x86_64-w64-mingw32" -DCMAKE_C_FLAGS="-target x86_64-w64-mingw32"
+  - if [%COMPILER%]==[MinGW-w64] cmake -G "MinGW Makefiles" -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
+  # compile
+  - cmake --build ./_build/%BUILD_DIR% --config %BUILD_TYPE% --target install
+
+test_script:
+  - cd C:\projects\pandora_toolbox\_build\%BUILD_DIR%
+  - if [%COMPILER%]==[MSVC19] ctest --output-on-failure
+  - if [%COMPILER%]==[MSVC17] ctest --output-on-failure
