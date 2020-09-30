@@ -1,0 +1,70 @@
+# Properly detect languages on Github
+
+*.h    linguist-language=C++
+*.hpp  linguist-language=C++
+*.hxx  linguist-language=C++
+*.inc  linguist-language=C++
+*.c    linguist-language=C
+*.cpp  linguist-language=C++
+*.cxx  linguist-language=C++
+*.ipp  linguist-language=C++
+*.cppm linguist-language=C++
+*.asm  linguist-language=Assembly
+*.mmx  linguist-language=Assembly
+*.sse  linguist-language=Assembly
+*.avx  linguist-language=Assembly
+*.glsl  linguist-language=GLSL
+*.vrx   linguist-language=GLSL
+*.vert  linguist-language=GLSL
+*.glslv linguist-language=GLSL
+*.vsh   linguist-language=GLSL
+*.frg   linguist-language=GLSL
+*.frag  linguist-language=GLSL
+*.glslf linguist-language=GLSL
+*.fsh   linguist-language=GLSL
+*.geom  linguist-language=GLSL
+*.gs    linguist-language=GLSL
+*.gsh   linguist-language=GLSL
+*.comp  linguist-language=GLSL
+*.csh   linguist-language=GLSL
+*.tesc  linguist-language=GLSL
+*.tsh   linguist-language=GLSL
+
+# Normalize EOL for source files
+
+# Sources
+*.h     text eol=lf
+*.hpp   text eol=lf
+*.hxx   text eol=lf
+*.inc   text eol=lf
+*.c     text eol=lf
+*.cpp   text eol=lf
+*.cxx   text eol=lf
+*.ipp   text eol=lf
+*.cppm  text eol=lf
+*.asm   text eol=lf
+*.mmx   text eol=lf
+*.sse   text eol=lf
+*.avx   text eol=lf
+*.glsl  text eol=lf
+*.vrx   text eol=lf
+*.vert  text eol=lf
+*.glslv text eol=lf
+*.vsh   text eol=lf
+*.frg   text eol=lf
+*.frag  text eol=lf
+*.glslf text eol=lf
+*.fsh   text eol=lf
+*.geom  text eol=lf
+*.gs    text eol=lf
+*.gsh   text eol=lf
+*.comp  text eol=lf
+*.csh   text eol=lf
+*.tesc  text eol=lf
+*.tsh   text eol=lf
+
+# Scripts
+*.bash     text eol=lf
+*.sh       text eol=lf
+*.bat      text eol=crlf
+*.cmd      text eol=crlf
