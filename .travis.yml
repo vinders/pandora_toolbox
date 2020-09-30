@@ -1,0 +1,312 @@
+dist: xenial
+sudo: require
+git:
+  depth: false
+
+env:
+  global:
+    - CODECOV_TOKEN="975b9113-5c8b-445f-919c-c76ceb46388a"
+    - COVERAGE_DIR="_coverage"
+    - MAKEFLAGS=-j4
+
+notifications:
+  email:
+    on_success: never
+    on_failure: never
+
+matrix:
+  fast_finish: true
+  include:
+    - &Linux-clang9
+      branches:
+        only:
+          - develop
+      if: branch = develop
+      os: linux
+      dist: bionic
+      language: cpp
+      compiler: clang
+      env:
+        - CC=clang-9
+        - CXX=clang++-9
+        - OS_NAME=linux
+        - PLATFORM_NAME=linux-clang
+        - BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-bionic-9
+          packages:
+            - clang-9
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - libasound2-dev
+            - libxrandr-dev
+            - xorg-dev
+            - libgl1-mesa-dev
+            - libglu1-mesa-dev
+    - &Linux-gcc
+      branches:
+        only:
+          - master
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: linux
+      dist: bionic
+      language: cpp
+      compiler: gcc
+      env:
+        - CC=gcc-9
+        - CXX=g++-9
+        - OS_NAME=linux
+        - PLATFORM_NAME=linux-gcc
+        - BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
+            - libasound2-dev
+            - libxrandr-dev
+            - xorg-dev
+            - libgl1-mesa-dev
+            - libglu1-mesa-dev
+    - &Linux-gcc7-cov
+      branches:
+        only:
+          - develop
+      if: branch = develop
+      os: linux
+      language: cpp
+      compiler: gcc
+      env:
+        - CC=gcc-7
+        - CXX=g++-7
+        - OS_NAME=linux
+        - PLATFORM_NAME=linux-gcc
+        - BUILD_TYPE=Debug
+        - COVERAGE_MODE=1
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - g++-7
+            - libasound2-dev
+            - libxrandr-dev
+            - xorg-dev
+            - libgl1-mesa-dev
+            - libglu1-mesa-dev
+    - &Linux-gcc5
+      branches:
+        only:
+          - master
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env:
+        - CC=gcc-5
+        - CXX=g++-5
+        - OS_NAME=linux
+        - PLATFORM_NAME=linux-gcc5
+        - BUILD_TYPE=Debug
+        - CPP_REVISION=14
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-5
+            - g++-5
+            - libasound2-dev
+            - libxrandr-dev
+            - xorg-dev
+            - libgl1-mesa-dev
+            - libglu1-mesa-dev
+    - &MacOS-clang
+      branches:
+        only:
+          - master
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: osx
+      language: cpp
+      compiler: clang
+      env:
+        - CC=clang
+        - CXX=clang++
+        - OS_NAME=osx
+        - PLATFORM_NAME=osx
+        - BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-7
+          packages:
+            - libasound2-dev
+    - &iOS
+      branches:
+        only:
+          - master
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: osx
+      language: cpp
+      compiler: clang
+      env:
+        - OS_NAME=osx
+        - PLATFORM_NAME=ios
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-7
+          packages:
+            - libasound2-dev
+    - &Android64
+      branches:
+        only:
+          - master
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: linux
+      language: android
+      env:
+        - OS_NAME=android
+        - PLATFORM_NAME=android64
+        - ANDROID_TARGET=android-26
+        - ANDROID_TARGET_VERSION=26
+        - ANDROID_ABI=arm64-v8a
+        - ANDROID_ARCH=arm64
+        - ANDROID_NEON=TRUE
+      android:
+        components:
+          - tools
+          - tools #see https://github.com/travis-ci/travis-ci/issues/6040#issuecomment-219367943)
+          - platform-tools
+          - extra-android-support
+          - extra-android-m2repository
+          - extra-google-m2repository
+          - build-tools-26.0.3
+          - android-26
+      addons:
+        apt:
+          packages:
+            - python3
+            - ninja-build
+            - p7zip-full
+
+before_install:
+  - |
+    if [ "$OS_NAME" = "android" ]; then
+      export ANDROID_HOME=/usr/local/android-sdk
+      export ARCH="$(uname -m)"
+      wget "http://dl.google.com/android/repository/android-ndk-r17c-linux-${ARCH}.zip" -O ndk.bin
+      7z x ndk.bin > /dev/null
+      export ANDROID_NDK_HOME="$(pwd)/android-ndk-r17c"
+      export PATH="${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${ANDROID_NDK_HOME}:$PATH"
+      echo "sdk.dir=$ANDROID_HOME" > local.properties
+      echo "ndk.dir=$ANDROID_NDK_HOME" >> local.properties
+    elif [ "$PLATFORM_NAME" = "ios" ]; then
+      OSX_VER="$(sw_vers -productVersion)"
+      if [ "${OSX_VER:0:5}" = "10.14" ]; then
+        open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg 
+      fi
+    fi
+            
+before_script:
+  # install recent cmake
+  - sh ./_scripts/ci/install_cmake.sh 3.14.7 3.14 _addons
+  - sudo chmod -R 777 "./_addons"
+  - PATH=$(pwd)/_addons/cmake_3.14.7:$(pwd)/_addons/cmake_3.14.7/bin:$PATH
+  - export CTEST_OUTPUT_ON_FAILURE=1
+  # install libs / toolchain
+  - |
+    if [ "$OS_NAME" = "android" ]; then
+      python3 "${ANDROID_NDK_HOME}/build/tools/make_standalone_toolchain.py" --arch arm64 --install-dir "${HOME}/arm_toolchain"
+      export PATH=$HOME/arm_toolchain:$HOME/arm_toolchain/bin:$PATH
+      export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
+    else
+      sh ./_scripts/ci/install_opengl.sh
+    fi
+  - cmake --version
+  # dependencies
+  - sh ./_scripts/ci/install_dependencies.sh "${PLATFORM_NAME}"
+
+script:
+  - sh ./_scripts/update_version.sh
+  - mkdir _build && cd ./_build && mkdir "${PLATFORM_NAME}" && cd ..
+  - |
+    if [ "$OS_NAME" = "android" ]; then
+      cmake -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="14" -DCWORK_DUMMY_SOURCES=ON \
+        -G Ninja \
+        -DANDROID_ABI=$ANDROID_ABI \
+        -DANDROID_ARM_NEON=$ANDROID_NEON \
+        -DANDROID_PLATFORM=$ANDROID_TARGET \
+        -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH \
+        -DANDROID_TOOLCHAIN=clang \
+        -DCMAKE_SYSTEM_NAME=Android \
+        -DCMAKE_ANDROID_STANDALONE_TOOLCHAIN=$TOOLCHAIN_PATH \
+        -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH \
+        -DCMAKE_ANDROID_API=$ANDROID_TARGET_VERSION \
+        -DCMAKE_ANDROID_ARCH_ABI=$ANDROID_ABI \
+        -DCMAKE_EXE_LINKER_FLAGS="-pie" \
+        -DCMAKE_ANDROID_ARM_NEON=$ANDROID_NEON \
+        || exit 1
+    elif [ "$PLATFORM_NAME" = "ios" ]; then
+      cmake -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="14" -DCWORK_DUMMY_SOURCES=ON \
+        -G Xcode \
+        -DCMAKE_SYSTEM_NAME=iOS \
+        "-DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64;i386;x86_64" \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=9.3 \
+        -DCMAKE_INSTALL_PREFIX=`pwd`/_install \
+        -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
+        -DCMAKE_IOS_INSTALL_COMBINED=YES \
+        || exit 1
+    elif [ -n "$COVERAGE_MODE" ]; then
+      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCWORK_COVERAGE=1 || exit 1
+    elif [ -z "$CPP_REVISION" ]; then
+      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" || exit 1
+    else
+      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="${CPP_REVISION}" || exit 1
+    fi
+  - |
+    if [ "$OS_NAME" = "android" ]; then
+      cd "./_build/${PLATFORM_NAME}"
+      ninja -j4 || exit 1
+    elif [ "$PLATFORM_NAME" = "ios" ]; then
+      cmake --build "./_build/${PLATFORM_NAME}" --config Release --target install || exit 1
+    else
+      cd "./_build/${PLATFORM_NAME}"
+      make -j4 || exit 1
+      make test || exit 1
+      cd ../..
+    fi
+
+after_success: |
+  if [ -n "$COVERAGE_MODE" ]; then
+    sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
+    bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
+    sudo rm -rf $COVERAGE_DIR
+  fi
