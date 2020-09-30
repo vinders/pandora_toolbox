@@ -1,0 +1,42 @@
+ignore:
+  - "bin/"
+  - "_bin/"
+  - "build/"
+  - "_build/"
+  - "_cmake/"
+  - "_coverage/"
+  - "addons/"
+  - "_addons/"
+  - "_scripts/"
+  - "_libs/"
+  - ".gitignore"
+  - "LICENSE"
+  - "*.yml"
+  - "*.md"
+  - "*.sh"
+  - "*.bat"
+  - "*/bin/"
+  - "*/_bin/"
+  - "*/build/"
+  - "*/_build/"
+  - "*/cmake/"
+  - "*/*.md"
+  - "*/*.sh"
+  - "*/*.bat"
+  
+coverage:
+  status:
+    project:
+      default: false
+      tests:
+        target: 60%
+        threshold: 20%
+        base: auto 
+        flags:
+          - unit
+        paths:
+          - "*/test"
+          - "*/tests"
+          - "*/_test"
+        branches: 
+          - master
