@@ -36,7 +36,8 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 
 |    name    |                                                   description                                                        |
 |------------|----------------------------------------------------------------------------------------------------------------------|
-| *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                |
+| *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
+| *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |
 
 ---
 
