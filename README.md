@@ -38,6 +38,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 |------------|----------------------------------------------------------------------------------------------------------------------|
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
 | *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |
+| *time*     | Time management utils (stopwatch, timer, rates...), high-precision native system clocks...                           |
 
 ---
 
