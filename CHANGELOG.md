@@ -1,6 +1,21 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.14.2.47
+2020-10-02 - f9c113579c80d6f2881096c7d395aa4102648c5d
+### features
+vinders (4):
+* time: basic rational (frequency...) + rate factory (smpte, audio rates)
+* time: high precision & monotonic native system clocks
+* time: high-resolution stopwatch utility
+* time: synchronization timer (refresh/poll sync, frame limiter...)
+### fixes
+vinders (2):
+* cwork: git submodule utility: optionally permissive
+* cwork: custom cmake framework: regroup parent/child modules in common _libs directory
+
+---
+
 ## 0.10.0.37
 2020-10-02 - 0d671633ddbd7612e802283c179bbaed2d6a76b9
 ### features
