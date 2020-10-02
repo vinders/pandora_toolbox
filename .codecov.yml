@@ -39,4 +39,4 @@ coverage:
           - "*/tests"
           - "*/_test"
         branches: 
-          - master
+          - develop
