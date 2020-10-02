@@ -10,12 +10,12 @@ if(NOT EXISTS "${CWORK_SUBMODULE_PATH}/CMakeLists.txt")
         execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive --remote
                         WORKING_DIRECTORY ${CWORK_SOLUTION_PATH}
                         RESULT_VARIABLE GIT_SUBMOD_RESULT)
-        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+        if(NOT CWORK_SUBMODULE_PERMISSIVE AND NOT GIT_SUBMOD_RESULT EQUAL "0")
             message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
         endif()
     endif()
     
-    if(NOT EXISTS "${CWORK_SUBMODULE_PATH}/CMakeLists.txt")
+    if(NOT CWORK_SUBMODULE_PERMISSIVE AND NOT EXISTS "${CWORK_SUBMODULE_PATH}/CMakeLists.txt")
         message(FATAL_ERROR "Error: Submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Cmake will exit.")
     endif()
 endif()
