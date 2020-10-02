@@ -1,6 +1,6 @@
 if(NOT TARGET glfw3 AND NOT TARGET glfw AND NOT IOS AND NOT ANDROID)
     set(glfw3__FOUND ON)
-    set(GLFW3__PATH ${CWORK_SOLUTION_PATH}/_libs/glfw3)
+    set(GLFW3__PATH ${CWORK_MODULE_DESTINATION}/glfw3)
 
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Manual project download                                         │
@@ -8,7 +8,7 @@ if(NOT TARGET glfw3 AND NOT TARGET glfw AND NOT IOS AND NOT ANDROID)
     if(NOT EXISTS ${GLFW3__PATH} OR NOT EXISTS "${GLFW3__PATH}/CMakeLists.txt")
         set(_GIT_EXT_REPOSITORY https://github.com/glfw/glfw.git)
         set(_GIT_EXT_TAG "3.3.2")
-        set(_GIT_EXT_CACHE ${CWORK_SOLUTION_PATH}/_libs/.cache/glfw3)
+        set(_GIT_EXT_CACHE ${CWORK_MODULE_DESTINATION}/.cache/glfw3)
         set(_GIT_EXT_DIR ${GLFW3__PATH})
         configure_file("${CMAKE_CURRENT_LIST_DIR}/git_external.cmake" "${_GIT_EXT_CACHE}/CMakeLists.txt")
         execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" ${_GIT_EXT_CACHE} WORKING_DIRECTORY ${_GIT_EXT_CACHE})

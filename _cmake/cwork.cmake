@@ -26,6 +26,10 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         include(${cwork_path}/cwork_arch_flags.cmake)
         set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
         
+        if (NOT DEFINED CWORK_MODULE_DESTINATION)
+          set(CWORK_MODULE_DESTINATION "${root_path}/_libs" CACHE STRING "CWORK_MODULE_DESTINATION")
+        endif()
+        
         # build message
         if(DEFINED INSTALL_REV AND INSTALL_REV)
             message("##teamcity[buildNumber '${PROJECT_VERSION}${INSTALL_REV}']")
@@ -277,6 +281,9 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
             set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${module_path})
         else()
             set(CMAKE_MODULE_PATH ${module_path})
+        endif()
+        if (NOT DEFINED CWORK_MODULE_DESTINATION)
+          set(CWORK_MODULE_DESTINATION "${CWORK_SOLUTION_PATH}/_libs" CACHE STRING "CWORK_MODULE_DESTINATION")
         endif()
         
         string(TOLOWER ${build_type} CWORK_BUILD_TYPE)

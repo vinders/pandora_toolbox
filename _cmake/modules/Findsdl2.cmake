@@ -1,6 +1,6 @@
 if(NOT TARGET SDL2 AND NOT TARGET SDL2-static)
     set(sdl2__FOUND ON)
-    set(SDL2__PATH ${CWORK_SOLUTION_PATH}/_libs/sdl2)
+    set(SDL2__PATH ${CWORK_MODULE_DESTINATION}/sdl2)
 
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Manual project download                                         │
@@ -8,7 +8,7 @@ if(NOT TARGET SDL2 AND NOT TARGET SDL2-static)
     if(NOT EXISTS ${SDL2__PATH} OR NOT EXISTS "${SDL2__PATH}/CMakeLists.txt")
         set(_GIT_EXT_REPOSITORY https://github.com/spurious/SDL-mirror.git)
         set(_GIT_EXT_TAG "release-2.0.12")
-        set(_GIT_EXT_CACHE ${CWORK_SOLUTION_PATH}/_libs/.cache/sdl2)
+        set(_GIT_EXT_CACHE ${CWORK_MODULE_DESTINATION}/.cache/sdl2)
         set(_GIT_EXT_DIR ${SDL2__PATH})
         configure_file("${CMAKE_CURRENT_LIST_DIR}/git_external.cmake" "${_GIT_EXT_CACHE}/CMakeLists.txt")
         execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" ${_GIT_EXT_CACHE} WORKING_DIRECTORY ${_GIT_EXT_CACHE})

@@ -1,6 +1,6 @@
 if(NOT TARGET libglew AND NOT TARGET libglew_static AND NOT IOS AND NOT APPLE AND NOT ANDROID)
     set(libglew__FOUND ON)
-    set(LIBGLEW__PATH ${CWORK_SOLUTION_PATH}/_libs/glew)
+    set(LIBGLEW__PATH ${CWORK_MODULE_DESTINATION}/glew)
 
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Git submodules                                                  │
@@ -15,7 +15,7 @@ if(NOT TARGET libglew AND NOT TARGET libglew_static AND NOT IOS AND NOT APPLE AN
     if(NOT EXISTS ${LIBGLEW__PATH} OR NOT EXISTS "${LIBGLEW__PATH}/CMakeLists.txt")
         set(_GIT_EXT_REPOSITORY https://github.com/Perlmint/glew-cmake.git)
         set(_GIT_EXT_TAG "glew-cmake-2.1.0")
-        set(_GIT_EXT_CACHE ${CWORK_SOLUTION_PATH}/_libs/.cache/glew)
+        set(_GIT_EXT_CACHE ${CWORK_MODULE_DESTINATION}/.cache/glew)
         set(_GIT_EXT_DIR ${LIBGLEW__PATH})
         configure_file("${CMAKE_CURRENT_LIST_DIR}/git_external.cmake" "${_GIT_EXT_CACHE}/CMakeLists.txt")
         execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" ${_GIT_EXT_CACHE} WORKING_DIRECTORY ${_GIT_EXT_CACHE})
