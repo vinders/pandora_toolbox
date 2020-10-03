@@ -15,5 +15,6 @@ project("pandora" VERSION ${CWORK_BUILD_VERSION})
 cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_cmake"
     system
     thread
+    pattern
     time
 )
