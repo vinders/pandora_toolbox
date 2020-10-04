@@ -74,9 +74,9 @@ namespace pandora {
       }
       
       Timer(const Type&) = delete;
-      Timer(Type&&) = default;
+      Timer(Type&&) noexcept = default;
       Type& operator=(const Type&) = delete;
-      Type& operator=(Type&&) = default;
+      Type& operator=(Type&&) noexcept = default;
       ~Timer() = default;
       
       // -- getters --

@@ -27,9 +27,9 @@ namespace pandora {
       Stopwatch() = default;
       
       Stopwatch(const Stopwatch&) = default;
-      Stopwatch(Stopwatch&&) = default;
+      Stopwatch(Stopwatch&&) noexcept = default;
       inline Stopwatch& operator=(const Stopwatch&) = default;
-      inline Stopwatch& operator=(Stopwatch&&) = default;
+      inline Stopwatch& operator=(Stopwatch&&) noexcept = default;
       ~Stopwatch() = default;
 
       // -- stopwatch operations --

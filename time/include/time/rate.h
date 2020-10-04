@@ -22,9 +22,9 @@ namespace pandora {
       constexpr Rate(int32_t numerator, uint32_t denominator) noexcept
         : _numerator(numerator), _denominator(denominator) { assert(denominator != 0u); }
       Rate(const Rate&) = default;
-      Rate(Rate&&) = default;
+      Rate(Rate&&) noexcept = default;
       Rate& operator=(const Rate&) = default;
-      Rate& operator=(Rate&&) = default;
+      Rate& operator=(Rate&&) noexcept = default;
       ~Rate() = default;
       
       // -- getters / setters --
