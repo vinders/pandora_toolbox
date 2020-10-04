@@ -13,6 +13,9 @@ Code generators : _P_SERIALIZABLE_ENUM,
 *******************************************************************************/
 #pragma once
 
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <cstddef>
 #include <cstring>
 #include <string>
@@ -59,6 +62,8 @@ Code generators : _P_SERIALIZABLE_ENUM,
 #define __P_CONCAT_ENUM(type, value)            type :: value
 #define __P_SERIALIZE_ENUM_CASE(type, value)    case (__P_CONCAT_ENUM(type,value)): { return _P_STRINGIFY_SEMICOLON(value) }
 #define __P_DESERIALIZE_ENUM_CASE(type, value)  else if (_val == _P_STRINGIFY(value)) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
+#define __P_SERIALIZE_ENUM_CASE_BUFFER(type, value)    case (__P_CONCAT_ENUM(type,value)): { strncpy(_out, _P_STRINGIFY(value), _bufferSize); _out[_bufferSize - 1u] = '\0'; break; }
+#define __P_DESERIALIZE_ENUM_CASE_BUFFER(type, value)  else if (strncmp(_val, _P_STRINGIFY(value), _length) == 0) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
 #define __P_EXPAND_ENUM_VALUE(type, value)      , __P_CONCAT_ENUM(type,value)
 
 // define function to get a list of enum values (_P_SERIALIZABLE_ENUM required)
@@ -81,6 +86,21 @@ Code generators : _P_SERIALIZABLE_ENUM,
           return false; \
         } \
         constexpr inline size_t __P_CONCAT(type,_size)() { return _P_GET_ARG_COUNT(__VA_ARGS__); }
+
+// make an enum serializable/deserializable - external buffer
+#define _P_SERIALIZABLE_ENUM_BUFFER(type, ...) \
+        inline char* toString(char* _out, size_t _bufferSize, type _val) noexcept { \
+          switch (_val) { \
+            _P_PARAM_FOREACH(__P_SERIALIZE_ENUM_CASE_BUFFER, type, __VA_ARGS__) \
+            default: if (_bufferSize > size_t{ 0 }) { *_out = '\0'; } break; \
+          } \
+          return _out; \
+        } \
+        inline bool fromString(const char* _val, size_t _length, type& _out) noexcept { \
+          if (_length == 0) { return false; } \
+          _P_PARAM_FOREACH(__P_DESERIALIZE_ENUM_CASE_BUFFER, type, __VA_ARGS__) \
+          return false; \
+        }
 
 
 // -- flags operations --

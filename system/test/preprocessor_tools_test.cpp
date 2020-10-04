@@ -1,3 +1,10 @@
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -161,12 +168,13 @@ enum class DummyEnum: uint32_t {
   d,
   e,
   f,
-  g
+  ghi
 };
-_P_LIST_ENUM_VALUES(DummyEnum, all, a, b, c, d, e, f, g);
+_P_LIST_ENUM_VALUES(DummyEnum, all, a, b, c, d, e, f, ghi);
 _P_LIST_ENUM_VALUES(DummyEnum, repeat, a, a, b, b, a, b);
-_P_LIST_ENUM_VALUES(DummyEnum, odd, g, e, c, a);
-_P_SERIALIZABLE_ENUM(DummyEnum, a, b, c, d, e, f, g);
+_P_LIST_ENUM_VALUES(DummyEnum, odd, ghi, e, c, a);
+_P_SERIALIZABLE_ENUM(DummyEnum, a, b, c, d, e, f, ghi);
+_P_SERIALIZABLE_ENUM_BUFFER(DummyEnum, a, b, c, d, e, f, ghi);
 
 TEST_F(PreprocessorToolsTest, listEnumValues) {
   ASSERT_EQ(size_t{ 7u }, DummyEnum_all().size());
@@ -176,7 +184,7 @@ TEST_F(PreprocessorToolsTest, listEnumValues) {
   EXPECT_EQ(DummyEnum::d, DummyEnum_all()[3]);
   EXPECT_EQ(DummyEnum::e, DummyEnum_all()[4]);
   EXPECT_EQ(DummyEnum::f, DummyEnum_all()[5]);
-  EXPECT_EQ(DummyEnum::g, DummyEnum_all()[6]);
+  EXPECT_EQ(DummyEnum::ghi, DummyEnum_all()[6]);
 
   ASSERT_EQ(size_t{ 6u }, DummyEnum_repeat().size());
   EXPECT_EQ(DummyEnum::a, DummyEnum_repeat()[0]);
@@ -187,7 +195,7 @@ TEST_F(PreprocessorToolsTest, listEnumValues) {
   EXPECT_EQ(DummyEnum::b, DummyEnum_repeat()[5]);
 
   ASSERT_EQ(size_t{ 4u }, DummyEnum_odd().size());
-  EXPECT_EQ(DummyEnum::g, DummyEnum_odd()[0]);
+  EXPECT_EQ(DummyEnum::ghi, DummyEnum_odd()[0]);
   EXPECT_EQ(DummyEnum::e, DummyEnum_odd()[1]);
   EXPECT_EQ(DummyEnum::c, DummyEnum_odd()[2]);
   EXPECT_EQ(DummyEnum::a, DummyEnum_odd()[3]);
@@ -200,7 +208,20 @@ TEST_F(PreprocessorToolsTest, fromSerializableEnum) {
   EXPECT_EQ(std::string("d"), toString(DummyEnum::d));
   EXPECT_EQ(std::string("e"), toString(DummyEnum::e));
   EXPECT_EQ(std::string("f"), toString(DummyEnum::f));
-  EXPECT_EQ(std::string("g"), toString(DummyEnum::g));
+  EXPECT_EQ(std::string("ghi"), toString(DummyEnum::ghi));
+  EXPECT_EQ(std::string(""), toString((DummyEnum)123456));
+}
+TEST_F(PreprocessorToolsTest, fromSerializableEnumBuffered) {
+  char buffer[256]{ 0 };
+  EXPECT_EQ(std::string("a"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::a)));
+  EXPECT_EQ(std::string("b"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::b)));
+  EXPECT_EQ(std::string("c"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::c)));
+  EXPECT_EQ(std::string("d"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::d)));
+  EXPECT_EQ(std::string("e"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::e)));
+  EXPECT_EQ(std::string("f"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::f)));
+  EXPECT_EQ(std::string("ghi"), std::string(toString(buffer, size_t{ 256u }, DummyEnum::ghi)));
+  EXPECT_EQ(std::string("g"), std::string(toString(buffer, size_t{ 2u }, DummyEnum::ghi)));
+  EXPECT_EQ(std::string(""), std::string(toString(buffer, size_t{ 256u }, (DummyEnum)123456)));
 }
 
 TEST_F(PreprocessorToolsTest, toSerializableEnum) {
@@ -217,14 +238,43 @@ TEST_F(PreprocessorToolsTest, toSerializableEnum) {
   EXPECT_EQ(DummyEnum::e, result);
   EXPECT_TRUE(fromString("f", result));
   EXPECT_EQ(DummyEnum::f, result);
-  EXPECT_TRUE(fromString("g", result));
-  EXPECT_EQ(DummyEnum::g, result);
+  EXPECT_TRUE(fromString("ghi", result));
+  EXPECT_EQ(DummyEnum::ghi, result);
+  EXPECT_FALSE(fromString("azerty", result));
+  EXPECT_EQ(DummyEnum::ghi, result);
+}
+TEST_F(PreprocessorToolsTest, toSerializableEnumBuffered) {
+  DummyEnum result = DummyEnum::a;
+  EXPECT_TRUE(fromString("a", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::a, result);
+  EXPECT_TRUE(fromString("b", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::b, result);
+  EXPECT_TRUE(fromString("c", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::c, result);
+  EXPECT_TRUE(fromString("d", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::d, result);
+  EXPECT_TRUE(fromString("e", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::e, result);
+  EXPECT_TRUE(fromString("f", size_t{ 1u }, result));
+  EXPECT_EQ(DummyEnum::f, result);
+  EXPECT_TRUE(fromString("ghi", size_t{ 3u }, result));
+  EXPECT_EQ(DummyEnum::ghi, result);
+  EXPECT_FALSE(fromString("azerty", size_t{ 6u }, result));
+  EXPECT_EQ(DummyEnum::ghi, result);
 }
 
 TEST_F(PreprocessorToolsTest, toFromSerializableListedEnum) {
   DummyEnum result = DummyEnum::a;
   for (auto it : DummyEnum_all()) {
     EXPECT_TRUE(fromString(toString(it), result));
+    EXPECT_EQ(it, result);
+  }
+}
+TEST_F(PreprocessorToolsTest, toFromSerializableListedEnumBuffered) {
+  char buffer[256]{ 0 };
+  DummyEnum result = DummyEnum::a;
+  for (auto it : DummyEnum_all()) {
+    EXPECT_TRUE(fromString(toString(buffer, size_t{ 256u }, it), (it == DummyEnum::ghi) ? size_t{ 3u } : size_t{ 1u }, result));
     EXPECT_EQ(it, result);
   }
 }
@@ -372,3 +422,7 @@ TEST_F(PreprocessorToolsTest, duplicateSemicolon) {
 TEST_F(PreprocessorToolsTest, forceInlineMethod) {
   EXPECT_EQ(42, forceInlineTest());
 }
+
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic pop
+#endif
