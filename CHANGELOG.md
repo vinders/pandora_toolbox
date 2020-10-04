@@ -1,6 +1,17 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.23.1.64
+2020-10-04 - e91e20bcb1755ca7452365879577be2d4ba2b478
+### features
+vinders (1):
+* system: macros & code generators: enum serialization with buffer
+### fixes
+vinders (1):
+* system: logger + basic formatter: prealloc buffer for enum serialization
+
+---
+
 ## 0.22.1.59
 2020-10-04 - 0cc828d8a1f6187fb040ffec8690212627b5dc86
 ### features
