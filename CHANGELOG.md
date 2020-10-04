@@ -1,6 +1,24 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.22.1.59
+2020-10-04 - 0cc828d8a1f6187fb040ffec8690212627b5dc86
+### features
+vinders (8):
+* pattern: custom type traits (copy/move/compare/iterator) + copy/move enablers
+* pattern: global singleton + locked singleton patterns
+* pattern: optional value pattern (pointer-like buffer, stack alloc)
+* pattern: locked object pattern (safe lifetime lock + simple ref lock)
+* pattern: pre/post operation guard pattern
+* pattern: iterator/iterable pattern + declaration helpers
+* pattern: RAII contract utility (for delegate,observer...) + contract registrar
+* pattern: observer + delegate patterns (direct/deferrable)
+### fixes
+vinders (1):
+* cwork: custom cmake framework: refactr parent/internal solution system
+
+---
+
 ## 0.14.2.47
 2020-10-02 - f9c113579c80d6f2881096c7d395aa4102648c5d
 ### features
