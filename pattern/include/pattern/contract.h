@@ -65,9 +65,9 @@ namespace pandora {
       ContractProvider() : _contracts(std::make_shared<RegistrationCollection>()) {}
       ContractProvider(std::shared_ptr<ContractListener> listener) : _contracts(std::make_shared<RegistrationCollection>(listener)) {}
       ContractProvider(const ContractProvider&) = delete;
-      ContractProvider(ContractProvider&&) = default;
+      ContractProvider(ContractProvider&&) noexcept = default;
       ContractProvider& operator=(const ContractProvider&) = delete;
-      ContractProvider& operator=(ContractProvider&&) = default;
+      ContractProvider& operator=(ContractProvider&&) noexcept = default;
 
       /// @brief Unregister all contracts on destruction
       ~ContractProvider() noexcept { clear(); }

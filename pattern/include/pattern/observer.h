@@ -50,9 +50,9 @@ namespace pandora {
       }
       
       Observable(const Type&) = delete;
-      Observable(Type&&) = default;
+      Observable(Type&&) noexcept = default;
       Type& operator=(const Type&) = delete;
-      Type& operator=(Type&&) = default;
+      Type& operator=(Type&&) noexcept = default;
       virtual ~Observable() = default;
       
       // -- getters --

@@ -100,9 +100,9 @@ namespace pandora {
 
       Iterator() noexcept : _collection(nullptr), _current(nullptr), _index(_endIndex()) {}
       Iterator(const Type&) = default;
-      Iterator(Type&&) = default;
+      Iterator(Type&&) noexcept = default;
       Type& operator=(const Type&) = default;
-      Type& operator=(Type&&) = default;
+      Type& operator=(Type&&) noexcept = default;
       ~Iterator() = default;
       inline Type base() const noexcept { return Type(*this); }
 

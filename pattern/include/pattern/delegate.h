@@ -50,9 +50,9 @@ namespace pandora {
       }
 
       Delegate(const Type&) = delete;
-      Delegate(Type&&) = default;
+      Delegate(Type&&) noexcept = default;
       Type& operator=(const Type&) = delete;
-      Type& operator=(Type&&) = default;
+      Type& operator=(Type&&) noexcept = default;
       ~Delegate() = default;
       
       // -- getters --
