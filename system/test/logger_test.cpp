@@ -1,3 +1,6 @@
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -46,10 +49,11 @@ public:
 
   void write(LogLevel level, LogCategory category, const char* origin, uint32_t line, const char* format, va_list& args) {
     char buffer[_LOG_BUFFER_SIZE + 1u] = { 0 };
-    std::string levelStr = toString(level);
-    std::string catStr = toString(category);
+    char levelBuffer[12]{ 0 };
+    char categoryBuffer[8]{ 0 };
 
-    int writtenLength = snprintf(buffer, _LOG_BUFFER_SIZE, "<tr><td>%s</td><td>%s</td><td>%s(%d)</td><td>", levelStr.c_str(), catStr.c_str(), origin, line);
+    int writtenLength = snprintf(buffer, _LOG_BUFFER_SIZE, "<tr><td>%s</td><td>%s</td><td>%s(%d)</td><td>", 
+                                 toString(levelBuffer, size_t{ 12u }, level), toString(categoryBuffer, size_t{ 8u }, category), origin, line);
     if (writtenLength >= 0 && writtenLength < static_cast<int>(_LOG_BUFFER_SIZE)) {
       vsnprintf(buffer + writtenLength, _LOG_BUFFER_SIZE - static_cast<size_t>(writtenLength), format, args);
       *(this->_logStream) << buffer << "</td></tr>" << std::endl;

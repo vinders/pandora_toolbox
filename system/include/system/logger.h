@@ -4,12 +4,14 @@ License :     MIT
 *******************************************************************************/
 #pragma once
 
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <cstddef>
 #include <cstdio>
 #include <cstdarg>
 #include <cstdint>
 #include <cassert>
-#include <string>
 #include <fstream>
 #include "./preprocessor_tools.h"
 #if defined(_MSC_VER) && defined(_WINDOWS)
@@ -32,7 +34,7 @@ namespace pandora {
       standard = 3u,
       critical = 4u
     };
-    _P_SERIALIZABLE_ENUM(LogLevel, none, critical, standard, debug, trace);
+    _P_SERIALIZABLE_ENUM_BUFFER(LogLevel, none, critical, standard, debug, trace);
 
     /// @brief Log content category
     enum class LogCategory: uint32_t {
@@ -42,7 +44,7 @@ namespace pandora {
       warning = 3u,
       error = 4u,
     };
-    _P_SERIALIZABLE_ENUM(LogCategory, none, event, info, warning, error);
+    _P_SERIALIZABLE_ENUM_BUFFER(LogCategory, none, event, info, warning, error);
 
 
     // -- log utility --
@@ -144,9 +146,9 @@ namespace pandora {
       inline void write(LogLevel level, LogCategory flag, const char* origin, uint32_t line, const char* format, va_list& args) {
         assert(origin != nullptr && format != nullptr);
         *(this->_messageBuffer) = '\0';
-
-        const auto categoryLabel = toString(flag);
-        int writtenLength = __snprintf_truncate(this->_messageBuffer, _BufferSize, "[%s - lv.%u]: %s(%u): ", categoryLabel.c_str(), static_cast<uint32_t>(level), origin, line);
+        char categoryBuffer[8];
+        int writtenLength = __snprintf_truncate(this->_messageBuffer, _BufferSize, "[%s - lv.%u]: %s(%u): ", 
+                                                toString(categoryBuffer,size_t{ 8u },flag), static_cast<uint32_t>(level), origin, line);
         if (writtenLength < 0)
           writtenLength = static_cast<int>(strnlen(this->_messageBuffer, _BufferSize));
 
