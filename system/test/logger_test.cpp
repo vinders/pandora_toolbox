@@ -11,6 +11,7 @@
 #define _LOG_BUFFER_SIZE size_t{ 255u }
 
 using namespace pandora::system;
+using _BasicFormatterNoDate = BasicLogFormatter<std::ostringstream,size_t{ 255u },DateFormat::none,TimeFormat::none>;
 
 class LoggerTest : public testing::Test {
 public:
@@ -85,8 +86,8 @@ TEST_F(LoggerTest, loggerWithoutHeadersDefaultLevel) {
   EXPECT_EQ(std::string(""), loggerRef.status().stream().str());
 }
 TEST_F(LoggerTest, loggerWithoutHeaders) {
-  Logger<BasicLogFormatter<std::ostringstream> > logger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}), LogLevel::trace);
-  EXPECT_EQ(LogLevel::trace, logger.getMinLevel());
+  Logger<BasicLogFormatter<std::ostringstream> > logger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}), LogLevel::verbose);
+  EXPECT_EQ(LogLevel::verbose, logger.getMinLevel());
   EXPECT_FALSE(logger.status().getErrorStatus() & std::ostream::failbit);
   EXPECT_FALSE(logger.status().getErrorStatus() & std::ostream::badbit);
   logger.status().clearErrorStatus();
@@ -159,82 +160,91 @@ TEST_F(LoggerTest, htmlLoggerWithHeaders) {
 }
 
 TEST_F(LoggerTest, movedLogger) {
-  Logger<BasicLogFormatter<std::ostringstream> > movedLogger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}), LogLevel::debug);
+  Logger<_BasicFormatterNoDate> movedLogger(_BasicFormatterNoDate(std::ostringstream{}), LogLevel::debug);
   std::ostringstream stream;
   Logger<HtmlLogFormatter> movedLoggerHtml(HtmlLogFormatter(stream, false), LogLevel::critical);
 
-  Logger<BasicLogFormatter<std::ostringstream> > logger(std::move(movedLogger));
+  Logger<_BasicFormatterNoDate> logger(std::move(movedLogger));
   Logger<HtmlLogFormatter> loggerHtml(std::move(movedLoggerHtml));
 
-  logger.log(LogLevel::critical, LogCategory::event, "def", 24, "trololololo");
+  logger.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
   logger.flush();
-  EXPECT_EQ(std::string("[event - lv.4]: def(24): trololololo\n"), logger.status().stream().str());
+  EXPECT_EQ(std::string(" EVENT(lv.4) [def:24]: trololololo\n"), logger.status().stream().str());
 
-  loggerHtml.log(LogLevel::critical, LogCategory::event, "def", 24, "trololololo");
+  loggerHtml.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
   loggerHtml.flush();
-  EXPECT_EQ(std::string("<table>\n<tr><td>critical</td><td>event</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
+  EXPECT_EQ(std::string("<table>\n<tr><td>critical</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
 }
 
 
 // -- write logs --
 
+TEST_F(LoggerTest, logMessageWithoutHeadersWithDate) {
+  Logger<BasicLogFormatter<std::ostringstream,size_t{255u},DateFormat::year_mm_dd,TimeFormat::h24_mm_ss_milli> > 
+    logger(BasicLogFormatter<std::ostringstream,size_t{255u},DateFormat::year_mm_dd,TimeFormat::h24_mm_ss_milli>(std::ostringstream{}), LogLevel::none);
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "sherlock", 44, "this is not an %s", "event");
+
+  logger.flush();
+  EXPECT_EQ(std::string(" EVENT(lv.1) [sherlock:44]: this is not an event\n"), logger.status().stream().str().substr(size_t{ 23u }));
+  printf("%s", logger.status().stream().str().c_str());
+}
 TEST_F(LoggerTest, logMessageWithoutHeaders) {
-  Logger<BasicLogFormatter<std::ostringstream> > logger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}), LogLevel::none);
+  Logger<_BasicFormatterNoDate> logger(_BasicFormatterNoDate(std::ostringstream{}), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "nowhere", 12, "hello world !");
-  logger.log(LogLevel::trace, LogCategory::event, "sherlock", 44, "this is not an %s", "event");
-  logger.log(LogLevel::debug, LogCategory::info, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
-  logger.log(LogLevel::standard, LogCategory::warning, "irobot", 0, "AI will %s the world", "save");
-  logger.log(LogLevel::critical, LogCategory::error, "mars-attacks", 8, " ");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "sherlock", 44, "this is not an %s", "event");
+  logger.log(LogLevel::debug, LogCategory::INFO, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
+  logger.log(LogLevel::standard, LogCategory::WARNING, "irobot", 0, "AI will %s the world", "save");
+  logger.log(LogLevel::critical, LogCategory::ERROR, "mars-attacks", 8, " ");
 
   logger.flush();
   EXPECT_EQ(std::string(
-    "[none - lv.0]: nowhere(12): hello world !\n"
-    "[event - lv.1]: sherlock(44): this is not an event\n"
-    "[info - lv.2]: mib(21): code 257 - 1 alien to remove\n"
-    "[warning - lv.3]: irobot(0): AI will save the world\n"
-    "[error - lv.4]: mars-attacks(8):  \n"), logger.status().stream().str());
+    " (lv.0) [nowhere:12]: hello world !\n"
+    " EVENT(lv.1) [sherlock:44]: this is not an event\n"
+    " INFO(lv.2) [mib:21]: code 257 - 1 alien to remove\n"
+    " WARNING(lv.3) [irobot:0]: AI will save the world\n"
+    " ERROR(lv.4) [mars-attacks:8]:  \n"), logger.status().stream().str());
 }
 TEST_F(LoggerTest, logMessageWithHeaders) {
-  Logger<BasicLogFormatter<std::ostringstream> > logger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}, "head-line"), LogLevel::none);
+  Logger<_BasicFormatterNoDate> logger(_BasicFormatterNoDate(std::ostringstream{}, "head-line"), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "nowhere", 12, "hello world !");
-  logger.log(LogLevel::trace, LogCategory::event, "sherlock", 44, "this is not an %s", "event");
-  logger.log(LogLevel::debug, LogCategory::info, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
-  logger.log(LogLevel::standard, LogCategory::warning, "irobot", 0, "AI will %s the world", "save");
-  logger.log(LogLevel::critical, LogCategory::error, "mars-attacks", 8, " ");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "sherlock", 44, "this is not an %s", "event");
+  logger.log(LogLevel::debug, LogCategory::INFO, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
+  logger.log(LogLevel::standard, LogCategory::WARNING, "irobot", 0, "AI will %s the world", "save");
+  logger.log(LogLevel::critical, LogCategory::ERROR, "mars-attacks", 8, " ");
 
   logger.flush();
   EXPECT_EQ(std::string("head-line\n"
-    "[none - lv.0]: nowhere(12): hello world !\n"
-    "[event - lv.1]: sherlock(44): this is not an event\n"
-    "[info - lv.2]: mib(21): code 257 - 1 alien to remove\n"
-    "[warning - lv.3]: irobot(0): AI will save the world\n"
-    "[error - lv.4]: mars-attacks(8):  \n"), logger.status().stream().str());
+    " (lv.0) [nowhere:12]: hello world !\n"
+    " EVENT(lv.1) [sherlock:44]: this is not an event\n"
+    " INFO(lv.2) [mib:21]: code 257 - 1 alien to remove\n"
+    " WARNING(lv.3) [irobot:0]: AI will save the world\n"
+    " ERROR(lv.4) [mars-attacks:8]:  \n"), logger.status().stream().str());
 }
 TEST_F(LoggerTest, logIgnoredMessage) {
-  Logger<BasicLogFormatter<std::ostringstream> > logger(BasicLogFormatter<std::ostringstream>(std::ostringstream{}), LogLevel::critical);
+  Logger<_BasicFormatterNoDate> logger(_BasicFormatterNoDate(std::ostringstream{}), LogLevel::critical);
 
-  logger.log(LogLevel::none, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::trace, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::debug, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::standard, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::critical, LogCategory::info, "abc", 42, "blabla");
+  logger.log(LogLevel::none, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::verbose, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::debug, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::standard, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::critical, LogCategory::INFO, "abc", 42, "blabla");
 
   logger.setMinLevel(LogLevel::debug);
   EXPECT_EQ(LogLevel::debug, logger.getMinLevel());
-  logger.log(LogLevel::none, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::trace, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::debug, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::standard, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::critical, LogCategory::event, "def", 24, "trololololo");
+  logger.log(LogLevel::none, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::debug, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::standard, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
 
   logger.flush();
   EXPECT_EQ(std::string(
-    "[info - lv.4]: abc(42): blabla\n"
-    "[event - lv.2]: def(24): trololololo\n"
-    "[event - lv.3]: def(24): trololololo\n"
-    "[event - lv.4]: def(24): trololololo\n"), logger.status().stream().str());
+    " INFO(lv.4) [abc:42]: blabla\n"
+    " EVENT(lv.2) [def:24]: trololololo\n"
+    " EVENT(lv.3) [def:24]: trololololo\n"
+    " EVENT(lv.4) [def:24]: trololololo\n"), logger.status().stream().str());
 }
 
 TEST_F(LoggerTest, logHtmlMessageWithoutHeaders) {
@@ -242,67 +252,68 @@ TEST_F(LoggerTest, logHtmlMessageWithoutHeaders) {
   Logger<HtmlLogFormatter> logger(HtmlLogFormatter(stream, false), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "nowhere", 12, "hello world !");
-  logger.log(LogLevel::trace, LogCategory::event, "sherlock", 44, "this is not an %s", "event");
-  logger.log(LogLevel::debug, LogCategory::info, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
-  logger.log(LogLevel::standard, LogCategory::warning, "irobot", 0, "AI will %s the world", "save");
-  logger.log(LogLevel::critical, LogCategory::error, "mars-attacks", 8, " ");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "sherlock", 44, "this is not an %s", "event");
+  logger.log(LogLevel::debug, LogCategory::INFO, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
+  logger.log(LogLevel::standard, LogCategory::WARNING, "irobot", 0, "AI will %s the world", "save");
+  logger.log(LogLevel::critical, LogCategory::ERROR, "mars-attacks", 8, " ");
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n"
-            "<tr><td>none</td><td>none</td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
-            "<tr><td>trace</td><td>event</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
-            "<tr><td>debug</td><td>info</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
-            "<tr><td>standard</td><td>warning</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
-            "<tr><td>critical</td><td>error</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
+            "<tr><td>none</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
+            "<tr><td>verbose</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
+            "<tr><td>debug</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
+            "<tr><td>standard</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
+            "<tr><td>critical</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
 }
 TEST_F(LoggerTest, logHtmlMessageWithHeaders) {
   std::ostringstream stream;
   Logger<HtmlLogFormatter> logger(HtmlLogFormatter(stream, true), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "nowhere", 12, "hello world !");
-  logger.log(LogLevel::trace, LogCategory::event, "sherlock", 44, "this is not an %s", "event");
-  logger.log(LogLevel::debug, LogCategory::info, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
-  logger.log(LogLevel::standard, LogCategory::warning, "irobot", 0, "AI will %s the world", "save");
-  logger.log(LogLevel::critical, LogCategory::error, "mars-attacks", 8, " ");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "sherlock", 44, "this is not an %s", "event");
+  logger.log(LogLevel::debug, LogCategory::INFO, "mib", 21, "code %d - %d %s to remove", 257, 1, "alien");
+  logger.log(LogLevel::standard, LogCategory::WARNING, "irobot", 0, "AI will %s the world", "save");
+  logger.log(LogLevel::critical, LogCategory::ERROR, "mars-attacks", 8, " ");
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n<tr><th>Level</th><th>Category</th><th>Source</th><th>Message</th></tr>\n"
-            "<tr><td>none</td><td>none</td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
-            "<tr><td>trace</td><td>event</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
-            "<tr><td>debug</td><td>info</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
-            "<tr><td>standard</td><td>warning</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
-            "<tr><td>critical</td><td>error</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
+            "<tr><td>none</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
+            "<tr><td>verbose</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
+            "<tr><td>debug</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
+            "<tr><td>standard</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
+            "<tr><td>critical</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
 }
 TEST_F(LoggerTest, logHtmlIgnoredMessage) {
   std::ostringstream stream;
   Logger<HtmlLogFormatter> logger(HtmlLogFormatter(stream, false), LogLevel::critical);
 
-  logger.log(LogLevel::none, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::trace, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::debug, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::standard, LogCategory::info, "abc", 42, "blabla");
-  logger.log(LogLevel::critical, LogCategory::info, "abc", 42, "blabla");
+  logger.log(LogLevel::none, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::verbose, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::debug, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::standard, LogCategory::INFO, "abc", 42, "blabla");
+  logger.log(LogLevel::critical, LogCategory::INFO, "abc", 42, "blabla");
 
   logger.setMinLevel(LogLevel::standard);
   EXPECT_EQ(LogLevel::standard, logger.getMinLevel());
-  logger.log(LogLevel::none, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::trace, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::debug, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::standard, LogCategory::event, "def", 24, "trololololo");
-  logger.log(LogLevel::critical, LogCategory::event, "def", 24, "trololololo");
+  logger.log(LogLevel::none, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::verbose, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::debug, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::standard, LogCategory::EVENT, "def", 24, "trololololo");
+  logger.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n"
-            "<tr><td>critical</td><td>info</td><td>abc(42)</td><td>blabla</td></tr>\n"
-            "<tr><td>standard</td><td>event</td><td>def(24)</td><td>trololololo</td></tr>\n"
-            "<tr><td>critical</td><td>event</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
+            "<tr><td>critical</td><td>INFO</td><td>abc(42)</td><td>blabla</td></tr>\n"
+            "<tr><td>standard</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"
+            "<tr><td>critical</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
 }
 
 
 // -- size overflow --
 
 TEST_F(LoggerTest, logMessagePrefixTooLong) {
-  Logger<BasicLogFormatter<std::ostringstream, size_t{ 25u }> > logger(BasicLogFormatter<std::ostringstream, size_t{ 25u }>(std::ostringstream{}), LogLevel::none);
+  Logger<BasicLogFormatter<std::ostringstream,size_t{ 19u },DateFormat::none,TimeFormat::none> > 
+    logger(BasicLogFormatter<std::ostringstream,size_t{ 19u },DateFormat::none,TimeFormat::none>(std::ostringstream{}), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "now", 12, "hello world !");
   logger.log(LogLevel::none, LogCategory::none, "nowh", 12, "hello world !");
@@ -310,12 +321,13 @@ TEST_F(LoggerTest, logMessagePrefixTooLong) {
 
   logger.flush();
   EXPECT_EQ(std::string(
-    "[none - lv.0]: now(12): \n"
-    "[none - lv.0]: nowh(12):\n"
-    "[none - lv.0]: nowhere(1\n"), logger.status().stream().str());
+    " (lv.0) [now:12]: \n"
+    " (lv.0) [nowh:12]:\n"
+    " (lv.0) [nowhere:1\n"), logger.status().stream().str());
 }
 TEST_F(LoggerTest, logMessageMessageTooLong) {
-  Logger<BasicLogFormatter<std::ostringstream, size_t{ 25u }> > logger(BasicLogFormatter<std::ostringstream, size_t{ 25u }>(std::ostringstream{}), LogLevel::none);
+  Logger<BasicLogFormatter<std::ostringstream,size_t{ 19u },DateFormat::none,TimeFormat::none> > 
+    logger(BasicLogFormatter<std::ostringstream,size_t{ 19u },DateFormat::none,TimeFormat::none>(std::ostringstream{}), LogLevel::none);
 
   logger.log(LogLevel::none, LogCategory::none, "o", 12, "hello world !");
   logger.log(LogLevel::none, LogCategory::none, "o", 12, "%s", "hello world !");
@@ -323,7 +335,7 @@ TEST_F(LoggerTest, logMessageMessageTooLong) {
 
   logger.flush();
   EXPECT_EQ(std::string(
-    "[none - lv.0]: o(12): he\n"
-    "[none - lv.0]: o(12): he\n"
-    "[none - lv.0]: o(12):  h\n"), logger.status().stream().str());
+    " (lv.0) [o:12]: he\n"
+    " (lv.0) [o:12]: he\n"
+    " (lv.0) [o:12]:  h\n"), logger.status().stream().str());
 }

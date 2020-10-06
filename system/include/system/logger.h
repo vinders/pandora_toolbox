@@ -13,6 +13,7 @@ License :     MIT
 #include <cstdint>
 #include <cassert>
 #include <fstream>
+#include "./date_time.h"
 #include "./preprocessor_tools.h"
 #if defined(_MSC_VER) && defined(_WINDOWS)
 # define __snprintf_truncate(buffer, ...) _snprintf_s(buffer, _TRUNCATE, __VA_ARGS__)
@@ -24,27 +25,27 @@ License :     MIT
 
 namespace pandora {
   namespace system {
-    template <typename,size_t> class BasicLogFormatter;
+    template <typename,size_t,DateFormat,TimeFormat> class BasicLogFormatter;
 
     /// @brief Log level type
     enum class LogLevel: uint32_t {
       none = 0u,
-      trace = 1u,
+      verbose = 1u,
       debug = 2u,
       standard = 3u,
       critical = 4u
     };
-    _P_SERIALIZABLE_ENUM_BUFFER(LogLevel, none, critical, standard, debug, trace);
+    _P_SERIALIZABLE_ENUM_BUFFER(LogLevel, none, critical, standard, debug, verbose);
 
     /// @brief Log content category
     enum class LogCategory: uint32_t {
       none = 0u,
-      event = 1u,
-      info = 2u,
-      warning = 3u,
-      error = 4u,
+      INFO = 1u,
+      EVENT = 2u,
+      WARNING = 3u,
+      ERROR = 4u
     };
-    _P_SERIALIZABLE_ENUM_BUFFER(LogCategory, none, event, info, warning, error);
+    _P_SERIALIZABLE_ENUM_BUFFER(LogCategory, INFO, EVENT, WARNING, ERROR);
 
 
     // -- log utility --
@@ -53,8 +54,9 @@ namespace pandora {
     /// @brief Simple log writing utility. Not protected against concurrent access (can be used in Locked pattern for such situations)
     template <typename _OutputFormatter                   ///< Output formatter: any movable class that implements:
                        = BasicLogFormatter                ///  void write(LogLevel, LogCategory, const char* orig, uint32_t line, const char* format, va_list&),
-                         <std::ofstream,size_t{ 255u }> > ///  void write(LogLevel, LogCategory, const wchar_t* orig, uint32_t line, const wchar_t* format, va_list&),
-                                                          ///  void flush().
+                         <std::ofstream,size_t{ 255u },   ///  void write(LogLevel, LogCategory, const wchar_t* orig, uint32_t line, const wchar_t* format, va_list&),
+                          DateFormat::year_mm_dd,         ///  void flush().
+                          TimeFormat::h24_mm_ss_milli> >  
     class Logger final {
     public:
       /// @brief Create logger utility (inject output formatter with stream + set initial output level)
@@ -114,9 +116,13 @@ namespace pandora {
     /// @note  Use this class as an example to create custom formatters (csv, html, xml...)
     template <typename _OutputStream = std::ofstream,  ///< Output stream type: fstream/ofstream/stringstream/ostringstream/osyncstream 
                                                        ///  or any movable class that implements: operator<<, flush, clear, rdstate.
-              size_t _BufferSize = size_t{ 255u }>     ///< Max log message length (including metadata)
+              size_t _BufferSize = size_t{ 255u },     ///< Max log message length (including metadata)
+              DateFormat _DateType = DateFormat::year_mm_dd,      ///< Log date formatting
+              TimeFormat _TimeType = TimeFormat::h24_mm_ss_milli> ///< Log time formatting
     class BasicLogFormatter final {
     public:
+      using Type = BasicLogFormatter<_OutputStream,_BufferSize,_DateType,_TimeType>;
+
       /// @brief Create formatter (inject output stream)
       BasicLogFormatter(_OutputStream&& logStream) 
         : _logStream(std::move(logStream)) {}
@@ -127,10 +133,10 @@ namespace pandora {
           this->_logStream << outputHeader << std::endl;
       }
       BasicLogFormatter() = default; ///< Formatter with default output (string stream) or no output (file stream)
-      BasicLogFormatter(const BasicLogFormatter<_OutputStream,_BufferSize>&) = delete;
-      BasicLogFormatter(BasicLogFormatter<_OutputStream,_BufferSize>&&) = default;
-      BasicLogFormatter& operator=(const BasicLogFormatter<_OutputStream,_BufferSize>&) = delete;
-      BasicLogFormatter& operator=(BasicLogFormatter<_OutputStream,_BufferSize>&&) = default;
+      BasicLogFormatter(const Type&) = delete;
+      BasicLogFormatter(Type&&) = default;
+      BasicLogFormatter& operator=(const Type&) = delete;
+      BasicLogFormatter& operator=(Type&&) = default;
       ~BasicLogFormatter() = default;
 
       // -- status --
@@ -145,15 +151,17 @@ namespace pandora {
       // Format and write log message and metadata
       inline void write(LogLevel level, LogCategory flag, const char* origin, uint32_t line, const char* format, va_list& args) {
         assert(origin != nullptr && format != nullptr);
-        *(this->_messageBuffer) = '\0';
+        static_assert(_BufferSize > size_t{ 0u }, "Template argument _BufferSize cannot be 0.");
         char categoryBuffer[8];
-        int writtenLength = __snprintf_truncate(this->_messageBuffer, _BufferSize, "[%s - lv.%u]: %s(%u): ", 
-                                                toString(categoryBuffer,size_t{ 8u },flag), static_cast<uint32_t>(level), origin, line);
-        if (writtenLength < 0)
-          writtenLength = static_cast<int>(strnlen(this->_messageBuffer, _BufferSize));
 
-        if (static_cast<size_t>(writtenLength) < _BufferSize - 1u)
-          __vsnprintf_truncate(this->_messageBuffer + writtenLength, _BufferSize - static_cast<size_t>(writtenLength), format, args);
+        *(this->_messageBuffer) = '\0';
+        size_t totalLength = getCurrentDateTimeString<TimeReference::local,_DateType,_TimeType,' '>(this->_messageBuffer, _BufferSize - 1u);
+        int messageLength = __snprintf_truncate(this->_messageBuffer + totalLength, _BufferSize - totalLength, " %s(lv.%u) [%s:%u]: ", 
+                                                toString(categoryBuffer,size_t{ 8u },flag), static_cast<uint32_t>(level), origin, line);
+        totalLength = (messageLength > 0) ? totalLength + static_cast<size_t>(messageLength) : strnlen(this->_messageBuffer, _BufferSize);
+
+        if (totalLength < _BufferSize - 1u)
+          __vsnprintf_truncate(this->_messageBuffer + totalLength, _BufferSize - totalLength, format, args);
 
         this->_messageBuffer[_BufferSize - 1u] = static_cast<char>(0);
         this->_logStream << this->_messageBuffer << std::endl;
@@ -161,7 +169,7 @@ namespace pandora {
       // Flush log stream buffer
       inline void flush() noexcept { this->_logStream.flush(); }
 
-      friend class Logger<BasicLogFormatter<_OutputStream,_BufferSize> >;
+      friend class Logger<Type>;
 
     private:
       char _messageBuffer[_BufferSize + 1u]{ 0 };
@@ -171,17 +179,17 @@ namespace pandora {
 
     // -- aliases --
 
-    template <size_t _BufferSize = size_t{ 255u } >
-    using LogFileFormatter = BasicLogFormatter<std::ofstream,_BufferSize>;
+    template <size_t _BufferSize = size_t{ 255u }, DateFormat _DateType = DateFormat::year_mm_dd, TimeFormat _TimeType = TimeFormat::h24_mm_ss_milli>
+    using LogFileFormatter = BasicLogFormatter<std::ofstream,_BufferSize,_DateType,_TimeType>;
 
-    template <size_t _BufferSize = size_t{ 255u } >
-    using LogStringFormatter = BasicLogFormatter<std::ostringstream, _BufferSize>;
+    template <size_t _BufferSize = size_t{ 255u }, DateFormat _DateType = DateFormat::year_mm_dd, TimeFormat _TimeType = TimeFormat::h24_mm_ss_milli>
+    using LogStringFormatter = BasicLogFormatter<std::ostringstream, _BufferSize,_DateType,_TimeType>;
 
-    template <size_t _BufferSize = size_t{ 255u } >
-    using FileLogger = Logger<LogFileFormatter<_BufferSize> >;
+    template <size_t _BufferSize = size_t{ 255u }, DateFormat _DateType = DateFormat::year_mm_dd, TimeFormat _TimeType = TimeFormat::h24_mm_ss_milli>
+    using FileLogger = Logger<LogFileFormatter<_BufferSize,_DateType,_TimeType> >;
 
-    template <size_t _BufferSize = size_t{ 255u } >
-    using StringLogger = Logger<LogStringFormatter<_BufferSize> >;
+    template <size_t _BufferSize = size_t{ 255u }, DateFormat _DateType = DateFormat::year_mm_dd, TimeFormat _TimeType = TimeFormat::h24_mm_ss_milli>
+    using StringLogger = Logger<LogStringFormatter<_BufferSize,_DateType,_TimeType> >;
 
   }
 }
