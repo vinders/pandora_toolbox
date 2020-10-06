@@ -14,7 +14,6 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 
 ## Build status
 ![Cmake3_14](https://img.shields.io/badge/cmake-3.14-888.svg)
-![BranchDevelop](https://img.shields.io/badge/branch-develop-487.svg)
 [![codecov](https://codecov.io/gh/vinders/pandora_toolbox/branch/develop/graph/badge.svg?token=5NQ4BF7QRI)](https://codecov.io/gh/vinders/pandora_toolbox)
 ![C++17](https://img.shields.io/badge/c++-17-75b.svg)
 ![C++14](https://img.shields.io/badge/c++-14-a99dc2.svg)
