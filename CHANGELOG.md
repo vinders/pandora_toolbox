@@ -1,6 +1,18 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.25.0.69
+2020-10-06 - a630f678994ca4d0c1e0e26c529000a19a253139
+### features
+vinders (2):
+* system: date/time formatting + reading
+* io: CSV log output formatter
+### fixes
+vinders (1):
+* system: logger + basic formatter: add current date/time
+
+---
+
 ## 0.23.1.64
 2020-10-04 - e91e20bcb1755ca7452365879577be2d4ba2b478
 ### features
@@ -26,7 +38,7 @@ vinders (8):
 * pattern: observer + delegate patterns (direct/deferrable)
 ### fixes
 vinders (1):
-* cwork: custom cmake framework: refactr parent/internal solution system
+* cwork: custom cmake framework: refactor parent/internal solution system
 
 ---
 
