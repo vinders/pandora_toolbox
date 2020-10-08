@@ -1,7 +1,7 @@
 set(filesystem__FOUND ON)
 
 if(MINGW)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL 9.0)
         set(filesystem__LINKED user32.lib Shlwapi.lib)
     else()
         set(filesystem__LINKED Shlwapi.lib)

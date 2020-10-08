@@ -4,7 +4,7 @@ License :     MIT
 *******************************************************************************/
 #pragma once
 
-#if (!defined(_CPP_REVISION) || _CPP_REVISION != 14) && ( (defined(_MSC_VER) && _MSC_VER >= 1914) || (defined(__GNUC__) && __GNUC__ >= 8) || (defined(__clang_major__) && __clang_major__ >= 11) )
+#if (!defined(_CPP_REVISION) || _CPP_REVISION != 14) && ( (defined(_MSC_VER) && _MSC_VER >= 1914) || (!defined(__MINGW32__) && defined(__GNUC__) && __GNUC__ >= 8) || (defined(__MINGW32__) && defined(__GNUC__) && __GNUC__ > 9) || (defined(__clang_major__) && __clang_major__ >= 11) )
 # include <filesystem>
 #else
 # define _USE_NATIVE_FILESYSTEM 1
