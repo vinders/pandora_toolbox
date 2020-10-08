@@ -1,7 +1,7 @@
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
 #endif
-#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 7
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
