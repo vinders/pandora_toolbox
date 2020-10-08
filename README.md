@@ -33,7 +33,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 
 |    name    |                                                   description                                                        |
 |------------|----------------------------------------------------------------------------------------------------------------------|
-| *io*       | File/directory utils, standard system locations, serialization, encoding, ...                                        |
+| *io*       | File/directory utils, standard system locations, serialization, encoders, formatters...                              |
 | *pattern*  | Common design patterns (optional, locked, iterator, observer/delegate with contract...), advanced type traits...     |
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
 | *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |

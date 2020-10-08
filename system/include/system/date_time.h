@@ -141,14 +141,16 @@ namespace pandora {
           ++dateLength;
         }
       }
-      else __if_constexpr (_TimeType == TimeFormat::none) {
-        if (maxLength > size_t{ 0 })
-          *out = static_cast<char>(0);
-        return size_t{ 0 };
-      }
       __if_constexpr (_TimeType != TimeFormat::none)
         _getTimeFormatSpecifiers<_TimeType>(buffer + dateLength);
-      size_t length = strftime(out, maxLength, buffer, timeDetails);
+
+      size_t length{ 0 };
+      __if_constexpr (_DateType != DateFormat::none || _TimeType != TimeFormat::none)
+        length = strftime(out, maxLength, buffer, timeDetails);
+      else {
+        if (maxLength > size_t{ 0 })
+          *out = static_cast<char>(0);
+      }
       
       // format milli/micro/nanoseconds
       __if_constexpr (_TimeType == TimeFormat::h24_mm_ss_milli) {
