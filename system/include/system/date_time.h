@@ -17,6 +17,25 @@ License :     MIT
 #else
 # define __if_constexpr if
 #endif
+#if (!defined(_CPP_REVISION) || _CPP_REVISION != 14) && (defined(_MSC_VER) || !defined(__MINGW32__))
+# define __P_FORMAT_SPEC_mdy_VAL "%D"
+# define __P_FORMAT_SPEC_mdy_SIZE size_t{ 2u }
+# define __P_FORMAT_SPEC_yearmd_VAL "%F"
+# define __P_FORMAT_SPEC_yearmd_SIZE size_t{ 2u }
+# define __P_FORMAT_SPEC_hms_VAL "%T"
+# define __P_FORMAT_SPEC_hms_SIZE size_t{ 2u }
+# define __P_FORMAT_SPEC_hms_sub_VAL "%T."
+# define __P_FORMAT_SPEC_hms_sub_SIZE size_t{ 3u }
+#else
+# define __P_FORMAT_SPEC_mdy_VAL "%m/%d/%y"
+# define __P_FORMAT_SPEC_mdy_SIZE size_t{ 8u }
+# define __P_FORMAT_SPEC_yearmd_VAL "%Y-%m-%d"
+# define __P_FORMAT_SPEC_yearmd_SIZE size_t{ 8u }
+# define __P_FORMAT_SPEC_hms_VAL "%H:%M:%S"
+# define __P_FORMAT_SPEC_hms_SIZE size_t{ 8u }
+# define __P_FORMAT_SPEC_hms_sub_VAL "%H:%M:%S."
+# define __P_FORMAT_SPEC_hms_sub_SIZE size_t{ 9u }
+#endif
 
 namespace pandora {
   namespace system {
@@ -58,24 +77,24 @@ namespace pandora {
       __if_constexpr (_DateType == DateFormat::weekday)      { memcpy((void*)out, (void*)"%A", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
       else __if_constexpr (_DateType == DateFormat::month)   { memcpy((void*)out, (void*)"%B", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
       else __if_constexpr (_DateType == DateFormat::year)    { memcpy((void*)out, (void*)"%Y", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
-      else __if_constexpr (_DateType == DateFormat::wkd_d_mth)       { memcpy((void*)out, (void*)"%a %e %b", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::wkd_mth_d)       { memcpy((void*)out, (void*)"%a %b %e", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::weekday_d_month) { memcpy((void*)out, (void*)"%A %e %B", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::weekday_month_d) { memcpy((void*)out, (void*)"%A %B %e", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::wkd_d_mth_year)  { memcpy((void*)out, (void*)"%a %e %b %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
-      else __if_constexpr (_DateType == DateFormat::wkd_mth_d_year)  { memcpy((void*)out, (void*)"%a %b %e %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
-      else __if_constexpr (_DateType == DateFormat::weekday_d_month_year) { memcpy((void*)out, (void*)"%A %e %B %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
-      else __if_constexpr (_DateType == DateFormat::weekday_month_d_year) { memcpy((void*)out, (void*)"%A %B %e %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
-      else __if_constexpr (_DateType == DateFormat::d_month_year) { memcpy((void*)out, (void*)"%e %B %Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::month_d_year) { memcpy((void*)out, (void*)"%B %e %Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::wkd_d_mth)       { memcpy((void*)out, (void*)"%a %d %b", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::wkd_mth_d)       { memcpy((void*)out, (void*)"%a %b %d", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::weekday_d_month) { memcpy((void*)out, (void*)"%A %d %B", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::weekday_month_d) { memcpy((void*)out, (void*)"%A %B %d", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::wkd_d_mth_year)  { memcpy((void*)out, (void*)"%a %d %b %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
+      else __if_constexpr (_DateType == DateFormat::wkd_mth_d_year)  { memcpy((void*)out, (void*)"%a %b %d %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
+      else __if_constexpr (_DateType == DateFormat::weekday_d_month_year) { memcpy((void*)out, (void*)"%A %d %B %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
+      else __if_constexpr (_DateType == DateFormat::weekday_month_d_year) { memcpy((void*)out, (void*)"%A %B %d %Y", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
+      else __if_constexpr (_DateType == DateFormat::d_month_year) { memcpy((void*)out, (void*)"%d %B %Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
+      else __if_constexpr (_DateType == DateFormat::month_d_year) { memcpy((void*)out, (void*)"%B %d %Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
       else __if_constexpr (_DateType == DateFormat::dd_mm)      { memcpy((void*)out, (void*)"%d/%m", size_t{ 6u }*sizeof(char)); return size_t{ 5u }; }
       else __if_constexpr (_DateType == DateFormat::mm_dd)      { memcpy((void*)out, (void*)"%m/%d", size_t{ 6u }*sizeof(char)); return size_t{ 5u }; }
       else __if_constexpr (_DateType == DateFormat::dd_mm_yy)   { memcpy((void*)out, (void*)"%d/%m/%y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
       else __if_constexpr (_DateType == DateFormat::dd_mm_year) { memcpy((void*)out, (void*)"%d/%m/%Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::mm_dd_yy)   { memcpy((void*)out, (void*)"%D", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
+      else __if_constexpr (_DateType == DateFormat::mm_dd_yy)   { memcpy((void*)out, (void*)__P_FORMAT_SPEC_mdy_VAL, (__P_FORMAT_SPEC_mdy_SIZE+1u)*sizeof(char)); return __P_FORMAT_SPEC_mdy_SIZE; }
       else __if_constexpr (_DateType == DateFormat::mm_dd_year) { memcpy((void*)out, (void*)"%m/%d/%Y", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
       else __if_constexpr (_DateType == DateFormat::yy_mm_dd)   { memcpy((void*)out, (void*)"%y-%m-%d", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_DateType == DateFormat::year_mm_dd) { memcpy((void*)out, (void*)"%F", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
+      else __if_constexpr (_DateType == DateFormat::year_mm_dd) { memcpy((void*)out, (void*)__P_FORMAT_SPEC_yearmd_VAL, (__P_FORMAT_SPEC_yearmd_SIZE+1u)*sizeof(char)); return __P_FORMAT_SPEC_yearmd_SIZE; }
       else { *out = static_cast<char>(0); return size_t{ 0u }; }
     }
     
@@ -97,9 +116,9 @@ namespace pandora {
       __if_constexpr (_TimeType == TimeFormat::none) { *out = static_cast<char>(0); return size_t{ 0u }; }
       else __if_constexpr (_TimeType == TimeFormat::h24_mm)    { memcpy((void*)out, (void*)"%H:%M", size_t{ 6u }*sizeof(char)); return size_t{ 5u }; }
       else __if_constexpr (_TimeType == TimeFormat::h12_mm)    { memcpy((void*)out, (void*)"%H:%M %p", size_t{ 9u }*sizeof(char)); return size_t{ 8u }; }
-      else __if_constexpr (_TimeType == TimeFormat::h24_mm_ss) { memcpy((void*)out, (void*)"%T", size_t{ 3u }*sizeof(char)); return size_t{ 2u }; }
+      else __if_constexpr (_TimeType == TimeFormat::h24_mm_ss) { memcpy((void*)out, (void*)__P_FORMAT_SPEC_hms_VAL, (__P_FORMAT_SPEC_hms_SIZE+1u)*sizeof(char)); return __P_FORMAT_SPEC_hms_SIZE; }
       else __if_constexpr (_TimeType == TimeFormat::h12_mm_ss) { memcpy((void*)out, (void*)"%I:%M:%S %p", size_t{ 12u }*sizeof(char)); return size_t{ 11u }; }
-      else { memcpy((void*)out, (void*)"%T.", size_t{ 4u }*sizeof(char)); return size_t{ 3u }; } // HH:MM:SS.sub
+      else { memcpy((void*)out, (void*)__P_FORMAT_SPEC_hms_sub_VAL, (__P_FORMAT_SPEC_hms_sub_SIZE+1u)*sizeof(char)); return __P_FORMAT_SPEC_hms_sub_SIZE; } // HH:MM:SS.sub
     }
    
    
@@ -190,3 +209,11 @@ namespace pandora {
   }
 }
 #undef __if_constexpr
+#undef __P_FORMAT_SPEC_mdy_VAL
+#undef __P_FORMAT_SPEC_mdy_SIZE
+#undef __P_FORMAT_SPEC_yearmd_VAL
+#undef __P_FORMAT_SPEC_yearmd_SIZE
+#undef __P_FORMAT_SPEC_hms_VAL
+#undef __P_FORMAT_SPEC_hms_SIZE
+#undef __P_FORMAT_SPEC_hms_sub_VAL
+#undef __P_FORMAT_SPEC_hms_sub_SIZE
