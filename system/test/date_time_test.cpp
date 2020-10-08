@@ -1,6 +1,10 @@
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
 #endif
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
 #include <cstdio>
 #include <gtest/gtest.h>
 #include <system/date_time.h>
@@ -156,3 +160,7 @@ TEST_F(DateTimeTest, currentDateTimeString) {
   EXPECT_EQ(size_t{ 29u }, length);
 }
 #undef _CURRENT_DATE_TIME
+
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic pop
+#endif
