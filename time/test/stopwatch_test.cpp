@@ -36,7 +36,7 @@ TEST_F(StopwatchTest, startStop) {
   EXPECT_EQ(std::chrono::nanoseconds{ 0 }, sw.elapsedTime<std::chrono::nanoseconds>());
 
   sw.start();
-  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 10000000 });
+  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 5000000 });
   EXPECT_EQ(Stopwatch<>::Status::running, sw.status());
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
   sw.stop();
@@ -44,8 +44,11 @@ TEST_F(StopwatchTest, startStop) {
   EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() >= std::chrono::nanoseconds{ 10000000 });
 
   sw.start();
+  auto before = std::chrono::high_resolution_clock::now();
   EXPECT_EQ(Stopwatch<>::Status::running, sw.status());
-  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 10000000 });
+  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 5000000 });
+  while (std::chrono::high_resolution_clock::now() == before)
+    std::this_thread::yield();
   sw.stop();
   EXPECT_EQ(Stopwatch<>::Status::idle, sw.status());
   EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() > std::chrono::nanoseconds{ 0 });
@@ -57,7 +60,7 @@ TEST_F(StopwatchTest, startPause) {
   EXPECT_EQ(std::chrono::nanoseconds{ 0 }, sw.elapsedTime<std::chrono::nanoseconds>());
 
   sw.start();
-  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 10000000 });
+  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() < std::chrono::nanoseconds{ 5000000 });
   EXPECT_EQ(Stopwatch<>::Status::running, sw.status());
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
   sw.pause();
@@ -67,7 +70,7 @@ TEST_F(StopwatchTest, startPause) {
 
   sw.start();
   EXPECT_EQ(Stopwatch<>::Status::running, sw.status());
-  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() >= std::chrono::nanoseconds{ 10000000 });
+  EXPECT_TRUE(sw.elapsedTime<std::chrono::nanoseconds>() >= std::chrono::nanoseconds{ 5000000 });
   std::this_thread::sleep_for(std::chrono::milliseconds(1));
   sw.pause();
   EXPECT_EQ(Stopwatch<>::Status::paused, sw.status());

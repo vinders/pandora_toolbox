@@ -441,5 +441,5 @@ TEST_F(TimerTest, waitPeriodTimingCheck) {
 
   auto timeAfter = std::chrono::high_resolution_clock::now();
   EXPECT_TRUE((timeAfter - timeBefore).count() >= 30000000LL);
-  EXPECT_TRUE((timeAfter - timeBefore).count() <= 45000000LL + lateness.count());
+  EXPECT_TRUE((timeAfter - timeBefore).count() <= 50000000LL + lateness.count());
 }

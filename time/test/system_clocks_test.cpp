@@ -31,17 +31,17 @@ void _validateClockTimes() {
   double nsPerPeriod = (_ClockType::clockPeriod())
                      * 1000000000.0 * static_cast<double>(_ClockType::period::num) / static_cast<double>(_ClockType::period::den);
   // very high precision clocks need more cycles to be compared with standard lower precision clocks
-  if (nsPerPeriod < 5000000.0) {
-    periodCount = 5000000.0 / nsPerPeriod;
-    periodGuardband = 2500000.0 / nsPerPeriod;
+  if (nsPerPeriod < 7500000.0) {
+    periodCount = 7500000.0 / nsPerPeriod;
+    periodGuardband = periodCount*0.5;
   }
 
   // validate with standard clock measures
   std::chrono::nanoseconds timeToWait(static_cast<int64_t>(periodCount * nsPerPeriod));
+  auto stdTimeBefore = std::chrono::high_resolution_clock::now();
   auto time1 = _ClockType::now();
   auto ticks1 = _ClockType::countTicks();
 
-  auto stdTimeBefore = std::chrono::high_resolution_clock::now();
   while (stdTimeBefore + timeToWait > std::chrono::high_resolution_clock::now());
 
   auto time2 = _ClockType::now();
@@ -60,20 +60,6 @@ void _validateClockTimes() {
   EXPECT_LE(_ClockType::toDuration(ticks2 - ticks1).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount + periodGuardband) * nsPerPeriod)).count());
   EXPECT_GE(_ClockType::interval(ticks1, ticks2).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount - periodGuardband) * nsPerPeriod)).count());
   EXPECT_LE(_ClockType::interval(ticks1, ticks2).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount + periodGuardband) * nsPerPeriod)).count());
-
-  if (nsPerPeriod < 1000000.0) {
-    periodCount = 4.0;
-    timeToWait = std::chrono::nanoseconds(static_cast<int64_t>(periodCount * nsPerPeriod));
-    auto stdTime1 = std::chrono::high_resolution_clock::now();
-
-    auto timeBefore = _ClockType::now();
-    while (timeBefore + timeToWait > _ClockType::now());
-
-    auto stdTime2 = std::chrono::high_resolution_clock::now();
-
-    EXPECT_LE(stdTime1 + std::chrono::nanoseconds(static_cast<int64_t>((periodCount - 1.0) * nsPerPeriod)), stdTime2);
-    EXPECT_GE(stdTime1 + std::chrono::nanoseconds(static_cast<int64_t>(periodCount * nsPerPeriod) + 15000000LL), stdTime2);
-  }
 }
 
 TEST_F(SystemClocksTest, highResolutionClock) {
