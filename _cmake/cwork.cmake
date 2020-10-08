@@ -255,6 +255,17 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         unset(__ORIG_CWORK_BUILD_VERSION)
     endmacro()
     
+    #brief:   Set compile options for current project
+    #warning: Must be called BEFORE cwork_create_project and cwork_set_default_solution
+    #params: - ARGN: list of options to include in current project
+    macro(cwork_set_compile_options)
+        set(_cmd_list "${ARGN}")
+        if (_cmd_list)
+            set(${PROJECT_NAME}_COMPILE_CMD "${_cmd_list}")
+        endif()
+        unset(_cmd_list)
+    endmacro()
+    
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Projects                                                        │
     # └──────────────────────────────────────────────────────────────────┘
@@ -329,6 +340,10 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
           set(CWORK_EXTERN_FRAMEWORKS_SCOPE ${${CWORK_PROJECT_NAME}_EXTERN_FRAMEWORKS_SCOPE})
           unset(${CWORK_PROJECT_NAME}_EXTERN_FRAMEWORKS)
           unset(${CWORK_PROJECT_NAME}_EXTERN_FRAMEWORKS_SCOPE)
+        endif()
+        if(${CWORK_PROJECT_NAME}_COMPILE_CMD)
+            set(CWORK_COMPILE_CMD ${${CWORK_PROJECT_NAME}_COMPILE_CMD})
+            unset(${CWORK_PROJECT_NAME}_COMPILE_CMD)
         endif()
         if(CWORK_LINKED_LIBRARIES)
             unset(CWORK_LINKED_LIBRARIES)
@@ -533,6 +548,10 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         
         set(${CWORK_PROJECT_NAME}_FOUND ON CACHE STRING "${CWORK_PROJECT_NAME}_FOUND")
         
+        if(CWORK_COMPILE_CMD)
+            add_compile_options(${CWORK_COMPILE_CMD})
+        endif()
+        
         if(${CWORK_PROJECT_NAME}_SOURCE_FILES)
             set(CWORK_PROJECT_SCOPE PUBLIC)
             
@@ -631,6 +650,9 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 message("> ${CWORK_PROJECT_NAME}.test - build ${PROJECT_VERSION} -")
                 enable_testing()
                 add_executable(${CWORK_PROJECT_NAME}.test ${${CWORK_PROJECT_NAME}_TEST_FILES})
+                if(CWORK_COMPILE_CMD)
+                    add_compile_options(${CWORK_COMPILE_CMD})
+                endif()
                 
                 # link
                 if(NOT ${CWORK_PROJECT_NAME}_INTERFACE)
