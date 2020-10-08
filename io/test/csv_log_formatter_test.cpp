@@ -1,5 +1,13 @@
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
+# pragma warning(push)
+# pragma warning(disable : 4100)
+# pragma warning(disable : 4101)
+# pragma warning(disable : 4189)
+#endif
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -405,3 +413,10 @@ TEST_F(CsvLogFormatterTest, logCsvCommaMessageTooLongWhenEscaped) {
     "INFO,0,nowhere(12),1\",\"2\n"
     "INFO,0,nowhere(12),1\",\"2\n"), logger.status().stream().str());
 }
+
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+#if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
+# pragma GCC diagnostic pop
+#endif
