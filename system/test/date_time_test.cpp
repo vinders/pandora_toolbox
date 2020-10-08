@@ -1,5 +1,9 @@
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
+# pragma warning(push)
+# pragma warning(disable : 4100)
+# pragma warning(disable : 4101)
+# pragma warning(disable : 4189)
 #endif
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic push
@@ -161,6 +165,9 @@ TEST_F(DateTimeTest, currentDateTimeString) {
 }
 #undef _CURRENT_DATE_TIME
 
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic pop
 #endif
