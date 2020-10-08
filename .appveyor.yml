@@ -24,7 +24,7 @@ for:
           BUILD_TYPE: Debug
           COMPILER: MSVC17
           PLATFORM: x64
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
           APPVEYOR_JOB_NAME: windows-mingw64
           BUILD_DIR: mingw64
           BUILD_TYPE: Debug
@@ -54,10 +54,15 @@ for:
 
 install:
   - call _scripts/ci/install_dependencies.bat
-  - if [%COMPILER%]==[LLVM/Clang] set PATH=%APPVEYOR_BUILD_FOLDER%\deps\bin;C:\Program Files\LLVM\bin;%ProgramFiles(x86)%\LLVM\bin;C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
-  - if [%COMPILER%]==[MinGW-w64] set PATH=C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin;%APPVEYOR_BUILD_FOLDER%\deps\bin;C:\MinGW\bin;%PATH%
-  # workaround: rename sh: its PATH interferes with MinGW's
-  - if [%COMPILER%]==[MinGW-w64] rename "C:\Program Files\Git\usr\bin\sh.exe" "sh_.exe"
+  # MinGW
+  - if [%COMPILER%]==[MinGW-w64] choco upgrade chocolatey
+  - if [%COMPILER%]==[MinGW-w64] if not exist "C:\mingw.7z" appveyor-retry appveyor DownloadFile "http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z" -FileName "C:\mingw.7z"
+  - if [%COMPILER%]==[MinGW-w64] 7z x -y -oC:\ "C:\mingw.7z" > nul
+  - if [%COMPILER%]==[MinGW-w64] set INCLUDE=C:\mingw64\x86_64-w64-mingw32\include;%INCLUDE%
+  - if [%COMPILER%]==[MinGW-w64] set LIB=C:\mingw64\x86_64-w64-mingw32\lib;%LIB%
+  - if [%COMPILER%]==[MinGW-w64] set "LIB=%LIB%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64"
+  - if [%COMPILER%]==[MinGW-w64] set PATH=C:\mingw64\bin;C:\mingw64\x86_64-w64-mingw32\lib;C:\mingw64\x86_64-w64-mingw32\include;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH:C:\Program Files\Git\usr\bin;=%
+  - if [%COMPILER%]==[MinGW-w64] set "PATH=%PATH%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64;C:\Windows\System32"
 
 build_script:
   - cd C:\projects\pandora_toolbox
@@ -76,5 +81,4 @@ build_script:
 
 test_script:
   - cd C:\projects\pandora_toolbox\_build\%BUILD_DIR%
-  - if [%COMPILER%]==[MSVC19] ctest --output-on-failure
-  - if [%COMPILER%]==[MSVC17] ctest --output-on-failure
+  - ctest --output-on-failure

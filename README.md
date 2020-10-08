@@ -2,7 +2,7 @@
 ![CI_AppVeyor](https://img.shields.io/badge/CI-AppVeyor-777.svg)
 ![CI_Travis](https://img.shields.io/badge/CI-Travis_CI-777.svg)
 ![Cmake](https://img.shields.io/badge/project-CMake-49788c.svg)
-![C++](https://img.shields.io/badge/language-C++_17-49788c.svg)
+![C++](https://img.shields.io/badge/lang-C++_17-49788c.svg)
 ![Gtest](https://img.shields.io/badge/tests-Googletest-49788c.svg)
 ![Doxy](https://img.shields.io/badge/docs-Doxygen-49788c.svg)
 
@@ -20,7 +20,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 
 |           system            |        compiler        |         status         |
 |-----------------------------|------------------------|------------------------|
-| Windows 7+ <sub>(x86/x86_64)</sub> | ![vs2019](https://img.shields.io/badge/visual_studio-2019-75b.svg)<br>![vs2017](https://img.shields.io/badge/visual_studio-2017-a99dc2.svg)<br>![mingw7](https://img.shields.io/badge/mingw-gcc_7.1-75b.svg) | ![BranchMaster](https://img.shields.io/badge/-master-49788c.svg) [![AppVeyor Master](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/master?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/master)<br>![BranchDevelop](https://img.shields.io/badge/-develop-49788c.svg) [![AppVeyor Develop](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/develop?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/develop) |
+| Windows 7+ <sub>(x86/x86_64)</sub> | ![vs2019](https://img.shields.io/badge/visual_studio-2019-75b.svg)<br>![vs2017](https://img.shields.io/badge/visual_studio-2017-a99dc2.svg)<br>![mingw7](https://img.shields.io/badge/mingw64-8.1.0-75b.svg) | ![BranchMaster](https://img.shields.io/badge/-master-49788c.svg) [![AppVeyor Master](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/master?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/master)<br>![BranchDevelop](https://img.shields.io/badge/-develop-49788c.svg) [![AppVeyor Develop](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/develop?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/develop) |
 | Linux <sub>(x86_64)</sub>          | ![gcc9](https://img.shields.io/badge/gcc-9.1-75b.svg)       | ![BranchMaster](https://img.shields.io/badge/-master-49788c.svg) [![Build1-Linux-gcc](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/1)](https://travis-ci.org/vinders/pandora_toolbox)<br>![BranchDevelop](https://img.shields.io/badge/-develop-49788c.svg) [![Build2-Linux-gcc](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/2)](https://travis-ci.org/vinders/pandora_toolbox) |
 |                                    | ![clang9](https://img.shields.io/badge/clang-9.0.0-75b.svg) | ![BranchDevelop](https://img.shields.io/badge/-develop-49788c.svg) [![Build-Linux-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/1)](https://travis-ci.org/vinders/pandora_toolbox) |
 |                                    | ![gcc7](https://img.shields.io/badge/gcc-7.1-75b.svg)       | ![BranchDevelop](https://img.shields.io/badge/-develop-49788c.svg) [![Build-Linux-gcc7](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/3)](https://travis-ci.org/vinders/pandora_toolbox) |
