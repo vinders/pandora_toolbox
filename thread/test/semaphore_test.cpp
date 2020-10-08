@@ -196,7 +196,7 @@ TEST_F(SemaphoreTest, waitUntilTimeout) {
   EXPECT_TRUE(sema.tryWaitUntil(1u, std::chrono::steady_clock::now() + std::chrono::milliseconds(1)));
   EXPECT_FALSE(sema.tryWait());
 
-  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(1);
+  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(16);
   EXPECT_FALSE(sema.tryWaitUntil(timeout));
   EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
 

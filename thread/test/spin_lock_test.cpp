@@ -68,11 +68,11 @@ TEST_F(SpinLockTest, tryLockFailure) {
   EXPECT_FALSE(mutex.tryLock(std::chrono::milliseconds(1)));
   EXPECT_FALSE(mutex.try_lock_for(std::chrono::microseconds(1)));
 
-  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(1);
+  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(16);
   EXPECT_FALSE(mutex.tryLockUntil(timeout));
   EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
 
-  timeout = std::chrono::steady_clock::now() + std::chrono::microseconds(1);
+  timeout = std::chrono::steady_clock::now() + std::chrono::microseconds(16);
   EXPECT_FALSE(mutex.try_lock_until(timeout));
   EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
 }

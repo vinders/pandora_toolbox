@@ -137,11 +137,11 @@ TEST_F(RecursiveSpinLockTest, tryLockThreadFailure) {
       EXPECT_FALSE(mutex.tryLock(std::chrono::milliseconds(1LL)));
       EXPECT_FALSE(mutex.try_lock_for(std::chrono::microseconds(1LL)));
 
-      auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(1LL);
+      auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(16LL);
       EXPECT_FALSE(mutex.tryLockUntil(timeout));
       EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
 
-      timeout = std::chrono::steady_clock::now() + std::chrono::microseconds(1LL);
+      timeout = std::chrono::steady_clock::now() + std::chrono::microseconds(16LL);
       EXPECT_FALSE(mutex.try_lock_until(timeout));
       EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
     });
