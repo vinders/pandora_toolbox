@@ -27,16 +27,8 @@ ignore:
 coverage:
   status:
     project:
-      default: false
-      tests:
-        target: 60%
+      default:
+        target: 70%
         threshold: 20%
-        base: auto 
-        flags:
-          - unit
-        paths:
-          - "*/test"
-          - "*/tests"
-          - "*/_test"
         branches: 
           - develop
