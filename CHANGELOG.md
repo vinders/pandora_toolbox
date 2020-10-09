@@ -1,26 +1,19 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.25.0.69
-2020-10-06 - a630f678994ca4d0c1e0e26c529000a19a253139
+## 0.27.1.88
+2020-10-09 - 1824780657969aadec0cb2aa8a3b73b044906ced
 ### features
-vinders (2):
+vinders (5):
+* system: macros & code generators: enum serialization with buffer
 * system: date/time formatting + reading
 * io: CSV log output formatter
+* io: file system IO/creation/removal + entry metadata/type/access/content reading + path management
+* io: file system known location finder
 ### fixes
-vinders (1):
+vinders (2):
+* system: logger + basic formatter: enum serialization with buffer (no alloc)
 * system: logger + basic formatter: add current date/time
-
----
-
-## 0.23.1.64
-2020-10-04 - e91e20bcb1755ca7452365879577be2d4ba2b478
-### features
-vinders (1):
-* system: macros & code generators: enum serialization with buffer
-### fixes
-vinders (1):
-* system: logger + basic formatter: prealloc buffer for enum serialization
 
 ---
 
