@@ -25,10 +25,16 @@ ignore:
   - "*/*.bat"
   
 coverage:
+  round: down
   status:
     project:
       default:
+        enabled: yes
         target: 70%
-        threshold: 20%
+        threshold: 10%
         branches: 
           - develop
+    
+    patch:
+      default:
+        enabled: false
