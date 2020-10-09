@@ -65,6 +65,7 @@ else() # GCC / Clang
         if(CWORK_EXPORT_SYMBOLS)
             set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
         endif()
+        set(CMAKE_SH "CMAKE_SH-NOTFOUND")
     endif()
     
     if(CWORK_COVERAGE)

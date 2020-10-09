@@ -196,9 +196,9 @@ TEST_F(SemaphoreTest, waitUntilTimeout) {
   EXPECT_TRUE(sema.tryWaitUntil(1u, std::chrono::steady_clock::now() + std::chrono::milliseconds(1)));
   EXPECT_FALSE(sema.tryWait());
 
-  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(16);
+  auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(16LL);
   EXPECT_FALSE(sema.tryWaitUntil(timeout));
-  EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout);
+  EXPECT_TRUE(std::chrono::steady_clock::now() >= timeout - std::chrono::milliseconds(2LL));//core switch error margin
 
   sema.notify(2u);
   EXPECT_FALSE(sema.tryWaitUntil(3u, std::chrono::steady_clock::now() + std::chrono::milliseconds(1)));

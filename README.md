@@ -33,6 +33,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 
 |    name    |                                                   description                                                        |
 |------------|----------------------------------------------------------------------------------------------------------------------|
+| *hardware* | CPU specifications reader, instruction sets detection, process affinity, device handlers...                          |
 | *io*       | File/directory utils, standard system locations, serialization, encoders, formatters...                              |
 | *pattern*  | Common design patterns (optional, locked, iterator, observer/delegate with contract...), advanced type traits...     |
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
@@ -72,7 +73,7 @@ Examples:
 ### Workflow
 
 Branches:
-* *master* : no direct commit, **only merges** from develop (for each release). Always call '_scripts/merge_develop_into_master.sh' for every merge of *develop* into *master*.
+* *master* : no direct commit, **only merges** from develop (for each release). Always call '_scripts/merge_develop_into_master.sh' (SSH key access to repo required) for every merge of *develop* into *master*.
 * *develop*: main development branch, with full continuous integration and code coverage. Small commits can be directly committed in *develop*. Complex commits belong in feature branches.
 * *feat/...* or *fix/...* (ex: *feat/json_serializer*): branches for new features and fixes, with continuous integration on main systems. Should be merged into *develop* when complete (with param --no-ff).
 
