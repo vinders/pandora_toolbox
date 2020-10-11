@@ -1,6 +1,17 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.31.0.103
+2020-10-11 - ea4aba33ade990f10db821e3b72b606a90832d82
+### features
+vinders (4):
+* hardware: process / thread CPU affinity tools
+* hardware: CPUID register reader (x86/ARM) & CPU info file reader (Linux)
+* hardware: CPU arch: cores detection
+* hardware: CPU specifications detection (x86/ARM)
+
+---
+
 ## 0.27.1.88
 2020-10-09 - 1824780657969aadec0cb2aa8a3b73b044906ced
 ### features
