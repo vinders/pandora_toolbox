@@ -10,13 +10,12 @@ License :     MIT
 
 #else
 # include <system/operating_system.h>
-# if _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_MAC_OSX || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_UNIX \
-  || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_LINUX || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_ANDROID
-#  include <cstddef>
-#  include <sys/types.h>
-#  include <unistd.h>
-#  include <pthread.h>
-#  define __P_USE_POSIX_PTHREAD
+# if _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_LINUX || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_UNIX || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_MAC_OSX || _SYSTEM_OPERATING_SYSTEM == _SYSTEM_OS_ANDROID
+#   include <cstddef>
+#   include <sys/types.h>
+#   include <unistd.h>
+#   include <pthread.h>
+#   define __P_USE_POSIX_PTHREAD
 # endif
 # include "hardware/_private/_process_affinity_binding.h"
 #endif
