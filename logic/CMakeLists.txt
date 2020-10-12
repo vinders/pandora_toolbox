@@ -14,4 +14,4 @@ project("${CWORK_SOLUTION_NAME}.logic" VERSION ${CWORK_BUILD_VERSION} LANGUAGES 
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
-                     "include" "src" "test" "tools/search_sort_benchmark")
+                     "include" "src" "test")
