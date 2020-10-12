@@ -2,22 +2,16 @@
 # Author  :     Romain Vinders
 # License :     MIT
 # ------------------------------------------------------------------------------
-# Portable and efficient libraries for video & real-time projects.
+# Math algorithms, string utils, search & sort, ...
 #*******************************************************************************
 cmake_minimum_required(VERSION 3.14)
-include("${CMAKE_CURRENT_SOURCE_DIR}/_cmake/cwork.cmake")
-cwork_read_version_from_file("${CMAKE_CURRENT_SOURCE_DIR}/build_version.txt" ON)
-project("pandora" VERSION ${CWORK_BUILD_VERSION})
+include("${CMAKE_CURRENT_SOURCE_DIR}/../_cmake/cwork.cmake")
+cwork_set_default_solution("pandora" "${CMAKE_CURRENT_SOURCE_DIR}/..")
+cwork_read_version_from_file("${CMAKE_CURRENT_SOURCE_DIR}/../build_version.txt" OFF)
+project("${CWORK_SOLUTION_NAME}.logic" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 # ┌──────────────────────────────────────────────────────────────────┐
-# │  Solution settings                                               │
+# │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
-cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_cmake"
-    system
-    thread
-    pattern
-    logic
-    time
-    io
-    hardware
-)
+cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
+                     "include" "src" "test" "tools/search_sort_benchmark")

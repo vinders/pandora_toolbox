@@ -35,6 +35,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 |------------|----------------------------------------------------------------------------------------------------------------------|
 | *hardware* | CPU specifications reader, instruction sets detection, process affinity, device handlers...                          |
 | *io*       | File/directory utils, standard system locations, serialization, encoders, formatters...                              |
+| *logic*    | Mathematical algorithms, string manipulation utils, search/sort algorithms, AI routines...                           |
 | *pattern*  | Common design patterns (optional, locked, iterator, observer/delegate with contract...), advanced type traits...     |
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
 | *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |
