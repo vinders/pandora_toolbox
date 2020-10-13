@@ -37,7 +37,7 @@ void _validateClockTimes() {
   }
 
   // validate with standard clock measures
-  std::chrono::nanoseconds timeToWait(static_cast<int64_t>(periodCount * nsPerPeriod));
+  std::chrono::nanoseconds timeToWait(static_cast<int64_t>(periodCount*nsPerPeriod));
   auto stdTimeBefore = std::chrono::high_resolution_clock::now();
   auto time1 = _ClockType::now();
   auto ticks1 = _ClockType::countTicks();
@@ -52,14 +52,16 @@ void _validateClockTimes() {
   EXPECT_GE(time1 + std::chrono::nanoseconds(static_cast<int64_t>((periodCount + periodGuardband) * nsPerPeriod)), time2);
   EXPECT_TRUE(ticks1 < ticks2);
 
-  auto lowerBound = (nsPerPeriod < 1000000.0) ? (time1 - std::chrono::nanoseconds(1000000)) : (time1 - std::chrono::nanoseconds(5000000));
-  auto upperBound = (nsPerPeriod < 1000000.0) ? (time2 + std::chrono::nanoseconds(5000000)) : (time2 + std::chrono::nanoseconds(16000000));
+  auto lowerBound = (nsPerPeriod < 1000000.0) ? (time1 - std::chrono::nanoseconds(1000000LL)) : (time1 - std::chrono::nanoseconds(5000000LL));
+  auto upperBound = (nsPerPeriod < 1000000.0) ? (time2 + std::chrono::nanoseconds(5000000LL)) : (time2 + std::chrono::nanoseconds(16000000LL));
   EXPECT_GE(_ClockType::toTimePoint(ticks2), lowerBound);
   EXPECT_LE(_ClockType::toTimePoint(ticks2), upperBound);
-  EXPECT_GE(_ClockType::toDuration(ticks2 - ticks1).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount - periodGuardband) * nsPerPeriod)).count());
-  EXPECT_LE(_ClockType::toDuration(ticks2 - ticks1).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount + periodGuardband) * nsPerPeriod)).count());
-  EXPECT_GE(_ClockType::interval(ticks1, ticks2).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount - periodGuardband) * nsPerPeriod)).count());
-  EXPECT_LE(_ClockType::interval(ticks1, ticks2).count(), std::chrono::nanoseconds(static_cast<int64_t>((periodCount + periodGuardband) * nsPerPeriod)).count());
+  int64_t lowerDuration = (nsPerPeriod < 1000000.0) ? static_cast<int64_t>(periodCount*nsPerPeriod) - 1000000LL : static_cast<int64_t>((periodCount - periodGuardband)*nsPerPeriod);
+  int64_t upperDuration = (nsPerPeriod < 1000000.0) ? static_cast<int64_t>(periodCount*nsPerPeriod) + 5000000LL : static_cast<int64_t>((periodCount + periodGuardband)*nsPerPeriod);
+  EXPECT_GE(_ClockType::toDuration(ticks2 - ticks1).count(), lowerDuration);
+  EXPECT_LE(_ClockType::toDuration(ticks2 - ticks1).count(), upperDuration);
+  EXPECT_GE(_ClockType::interval(ticks1, ticks2).count(), lowerDuration);
+  EXPECT_LE(_ClockType::interval(ticks1, ticks2).count(), upperDuration);
 }
 
 TEST_F(SystemClocksTest, highResolutionClock) {
