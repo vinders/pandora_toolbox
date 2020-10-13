@@ -43,10 +43,10 @@ namespace pandora {
     template <typename _ClockType = HighResolutionClock,       // main clock used by timer
               typename _AuxClockType = HighResolutionAuxClock, // secondary clock used by timer when main clock has unexpected results
               DelayHandling _DelayAction = DelayHandling::compensate, // timer behaviour when lateness occurs
-              bool _IsEcoMode = false> // if long time period to wait, make thread sleep instead of polling
+              bool _UseActivePolling = true> // true: real-time polling (100% CPU usage) / false: thread sleep between checks (less CPU intensive, but not real-time/predictable)
     class Timer final {
     public:
-      using Type = Timer<_ClockType,_AuxClockType,_DelayAction,_IsEcoMode>;
+      using Type = Timer<_ClockType,_AuxClockType,_DelayAction,_UseActivePolling>;
     
       /// @brief Initialize timer frequency and first period
       /// @warning The frequency value must be above 0!
@@ -167,7 +167,7 @@ namespace pandora {
           && (!_getInterval<_AuxClockType>(currentAuxTicks, this->_lastAuxTicks, this->_auxTimeout, interval) || interval.count() < 0)) { // error (paused app?) -> consider period finished
             interval = this->_period;
           }
-          else __if_constexpr (_IsEcoMode) {
+          else __if_constexpr (_UseActivePolling == false) {
             if (interval < this->_nextPeriod - _minSleepTime())
               std::this_thread::sleep_for(this->_nextPeriod - interval - _minSleepTime());
           }
