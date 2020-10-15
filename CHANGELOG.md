@@ -1,6 +1,19 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.37.0.117
+2020-10-15 - 52f723f109c7aa84cdaeafb99ab05a6e9f5801d4
+### features
+vinders (6):
+* thread: thread scheduling priority setter
+* logic: general math algorithms: GCD, power of 2, near equality
+* logic: string manipulation: length, pad, trim...
+* logic: interval search algorithms (for sorted arrays)
+* logic: sorting algorithms (heap-sort, quick-sort, bubble, insert, binary-insert)
+* logic: search/sort algorithm benchmark tool
+
+---
+
 ## 0.31.0.103
 2020-10-11 - ea4aba33ade990f10db821e3b72b606a90832d82
 ### features
