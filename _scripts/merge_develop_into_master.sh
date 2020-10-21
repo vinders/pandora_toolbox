@@ -23,7 +23,7 @@ if [ -n $BRANCH_NAME ] && [ "$BRANCH_NAME" = "develop" ]; then
     git add build_version.txt
     git add CHANGELOG.md
 
-    if git commit -m 'infra-ci: update version & changelog' && git checkout master && git pull && git merge develop
+    if git commit -m 'infra-ci: update changelog' && git push && git checkout master && git pull && git merge develop
     then
       CONFLICTS=$(git ls-files --unmerged)
       if [ -z "$CONFLICTS" ]; then
