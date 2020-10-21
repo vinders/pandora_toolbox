@@ -52,6 +52,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 add_subdirectory(${_subdir})
             endforeach()
         endif()
+        message("\n------------------------------------------------------------------------------\n")
     endmacro()
     
     #brief: Add multiple projects to an existing solution
