@@ -1,6 +1,23 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.43.2.128
+2020-10-21 - c22d1e7bb91530b3584974bbb3b0a10e49288a7e
+### features
+vinders (6):
+* memory: endianness conversion utils
+* memory: memory register component (multi-size access)
+* memory: fixed-size circular queue (stack alloc)
+* memory: fixed-size vector template (stack alloc)
+* memory: fixed-size string (stack alloc)
+* memory: preallocated memory pool (stack/heap)
+### fixes
+vinders (2):
+* hardware: CPU cores detection: support modern AMD
+* scripts: version release script (version/changelog/tag + merge): push changelog on develop
+
+---
+
 ## 0.37.0.117
 2020-10-15 - 52f723f109c7aa84cdaeafb99ab05a6e9f5801d4
 ### features
