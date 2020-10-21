@@ -48,7 +48,7 @@ namespace pandora {
 
           int32_t amdFamily = static_cast<int32_t>(CpuidRegisterReader::readRegisterBits(buffer, cpuid_x86::baseFamily()))
                          + static_cast<int32_t>(CpuidRegisterReader::extractRegisterBits(buffer, cpuid_x86::extendedFamily()));
-          if (amdFamily == 0x17u)
+          if (amdFamily >= 0x17u)
             return true;
 
           int32_t extendedSize = static_cast<int32_t>(CpuidRegisterReader::readRegisterBits(buffer, cpuid_x86::extendedSize()));
