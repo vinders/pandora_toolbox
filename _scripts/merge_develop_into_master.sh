@@ -29,6 +29,7 @@ if [ -n $BRANCH_NAME ] && [ "$BRANCH_NAME" = "develop" ]; then
       if [ -z "$CONFLICTS" ]; then
         git tag "v${CURRENT_VERSION}"
         git push
+        git push origin "v${CURRENT_VERSION}"
         git checkout develop
       else
         echo "Merge conflicts... Operation aborted."
