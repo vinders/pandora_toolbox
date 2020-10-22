@@ -21,4 +21,5 @@ if not exist ./glfw3/CMakeLists.txt (
     call git clone --depth 1 --branch "3.3.2" https://github.com/glfw/glfw glfw3
 )
 
+cd ..
 exit /B 0
