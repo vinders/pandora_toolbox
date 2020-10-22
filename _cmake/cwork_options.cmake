@@ -11,10 +11,10 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         if( (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
          OR (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.14)
          OR ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang") AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0) )
-          set(CWORK_CPP_REVISION "14" CACHE STRING "C++ revision") # compiler too old for C++17 -> only C++14
+            set(CWORK_CPP_REVISION "14" CACHE STRING "C++ revision") # compiler too old for C++17 -> only C++14
         else()
-          set(CWORK_CPP_REVISION AUTO CACHE STRING "C++ revision") # modern compiler -> customizable C++ revision
-          set_property(CACHE CWORK_CPP_REVISION PROPERTY STRINGS AUTO "17" "14") # possible values for GUI
+            set(CWORK_CPP_REVISION AUTO CACHE STRING "C++ revision") # modern compiler -> customizable C++ revision
+            set_property(CACHE CWORK_CPP_REVISION PROPERTY STRINGS AUTO "17" "14") # possible values for GUI
         endif()
     endif()
     
@@ -24,6 +24,12 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     if(NOT DEFINED CWORK_EXPORT_SYMBOLS)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
             option(CWORK_EXPORT_SYMBOLS "auto-export all symbols" ON)
+        endif()
+    endif()
+    if(NOT DEFINED CWORK_WINDOWS_SUPPORT)
+        if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set(CWORK_WINDOWS_SUPPORT "7" CACHE STRING "minimum Windows version") # support versions of Windows older than Windows 10
+            set_property(CACHE CWORK_WINDOWS_SUPPORT PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
         endif()
     endif()
 

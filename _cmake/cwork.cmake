@@ -58,9 +58,8 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     #brief: Add multiple projects to an existing solution
     #params: ARGN: list of project subdirectories (by order of dependencies, from independant lib to most dependant or app)
     macro(cwork_set_solution_projects)
-        message("\n——————————————————————————————————————————————————————————————————————————————")
-        message("  SOLUTION PROJECTS (${CWORK_SOLUTION_NAME} - build ${PROJECT_VERSION})")
-        message("——————————————————————————————————————————————————————————————————————————————")
+        message("\n------------------------------------------------------------------------------\n")
+        message("————— SOLUTION PROJECTS (${CWORK_SOLUTION_NAME} - build ${PROJECT_VERSION}) —————")
     
         # project subdirectories
         set(_all_projects "${ARGN}")
@@ -241,9 +240,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         cwork_read_version_from_file("${root_path}/${custom_solution_name}/build_version.txt" ON)
         
         if(NOT ${link_to_current_project})
-            message("\n——————————————————————————————————————————————————————————————————————————————")
-            message("  CUSTOM SOLUTION (${custom_solution_name} - build ${CWORK_BUILD_VERSION})")
-            message("——————————————————————————————————————————————————————————————————————————————")
+            message("\n————— CUSTOM SOLUTION (${custom_solution_name} - build ${CWORK_BUILD_VERSION}) —————")
         endif()
         
         # project subdirectories
