@@ -7,7 +7,7 @@
 ![Doxy](https://img.shields.io/badge/docs-Doxygen-49788c.svg)
 
 Pandora Toolbox is a collection of portable C++ libraries: general purpose utilities, data containers, common patterns, video filters and helpers of all kinds. 
-The code is meant to be highly efficient and easy to use in real-time and video projects : AI, video processing, video games, emulators or embedded systems. Written in modern C++ 17, it supports backwards compatibility with C++ 14.
+The code is meant to be highly efficient and easy to use in real-time and video projects : AI, video processing, video games, emulators or embedded systems. Written in C++ 17, it supports backwards compatibility with C++ 14.
 
 See [Libraries](#libraries) section below for more information. Check changelog [here](./CHANGELOG.md).
 Contributors should also check the [Workflow](#workflow) and [Coding style](#coding-style) guidelines.
@@ -41,6 +41,7 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
 | *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |
 | *time*     | Time management utils (stopwatch, timer, rates...), high-precision native system clocks...                           |
+| *video*    | Video rendering (shaders, camera, ...), video filtering/upscaling, display management utils...                       |
 
 ---
 
@@ -63,12 +64,14 @@ Examples:
 
 |    Option    |    Name    |    Value(s)    |    Available for...    |
 |--------------|------------|----------------|------------------------|
-| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>     | CWORK_CPP_REVISION  | "17"<br>"14"                     | all C++17-compliant compilers  |
-| Build separate symbol files, for debuggers such as GDB.<br><sub>*Default: OFF*</sub>            | CWORK_BUILD_SYMBOL_FILES | ON<br>OFF                         | all systems  |
-| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS        | ON<br>OFF                         | all except cross-compilation & ARM  |
-| Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>      | CWORK_DOCS         | ON<br>OFF                         | all except cross-compilation  |
-| Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub> | CWORK_TOOLS        | ON<br>OFF                         | all systems  |
-| Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>  | CWORK_COVERAGE     | ON<br>OFF                         | only linux/unix systems  |
+| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>  | CWORK_CPP_REVISION  | "17"<br>"14"  | all C++17-compliant compilers  |
+| Build separate symbol files, for debuggers such as GDB.<br><sub>*Default: OFF*</sub>        | CWORK_BUILD_SYMBOL_FILES  | ON<br>OFF     | all systems              |
+| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS              | ON<br>OFF     | all except cross-compilation & ARM  |
+| Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS               | ON<br>OFF     | all except cross-compilation  |
+| Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS              | ON<br>OFF     | all systems              |
+| Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE           | ON<br>OFF     | only linux/unix systems  |
+| Enable OpenGL4/ES features.<br><sub>*Default: ON*</sub>                                     | USE_PANDORA_VIDEO_OPENGL  | ON<br>OFF     | all systems              |
+| Enable Vulkan features.<br><sub>*Default: ON, if Vulkan SDK is installed*</sub>             | USE_PANDORA_VIDEO_VULKAN  | ON<br>OFF     | all except iOS           |
 
 ---
 
