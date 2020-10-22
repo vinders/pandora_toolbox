@@ -5,7 +5,7 @@ License :     MIT
 Description : sorting algorithms
 ------------------------------------------------------------------------
 Functions : bubbleSort, insertionSort, binaryInsertionSort
-            heapSort, quickSort, mergeSort
+            heapSort, quickSort
 *******************************************************************************/
 #pragma once
 
