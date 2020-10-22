@@ -32,6 +32,7 @@ matrix:
         - OS_NAME=linux
         - PLATFORM_NAME=linux-clang
         - BUILD_TYPE=Debug
+        - ENABLE_VULKAN=OFF
       addons:
         apt:
           sources:
@@ -65,6 +66,7 @@ matrix:
         - OS_NAME=linux
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Release
+        - ENABLE_VULKAN=ON
       addons:
         apt:
           sources:
@@ -92,6 +94,7 @@ matrix:
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Debug
         - COVERAGE_MODE=1
+        - ENABLE_VULKAN=ON
       addons:
         apt:
           sources:
@@ -124,6 +127,7 @@ matrix:
         - PLATFORM_NAME=linux-gcc5
         - BUILD_TYPE=Debug
         - CPP_REVISION=14
+        - ENABLE_VULKAN=OFF
       addons:
         apt:
           sources:
@@ -154,6 +158,7 @@ matrix:
         - OS_NAME=osx
         - PLATFORM_NAME=osx
         - BUILD_TYPE=Release
+        - ENABLE_VULKAN=ON
       addons:
         apt:
           sources:
@@ -175,6 +180,7 @@ matrix:
       env:
         - OS_NAME=osx
         - PLATFORM_NAME=ios
+        - ENABLE_VULKAN=OFF
       addons:
         apt:
           sources:
@@ -200,6 +206,7 @@ matrix:
         - ANDROID_ABI=arm64-v8a
         - ANDROID_ARCH=arm64
         - ANDROID_NEON=TRUE
+        - ENABLE_VULKAN=ON
       android:
         components:
           - tools
@@ -234,7 +241,7 @@ before_install:
         open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg 
       fi
     fi
-            
+
 before_script:
   # install recent cmake
   - sh ./_scripts/ci/install_cmake.sh 3.14.7 3.14 _addons
@@ -249,6 +256,14 @@ before_script:
       export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
     else
       sh ./_scripts/ci/install_opengl.sh
+      if [ "$ENABLE_VULKAN" = "ON" ]; then
+        sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
+        if [ "$OS_NAME" = "osx" ]; then
+          export VULKAN_SDK=/usr/local
+        else
+          export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
+        fi
+      fi
     fi
   - cmake --version
   # dependencies
