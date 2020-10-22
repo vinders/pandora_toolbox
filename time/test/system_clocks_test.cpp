@@ -2,7 +2,7 @@
 #include <chrono>
 #include <thread>
 #include <time/system_clocks.h>
-#if defined(_CPP_REVISION) && _CPP_REVISION == 14
+#if !defined(_WINDOWS) && defined(_CPP_REVISION) && _CPP_REVISION == 14
   template <typename _ClockType>
   constexpr bool pandora::time::ClockAlias<_ClockType>::is_steady;
 #endif
