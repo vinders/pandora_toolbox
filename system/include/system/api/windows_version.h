@@ -6,6 +6,21 @@ Description : Microsoft Windows feature version constants
 #ifdef _WINDOWS
 // Windows constants (to enable all features available on platform versions up to the one specified)
 # include <sdkddkver.h>
+# ifdef WINVER
+#   undef WINVER
+# endif
+# ifdef _WIN32_WINNT
+#   undef _WIN32_WINNT
+# endif
+# ifdef _WIN32_WINDOWS
+#   undef _WIN32_WINDOWS
+# endif
+# ifdef _WIN32_IE
+#   undef _WIN32_IE
+# endif
+# ifdef NTDDI_VERSION
+#   undef NTDDI_VERSION
+# endif
 
 # if defined(CWORK_WINDOWS_SUPPORT) && CWORK_WINDOWS_SUPPORT == 10 // only Windows 10+
 #   define WINVER _WIN32_WINNT_WIN10 
