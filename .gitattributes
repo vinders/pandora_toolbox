@@ -28,6 +28,7 @@
 *.comp  linguist-language=GLSL
 *.csh   linguist-language=GLSL
 *.tesc  linguist-language=GLSL
+*.tese  linguist-language=GLSL
 *.tsh   linguist-language=GLSL
 
 # Normalize EOL for source files
