@@ -11,8 +11,8 @@ License :     MIT
 #if !defined(_WINDOWS) && defined(__APPLE__)
 # include <TargetConditionals.h>
 # if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-#   include <OpenGLES/ES2/gl.h>
-#   include <OpenGLES/ES2/glext.h>
+#   include <OpenGLES/ES3/gl.h>
+#   include <OpenGLES/ES3/glext.h>
 # else
 #   include <OpenGL/gl.h>
 # endif

@@ -35,7 +35,7 @@ elseif(ANDROID)
         include_directories("${ANDROID_STANDALONE_TOOLCHAIN}/usr/include")
     endif()
     
-    set(opengl_libs__LINKED android EGL GLESv2)
+    set(opengl_libs__LINKED android EGL GLESv3)
     
 else()
     find_package(OpenGL REQUIRED)
