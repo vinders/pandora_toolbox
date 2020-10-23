@@ -22,21 +22,21 @@ Description : Microsoft Windows feature version constants
 #   undef NTDDI_VERSION
 # endif
 
-# if defined(CWORK_WINDOWS_SUPPORT) && CWORK_WINDOWS_SUPPORT == 10 // only Windows 10+
+# if defined(_MIN_WINDOWS_VERSION) && _MIN_WINDOWS_VERSION == 10 // only Windows 10+
 #   define WINVER _WIN32_WINNT_WIN10 
 #   define _WIN32_WINNT _WIN32_WINNT_WIN10 
 #   define _WIN32_WINDOWS _WIN32_WINNT_WIN10   
 #   define _WIN32_IE _WIN32_IE_IE110  
 #   define NTDDI_VERSION NTDDI_WIN10 
 
-# elif defined(CWORK_WINDOWS_SUPPORT) && CWORK_WINDOWS_SUPPORT == 8 // Windows 8/10+
+# elif defined(_MIN_WINDOWS_VERSION) && _MIN_WINDOWS_VERSION == 8 // Windows 8/10+
 #   define WINVER _WIN32_WINNT_WIN8 
 #   define _WIN32_WINNT _WIN32_WINNT_WIN8 
 #   define _WIN32_WINDOWS _WIN32_WINNT_WIN8   
 #   define _WIN32_IE _WIN32_IE_IE90  
 #   define NTDDI_VERSION NTDDI_WIN8 
 
-# elif !defined(CWORK_WINDOWS_SUPPORT) || CWORK_WINDOWS_SUPPORT == 7 // Windows 7/8/10+
+# elif !defined(_MIN_WINDOWS_VERSION) || _MIN_WINDOWS_VERSION == 7 // Windows 7/8/10+
 #   define WINVER _WIN32_WINNT_WIN7 
 #   define _WIN32_WINNT _WIN32_WINNT_WIN7 
 #   define _WIN32_WINDOWS _WIN32_WINNT_WIN7   

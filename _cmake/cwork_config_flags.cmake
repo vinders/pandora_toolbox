@@ -79,6 +79,9 @@ endif()
 # └──────────────────────────────────────────────────────────────────┘
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+if(CWORK_WINDOWS_SUPPORT)
+    add_definitions(-D_MIN_WINDOWS_VERSION=${CWORK_WINDOWS_SUPPORT})
+endif()
 if(MSVC)
     if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
         if(${CWORK_SYSTEM_ARCH_BITS} EQUAL 64)
@@ -107,7 +110,7 @@ endif()
 # └──────────────────────────────────────────────────────────────────┘
 if(CWORK_CPP_REVISION AND ${CWORK_CPP_REVISION} STREQUAL "14")
     if(MSVC)
-        add_compile_options(/std:c++14)
+        add_compile_options(/std:c++14 /IGNORE:4127)
     elseif(CMAKE_COMPILER_IS_GNUCXX)
         add_compile_options(-std=c++14)
     endif()
