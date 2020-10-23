@@ -256,7 +256,7 @@ before_script:
       export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
     else
       sh ./_scripts/ci/install_opengl.sh
-      if [ "$ENABLE_VULKAN" = "ON" ]; then
+      if [ "$ENABLE_VULKAN" = "ON___DISABLED_UNTIL_USED_IN_CODE" ]; then
         sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
         if [ "$OS_NAME" = "osx" ]; then
           export VULKAN_SDK=/usr/local
