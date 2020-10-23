@@ -60,4 +60,5 @@ if(NOT TARGET libglew AND NOT TARGET libglew_static AND NOT IOS AND NOT APPLE AN
     else()
         set(libglew__LINKED libglew_static)
     endif()
+    message("-- Found GLEW: ${libglew__LINKED}")
 endif()

@@ -52,6 +52,7 @@ if(NOT TARGET SDL2 AND NOT TARGET SDL2-static)
     endif()
     
     set(sdl2__LINKED ${SDL2_LIBRARIES})
+    message("-- Found SDL2: ${sdl2__LINKED}")
     
     if(DEFINED __OLD_BUILD_SHARED_LIBS)
         set(BUILD_SHARED_LIBS __OLD_BUILD_SHARED_LIBS)

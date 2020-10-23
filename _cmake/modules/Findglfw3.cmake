@@ -47,6 +47,7 @@ if(NOT TARGET glfw3 AND NOT TARGET glfw AND NOT IOS AND NOT ANDROID)
         set_target_properties(glfw3 PROPERTIES FOLDER libs)
         set(glfw3__LINKED glfw3)
     endif()
+    message("-- Found GLFW3: ${glfw3__LINKED}")
     
     if(DEFINED __OLD_BUILD_SHARED_LIBS)
         set(BUILD_SHARED_LIBS __OLD_BUILD_SHARED_LIBS)
