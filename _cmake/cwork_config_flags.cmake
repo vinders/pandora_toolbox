@@ -110,7 +110,7 @@ endif()
 # └──────────────────────────────────────────────────────────────────┘
 if(CWORK_CPP_REVISION AND ${CWORK_CPP_REVISION} STREQUAL "14")
     if(MSVC)
-        add_compile_options(/std:c++14 /IGNORE:4127)
+        add_compile_options(/std:c++14 /wd4127)
     elseif(CMAKE_COMPILER_IS_GNUCXX)
         add_compile_options(-std=c++14)
     endif()
