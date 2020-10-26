@@ -45,6 +45,26 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         option(CWORK_TOOLS "tools" ON) # additional tools (sub-projects, perfs tests, graphical tests, editors...)
     endif()
     
+    # -- video rendering --
+    
+    if(NOT DEFINED CWORK_VIDEO_OPENGL4)
+        option(CWORK_VIDEO_OPENGL4 "enable OpenGL4/ES3 features" ON)
+    endif()
+
+    if((NOT WIN32 AND NOT WIN64 AND NOT _WIN32 AND NOT _WIN64) OR NOT MSVC)
+        set(CWORK_VIDEO_D3D11 OFF CACHE STRING "enable Direct3D 11 features")
+        set(_VIDEO_D3D11_NOT_SUPPORTED ON CACHE STRING "")
+    elseif(NOT DEFINED CWORK_VIDEO_D3D11)
+        option(CWORK_VIDEO_D3D11 "enable Direct3D 11 features" ON)
+    endif()
+
+    if(IOS OR ("$ENV{VULKAN_SDK}" STREQUAL "" AND NOT ANDROID))
+        set(CWORK_VIDEO_VULKAN OFF CACHE STRING "enable Vulkan 1.2 features")
+        set(_VIDEO_VULKAN_NOT_SUPPORTED ON CACHE STRING "")
+    elseif(NOT DEFINED CWORK_VIDEO_VULKAN)
+        option(CWORK_VIDEO_VULKAN "enable Vulkan 1.2 features" ON)
+    endif()
+    
     # -- CI / debugging --
     
     if(NOT DEFINED CWORK_COVERAGE 

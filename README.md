@@ -70,10 +70,10 @@ Examples:
 | Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                | ON<br>OFF     | all except cross-compilation  |
 | Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS               | ON<br>OFF     | all systems              |
 | Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE            | ON<br>OFF     | only linux/unix systems  |
-| Windows API retro-compatibility (minimum OS version).<br><sub>*Default: "7"*</sub>           | CWORK_WINDOWS_SUPPORT     | "10" "8"<br>"7" "6"  | only windows systems  |
-| Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | USE_PANDORA_VIDEO_OPENGL  | ON<br>OFF     | all systems              |
-| Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC compiler*</sub>                    | USE_PANDORA_VIDEO_D3D11   | ON<br>OFF     | only windows systems<br>(MSVC required)  |
-| Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | USE_PANDORA_VIDEO_VULKAN  | ON<br>OFF     | all except iOS<br>(env *VULKAN_SDK* required)  |
+| Minimum supported Windows (API retro-compatibility).<br><sub>*Default: "7"*</sub>            | CWORK_WINDOWS_SUPPORT     | "10" "8"<br>"7" "6"  | only windows systems  |
+| Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4       | ON<br>OFF     | all systems              |
+| Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC compiler*</sub>                    | CWORK_VIDEO_D3D11         | ON<br>OFF     | only windows systems<br>(MSVC required)  |
+| Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN        | ON<br>OFF     | all except iOS<br>(environment var *VULKAN_SDK* required)  |
 
 ---
 
