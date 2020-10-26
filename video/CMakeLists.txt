@@ -34,8 +34,13 @@ endif()
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
+if(PYTHON_EXECUTABLE)
+    unset(PYTHON_EXECUTABLE CACHE)
+endif()
+find_package(Python3 COMPONENTS Interpreter Development)
+
 set(_EXTERN_LIBS)
-if(USE_PANDORA_VIDEO_OPENGL) # openGL 4.1+/ES
+if(USE_PANDORA_VIDEO_OPENGL) # openGL 4.1+/ES3+
     set(_EXTERN_LIBS opengl_libs libglew_static)
 endif()
 if(USE_PANDORA_VIDEO_D3D11) # direct3D 11+
@@ -87,3 +92,13 @@ endif()
 if(DEFINED _VULKAN_NOT_SUPPORTED_FLAG AND _VULKAN_NOT_SUPPORTED_FLAG)
     message("> Vulkan SDK not installed or not supported on current system -> disabled")
 endif()
+
+# build shaders from shader modules
+add_custom_target(${PROJECT_NAME}.build_shaders ALL
+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py "${CMAKE_CURRENT_SOURCE_DIR}/${_INCLUDE_DIR}/video/shaders" 
+                                                                              "${CMAKE_CURRENT_SOURCE_DIR}/_generated" 
+                                                                              "${CMAKE_CURRENT_SOURCE_DIR}/${_INCLUDE_DIR}/_embed"
+    COMMENT "Building shader files..."
+)
+set_target_properties(${PROJECT_NAME}.build_shaders PROPERTIES FOLDER ${CWORK_SOLUTION_NAME}/tools)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.build_shaders)

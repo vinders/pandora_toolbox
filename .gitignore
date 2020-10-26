@@ -24,12 +24,16 @@ _libs/.cache/
 _libs/*/.cache/
 _libs/*/
 obj/
+tmp/
 */[Bb]in/
 */[Bb]uild/
 */_bin/
 */_build/
 */_docs/
+*/_generated/
+*/include/_embed/
 */obj/
+*/tmp/
 */cmake/CMakeLists/
 */cmake/.*/
 cmake-build-debug/
@@ -48,10 +52,6 @@ _ReSharper*/
 ### C / C++ ###
 
 # Compiler / Linker / Precompiled Headers
-bin/
-build/
-obj/
-tmp/
 *.d
 *.o
 *.ko
