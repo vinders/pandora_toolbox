@@ -54,6 +54,7 @@ for:
 
 install:
   - call _scripts/ci/install_dependencies.bat
+  - set "PATH=C:\\Python38-x64;C:\\Python38-x64\\Scripts;%PATH%"
   # if [%COMPILER%]==[MSVC19] call _scripts/ci/install_vulkan.bat
   # if [%COMPILER%]==[MinGW-w64] call _scripts/ci/install_vulkan.bat
   # MinGW

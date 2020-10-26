@@ -47,6 +47,7 @@ matrix:
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
+            - python3.5
     - &Linux-gcc
       branches:
         only:
@@ -79,6 +80,7 @@ matrix:
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
+            - python3.5
     - &Linux-gcc7-cov
       branches:
         only:
@@ -107,6 +109,7 @@ matrix:
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
+            - python3.5
     - &Linux-gcc5
       branches:
         only:
@@ -140,6 +143,7 @@ matrix:
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
+            - python3.5
     - &MacOS-clang
       branches:
         only:
@@ -165,6 +169,7 @@ matrix:
             - llvm-toolchain-trusty-7
           packages:
             - libasound2-dev
+            - python3.5
     - &iOS
       branches:
         only:
@@ -187,6 +192,7 @@ matrix:
             - llvm-toolchain-trusty-7
           packages:
             - libasound2-dev
+            - python3.5
     - &Android64
       branches:
         only:
@@ -220,7 +226,7 @@ matrix:
       addons:
         apt:
           packages:
-            - python3
+            - python3.5
             - ninja-build
             - p7zip-full
 
@@ -246,6 +252,7 @@ before_script:
   # install recent cmake
   - sh ./_scripts/ci/install_cmake.sh 3.14.7 3.14 _addons
   - sudo chmod -R 777 "./_addons"
+  - sudo chmod -R 777 "./video"
   - PATH=$(pwd)/_addons/cmake_3.14.7:$(pwd)/_addons/cmake_3.14.7/bin:$PATH
   - export CTEST_OUTPUT_ON_FAILURE=1
   # install libs / toolchain
