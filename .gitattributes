@@ -30,6 +30,12 @@
 *.tesc  linguist-language=GLSL
 *.tese  linguist-language=GLSL
 *.tsh   linguist-language=GLSL
+*.hlsl  linguist-language=HLSL
+*.hlsli linguist-language=HLSL
+*.fx    linguist-language=HLSL
+*.fxh   linguist-language=HLSL
+*.py   linguist-language=Python
+*.py3  linguist-language=Python
 
 # Normalize EOL for source files
 
@@ -63,6 +69,12 @@
 *.csh   text eol=lf
 *.tesc  text eol=lf
 *.tsh   text eol=lf
+*.hlsl  text eol=lf
+*.hlsli text eol=lf
+*.fx    text eol=lf
+*.fxh   text eol=lf
+*.py    text eol=lf
+*.py3   text eol=lf
 
 # Scripts
 *.bash     text eol=lf
