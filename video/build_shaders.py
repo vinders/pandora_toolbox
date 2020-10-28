@@ -119,7 +119,7 @@ def compileShaderFileToByteCode(compilerArgs, srcPath, outPath):
 
 
 # Compile Direct3D shaders to API bytecode
-def compileDirect3dByteCode(compilerPath32, compilerPath64, shaderModel, shaderBasePath, outBasePath, headerBasePath):
+def compileDirect3dByteCode(compilerPath32, compilerPath64, extension, shaderModel, shaderBasePath, outBasePath, headerBasePath):
   for root,dirs,files in os.walk(shaderBasePath, topdown=True):
     # get path of current directory
     relPath = os.path.relpath(root, shaderBasePath) 
@@ -133,19 +133,25 @@ def compileDirect3dByteCode(compilerPath32, compilerPath64, shaderModel, shaderB
     
     # detect files to compile
     for file in files:
-      if len(file)>=4 and (file[-4:]=='.fxc' or file[-4:]=='.hxc'):
+      if len(file)>4 and (file[-len(extension):]==extension or file[-4:]=='.hxx'):
         continue
+      extIndex = file.rfind('.')
+      if extIndex<2:
+        print(filePath + ': missing shader type (vs/ps/...) before file extension (ex: myFile.vs.hlsl))')
+        continue
+      shaderType = file[extIndex-2:extIndex]
+        
       filePath = os.path.join(absShaderPath, file)
       if os.path.exists(compilerPath32):
-        outPath = os.path.join(absOutPath, file + '.fxc')
+        outPath = os.path.join(absOutPath, file + extension)
         outHeaderPath = os.path.join(absOutHeaderPath, file + '.hxx')
-        compileShaderFileToByteCode([compilerPath32, '/T', shaderModel, filePath, '/Fo', outPath], filePath, outPath)
-        compileShaderFileToByteCode([compilerPath32, '/T', shaderModel, filePath, '/Fh', outHeaderPath], filePath, outHeaderPath)
+        compileShaderFileToByteCode([compilerPath32, '/T', shaderType + '_' + shaderModel, '/O2', filePath, '/Fo', outPath], filePath, outPath)
+        compileShaderFileToByteCode([compilerPath32, '/T', shaderType + '_' + shaderModel, '/O2', filePath, '/Fh', outHeaderPath], filePath, outHeaderPath)
       if os.path.exists(compilerPath64):
-        outPath64 = os.path.join(absOutPath, file + '64.fxc')
+        outPath64 = os.path.join(absOutPath, file + '64' + extension)
         outHeaderPath64 = os.path.join(absOutHeaderPath, file + '64.hxx')
-        compileShaderFileToByteCode([compilerPath64, '/T', shaderModel, filePath, '/Fo', outPath64], filePath, outPath64)
-        compileShaderFileToByteCode([compilerPath64, '/T', shaderModel, filePath, '/Fh', outHeaderPath64], filePath, outHeaderPath64)
+        compileShaderFileToByteCode([compilerPath64, '/T', shaderType + '_' + shaderModel, '/O2', filePath, '/Fo', outPath64], filePath, outPath64)
+        compileShaderFileToByteCode([compilerPath64, '/T', shaderType + '_' + shaderModel, '/O2', filePath, '/Fh', outHeaderPath64], filePath, outHeaderPath64)
 #
 
 
@@ -400,14 +406,20 @@ for root,dirs,files in os.walk(srcPath, topdown=True):
 if os.name=='nt':
   d3d11ShaderPathEnd = getDirect3dShaderPathSuffix(outShaderPath, '11')
   d3d11ShaderPath = os.path.join(outShaderPath, d3d11ShaderPathEnd)
-  d3d11EmbedPath = os.path.join(outStringPath, d3d11ShaderPathEnd)
-  if os.path.exists(d3d11ShaderPath):
+  d3d12ShaderPathEnd = getDirect3dShaderPathSuffix(outShaderPath, '12')
+  d3d12ShaderPath = os.path.join(outShaderPath, d3d12ShaderPathEnd)
+  if os.path.exists(d3d11ShaderPath) or os.path.exists(d3d12ShaderPath):
     winSdkPath = findWindowsSdkUtilities()
-    fxc32Compiler = os.path.join(winSdkPath, 'x86/fxc.exe')
-    fxc64Compiler = os.path.join(winSdkPath, 'x64/fxc.exe')
-    if os.path.exists(fxc32Compiler) or os.path.exists(fxc64Compiler):
-      print('-- Compiling Direct3D shaders to FXC...')
-      compileDirect3dByteCode(fxc32Compiler, fxc64Compiler, 'cs_5_0', d3d11ShaderPath, d3d11ShaderPath, d3d11EmbedPath)
+    fxc32 = os.path.join(winSdkPath, 'x86/fxc.exe')
+    fxc64 = os.path.join(winSdkPath, 'x64/fxc.exe')
+    dxc32 = os.path.join(winSdkPath, 'x86/dxc.exe')
+    dxc64 = os.path.join(winSdkPath, 'x64/dxc.exe')
+    if os.path.exists(d3d11ShaderPath) and (os.path.exists(fxc32) or os.path.exists(fxc64)):
+      print('-- Compiling Direct3D 11 shaders to FXC...')
+      compileDirect3dByteCode(fxc32, fxc64, '.fxc', '5_0', d3d11ShaderPath, d3d11ShaderPath, os.path.join(outStringPath, d3d11ShaderPathEnd))
+    if os.path.exists(d3d12ShaderPath) and d3d12ShaderPath!=d3d11ShaderPath and (os.path.exists(dxc32) or os.path.exists(dxc64)):
+      print('-- Compiling Direct3D 12 shaders to DXC...')
+      compileDirect3dByteCode(dxc32, dxc64, '.dxc', '6_0', d3d12ShaderPath, d3d12ShaderPath, os.path.join(outStringPath, d3d12ShaderPathEnd))
 
 # compile vulkan shaders to SPIR-V (if Vulkan SDK available)
 vulkanShaderPath = os.path.join(outShaderPath, 'vulkan')
