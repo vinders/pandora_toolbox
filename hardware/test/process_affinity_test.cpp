@@ -28,7 +28,7 @@ TEST_F(ProcessAffinityTest, processAffinity) { // disabled for linux/unix/os-x C
 
   int32_t newMask = 0x03;
   int32_t verifiedMask = 0;
-  if (setCurrentProcessAffinity(newMask)) { // may fail on some systems, but should never crash
+  if (setCurrentProcessAffinity(newMask) && result) { // may fail on some systems, but should never crash
     EXPECT_TRUE(getCurrentProcessAffinity(verifiedMask));
     EXPECT_EQ(newMask, verifiedMask);
   }
