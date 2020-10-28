@@ -38,11 +38,11 @@ using namespace pandora::hardware;
   }
   // Read brand name in CPUID register  and convert raw value to brand string
   static inline std::string _readCpuBrandString(int32_t maxExtendedRegisterId) noexcept {
+    char brand[3*4*sizeof(uint32_t) + 1];
+    memset(brand, 0, sizeof(brand));
+      
     if (maxExtendedRegisterId >= static_cast<int32_t>(cpuid_x86::RegisterId::brand3)) {
       CpuRegister128 buffer{ 0 };
-      char brand[3*4*sizeof(uint32_t) + 1];
-      memset(brand, 0, sizeof(brand));
-
       CpuidRegisterReader::fillCpuid(buffer, cpuid_x86::RegisterId::brand1, 0);
       memcpy(reinterpret_cast<void*>(brand), reinterpret_cast<void*>(buffer.data()), 4*sizeof(uint32_t));
 
@@ -51,9 +51,8 @@ using namespace pandora::hardware;
 
       CpuidRegisterReader::fillCpuid(buffer, cpuid_x86::RegisterId::brand3, 0);
       memcpy(reinterpret_cast<void*>(brand + 8*sizeof(uint32_t)), reinterpret_cast<void*>(buffer.data()), 4*sizeof(uint32_t));
-      return std::string(brand);
     }
-    return std::string{};
+    return std::string(brand);
   }
 
   // Process CPU specifications detection (x86)

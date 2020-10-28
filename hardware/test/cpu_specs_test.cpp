@@ -64,6 +64,8 @@ TEST_F(CpuSpecsTest, readExtendedCpuSpecs) {
     EXPECT_EQ(hasAvx, specs.isInstructionSetSupported(CpuInstructionSet::avx));
     EXPECT_EQ(specs.hasAdvancedProperty(cpuid_x86::avx2()), specs.isInstructionSetSupported(CpuInstructionSet::avx2));
     EXPECT_EQ(specs.hasAdvancedProperty(cpuid_x86::avx512f()), specs.isInstructionSetSupported(CpuInstructionSet::avx512f));
+    
+    EXPECT_FALSE(specs.isInstructionSetSupported((CpuInstructionSet)1234567u));
 
 # elif _SYSTEM_CPU_ARCH == _SYSTEM_CPU_ARCH_ARM
     EXPECT_TRUE(specs.hasBaseProperty(cpuid_arm::id()));

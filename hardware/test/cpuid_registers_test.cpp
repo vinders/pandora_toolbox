@@ -34,6 +34,8 @@ TEST_F(CpuidRegistersTest, cpuRegisterLocations) {
     _validateRegister(cpuid_x86::vendorPart1());
     _validateRegister(cpuid_x86::vendorPart2());
     _validateRegister(cpuid_x86::vendorPart3());
+    _validateRegister(cpuid_x86::baseFamily());
+    _validateRegister(cpuid_x86::extendedFamily());
     _validateRegister(cpuid_x86::brandIndex());
     _validateRegister(cpuid_x86::logicalProcessorsPerCpu());
     _validateRegister(cpuid_x86::localApicId());
