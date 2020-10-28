@@ -1,8 +1,8 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.47.1.162
-2020-10-28 - d4dacfa06782fc82a90f00b04b2e6449165cf938
+## 0.47.2.168
+2020-10-28 - 8a585daad6dcf9c42389f20af6e53592a8a1d9fe
 ### features
 vinders (4):
 * video: openGL/vulkan API includes
@@ -10,8 +10,9 @@ vinders (4):
 * cwork: custom cmake framework: add option: minimum supported windows version (Win32 API)
 * video: shader generation script (assemble modules + remove comments/white-spaces + vulkan spir-v compilation)
 ### fixes
-vinders (1):
+vinders (2):
 * video: shader generation script: add D3D11 fxc shader compilation
+* video: shader generation script: add D3D12 dxc shader compilation
 
 ---
 
