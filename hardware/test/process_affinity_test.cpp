@@ -23,23 +23,19 @@ protected:
 TEST_F(ProcessAffinityTest, processAffinity) { // disabled for linux/unix/os-x CI tests (operations not allowed)
   int32_t origCoreMask = 0;
   bool result = getCurrentProcessAffinity(origCoreMask); // may fail on some systems, but should never crash
-  if (!result) {
+  if (!result)
     printf("getCurrentProcessAffinity is not supported or not allowed in current context...");
-#   if defined(_DEBUG) || !defined(NDEBUG)
-      setCurrentProcessAffinity(0);
-#   endif
-    return;
-  }
 
   int32_t newMask = 0x03;
+  int32_t verifiedMask = 0;
   if (setCurrentProcessAffinity(newMask)) { // may fail on some systems, but should never crash
-    int32_t verifiedMask = 0;
     EXPECT_TRUE(getCurrentProcessAffinity(verifiedMask));
     EXPECT_EQ(newMask, verifiedMask);
-    setCurrentProcessAffinity(origCoreMask); // restore initial affinity mask, to avoid affecting gtest process
   }
   else
     printf("setCurrentProcessAffinity is not supported or not allowed in current context...");
+  
+  setCurrentProcessAffinity(result ? origCoreMask : 0); // restore initial affinity mask, to avoid affecting gtest process
 }
 
 
