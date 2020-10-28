@@ -102,12 +102,9 @@ using namespace pandora::hardware;
       case cpuid_x86::RegisterId::baseFeatures:     return static_cast<uint32_t>(hasBaseProperty(prop));
       case cpuid_x86::RegisterId::advancedFeatures: return static_cast<uint32_t>(hasAdvancedProperty(prop));
       case cpuid_x86::RegisterId::extendedFeatures: return static_cast<uint32_t>(hasExtendedProperty(prop));
-      default: 
-        if (prop.exclusivity() == CpuVendor::unknown || prop.exclusivity() == this->_vendorId)
-          return CpuidRegisterReader::readRegisterBits(prop);
-        break;
+      default: return (prop.exclusivity() == CpuVendor::unknown || prop.exclusivity() == this->_vendorId)
+                      ? CpuidRegisterReader::readRegisterBits(prop) : 0u;
     }
-    return 0u;
   }
 
   // Verify CPU instruction set support
