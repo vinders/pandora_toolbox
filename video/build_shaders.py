@@ -10,12 +10,67 @@ import glob
 import shutil
 import subprocess
 
+# -- FILE INFORMATION --
+
 # Get first child directory
 def getFirstChildDir(dirPath):
   for path in glob.glob(dirPath + '/*/'):
     if path!='.' and path!='..':
       return path
   return ''
+#
+
+
+# Verify if a file is missing or outdated
+def isFileOutdated(fileName, fileDir, outShaderPath, outModulePath):
+  if os.path.exists(os.path.join(outShaderPath, fileName)):
+    if os.path.getmtime(os.path.join(fileDir, fileName)) > os.path.getmtime(os.path.join(outShaderPath, fileName)):
+      return True
+  if os.path.exists(os.path.join(outModulePath, fileName)):
+    if os.path.getmtime(os.path.join(fileDir, fileName)) > os.path.getmtime(os.path.join(outModulePath, fileName)):
+      return True
+  else:
+    return True
+  return False
+#
+
+
+# -- SHADER COMPILATION TO BYTE CODE --
+
+# Find output directory of direct3D shaders
+def getDirect3dShaderPathSuffix(commonPath, version):
+  if os.path.exists(os.path.join(commonPath, 'direct3d' + version)):
+    return 'direct3d' + version
+  elif os.path.exists(os.path.join(commonPath, 'direct3d_' + version)):
+    return 'direct3d_' + version
+  elif os.path.exists(os.path.join(commonPath, 'd3d' + version)):
+    return 'd3d' + version
+  return 'direct3d'
+#
+
+
+# Find Windows SDK utilities path
+def findWindowsSdkUtilities():
+  programsPath = os.getenv("ProgramFiles(x86)", default='')
+  if programsPath=='':
+    programsPath = os.getenv("ProgramFiles", default='')
+  if programsPath!='':
+    sdkPath = programsPath + '\\Windows Kits\\10\\bin'
+    if os.path.exists(programsPath + '\\Windows Kits\\10\\bin'):
+      sdkPath = programsPath + '\\Windows Kits\\10\\bin'
+    elif os.path.exists(programsPath + '\\Microsoft DirectX SDK (June 2010)\\Utilities\\bin'):
+      return programsPath + '\\Microsoft DirectX SDK (June 2010)\\Utilities\\bin'
+    elif os.path.exists(programsPath + '\\Microsoft DirectX SDK\\Utilities\\bin'):
+      return programsPath + '\\Microsoft DirectX SDK\\Utilities\\bin'
+    elif os.path.exists(programsPath + '\\Windows Kits\\8.1\\bin'):
+      sdkPath = programsPath + '\\Windows Kits\\8.1\\bin'
+    elif os.path.exists(programsPath + '\\Windows Kits\\8.0\\bin'):
+      sdkPath = programsPath + '\\Windows Kits\\8.0\\bin'
+      
+    for path in glob.glob(sdkPath + '/*/'):
+      if path!='.' and path!='..' and os.path.exists(path + '\\x86\\fxc.exe'):
+        return path
+    return sdkPath
 #
 
 
@@ -51,19 +106,72 @@ def findVulkanSdk(generationOutputPath):
 #
 
 
-# Verify if a file is missing or outdated
-def isFileOutdated(fileName, fileDir, outShaderPath, outModulePath):
-  if os.path.exists(os.path.join(outShaderPath, fileName)):
-    if os.path.getmtime(os.path.join(fileDir, fileName)) > os.path.getmtime(os.path.join(outShaderPath, fileName)):
-      return True
-  if os.path.exists(os.path.join(outModulePath, fileName)):
-    if os.path.getmtime(os.path.join(fileDir, fileName)) > os.path.getmtime(os.path.join(outModulePath, fileName)):
-      return True
-  else:
-    return True
-  return False
+# Compile shader file to API bytecode
+def compileShaderFileToByteCode(compilerArgs, srcPath, outPath):
+  if os.path.exists(outPath):
+    os.unlink(outPath)
+  print(' - ' + srcPath + ' -> ' + outPath)
+  process = subprocess.Popen(compilerArgs)
+  process.wait()
+  if not os.path.exists(outPath):
+    print(' > failed')
 #
 
+
+# Compile Direct3D shaders to API bytecode
+def compileDirect3dByteCode(compilerPath32, compilerPath64, shaderModel, shaderBasePath, outBasePath, headerBasePath):
+  for root,dirs,files in os.walk(shaderBasePath, topdown=True):
+    # get path of current directory
+    relPath = os.path.relpath(root, shaderBasePath) 
+    if len(relPath)>2 and relPath[0]=='.' and relPath[1]=='/':
+      relPath = relPath[2:]
+    if os.name=='nt':
+      relPath = relPath.replace('/','\\')
+    absShaderPath = os.path.join(shaderBasePath, relPath) if relPath!='.' else shaderBasePath
+    absOutPath = os.path.join(outBasePath, relPath) if relPath!='.' else outBasePath
+    absOutHeaderPath = os.path.join(headerBasePath, relPath) if relPath!='.' else headerBasePath
+    
+    # detect files to compile
+    for file in files:
+      if len(file)>=4 and (file[-4:]=='.fxc' or file[-4:]=='.hxc'):
+        continue
+      filePath = os.path.join(absShaderPath, file)
+      if os.path.exists(compilerPath32):
+        outPath = os.path.join(absOutPath, file + '.fxc')
+        outHeaderPath = os.path.join(absOutHeaderPath, file + '.hxx')
+        compileShaderFileToByteCode([compilerPath32, '/T', shaderModel, filePath, '/Fo', outPath], filePath, outPath)
+        compileShaderFileToByteCode([compilerPath32, '/T', shaderModel, filePath, '/Fh', outHeaderPath], filePath, outHeaderPath)
+      if os.path.exists(compilerPath64):
+        outPath64 = os.path.join(absOutPath, file + '64.fxc')
+        outHeaderPath64 = os.path.join(absOutHeaderPath, file + '64.hxx')
+        compileShaderFileToByteCode([compilerPath64, '/T', shaderModel, filePath, '/Fo', outPath64], filePath, outPath64)
+        compileShaderFileToByteCode([compilerPath64, '/T', shaderModel, filePath, '/Fh', outHeaderPath64], filePath, outHeaderPath64)
+#
+
+
+# Compile Vulkan shaders to API bytecode
+def compileVulkanByteCode(compilerPath, shaderBasePath, outBasePath):
+  for root,dirs,files in os.walk(shaderBasePath, topdown=True):
+    # get path of current directory
+    relPath = os.path.relpath(root, shaderBasePath) 
+    if len(relPath)>2 and relPath[0]=='.' and relPath[1]=='/':
+      relPath = relPath[2:]
+    if os.name=='nt':
+      relPath = relPath.replace('/','\\')
+    absShaderPath = os.path.join(shaderBasePath, relPath) if relPath!='.' else shaderBasePath
+    absOutPath = os.path.join(outBasePath, relPath) if relPath!='.' else outBasePath
+    
+    # detect files to compile
+    for file in files:
+      if file[-4:]=='.spv':
+        continue
+      filePath = os.path.join(absShaderPath, file)
+      outPath = os.path.join(absOutPath, file + '.spv')
+      compileShaderFileToByteCode([compilerPath, '-V', filePath, '-o', outPath], filePath, outPath)
+#
+
+
+# -- SHADER MODULE ASSEMBLING + COMMENT REMOVAL --
 
 # Remove white-spaces and comments
 def trimLine(fileLine):
@@ -226,11 +334,10 @@ def generateShaderFile(srcFileName, srcFileDir, outShaderPath, outModulePath, ou
 #
 
 
-# ---
-
+# -- MAIN --
 
 # read directory arguments
-print('--- Shader builder ---')
+print('------ Shader builder ------')
 if len(sys.argv) < 3:
   print('Missing directory argument(s) (usage: build_shader.py "source_dir" "shader_output_dir" "string_output_dir")', file=sys.stderr)
   exit(1)
@@ -289,32 +396,25 @@ for root,dirs,files in os.walk(srcPath, topdown=True):
         stringifyShaderFile(os.path.join(absModulePath, file), os.path.join(absStringPath, file + '.inc'))
 
 
+# compile direct3D shaders to FXC (if Windows SDK available)
+if os.name=='nt':
+  d3d11ShaderPathEnd = getDirect3dShaderPathSuffix(outShaderPath, '11')
+  d3d11ShaderPath = os.path.join(outShaderPath, d3d11ShaderPathEnd)
+  d3d11EmbedPath = os.path.join(outStringPath, d3d11ShaderPathEnd)
+  if os.path.exists(d3d11ShaderPath):
+    winSdkPath = findWindowsSdkUtilities()
+    fxc32Compiler = os.path.join(winSdkPath, 'x86/fxc.exe')
+    fxc64Compiler = os.path.join(winSdkPath, 'x64/fxc.exe')
+    if os.path.exists(fxc32Compiler) or os.path.exists(fxc64Compiler):
+      print('-- Compiling Direct3D shaders to FXC...')
+      compileDirect3dByteCode(fxc32Compiler, fxc64Compiler, 'cs_5_0', d3d11ShaderPath, d3d11ShaderPath, d3d11EmbedPath)
+
 # compile vulkan shaders to SPIR-V (if Vulkan SDK available)
 vulkanShaderPath = os.path.join(outShaderPath, 'vulkan')
 if os.path.exists(vulkanShaderPath):
-  vulkanSdkPath = findVulkanSdk(outShaderPath)
-  vulkanSdkCompiler = os.path.join(vulkanSdkPath,'Bin\\glslangValidator.exe') if os.name=='nt' else os.path.join(vulkanSdkPath,'bin/glslangValidator')
+  vulkanSdkCompiler = os.path.join(findVulkanSdk(outShaderPath),'Bin\\glslangValidator.exe') if os.name=='nt' else os.path.join(findVulkanSdk(outShaderPath),'bin/glslangValidator')
   if os.path.exists(vulkanSdkCompiler):
     print('-- Compiling Vulkan shaders to SPIR-V...')
-
-    # detect files to compile
-    for root,dirs,files in os.walk(vulkanShaderPath, topdown=True):
-      relPath = os.path.relpath(root, vulkanShaderPath) 
-      if os.name=='nt':
-        relPath = relPath.replace('/','\\')
-      absShaderPath = os.path.join(vulkanShaderPath, relPath) if relPath!='.' else vulkanShaderPath
-      for file in files:
-        if file[-4:]=='.spv':
-          continue
-        filePath = os.path.join(absShaderPath, file)
-        if os.path.exists(filePath + '.spv'):
-          os.unlink(filePath + '.spv')
-        
-        # compile command
-        print(' - ' + vulkanSdkCompiler + ' -V "' + filePath + '" -o "' + filePath + '.spv"')
-        process = subprocess.Popen([vulkanSdkCompiler, '-V', filePath, '-o', filePath + '.spv'])
-        process.wait()
-        if not os.path.exists(filePath + '.spv'):
-          print(' > failed')
+    compileVulkanByteCode(vulkanSdkCompiler, vulkanShaderPath, vulkanShaderPath)
 
 exit(0)
