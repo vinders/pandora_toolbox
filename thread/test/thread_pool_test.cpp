@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <stdexcept>
 #include <thread>
 #include <chrono>
 #include <functional>
@@ -39,6 +40,12 @@ void _taskRunner(std::unique_ptr<int>& param) {
   if (param != nullptr)
     totalValue += *param;
   std::this_thread::sleep_for(std::chrono::milliseconds(1u));
+}
+void _exceptionRunner(int& val) {
+  if (val == 42)
+    throw val;
+  totalValue += val;
+  throw std::runtime_error("ok");
 }
 
 template <typename T>
@@ -328,4 +335,18 @@ TEST_F(ThreadPoolTest, runnerPerJobWithDefault) {
   // move-only type
   ThreadPool<std::unique_ptr<int>, ThreadRunnerMode::perJob, TaskRunnerType::functionPointer> pool(4u, &_taskRunner);
   EXPECT_TRUE(pool.addJob(std::make_unique<int>(2), &_taskRunner));
+}
+
+// -- exception management --
+TEST_F(ThreadPoolTest, runnerWithException) {
+  int startVal = totalValue;
+  ThreadPool<int, ThreadRunnerMode::single, TaskRunnerType::functionPointer> pool(1u, &_exceptionRunner);
+
+  EXPECT_TRUE(pool.addJob(2));
+  _waitForJobsCompletion(pool);
+  EXPECT_EQ(startVal + 2, totalValue);
+
+  EXPECT_TRUE(pool.addJob(42));
+  _waitForJobsCompletion(pool);
+  EXPECT_EQ(startVal + 2, totalValue);
 }
