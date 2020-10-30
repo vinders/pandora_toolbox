@@ -24,7 +24,7 @@ System-dependant includes of intrinsics
   
 // -- linux / unix includes --
 
-#elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+#elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__) || defined(__APPLE__)
 # if !defined(__clang__)
 #   include <fcntl.h>
 #   include <unistd.h>
