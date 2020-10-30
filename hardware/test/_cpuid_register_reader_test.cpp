@@ -81,7 +81,7 @@ TEST_F(_CpuidRegisterReaderTest, registerBits) {
 
 // -- CPU info files (Linux) --
 
-#if _SYSTEM_CPU_ARCH == _SYSTEM_CPU_ARCH_X86 && !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+#if _SYSTEM_CPU_ARCH == _SYSTEM_CPU_ARCH_X86 && !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
   TEST_F(_CpuidRegisterReaderTest, readCpuInfoFile) {
     EXPECT_FALSE(CpuidRegisterReader::readCpuInfoFile("vendor_id").empty()); // vendor ID found
   }

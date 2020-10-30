@@ -6,7 +6,7 @@ License :     MIT
 
 #include <cstddef>
 #include <cstdint>
-#if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+#if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
 # include <cstdio>
 # include <string>
 # include <sys/types.h>
@@ -173,7 +173,7 @@ namespace pandora {
 
       // -- CPU info files (Linux) --
       
-#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
         /// @brief Read value in CPU info file (Linux)
         static std::string readCpuInfoFile(const std::string& prop) noexcept {
           std::string result;

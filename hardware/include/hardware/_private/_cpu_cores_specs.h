@@ -18,7 +18,7 @@ Functions: _isHyperThreadingSupported, _readCpuCoresFromOS, [_readCpuCoresFromCp
 #  include <sys/param.h>
 #  include <sys/sysctl.h>
 #  include <system/operating_system.h>
-# elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+# elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__)
 #  include <sys/sysinfo.h>
 #  include <unistd.h>
 # endif
@@ -88,7 +88,7 @@ namespace pandora {
         if (buffer > 1)
           coresCount.logicalCores = static_cast<uint32_t>(buffer);
 
-#     elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) // linux
+#     elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__) // linux
         int32_t buffer = get_nprocs();
         if (buffer > 1)
           coresCount.logicalCores = static_cast<uint32_t>(buffer);

@@ -159,7 +159,7 @@ using namespace pandora::hardware;
         default: this->_vendorId = CpuVendor::unknown; break;
       }
         
-#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
         this->_vendor = CpuidRegisterReader::readCpuInfoFile("vendor_id");
         if (this->_vendor.empty())
 #     endif
@@ -172,7 +172,7 @@ using namespace pandora::hardware;
     }
     
     if ((mode & SpecMode::brandName) == true) {
-#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+#     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
         this->_brand = CpuidRegisterReader::readCpuInfoFile("model name");
         if (this->_brand.empty())
 #     endif
@@ -194,7 +194,7 @@ using namespace pandora::hardware;
     }
   }
 
-# if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__))
+# if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
     static inline bool _hasCpuNeonOnLinux() noexcept { return CpuidRegisterReader::readAuxVectorsFile(AT_HWCAP, 4096); }
 # endif
 
@@ -220,7 +220,7 @@ using namespace pandora::hardware;
 #     else
       return (type == CpuInstructionSet::cpp);
 #     endif
-#   elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+#   elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__) || defined(__APPLE__)
 #     if defined(__aarch64__)
         return (type == CpuInstructionSet::neon64 || type == CpuInstructionSet::neon || type == CpuInstructionSet::cpp);
 #     elif defined(__clang__)
