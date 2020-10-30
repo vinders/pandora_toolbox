@@ -11,28 +11,22 @@ using namespace pandora::io;
 
 // Display list of directories
 void displayDirectories(const std::string& title, const std::vector<SystemPath>& directories) {
-  SystemPathChar offset[32];
-  for (int i = 0; i < 32; ++i) {
-# ifdef _WINDOWS
-    offset[i] = L' ';
-# else 
+  char offset[32];
+  for (int i = 0; i < title.size(); ++i)
     offset[i] = ' ';
-# endif
-  }
   offset[title.size()] = 0;
-  offset[title.size() + 1] = 0;
   
   printf(" %s  ", title.c_str());
   if (!directories.empty()) {
 #     ifdef _WINDOWS
-        wprintf(L"%s\n", directories.begin()->c_str());
+        printf("%S\n", directories.begin()->c_str());
 #     else
         printf("%s\n", directories.begin()->c_str());
 #     endif
     
     for (auto it = directories.begin() + 1; it != directories.end(); ++it) {
 #     ifdef _WINDOWS
-        wprintf(L" %s  %s\n", offset, it->c_str());
+        printf(" %s  %S\n", offset, it->c_str());
 #     else
         printf("%s%s\n", offset, it->c_str());
 #     endif
