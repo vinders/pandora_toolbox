@@ -52,15 +52,15 @@ namespace pandora {
 
 
     /// @brief Build instruction-set value from CPU architecture, instruction family and instruction-set code
-    constexpr inline const CpuInstructionSet toCpuInstructionSet(pandora::system::CpuArchitecture arch, CpuInstructionFamily family, uint32_t code) noexcept {
+    constexpr inline CpuInstructionSet toCpuInstructionSet(pandora::system::CpuArchitecture arch, CpuInstructionFamily family, uint32_t code) noexcept {
       return static_cast<CpuInstructionSet>(__P_toCpuInstructionSetValue(arch, family, code));
     }
     /// @brief Extract instruction family from instruction-set
-    constexpr inline const CpuInstructionFamily toCpuInstructionFamily(CpuInstructionSet instr) noexcept {
+    constexpr inline CpuInstructionFamily toCpuInstructionFamily(CpuInstructionSet instr) noexcept {
       return static_cast<CpuInstructionFamily>((static_cast<uint32_t>(instr) >> 16) & 0xFFu);
     }
     /// @brief Extract CPU architecture from instruction-set
-    constexpr inline const pandora::system::CpuArchitecture toCpuArchitecture(CpuInstructionSet instr) noexcept {
+    constexpr inline pandora::system::CpuArchitecture toCpuArchitecture(CpuInstructionSet instr) noexcept {
       return static_cast<pandora::system::CpuArchitecture>(static_cast<uint32_t>(instr) >> 24);
     }
 #   undef __P_toCpuInstructionSetValue

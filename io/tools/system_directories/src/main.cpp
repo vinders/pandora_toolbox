@@ -12,7 +12,7 @@ using namespace pandora::io;
 // Display list of directories
 void displayDirectories(const std::string& title, const std::vector<SystemPath>& directories) {
   char offset[32];
-  for (int i = 0; i < title.size(); ++i)
+  for (size_t i = 0; i < title.size(); ++i)
     offset[i] = ' ';
   offset[title.size()] = 0;
   

@@ -81,11 +81,11 @@ namespace pandora {
       
       // -- getters --
       
-      inline const double frequency() const noexcept { ///< Get configured timer frequency
+      inline double frequency() const noexcept { ///< Get configured timer frequency
         return (this->_period.count() != 0LL) ? (1000000000.0 / static_cast<double>(this->_period.count())) : 0.0;
       }
       inline const std::chrono::nanoseconds& periodDuration() const noexcept { return this->_period; } ///< Get configured timer period
-      inline const uint64_t totalPeriodCount() const noexcept { return this->_totalPeriods; } ///< Get total number of waited periods (since last reset)
+      inline uint64_t totalPeriodCount() const noexcept { return this->_totalPeriods; } ///< Get total number of waited periods (since last reset)
       
       /// @brief Measure total timer stats since last reset (for general stats, on-screen display, ...)
       inline TimerStats getTotalStats() const noexcept {
