@@ -22,6 +22,7 @@ if not "%1" == "" (
     if "%1" == "codelite-cpp14" cmake -G "CodeLite - MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CPP_REVISION="14"
     if "%1" == "eclipse" cmake -G "Eclipse CDT4 - MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
     if "%1" == "eclipse-cpp14" cmake -G "Eclipse CDT4 - MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CPP_REVISION="14"
+    if "%1" == "icc-make" cmake -G "NMake Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=icl -DCMAKE_CXX_COMPILER=icl
     if "%1" == "mingw-make" cmake -G "MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
     if "%1" == "mingw-make-cpp14" cmake -G "MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CPP_REVISION="14"
     if "%1" == "vs2017-32" cmake -G "Visual Studio 15 2017" -A Win32 -S . -B "./_build/%1" -DCWORK_CPP_REVISION="14"

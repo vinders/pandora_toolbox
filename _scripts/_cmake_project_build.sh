@@ -45,6 +45,9 @@ for arg in "$@"; do
                   -DCMAKE_IOS_INSTALL_COMBINED=YES \
                   || exit 1
             ;;
+        icc-make)
+            cmake -G "Unix Makefiles" -S . -B "./_build/${arg}" -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc || exit 1
+            ;;
         unix-make)
             cmake -G "Unix Makefiles" -S . -B "./_build/${arg}" || exit 1
             ;;

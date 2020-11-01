@@ -1,4 +1,6 @@
+os: linux
 dist: xenial
+language: cpp
 sudo: require
 git:
   depth: false
@@ -14,7 +16,7 @@ notifications:
     on_success: never
     on_failure: never
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - &Linux-clang9
@@ -229,6 +231,37 @@ matrix:
             - python3.5
             - ninja-build
             - p7zip-full
+    - &Linux-icc
+      branches:
+        only:
+          - develop
+      if: branch = develop
+      os: linux
+      dist: bionic
+      language: cpp
+      env:
+        - CC=icc
+        - CXX=icpc
+        - OS_NAME=linux
+        - PLATFORM_NAME=icc
+        - BUILD_TYPE=Debug
+        - ENABLE_VULKAN=OFF
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'deb https://apt.repos.intel.com/oneapi all main'
+              key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'
+          packages:
+            - intel-oneapi-icc-2021.1
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - libasound2-dev
+            - libxrandr-dev
+            - xorg-dev
+            - libgl1-mesa-dev
+            - libglu1-mesa-dev
+            - python3.5
 
 before_install:
   - |
@@ -263,6 +296,10 @@ before_script:
       export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
     else
       sh ./_scripts/ci/install_opengl.sh
+      if [ "$PLATFORM_NAME" = "icc" ]; then
+        sudo chmod -R 777 /opt/intel/oneapi
+        source /opt/intel/oneapi/setvars.sh
+      fi
       if [ "$ENABLE_VULKAN" = "ON___DISABLED_UNTIL_USED_IN_CODE" ]; then
         sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
         if [ "$OS_NAME" = "osx" ]; then
@@ -306,6 +343,8 @@ script:
         -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
         -DCMAKE_IOS_INSTALL_COMBINED=YES \
         || exit 1
+    elif [ "$PLATFORM_NAME" = "icc" ]; then
+      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc || exit 1
     elif [ -n "$COVERAGE_MODE" ]; then
       cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCWORK_COVERAGE=1 || exit 1
     elif [ -z "$CPP_REVISION" ]; then
