@@ -29,6 +29,8 @@ if not "%1" == "" (
     if "%1" == "vs2017-64" cmake -G "Visual Studio 15 2017" -A x64 -S . -B "./_build/%1" -DCWORK_CPP_REVISION="14"
     if "%1" == "vs2019-32" cmake -G "Visual Studio 16 2019" -A Win32 -S . -B "./_build/%1"
     if "%1" == "vs2019-64" cmake -G "Visual Studio 16 2019" -A x64 -S . -B "./_build/%1"
+    if "%1" == "vs2019-clangcl32" cmake -G "Visual Studio 16 2019" -A Win32 -T ClangCL -S . -B "./_build/%1" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m32"
+    if "%1" == "vs2019-clangcl64" cmake -G "Visual Studio 16 2019" -A x64 -T ClangCL -S . -B "./_build/%1" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m64"
     shift
     goto loop
 )
