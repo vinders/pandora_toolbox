@@ -1,8 +1,8 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.47.2.168
-2020-10-28 - 8a585daad6dcf9c42389f20af6e53592a8a1d9fe
+## 0.47.2.177
+2020-11-01 - 553127d2ca96d5129c3eeb0c974917d1c6014a0b
 ### features
 vinders (4):
 * video: openGL/vulkan API includes
