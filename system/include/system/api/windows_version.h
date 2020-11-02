@@ -27,7 +27,7 @@ Description : Microsoft Windows feature version constants
 #   define _WIN32_WINNT _WIN32_WINNT_WIN10 
 #   define _WIN32_WINDOWS _WIN32_WINNT_WIN10   
 #   define _WIN32_IE _WIN32_IE_IE110  
-#   define NTDDI_VERSION NTDDI_WIN10 
+#   define NTDDI_VERSION NTDDI_WIN10_RS3 
 
 # elif defined(_MIN_WINDOWS_VERSION) && _MIN_WINDOWS_VERSION == 8 // Windows 8/10+
 #   define WINVER _WIN32_WINNT_WIN8 

@@ -27,6 +27,8 @@ if not "%1" == "" (
     if "%1" == "mingw-make-cpp14" cmake -G "MinGW Makefiles" -S . -B "./_build/%1" -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CPP_REVISION="14"
     if "%1" == "vs2017-32" cmake -G "Visual Studio 15 2017" -A Win32 -S . -B "./_build/%1" -DCWORK_CPP_REVISION="14"
     if "%1" == "vs2017-64" cmake -G "Visual Studio 15 2017" -A x64 -S . -B "./_build/%1" -DCWORK_CPP_REVISION="14"
+    if "%1" == "vs2019-T2017-32" cmake -G "Visual Studio 16 2019" -A Win32 -T v141 -S . -B "./_build/%1"
+    if "%1" == "vs2019-T2017-64" cmake -G "Visual Studio 16 2019" -A x64 -T v141 -S . -B "./_build/%1"
     if "%1" == "vs2019-32" cmake -G "Visual Studio 16 2019" -A Win32 -S . -B "./_build/%1"
     if "%1" == "vs2019-64" cmake -G "Visual Studio 16 2019" -A x64 -S . -B "./_build/%1"
     if "%1" == "vs2019-clangcl32" cmake -G "Visual Studio 16 2019" -A Win32 -T ClangCL -S . -B "./_build/%1" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m32"
