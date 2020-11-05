@@ -87,7 +87,7 @@ jobs:
       branches:
         only:
           - develop
-      if: branch = develop
+      if: branch = develop AND fork = false
       os: linux
       language: cpp
       compiler: gcc
@@ -115,12 +115,12 @@ jobs:
     - &Linux-gcc5
       branches:
         only:
-          - master
           - develop
           - /^release.*$/
           - /^feat.*$/
           - /^fix.*$/
           - /^test.*$/
+      if: branch != master
       os: linux
       dist: trusty
       language: cpp
