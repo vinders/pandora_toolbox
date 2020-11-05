@@ -10,7 +10,7 @@ Pandora Toolbox is a collection of portable C++ libraries: general purpose utili
 The code is meant to be highly efficient and easy to use in real-time and video projects : AI, video processing, video games, emulators or embedded systems. Written in C++ 17, it supports backwards compatibility with C++ 14.
 
 See [Libraries](#libraries) section below for more information. Check changelog [here](./CHANGELOG.md).
-Contributors should also check the [Workflow](#workflow) and [Coding style](#coding-style) guidelines.
+Contributors should take a look at the [issue reporting, workflow and coding style](./CONTRIBUTING.md) guidelines.
 
 ## Build status
 ![cmake 3.14](_img/badges/build_cmake_3_14.svg)
@@ -23,9 +23,9 @@ Contributors should also check the [Workflow](#workflow) and [Coding style](#cod
 | Windows <sub>(x86/x86_64)</sub>  | ![vs2019](https://img.shields.io/badge/visual_studio-2019-75b.svg)<br>![vs2017](https://img.shields.io/badge/visual_studio-2017-a99dc2.svg)<br>![mingw7](https://img.shields.io/badge/mingw64-8.1.0-75b.svg)<br>![clangcl](https://img.shields.io/badge/clang--cl-10.0.0-75b.svg) | ![master](_img/badges/branch_master.svg) [![appveyor](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/master?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/master)<br>![develop](_img/badges/branch_develop.svg) [![appveyor-dev](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/develop?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/develop)  |
 | Linux <sub>(x86_64)</sub>        | ![gcc9](https://img.shields.io/badge/gcc-9.1-75b.svg)              | ![master](_img/badges/branch_master.svg) [![Linux-gcc9](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/1)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![Linux-gcc9-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/2)](https://travis-ci.org/vinders/pandora_toolbox)       |
 |                                  | ![clang9](https://img.shields.io/badge/clang-9.0.0-75b.svg)<br>![icc](https://img.shields.io/badge/intel_icc-2021.1-75b.svg)<br>![gcc7](https://img.shields.io/badge/gcc-7.1-75b.svg)<br>![gcc5](https://img.shields.io/badge/gcc-5.1-a99dc2.svg) | ![develop](_img/badges/branch_develop.svg) [![Linux-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/1)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![Linux-icc](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/8)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![Linux-gcc7](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/3)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![Linux-gcc5](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/4)](https://travis-ci.org/vinders/pandora_toolbox) |
-| Mac OS X <sub>(x86_64)</sub>     | ![clang7](https://img.shields.io/badge/clang-7.0.0-75b.svg)        | ![master](_img/badges/branch_master.svg) [![osx-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/3)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![osx-clang-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/5)](https://travis-ci.org/vinders/pandora_toolbox)         |
-| iOS <sub>(arm/arm64)</sub>       | ![clang7](https://img.shields.io/badge/clang-7.0.0-75b.svg)        | ![master](_img/badges/branch_master.svg) [![iOS-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/4)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![iOS-clang-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/6)](https://travis-ci.org/vinders/pandora_toolbox)         |
-| Android <sub>(arm64)</sub>       | ![android](https://img.shields.io/badge/android-ndk_26-a99dc2.svg) | ![master](_img/badges/branch_master.svg) [![android64-ndk](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/5)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![android64-ndk-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/7)](https://travis-ci.org/vinders/pandora_toolbox) |
+| Mac OS X <sub>(x86_64)</sub>     | ![clang7](https://img.shields.io/badge/clang-7.0.0-75b.svg)        | ![master](_img/badges/branch_master.svg) [![osx-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/2)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![osx-clang-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/5)](https://travis-ci.org/vinders/pandora_toolbox)         |
+| iOS <sub>(arm/arm64)</sub>       | ![clang7](https://img.shields.io/badge/clang-7.0.0-75b.svg)        | ![master](_img/badges/branch_master.svg) [![iOS-clang](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/3)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![iOS-clang-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/6)](https://travis-ci.org/vinders/pandora_toolbox)         |
+| Android <sub>(arm64)</sub>       | ![android](https://img.shields.io/badge/android-ndk_26-a99dc2.svg) | ![master](_img/badges/branch_master.svg) [![android64-ndk](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/master/4)](https://travis-ci.org/vinders/pandora_toolbox)<br>![develop](_img/badges/branch_develop.svg) [![android64-ndk-dev](https://travis-matrix-badges.herokuapp.com/repos/vinders/pandora_toolbox/branches/develop/7)](https://travis-ci.org/vinders/pandora_toolbox) |
 
 ## Libraries
 
@@ -72,109 +72,3 @@ Examples:
 | Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4       | ON<br>OFF     | all systems                   |
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11         | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN        | ON<br>OFF     | all except iOS<br>(environment variable *VULKAN_SDK* required)  |
-
----
-
-### Workflow
-
-Branches:
-* *master* : no direct commit, **only merges** from develop (for each release). Always call '_scripts/merge_develop_into_master.sh' (SSH key access to repo required) for every merge of *develop* into *master*.
-* *develop*: main development branch, with full continuous integration and code coverage. Small commits can be directly committed in *develop*. Complex commits belong in feature branches.
-* *feat/...* or *fix/...* (ex: *feat/json_serializer*): branches for new features and fixes, with continuous integration on main systems. Should be merged into *develop* when complete (with param --no-ff).
-
-Generated version and docs:
-
-The *build_version.txt* and *changelog.md* files are automatically generated by the script '_scripts/merge_develop_into_master.sh', based on the prefixes of commits (see 'Commit guidelines' below).
-
-### Commit guidelines
-
-All commits should follow one of these guidelines for the message (no additional space between prefix and dash):
-> * **prefix**-library_or_module_name: description_of_commit
-> * **prefix**-issue_number-library_or_module_name: description_of_commit
-
-| prefix |             usage              |
-|--------|--------------------------------|
-| *major* | Major changes, important breaking of compatibility, new product line, ... Increases the major version number of the project (ex: 1.#.#) and appears in change log. |
-| *feat*  | New feature or subfeature, or additional behavior. Increases the minor version number of the project (ex: #.1.#) and appears in change log. If the same feature is subdivided in multiple commits, use *patch* for the first commits, then *feat* for the last commit (feature delivery). Neglectible changes made later (comments, formatting, ...) can also use *patch*. If a feature needs to be refactored or bug-fixed, use *fix* instead. |
-| *fix*   | Bug fix or refactoring of a feature. Increases the fix version number of the project (ex: #.#.1) and appears in change log. |
-| *patch* | Small changes that do not really affect the behavior of a feature, or comments or additional tests. No impact on the version number. |
-| *infra* | Infrastructure changes: cmake, CI, coverage, scripts, ... No impact on the version number. |
-
-*Library or module name*: library containing the changed code (system, memory, pattern, video, ...), or name of the infrastructure module changed (ci, cwork, libs, scripts, ...).
-
-Examples:
-> * **feat**-pattern: iterator/iterable pattern + declaration helpers
-> * **fix**-9976-pattern: iterator/iterable: fix missing pointer init
-> * **infra**-cwork: improve cmake versioning
-
----
-
-### Coding style
-
-#### Naming
-
-* **Types (classes, structures, enums)**: *PascalCase*.
-* **Type aliases (using, typedef)**: *PascalCase* (except for types similar to C++ stdlib, such as *'time_point'* in a clock).
-* **Functions**: *camelCase* (except when dealing with standard C++ stdlib, for cases such as *'try_lock'* or *'max_size'*).
-* **Variables, namespaces**: *camelCase*.
-* **Macros**: *CAPITAL_LETTERS*.
-
-#### Code indent
-
-* **Indent**: 2 spaces (no tabulations)
-* **Brace style**: stroustrup's K&R style:
-```c
-    if (condition) {
-      doStuff();
-    }
-    else {
-      cancel();
-    }
-```
-* **Preprocessor**: also indent preprocessor commands (after the '#' symbol):
-```c
-    #ifdef _WINDOWS
-    # include <Windows.h>
-    # if _MSC_VER > 1924
-    #   include <filesystem>
-    # endif
-    #endif
-```
-
-#### Class organization
-
-* **Order**: *public* first, then *protected*, and *private* last. Make the class *final* if it's not meant to be inherited.
-* **Naming**: private class member variables & private functions are prefixed with '\_' *(ex: int \_value{ 0 };)*.
-* **Constructors**: use *=default* or *=delete* for copy/move constructors and operators if possible. If they must be explicitly defined, then the move constructor/operator must be *noexcept*.
-
-#### Comments
-
-* **Guideline**: always add comment headers for classes to describe their goal. Add comments for functions when they're not obvious or when they're complex.
-* **Classes headers**: use Doxygen formatting:
-```c
-    /// @class ClassName
-    /// @brief Short description of the class.
-    /// @warning Optional warnings about the behavior of the class.
-```
-* **Functions headers**: use Doxygen formatting:
-```c
-    /// @brief Short description of the function.
-    /// @param paramName  Optional description of an argument, if it's not obvious.
-    /// @returns Optional information about the return type, if it's not obvious.
-    /// @warning Optional warnings about the behavior of the function.
-```
-* **Section comments**: to separate sections of a header or sub-sections of a class, use ```// -- title --```.
-
-#### Macros
-
-* **Guideline**: only use macros for code generators (automatic enum serializers, code multipliers...). Prefer inline functions for anything else.
-* **Naming**: use capital letters and prefixes. Public macros are prefixed with '\_P\_', and private macros (for internal usage) are prefixed with '__' *(ex: __FILL_PARAMS)*.
-* **Definition**: private macros located in header files \*.h (for internal usage in the header file) are undefined at the end of header file (with *#undef __MACRO_NAME*).
-
-#### Good practices
-
-* **Scoped enums**: always use *enum class* instead of *enum* to declare enumerations.
-* **Namespaces**: enclose code with namespaces (project and library name) *(ex: pandora::memory::MyMemClass)*.
-* **Pointers**: prefer *std::unique_ptr* or *std::shared_ptr* to raw pointers (*Type\**) in most cases. Only use raw pointers for function arguments (optional params or polymorphism) or for special patterns (optional references).
-* **Header-only**: only create header-only classes for templates and objects with simple implementations. Use implementation files (\*.cpp) for business logic, complex code, or when including a system API (win32, openGL...).
-* **Warnings**: try to fix warnings when it's possible without too much overhead (and without breaking some functionalities).
