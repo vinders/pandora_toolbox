@@ -9,7 +9,7 @@
 Pandora Toolbox is a collection of portable C++ libraries: general purpose utilities, data containers, common patterns, video filters, timers, concurrency tools... 
 The code is meant to be highly efficient and easy to use in real-time and video projects : AI, video processing, video games, emulators or embedded systems. Written in C++ 17, it supports backwards compatibility with C++ 14.
 
-See [Libraries](#libraries) section below for more information. Check changelog [here](./CHANGELOG.md).
+See [Libraries](#libraries) section below for more information. Check changelog [here](./CHANGELOG.md).<br>
 Contributors should take a look at the [issue reporting, workflow and coding style](./CONTRIBUTING.md) guidelines.
 
 ## Build status
@@ -72,3 +72,15 @@ Examples:
 | Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4       | ON<br>OFF     | all systems                   |
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11         | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN        | ON<br>OFF     | all except iOS<br>(environment variable *VULKAN_SDK* required)  |
+
+---
+
+### Contribution guidelines
+
+* [Foreword](./CONTRIBUTING.md#foreword)
+* [Reporting Issues](./CONTRIBUTING.md#reporting-issues)
+* [Development](./CONTRIBUTING.md#development)
+    * [Workflow](./CONTRIBUTING.md#workflow)
+    * [Commit Guidelines](./CONTRIBUTING.md#commit-guidelines)
+    * [Pull Requests](./CONTRIBUTING.md#pull-requests)
+    * [Coding Style](./CONTRIBUTING.md#coding-style)

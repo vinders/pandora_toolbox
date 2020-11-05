@@ -72,6 +72,8 @@ Examples:
 > * **fix**-9976-pattern: iterator/iterable: fix missing pointer init
 > * **infra**-cwork: improve cmake versioning
 
+---
+
 ### Pull Requests
 
 * Please ask first before working on significant pull requests (new features, refactoring...), to avoid spending time on something that might not fit in the original project.
