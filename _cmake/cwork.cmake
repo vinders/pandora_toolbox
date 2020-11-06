@@ -283,7 +283,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     #params: - ARGN: list of options to include in current project
     macro(cwork_set_compile_options)
         set(_cmd_list "${ARGN}")
-        if (_cmd_list)
+        if(_cmd_list)
             set(${PROJECT_NAME}_COMPILE_CMD "${_cmd_list}")
         endif()
         unset(_cmd_list)
@@ -295,8 +295,14 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     
     #brief:   Generate header file with version information
     #warning: Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
+    #params: - ARGN: ON to generate a namespace for the solution as well
     macro(cwork_generate_version_header)
         set(${PROJECT_NAME}_VERSION_HEADERS ON)
+        set(_args "${ARGN}")
+        if(_args)
+            set(${PROJECT_NAME}_VERSION_HEADERS_SOLUTION ON)
+        endif()
+        unset(_args)
     endmacro()
     
     #brief:   Set type of sub-project (tools, tests, perfs, ...)
@@ -398,8 +404,19 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         # generate version header file
         if(DEFINED ${CWORK_PROJECT_NAME}_VERSION_HEADERS AND ${CWORK_PROJECT_NAME}_VERSION_HEADERS)
             message("> version header generated...")
-            file(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/${include_dir}/version.h")
-            configure_file("${cwork_path}/templates/version.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/${include_dir}/version.h")
+            string(REPLACE "." ";" __PROJECT_NAME_PARTS ${CWORK_PROJECT_NAME})
+            list(GET __PROJECT_NAME_PARTS -1 _LIB_NAME)
+            set(__OUTPUT_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${include_dir}/${_LIB_NAME}/version.h")
+            unset(__PROJECT_NAME_PARTS)
+            
+            file(REMOVE ${__OUTPUT_VERSION_FILE})
+            if(CWORK_SOLUTION_PATH AND DEFINED ${CWORK_PROJECT_NAME}_VERSION_HEADERS_SOLUTION AND ${CWORK_PROJECT_NAME}_VERSION_HEADERS_SOLUTION)
+                configure_file("${cwork_path}/templates/version_solution_lib.h.in" ${__OUTPUT_VERSION_FILE})
+            else()
+                configure_file("${cwork_path}/templates/version_lib.h.in" ${__OUTPUT_VERSION_FILE})
+            endif()
+            unset(__OUTPUT_VERSION_FILE)
+            unset(_LIB_NAME)
         endif()
         
         # auto-detect source files

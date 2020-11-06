@@ -1,0 +1,16 @@
+/*******************************************************************************
+Project version header
+*******************************************************************************/
+#pragma once 
+
+#include <cstddef>
+#include <cstdint>
+
+namespace ${_LIB_NAME} {
+  inline constexpr const char* version() noexcept { return "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"; }
+  
+  inline constexpr int32_t versionMajor() noexcept { return ${PROJECT_VERSION_MAJOR}; }
+  inline constexpr int32_t versionMinor() noexcept { return ${PROJECT_VERSION_MINOR}; }
+  inline constexpr int32_t versionPatch() noexcept { return ${PROJECT_VERSION_PATCH}; }
+  inline constexpr int32_t versionTweak() noexcept { return ${PROJECT_VERSION_TWEAK}; }
+}
