@@ -21,21 +21,31 @@ using namespace pandora::io;
 
 // -- path metadata - absolute/relative -- -------------------------------------
 
+#ifdef _WINDOWS // advanced verification for absolute paths (Windows)
+  template <typename _CharType, _CharType _MediaSep, _CharType _LevelSep1, _CharType _LevelSep2>
+  inline bool _isPathAbsolute(const _CharType* path) noexcept {
+    if (path != nullptr) {
+      if (path[0] == _LevelSep1 || path[0] == _LevelSep2)
+        return true;
+      while (*path != static_cast<_CharType>(0) && *path != _MediaSep)
+        ++path;
+      return (*path != static_cast<_CharType>(0) && (path[1] == _LevelSep1 || path[1] == _LevelSep2));
+    }
+    return false;
+  }
+#endif
+
 // - get absolute/relative path type -
 FileSystemPathType pandora::io::getFileSystemPathType(const char* path) noexcept {
 # ifdef _WINDOWS
-    return (path != nullptr && ((path[0] >= 'A' && path[0] <= 'Z' && path[1] == ':') || path[0] == '/' || path[0] == '\\') )
-           ? FileSystemPathType::absolute
-           : FileSystemPathType::relative;
+    return _isPathAbsolute<char,':','/','\\'>(path) ? FileSystemPathType::absolute : FileSystemPathType::relative;
 # else
     return (path != nullptr && (*path == '/' || *path == '\\')) ? FileSystemPathType::absolute : FileSystemPathType::relative;
 # endif
 }
 #ifdef _WINDOWS
   FileSystemPathType pandora::io::getFileSystemPathType(const wchar_t* path) noexcept {
-    return (path != nullptr && ((path[0] >= L'A' && path[0] <= L'Z' && path[1] == L':') || path[0] == L'/' || path[0] == L'\\') )
-           ? FileSystemPathType::absolute
-           : FileSystemPathType::relative;
+    return _isPathAbsolute<wchar_t,L':',L'/',L'\\'>(path) ? FileSystemPathType::absolute : FileSystemPathType::relative;
   }
 #endif
 

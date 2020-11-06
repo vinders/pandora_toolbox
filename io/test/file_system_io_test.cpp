@@ -159,6 +159,25 @@ TEST_F(FileSystemIOTest, ctorsAccessors) {
     ASSERT_EQ(size_t{ 2u }, wsegments.size());
     EXPECT_EQ(std::wstring(L"C:"), wsegments[0]);
     EXPECT_EQ(std::wstring(L"Windows"), wsegments[1]);
+
+    std::string testDirAbsMediaInit = "AB0:\\Windows\\";
+    FileSystemEntry<false> testDirAbsMedia(testDirAbsMediaInit);
+    EXPECT_EQ(FileSystemPathType::absolute, testDirAbsMedia.pathType());
+    std::wstring testWDirAbsMediaInit = L"AB0:\\Windows\\";
+    FileSystemEntry<true> testWDirAbsMedia(testWDirAbsMediaInit);
+    EXPECT_EQ(FileSystemPathType::absolute, testWDirAbsMedia.pathType());
+    std::string testDirWebMediaInit = "ftp://Windows\\";
+    FileSystemEntry<false> testDirWebMedia(testDirWebMediaInit);
+    EXPECT_EQ(FileSystemPathType::absolute, testDirWebMedia.pathType());
+    std::wstring testWDirWebMediaInit = L"ftp://Windows\\";
+    FileSystemEntry<true> testWDirWebMedia(testWDirWebMediaInit);
+    EXPECT_EQ(FileSystemPathType::absolute, testWDirWebMedia.pathType());
+    std::string testDirNoMediaInit = "C:A\\Windows\\";
+    FileSystemEntry<false> testDirNoMedia(testDirNoMediaInit);
+    EXPECT_EQ(FileSystemPathType::relative, testDirNoMedia.pathType());
+    std::wstring testWDirNoMediaInit = L"C:A\\Windows\\";
+    FileSystemEntry<true> testWDirNoMedia(testWDirNoMediaInit);
+    EXPECT_EQ(FileSystemPathType::relative, testWDirNoMedia.pathType());
 # endif
 }
 
