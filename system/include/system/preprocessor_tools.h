@@ -80,6 +80,13 @@ Code generators : _P_SERIALIZABLE_ENUM,
             default: return ""; \
           } \
         } \
+        template < type _val> \
+        inline constexpr const char* toString() noexcept { \
+          switch (_val) { \
+            _P_PARAM_FOREACH(__P_SERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
+            default: return ""; \
+          } \
+        } \
         inline bool fromString(const std::string& _val, type& _out) noexcept { \
           if (_val.empty()) { return false; } \
           _P_PARAM_FOREACH(__P_DESERIALIZE_ENUM_CASE, type, __VA_ARGS__) \

@@ -210,6 +210,24 @@ TEST_F(PreprocessorToolsTest, fromSerializableEnum) {
   EXPECT_EQ(std::string("f"), toString(DummyEnum::f));
   EXPECT_EQ(std::string("ghi"), toString(DummyEnum::ghi));
   EXPECT_EQ(std::string(""), toString((DummyEnum)123456));
+
+  bool result = false;
+  result = (memcmp("a", toString<DummyEnum::a>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("b", toString<DummyEnum::b>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("c", toString<DummyEnum::c>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("d", toString<DummyEnum::d>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("e", toString<DummyEnum::e>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("f", toString<DummyEnum::f>(), size_t{ 2u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("ghi", toString<DummyEnum::ghi>(), size_t{ 4u }) == 0);
+  EXPECT_TRUE(result);
+  result = (memcmp("", toString<(DummyEnum)123456>(), size_t{ 1u }) == 0);
+  EXPECT_TRUE(result);
 }
 TEST_F(PreprocessorToolsTest, fromSerializableEnumBuffered) {
   char buffer[256]{ 0 };
