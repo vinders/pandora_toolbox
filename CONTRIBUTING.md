@@ -2,10 +2,10 @@
 
 * [Foreword](#foreword)
 * [Reporting Issues](#reporting-issues)
+* [Pull Requests](#pull-requests)
 * [Development](#development)
     * [Workflow](#workflow)
     * [Commit Guidelines](#commit-guidelines)
-    * [Pull Requests](#pull-requests)
     * [Coding Style](#coding-style)
 
 ---
@@ -14,7 +14,7 @@
 
 Pandora Toolbox contains a simple set of helpers and utilities for the development of video games, emulators and real-time projects. *Efficiency* and *portability* are the main guidelines. I created it to use it as a library for my personal projects and for my portfolio.
 
-Please note that the toolbox is a not a do-it-all framework and shouldn't be used or developed as such (except for the CMake part). It is intended to be a *lightweight* static library, that provides useful/recurring features and abstractions of system calls. It's only supposed to contain utilities that are truly useful for games/emulation/ai/...
+Please note that the toolbox is a **not** a do-it-all framework and shouldn't be used or developed as such (except for the CMake part). It is intended to be a *lightweight* static library, that provides useful/recurring features and abstractions of system calls. It's only supposed to contain utilities that are truly useful for games/emulation/ai/...
 
 Suggestions, bug fixes and new features are welcome, as long as they respect that philosophy. If you'd like to share some ideas or if you're interested in contributing to the project, don't hesitate to contact me. Please provide as much detail and context as possible.
 
@@ -29,12 +29,24 @@ Guidelines for bug reports:
 * Try to reproduce it with the latest version: make sure it hasn't been fixed.
 * Isolate the problem: identify a reduced test case to reproduce it.
 * Issues should contain the following information: 
-    * Library version.
+    * Library version + bug frequency (*'systematic'*, *'sometimes'*, *'once'*).
     * System on which the error occurred (operating system(s), CPU, GPU).
-    * Frequency: *'systematic'*, *'sometimes'*, *'once'*).
-    * Test case to reproduce it.
+    * A clear description of the symptoms.
+    * The test case to reproduce it.
     * Any useful information (error messages/popups, logs, samples of corrupted data...).
     * If reproduced while debugging: line of code triggering the crash/assertion, call-stack...
+
+## Pull Requests
+
+* Please ask first before working on significant pull requests (new features, refactoring...), to avoid spending time on something that might not fit in the original project.
+* Please use the same [coding style](#coding-style) and [commit conventions](#commit-guidelines) as the original project.
+* The build status in the README file refers to the original repository. You might want to customize it for your fork (but please don't submit those changes in pull requests).
+
+Guidelines for pull requests:
+* The scope should remain focused and shouldn't contain unrelated commits.
+* Get the latest changes from the original repository first, to manage potential conflicts before submitting a pull request.
+* Ensure that the build is successful on all major systems and compilers.
+* Pull requests shouldn't contain temporary/debugging code, nor changes specific to a fork (custom readme, changelog, project files...).
 
 ---
 
@@ -71,20 +83,6 @@ Examples:
 > * **feat**-pattern: iterator/iterable pattern + declaration helpers
 > * **fix**-9976-pattern: iterator/iterable: fix missing pointer init
 > * **infra**-cwork: improve cmake versioning
-
----
-
-### Pull Requests
-
-* Please ask first before working on significant pull requests (new features, refactoring...), to avoid spending time on something that might not fit in the original project.
-* Please use the same [coding style](#coding-style) and [conventions](#commit-guidelines) as the original project.
-* The build status in the README file refers to the original repository. You might want to customize it for your fork (but please don't submit those changes in any pull request).
-
-Guidelines for pull requests:
-* The scope should remain focused and shouldn't contain unrelated commits.
-* Get the latest changes from the original repository first, to manage potential conflicts before submitting a pull request.
-* Ensure that the build is successful on all major systems and compilers.
-* Pull requests shouldn't contain temporary/debugging code, nor changes specific to a fork (custom readme, changelog, project files...).
 
 ---
 
