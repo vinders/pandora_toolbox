@@ -168,8 +168,8 @@ namespace pandora {
             interval = this->_period;
           }
           else __if_constexpr (_UseActivePolling == false) {
-            if (interval < this->_nextPeriod - _minSleepTime())
-              std::this_thread::sleep_for(this->_nextPeriod - interval - _minSleepTime());
+            if (interval + _sleepLatency() < this->_nextPeriod)
+              std::this_thread::sleep_for(this->_nextPeriod - interval - _sleepLatency());
           }
         } 
         while (interval < this->_nextPeriod);
@@ -208,7 +208,7 @@ namespace pandora {
         return lateness;
       }
 
-      static constexpr inline std::chrono::nanoseconds _minSleepTime() noexcept { return std::chrono::nanoseconds(16000000); }
+      static constexpr inline std::chrono::nanoseconds _sleepLatency() noexcept { return std::chrono::nanoseconds(16000000LL); }
     
     private:
       // settings
