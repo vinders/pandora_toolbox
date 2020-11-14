@@ -78,9 +78,7 @@ macro(pandora_video_autodetect_files category_id)
 endmacro()
 
 # general/common files
-set(_INCLUDE_FILES
-    ${_INCLUDE_DIR}/abstract_enums.h
-)
+set(_INCLUDE_FILES)
 set(_SOURCE_FILES)
 set(_TEST_FILES ${_TEST_DIR}/main.cpp)
 set(_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py)
