@@ -415,11 +415,11 @@ if os.name=='nt':
     dxc32 = os.path.join(winSdkPath, 'x86/dxc.exe')
     dxc64 = os.path.join(winSdkPath, 'x64/dxc.exe')
     if os.path.exists(d3d11ShaderPath) and (os.path.exists(fxc32) or os.path.exists(fxc64)):
-      print('-- Compiling Direct3D 11 shaders to FXC...')
-      compileDirect3dByteCode(fxc32, fxc64, '.fxc', '5_0', d3d11ShaderPath, d3d11ShaderPath, os.path.join(outStringPath, d3d11ShaderPathEnd))
+      print('-- Compiling Direct3D 11 shaders with FXC...')
+      compileDirect3dByteCode(fxc32, fxc64, '.cso', '5_0', d3d11ShaderPath, d3d11ShaderPath, os.path.join(outStringPath, d3d11ShaderPathEnd))
     if os.path.exists(d3d12ShaderPath) and d3d12ShaderPath!=d3d11ShaderPath and (os.path.exists(dxc32) or os.path.exists(dxc64)):
-      print('-- Compiling Direct3D 12 shaders to DXC...')
-      compileDirect3dByteCode(dxc32, dxc64, '.dxc', '6_0', d3d12ShaderPath, d3d12ShaderPath, os.path.join(outStringPath, d3d12ShaderPathEnd))
+      print('-- Compiling Direct3D 12 shaders with DXC...')
+      compileDirect3dByteCode(dxc32, dxc64, '.cso', '6_0', d3d12ShaderPath, d3d12ShaderPath, os.path.join(outStringPath, d3d12ShaderPathEnd))
 
 # compile vulkan shaders to SPIR-V (if Vulkan SDK available)
 vulkanShaderPath = os.path.join(outShaderPath, 'vulkan')
