@@ -5,5 +5,6 @@ if(NOT IOS AND NOT ANDROID)
     set(GLFW3_STATIC ON CACHE STRING "" FORCE)
     include(${CMAKE_CURRENT_LIST_DIR}/Findglfw3.cmake)
     
+    set(glfw3_static__INCLUDE ${glfw3__INCLUDE})
     set(glfw3_static__LINKED ${glfw3__LINKED})
 endif()

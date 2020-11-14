@@ -30,7 +30,7 @@ if(NOT TARGET glm)
     # │  Include project                                                 │
     # └──────────────────────────────────────────────────────────────────┘
     #add_subdirectory(${GLM__PATH} ${CMAKE_BINARY_DIR}/glm)  # useless (header-only)
-    include_directories(${GLM__PATH} ${CMAKE_BINARY_DIR}/glm)
+    set(glm__INCLUDE ${GLM__PATH} ${CMAKE_BINARY_DIR}/glm)
     
     if (TARGET glm)
         set_target_properties(glm PROPERTIES FOLDER libs)

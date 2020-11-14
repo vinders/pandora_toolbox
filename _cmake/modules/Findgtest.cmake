@@ -31,7 +31,7 @@ if(NOT TARGET gtest AND NOT IOS AND NOT ANDROID)
     # │  Include project                                                 │
     # └──────────────────────────────────────────────────────────────────┘
     add_subdirectory(${GTEST__PATH} ${CMAKE_BINARY_DIR}/gtest)
-    include_directories(${GTEST__PATH}/include ${GTEST__PATH}/src)
+    set(gtest__INCLUDE ${GTEST__PATH}/include ${GTEST__PATH}/src)
     
     if(TARGET gtest)
         set_target_properties(gtest PROPERTIES FOLDER "libs/test")

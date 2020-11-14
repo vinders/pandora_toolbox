@@ -37,7 +37,7 @@ if(NOT TARGET glfw3 AND NOT TARGET glfw AND NOT IOS AND NOT ANDROID)
     set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
     
     add_subdirectory(${GLFW3__PATH} ${CMAKE_BINARY_DIR}/glfw3)
-    include_directories(${GLFW3__PATH}/include ${GLFW3__PATH}/src)
+    set(glfw3__INCLUDE ${GLFW3__PATH}/include ${GLFW3__PATH}/src)
     
     if(TARGET glfw)
         set_target_properties(glfw PROPERTIES FOLDER libs)

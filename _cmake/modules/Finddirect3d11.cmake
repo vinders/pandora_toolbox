@@ -64,7 +64,7 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
         unset(_D3D11_ARCH)
 
         # set results
-        include_directories(${D3D11_INCLUDE_DIRS})
+        set(direct3d11__INCLUDE ${D3D11_INCLUDE_DIRS})
         set(direct3d11__LINKED ${D3D11_LIBRARIES})
         message("-- Found Direct3D11: ${direct3d11__LINKED}")
         

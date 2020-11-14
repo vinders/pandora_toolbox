@@ -48,7 +48,7 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
         unset(_D3D12_ARCH)
 
         # set results
-        include_directories(${D3D12_INCLUDE_DIRS})
+        set(direct3d12__INCLUDE ${D3D12_INCLUDE_DIRS})
         set(direct3d12__LINKED ${D3D12_LIBRARIES})
         message("-- Found Direct3D12: ${direct3d12__LINKED}")
         

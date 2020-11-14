@@ -37,7 +37,7 @@ if(NOT TARGET libglew AND NOT TARGET libglew_static AND NOT IOS AND NOT APPLE AN
     endif()
     
     add_subdirectory(${LIBGLEW__PATH} ${CMAKE_BINARY_DIR}/libglew)
-    include_directories(${LIBGLEW__PATH}/include ${LIBGLEW__PATH}/src)
+    set(libglew__INCLUDE ${LIBGLEW__PATH}/include ${LIBGLEW__PATH}/src)
     
     if(TARGET libglew)
         set_target_properties(libglew PROPERTIES FOLDER libs)

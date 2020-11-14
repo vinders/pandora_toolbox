@@ -36,7 +36,7 @@ if(NOT TARGET SDL2 AND NOT TARGET SDL2-static)
     endif()
     
     add_subdirectory(${SDL2__PATH} ${CMAKE_BINARY_DIR}/sdl2)
-    include_directories(${SDL2_INCLUDE_DIRS})
+    set(sdl2__INCLUDE ${SDL2_INCLUDE_DIRS})
     
     if(TARGET SDL2)
         set_target_properties(SDL2 PROPERTIES FOLDER libs)
