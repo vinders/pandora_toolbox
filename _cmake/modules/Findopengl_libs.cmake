@@ -17,9 +17,6 @@ elseif(APPLE)
     set(_EXTERNAL_FRAMEWORKS
         OpenGL
         GLUT
-        Cocoa
-        IOKit
-        CoreFoundation
     )
     if(CWORK_EXTERN_FRAMEWORKS)
         set(CWORK_EXTERN_FRAMEWORKS ${CWORK_EXTERN_FRAMEWORKS} ${_EXTERNAL_FRAMEWORKS})
@@ -39,11 +36,7 @@ elseif(ANDROID)
     
 else()
     find_package(OpenGL REQUIRED)
-    if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
-        set(opengl_libs__LINKED ${OPENGL_LIBRARIES})
-    else()
-        set(opengl_libs__LINKED X11 ${OPENGL_LIBRARIES})
-    endif()
+    set(opengl_libs__LINKED ${OPENGL_LIBRARIES})
 endif()
 
 if(CWORK_EXTERN_FRAMEWORKS AND NOT CWORK_EXTERN_FRAMEWORKS_SCOPE)
