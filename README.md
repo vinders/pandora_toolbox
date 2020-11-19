@@ -68,10 +68,10 @@ Examples:
 | Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                 | ON<br>OFF     | all except cross-compilation  |
 | Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS                | ON<br>OFF     | all systems                   |
 | Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE             | ON<br>OFF     | only linux/unix systems       |
-| Minimum Windows version support (10 - vista).<br><sub>*Default: "7"*</sub>                   | CWORK_WINDOWS_VERSION      | "10" "8"<br>"7" "6"  | only windows systems   |
+| Minimum Windows version support (vista/7/8/10).<br><sub>*Default: "7"*</sub>                 | CWORK_WINDOWS_VERSION      | "10" "8"<br>"7" "6"  | only windows systems   |
 | Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all systems                   |
-| Minimum OpenGL4 feature level (4.6 - 4.1).<br><sub>*Default: "45"*</sub>                     | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | only desktop systems   |
-| Minimum OpenGLES3 feature level (3.2 - 3.0).<br><sub>*Default: "32"*</sub>                   | CWORK_OPENGLES3_VERSION    | "32" "31"<br>"30"       | only embedded systems  |
+| Minimum OpenGL4 feature level.<br><sub>*Default: "45"*</sub>                                 | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | only desktop systems   |
+| Minimum OpenGLES feature level.<br><sub>*Default: "32"*</sub>                                | CWORK_OPENGLES3_VERSION    | "32" "31"<br>"30"       | only embedded systems  |
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11          | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
-| Minimum Direct3D feature level (11.4 - 11.0).<br><sub>*Default: "111"*</sub>                 | CWORK_D3D11_VERSION        | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
+| Minimum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "111"*</sub>              | CWORK_D3D11_VERSION        | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all except iOS<br>(environment variable *VULKAN_SDK* required)  |
