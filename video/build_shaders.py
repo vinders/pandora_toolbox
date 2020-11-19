@@ -275,6 +275,8 @@ def stringifyShaderFile(shaderFilePath, outStringFilePath):
 def generateShaderFile(srcFileName, srcFileDir, outShaderPath, outModulePath, outStringPath, installDirs):
   isShaderFile = False
   isInCommentBlock = False
+  canBeEntryPoint = len(srcFileName)>6 and srcFileName[-6:]!='.hlsli'
+  isD3dFile = len(srcFileName)>5 and srcFileName[-5:]=='.hlsl'
   outFilePath = os.path.join(outModulePath, srcFileName)
   with open(outFilePath, 'w') as outFile:
   
@@ -320,8 +322,17 @@ def generateShaderFile(srcFileName, srcFileDir, outShaderPath, outModulePath, ou
           
           # not an include -> write trimmed line in output file
           else:
-            if isShaderFile==False and lineInfo[0].find('main(')>=0: # file contains entry point
-              isShaderFile = True
+            if isShaderFile==False and canBeEntryPoint==True:
+              fileEntryPointIndex = lineInfo[0].find('main(')
+              if fileEntryPointIndex>=0:
+                prevEntryPointChar = lineInfo[0][fileEntryPointIndex-1] if fileEntryPointIndex>0 else ' '
+                if prevEntryPointChar==' ' or prevEntryPointChar=='\t': # file contains entry point
+                  isShaderFile = True
+                elif isD3dFile==True and (prevEntryPointChar=='S' or prevEntryPointChar=='s'):
+                  isShaderFile = True
+              elif isD3dFile==True and lineInfo[0].find('Main(')>=0:
+                isShaderFile = True
+            
             outFile.write(lineInfo[0] + '\n')
 
   if isShaderFile==True:
@@ -361,7 +372,7 @@ if len(sys.argv)>4:
     installDirsList.append(os.path.abspath(dir))
 
 if not os.path.exists(srcPath):
-  print('-- Empty or non-existing source directory.')
+  print('-- Empty or non-existing source directory: ' + srcPath)
   exit(0)
   
 # create output directories
