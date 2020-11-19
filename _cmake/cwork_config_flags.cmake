@@ -79,8 +79,8 @@ endif()
 # └──────────────────────────────────────────────────────────────────┘
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if(CWORK_WINDOWS_SUPPORT)
-    add_definitions(-D_MIN_WINDOWS_VERSION=${CWORK_WINDOWS_SUPPORT})
+if(CWORK_WINDOWS_VERSION)
+    add_definitions(-D_P_MIN_WINDOWS_VERSION=${CWORK_WINDOWS_VERSION})
 endif()
 if(MSVC)
     if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")

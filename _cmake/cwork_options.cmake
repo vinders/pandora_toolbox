@@ -26,10 +26,10 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             option(CWORK_EXPORT_SYMBOLS "auto-export all symbols" ON)
         endif()
     endif()
-    if(NOT DEFINED CWORK_WINDOWS_SUPPORT)
+    if(NOT DEFINED CWORK_WINDOWS_VERSION)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            set(CWORK_WINDOWS_SUPPORT "7" CACHE STRING "minimum Windows version") # support versions of Windows older than Windows 10
-            set_property(CACHE CWORK_WINDOWS_SUPPORT PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
+            set(CWORK_WINDOWS_VERSION "7" CACHE STRING "minimum Windows version") # support versions of Windows older than Windows 10
+            set_property(CACHE CWORK_WINDOWS_VERSION PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
         endif()
     endif()
 
