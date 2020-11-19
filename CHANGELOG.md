@@ -1,21 +1,23 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.47.5.198
-2020-11-14 - afa0a36032401f643531f032ef9b0a8fd2446ff2
+## 0.48.1.207
+2020-11-19 - 0e2640d7f296932c306ffee2d1a5c3a3a1b728ec
 ### features
-vinders (4):
+vinders (5):
 * cwork: custom cmake framework: support custom/shader/resource files + test-only dependencies
 * cwork: custom cmake framework: add option: minimum supported windows version (Win32 API)
+* cwork/system: dynamic library import/export definitions
 * video: openGL/vulkan API includes
 * video: shader generation script (assemble modules + remove comments/white-spaces + vulkan spir-v compilation)
 ### fixes
-vinders (5):
+vinders (6):
 * video: shader generation script: add D3D11 fxc shader compilation
 * video: shader generation script: add D3D12 dxc shader compilation
 * system: macros & code generators: add constexpr enum serializer
 * io: file IO/management/metadata: improve absolute path detection
 * cwork: custom cmake framework: replace global include dirs by target include dirs (to avoid file name conflicts)
+* cwork: custom cmake framework: allow different scopes when linking extern libs
 
 ---
 
