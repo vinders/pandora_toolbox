@@ -17,9 +17,9 @@ if not exist ./glm/CMakeLists.txt (
     call git clone --depth 1 --branch "0.9.9.8" https://github.com/g-truc/glm glm
 )
 :: glfw3
-if not exist ./glfw3/CMakeLists.txt (
-    call git clone --depth 1 --branch "3.3.2" https://github.com/glfw/glfw glfw3
-)
+:: if not exist ./glfw3/CMakeLists.txt (
+::     call git clone --depth 1 --branch "3.3.2" https://github.com/glfw/glfw glfw3
+:: )
 
 cd ..
 exit /B 0

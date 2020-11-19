@@ -35,8 +35,8 @@ if ! [ -e "./glm/CMakeLists.txt" ]; then
 fi
 
 # glfw3
-if ! [ -e "./glfw3/CMakeLists.txt" ]; then
-  git clone --depth 1 --branch "3.3.2" https://github.com/glfw/glfw glfw3
-fi
+# if ! [ -e "./glfw3/CMakeLists.txt" ]; then
+#   git clone --depth 1 --branch "3.3.2" https://github.com/glfw/glfw glfw3
+# fi
 
 exit 0
