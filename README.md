@@ -56,19 +56,22 @@ Using Cmake: \
 Examples:
 > * cmake -S . -G "Visual Studio 16 2019" -A x64 -B _build -DCWORK_TESTS=OFF
 > * cmake -S . -G "Unix Makefiles" -B _build -DCWORK_DOCS=ON
-> * cmake -S . -G "MinGW Makefiles" -B _build -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_TOOLS=ON
+> * cmake -S . -G "MinGW Makefiles" -B _build -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
 
 ### Cmake options
 
 |    Option    |    Name    |    Value(s)    |    Available for...    |
 |--------------|------------|----------------|------------------------|
-| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>  | CWORK_CPP_REVISION  | "17"<br>"14"  | all C++17-compliant compilers  |
-| Build separate symbol files, for debuggers such as GDB.<br><sub>*Default: OFF*</sub>         | CWORK_BUILD_SYMBOL_FILES  | ON<br>OFF     | all systems                   |
-| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS               | ON<br>OFF     | all except cross-compilation & ARM  |
-| Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                | ON<br>OFF     | all except cross-compilation  |
-| Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS               | ON<br>OFF     | all systems                   |
-| Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE            | ON<br>OFF     | only linux/unix systems       |
-| Minimum supported Windows (API retro-compatibility).<br><sub>*Default: "7"*</sub>            | CWORK_WINDOWS_SUPPORT     | "10" "8"<br>"7" "6"  | only windows systems   |
-| Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4       | ON<br>OFF     | all systems                   |
-| Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11         | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
-| Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN        | ON<br>OFF     | all except iOS<br>(environment variable *VULKAN_SDK* required)  |
+| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>   | CWORK_CPP_REVISION  | "17"<br>"14"  | all C++17-compliant compilers  |
+| Build separate symbol files, for debuggers such as GDB.<br><sub>*Default: OFF*</sub>         | CWORK_BUILD_SYMBOL_FILES   | ON<br>OFF     | all systems                   |
+| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS                | ON<br>OFF     | all except cross-compilation & ARM  |
+| Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                 | ON<br>OFF     | all except cross-compilation  |
+| Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS                | ON<br>OFF     | all systems                   |
+| Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE             | ON<br>OFF     | only linux/unix systems       |
+| Minimum Windows version support (10 - vista).<br><sub>*Default: "7"*</sub>                   | CWORK_WINDOWS_VERSION      | "10" "8"<br>"7" "6"  | only windows systems   |
+| Enable OpenGL4/ES3 features.<br><sub>*Default: ON*</sub>                                     | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all systems                   |
+| Minimum OpenGL4 feature level (4.6 - 4.1).<br><sub>*Default: "45"*</sub>                     | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | only desktop systems   |
+| Minimum OpenGLES3 feature level (3.2 - 3.0).<br><sub>*Default: "32"*</sub>                   | CWORK_OPENGLES3_VERSION    | "32" "31"<br>"30"       | only embedded systems  |
+| Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11          | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
+| Minimum Direct3D feature level (11.4 - 11.0).<br><sub>*Default: "111"*</sub>                 | CWORK_D3D11_VERSION        | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
+| Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all except iOS<br>(environment variable *VULKAN_SDK* required)  |
