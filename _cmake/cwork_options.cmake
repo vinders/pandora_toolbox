@@ -22,9 +22,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         option(CWORK_BUILD_SYMBOL_FILES "symbol files" OFF) # extract symbol files
     endif()
     if(NOT DEFINED CWORK_EXPORT_SYMBOLS)
-        if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            option(CWORK_EXPORT_SYMBOLS "auto-export all symbols" ON)
-        endif()
+        option(CWORK_EXPORT_SYMBOLS "auto-export all symbols" ON) # should always be ON for static libs
     endif()
     if(NOT DEFINED CWORK_WINDOWS_VERSION)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
