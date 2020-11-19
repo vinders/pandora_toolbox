@@ -18,22 +18,22 @@ if(PYTHON_EXECUTABLE)
 endif()
 find_package(Python3 COMPONENTS Interpreter Development)
 
-set(_EXTERN_LIBS)
+set(_EXTERN_LIBS window_libs)
 if(CWORK_VIDEO_OPENGL4) # openGL 4.1+/ES3+
-    set(_EXTERN_LIBS opengl_libs libglew_static)
+    set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" opengl_libs libglew_static)
 endif()
 if(CWORK_VIDEO_D3D11) # direct3D 11+
-    set(_EXTERN_LIBS ${_EXTERN_LIBS} direct3d11)
+    set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" direct3d11)
 endif()
 if(CWORK_VIDEO_VULKAN) # vulkan 1.2+
-    set(_EXTERN_LIBS ${_EXTERN_LIBS} vulkan_libs)
+    set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" vulkan_libs)
 endif()
 if(CWORK_VIDEO_OPENGL4 OR CWORK_VIDEO_VULKAN) # common
     set(_EXTERN_LIBS ${_EXTERN_LIBS} glm)
 endif()
 
 if(_EXTERN_LIBS)
-    cwork_set_external_libs("public" ${_EXTERN_LIBS})
+    cwork_set_external_libs("private" ${_EXTERN_LIBS})
 endif()
 cwork_set_internal_libs(system thread hardware)
 
@@ -108,16 +108,29 @@ cwork_set_test_files(${_TEST_FILES})
 
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")
+
+# rendering api config - feedback messages
+if(CWORK_VIDEO_OPENGL4)
+    if(_VIDEO_OPENGL_ES3_VERSION_STRING)
+        message("-- OpenGL ES${_VIDEO_OPENGL_ES3_VERSION_STRING} features level --")
+    else()
+        message("-- OpenGL ${_VIDEO_OPENGL4_VERSION_STRING} feature level --")
+    endif()
+endif()
 if((WIN32 OR WIN64 OR _WIN32 OR _WIN64) AND DEFINED _VIDEO_D3D11_NOT_SUPPORTED AND _VIDEO_D3D11_NOT_SUPPORTED)
     message("> Windows SDK not installed or not supported by compiler -> direct3D disabled")
+elseif(CWORK_VIDEO_D3D11)
+    message("-- Direct3D ${_VIDEO_D3D11_VERSION_STRING} feature level --")
 endif()
 if(DEFINED _VIDEO_VULKAN_NOT_SUPPORTED AND _VIDEO_VULKAN_NOT_SUPPORTED)
     message("> Vulkan SDK not installed or not supported on current system -> disabled")
+elseif(CWORK_VIDEO_VULKAN)
+    message("-- Vulkan ${_VIDEO_VULKAN_VERSION_STRING} feature level --")
 endif()
 
 # build shaders from shader modules
 add_custom_target(${PROJECT_NAME}.build_shaders ALL
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py "${_SHADER_DIR}/shaders" 
+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py "${_SHADER_DIR}" 
                                                                               "${CMAKE_CURRENT_SOURCE_DIR}/_generated" 
                                                                               "${_INCLUDE_DIR}/_embed"
     COMMENT "Building shader files..."

@@ -170,7 +170,8 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     
     #brief:   Set external dependencies for current project
     #warning: Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
-    #params: - scope: scope of external package: "public", "private"
+    #params: - scope: scope of following external packages: "public", "private" 
+    #                 (different scope flags can be inserted between dependencies)
     #        - ARGN: list of external packages to include in current project
     macro(cwork_set_external_libs scope)
         set(_ext_list "${ARGN}")
@@ -194,7 +195,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     
     #brief:   Set external frameworks for current project
     #warning: Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
-    #params: - scope: scope of external frameworks: "public", "private"
+    #params: - scope: scope of all external frameworks: "public", "private"
     #        - ARGN: list of external frameworks to include in current project
     macro(cwork_set_external_frameworks scope)
         set(_ext_list "${ARGN}")
@@ -565,19 +566,29 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 set(CWORK_EXTERN_LIBS_SCOPE INTERFACE)
             endif()
             foreach(_external_lib IN ITEMS ${CWORK_EXTERN_LIBS})
-                find_package(${_external_lib} REQUIRED)
-                if(${_external_lib}__FOUND AND ${_external_lib}__LINKED)
-                    if(NOT DEFINED CWORK_LINKED_LIBRARIES OR NOT CWORK_LINKED_LIBRARIES)
-                        set(CWORK_LINKED_LIBRARIES ${CWORK_EXTERN_LIBS_SCOPE} ${${_external_lib}__LINKED})
-                    else()
-                        set(CWORK_LINKED_LIBRARIES ${CWORK_LINKED_LIBRARIES} ${CWORK_EXTERN_LIBS_SCOPE} ${${_external_lib}__LINKED})
+                if(_external_lib STREQUAL "public")
+                    if(${CWORK_PROJECT_NAME}_SOURCE_FILES)
+                        set(CWORK_EXTERN_LIBS_SCOPE PUBLIC)
                     endif()
-                endif()
-                if(${_external_lib}__FOUND AND ${_external_lib}__INCLUDE)
-                    if(NOT DEFINED CWORK_INCLUDED_LIBRARIES OR NOT CWORK_INCLUDED_LIBRARIES)
-                        set(CWORK_INCLUDED_LIBRARIES ${${_external_lib}__INCLUDE})
-                    else()
-                        set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} ${${_external_lib}__INCLUDE})
+                elseif(_external_lib STREQUAL "private")
+                    if(${CWORK_PROJECT_NAME}_SOURCE_FILES)
+                        set(CWORK_EXTERN_LIBS_SCOPE PRIVATE)
+                    endif()
+                else()
+                    find_package(${_external_lib} REQUIRED)
+                    if(${_external_lib}__FOUND AND ${_external_lib}__LINKED)
+                        if(NOT DEFINED CWORK_LINKED_LIBRARIES OR NOT CWORK_LINKED_LIBRARIES)
+                            set(CWORK_LINKED_LIBRARIES ${CWORK_EXTERN_LIBS_SCOPE} ${${_external_lib}__LINKED})
+                        else()
+                            set(CWORK_LINKED_LIBRARIES ${CWORK_LINKED_LIBRARIES} ${CWORK_EXTERN_LIBS_SCOPE} ${${_external_lib}__LINKED})
+                        endif()
+                    endif()
+                    if(${_external_lib}__FOUND AND ${_external_lib}__INCLUDE)
+                        if(NOT DEFINED CWORK_INCLUDED_LIBRARIES OR NOT CWORK_INCLUDED_LIBRARIES)
+                            set(CWORK_INCLUDED_LIBRARIES ${${_external_lib}__INCLUDE})
+                        else()
+                            set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} ${${_external_lib}__INCLUDE})
+                        endif()
                     endif()
                 endif()
             endforeach()
