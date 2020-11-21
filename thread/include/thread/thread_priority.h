@@ -71,7 +71,7 @@ namespace pandora {
 #     endif
     }
     
-    /// @brief Set scheduler priority for a specific thread. Each bit (bit 0-31) set to 1 represents a CPU core (core 1-32) affinity.
+    /// @brief Set scheduler priority for a specific thread.
     /// @warning On linux/unix systems, the priority cannot exceed the value set by 'ulimit -r'
     inline bool setThreadPriority(std::thread& thread, ThreadPriority priority) noexcept {
 #     if defined(_WINDOWS) && (defined(_MSC_VER) || !defined(__MINGW32__))
