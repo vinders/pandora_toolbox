@@ -35,7 +35,7 @@ namespace pandora {
     class FixedSizeVector final : public pandora::pattern::ConstructorSelector<_DataType>, public pandora::pattern::AssignmentSelector<_DataType> {
     public:
       using value_type = _DataType;
-      using item_type = typename std::conditional<std::is_class<_DataType>::value,  pandora::pattern::Optional<_DataType>, _DataType >::type;
+      using item_type = typename std::conditional<std::is_class<_DataType>::value, pandora::pattern::Optional<_DataType>, _DataType>::type;
       using size_type = size_t;
       using reference = _DataType&;
       using const_reference = const _DataType&;
@@ -375,7 +375,7 @@ namespace pandora {
         this->_value[index].emplace(std::forward<Args>(args)...);
       }
       template <typename T = _DataType, typename... Args>
-      inline void _emplaceAt(typename std::enable_if<!std::is_class<T>::value, size_t>::type index, Args&&... args) {
+      inline void _emplaceAt(typename std::enable_if<!std::is_class<T>::value, size_t>::type index, Args&&... args) noexcept {
         this->_value[index] = T(std::forward<Args>(args)...);
       }
       

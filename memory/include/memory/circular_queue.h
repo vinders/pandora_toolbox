@@ -24,7 +24,7 @@ namespace pandora {
     class CircularQueue final : public pandora::pattern::ConstructorSelector<_DataType>, public pandora::pattern::AssignmentSelector<_DataType> {
     public:
       using value_type = _DataType;
-      using item_type = typename std::conditional<std::is_class<_DataType>::value,  pandora::pattern::Optional<_DataType>, _DataType >::type;
+      using item_type = typename std::conditional<std::is_class<_DataType>::value, pandora::pattern::Optional<_DataType>, _DataType>::type;
       using size_type = size_t;
       using reference = _DataType&;
       using const_reference = const _DataType&;
@@ -255,7 +255,7 @@ namespace pandora {
       static inline void _moveIn(_DataType& destination, pandora::pattern::enable_if_move_constructible<T, T&&> value) noexcept { destination = std::move(value); }
 
       template <typename ... _Args>
-      static inline void _emplaceIn(pandora::pattern::Optional<_DataType>& destination, _Args&&... args) noexcept { destination.emplace(std::forward<_Args>(args)...); }
+      static inline void _emplaceIn(pandora::pattern::Optional<_DataType>& destination, _Args&&... args) { destination.emplace(std::forward<_Args>(args)...); }
       template <typename ... _Args>
       static inline void _emplaceIn(_DataType& destination, _Args&&... args) noexcept { destination = _DataType(std::forward<_Args>(args)...); }
 
