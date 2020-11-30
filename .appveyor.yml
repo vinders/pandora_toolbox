@@ -53,7 +53,7 @@ build_script:
   - mkdir %BUILD_DIR%
   - cd ..
   # build project
-  - if [%COMPILER%]==[MSVC19] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR%
+  - if [%COMPILER%]==[MSVC19] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR% -DCWORK_WINDOWS_VERSION="10"
   - if [%COMPILER%]==[MSVC17] cmake -G "Visual Studio 15 2017" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR% -DCWORK_CPP_REVISION="14"
   - if [%COMPILER%]==[MinGW-w64] cmake -G "MinGW Makefiles" -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
   - if [%COMPILER%]==[clang-cl] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -T ClangCL -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m64"

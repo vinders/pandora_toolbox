@@ -26,7 +26,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     endif()
     if(NOT DEFINED CWORK_WINDOWS_VERSION)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            set(CWORK_WINDOWS_VERSION "7" CACHE STRING "minimum Windows version") # support versions of Windows older than Windows 10
+            set(CWORK_WINDOWS_VERSION "7" CACHE STRING "minimum Windows version (vista.SP1, 7, 8.1, 10.RS2)") # support versions of Windows older than Windows 10
             set_property(CACHE CWORK_WINDOWS_VERSION PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
         endif()
     endif()
@@ -48,9 +48,13 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     if(NOT DEFINED CWORK_VIDEO_OPENGL4)
         option(CWORK_VIDEO_OPENGL4 "enable OpenGL4/ES3 features" ON)
     endif()
-    if(NOT APPLE AND NOT DEFINED CWORK_OPENGL4_VERSION)
-        set(CWORK_OPENGL4_VERSION "45" CACHE STRING "minimum OpenGL4 revision support")
-        set_property(CACHE CWORK_OPENGL4_VERSION PROPERTY STRINGS "46" "45" "43" "41") # possible values for GUI
+    if(NOT DEFINED CWORK_OPENGL4_VERSION)
+        if(APPLE)
+            set(CWORK_OPENGL4_VERSION "41" CACHE STRING "minimum OpenGL4 revision support") # mac OS only supports OpenGL 4.1
+        else()
+            set(CWORK_OPENGL4_VERSION "45" CACHE STRING "minimum OpenGL4 revision support")
+            set_property(CACHE CWORK_OPENGL4_VERSION PROPERTY STRINGS "46" "45" "43" "41") # possible values for GUI
+        endif()
     endif()
     if(NOT DEFINED CWORK_OPENGLES3_VERSION)
         set(CWORK_OPENGLES3_VERSION "32" CACHE STRING "minimum OpenGL ES3 revision support")
