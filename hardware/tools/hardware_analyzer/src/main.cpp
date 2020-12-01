@@ -2,7 +2,7 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Local CPU specifications analyzer
+Local hardware specifications analyzer (CPU, monitors, display adapters)
 *******************************************************************************/
 #include <cstdio>
 #include <hardware/cpu_specs.h>
@@ -32,15 +32,15 @@ void displaySpecs(const CpuSpecs& specs) {
     architecture += std::string("_") + std::to_string(pandora::system::getCpuRegisterSize());
 
   clearScreen();
-  printf("\n CPU SPECIFICATIONS ANALYZER\n"
+  printf("\n HARDWARE SPECIFICATIONS ANALYZER\n"
          "____________________________________________________________\n\n"
          " CPU vendor:   %s\n CPU model:    %s\n Architecture: %s\n\n"
          " Physical cores:  %u\n Logical cores:   %u\n Hyper-threading: %s\n\n"
-         " Extended instruction sets :\n%s\n"
-         "____________________________________________________________\n\n",
+         " Extended instruction sets :\n%s\n",
         specs.vendor().c_str(), specs.brand().c_str(), architecture.c_str(),
         specs.physicalCores(), specs.logicalCores(), specs.isHyperThreadingCapable() ? "true" : "false",
         instructionSets.c_str());
+  printf("\n____________________________________________________________\n\n");
 }
 
 // CPU analysis

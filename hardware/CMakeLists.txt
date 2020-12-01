@@ -22,4 +22,4 @@ endif()
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
-                     "include" "src" "test" "tools/cpu_analyzer")
+                     "include" "src" "test" "tools/hardware_analyzer")
