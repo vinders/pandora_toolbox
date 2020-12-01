@@ -36,6 +36,8 @@
 *.fxh   linguist-language=HLSL
 *.py   linguist-language=Python
 *.py3  linguist-language=Python
+*.m    linguist-language=Objective-C
+*.mm   linguist-language=Objective-C++
 
 # Normalize EOL for source files
 
@@ -75,6 +77,8 @@
 *.fxh   text eol=lf
 *.py    text eol=lf
 *.py3   text eol=lf
+*.m     text eol=lf
+*.mm    text eol=lf
 
 # Scripts
 *.bash     text eol=lf
