@@ -28,11 +28,11 @@ License :     MIT
   
   void LibrariesX11::readSystemDpi() noexcept {
     dpiX = dpiY = __P_HARDWARE_X11_BASE_DPI; // default value if not found in Xft.dpi
-    if (this->_displayServer == nullptr)
+    if (this->displayServer == nullptr)
       return;
     
     // read Xft.dpi properties
-    char* resManagerId = XResourceManagerString(this->_displayServer);
+    char* resManagerId = XResourceManagerString(this->displayServer);
     if (resManagerId != nullptr) {
       XrmDatabase db = XrmGetStringDatabase(resManagerId);
       if (db) {

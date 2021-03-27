@@ -13,7 +13,7 @@ License :     MIT
 # include <X11/extensions/Xrandr.h> // display mode
 # include <X11/extensions/Xinerama.h> // legacy monitor indices
 
-# define __P_X11_BASE_DPI 96.0f
+# define __P_HARDWARE_X11_BASE_DPI 96.0f
 
   namespace pandora {
     namespace hardware {
@@ -36,6 +36,7 @@ License :     MIT
       // xinerama functions
       typedef Bool (* __x11_XineramaIsActive)(Display*);
       typedef Bool (* __x11_XineramaQueryExtension)(Display*,int*,int*);
+      typedef Status (* __x11_XineramaQueryVersion)(Display*,int*,int*);
       typedef XineramaScreenInfo* (* __x11_XineramaQueryScreens)(Display*,int*);
 
       // xf86vm functions
@@ -92,7 +93,7 @@ License :     MIT
         // close libraries
         void shutdown() noexcept;
         // enable DPI awareness
-        void readSystemDpi() noexcept
+        void readSystemDpi() noexcept;
         
         // get global instance
         static inline LibrariesX11& instance() noexcept {
