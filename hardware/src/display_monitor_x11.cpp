@@ -181,7 +181,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     return true;
   }
 
-  void DisplayMonitor::getMonitorDpi(uint32_t outDpiX, uint32_t outDpiY, DisplayMonitor::WindowHandle) const noexcept {
+  void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
     LibrariesX11& libs = LibrariesX11::instance();
     outDpiX = static_cast<uint32_t>(libs.dpiX + 0.5f); // round value
     outDpiY = static_cast<uint32_t>(libs.dpiY + 0.5f);

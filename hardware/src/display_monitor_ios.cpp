@@ -170,7 +170,7 @@ var screenOrientation: UIInterfaceOrientation {
     return true;
   }
 
-  void DisplayMonitor::getMonitorDpi(uint32_t outDpiX, uint32_t outDpiY, DisplayMonitor::WindowHandle windowHandle) const noexcept {
+  void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle windowHandle) const noexcept {
 
   }
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle windowHandle) const noexcept {

@@ -176,7 +176,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     return isEnabled;
   }
 
-  void DisplayMonitor::getMonitorDpi(uint32_t outDpiX, uint32_t outDpiY, DisplayMonitor::WindowHandle) const noexcept {
+  void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
     LibrariesCocoa& libs = LibrariesCocoa::instance();
     //refresh handle, si graphic switch a eu lieu
     //...
