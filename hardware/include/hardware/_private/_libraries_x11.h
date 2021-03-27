@@ -76,7 +76,7 @@ License :     MIT
         } randr;
         struct {
           bool      isAvailable  = false;
-          LibHandle instance     = nullptr
+          LibHandle instance     = nullptr;
           int       versionMajor = 0;
           int       versionMinor = 0;
           int       eventBase    = 0;
