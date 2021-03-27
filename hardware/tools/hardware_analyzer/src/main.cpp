@@ -6,6 +6,7 @@ Local hardware specifications analyzer (CPU, monitors, display adapters)
 *******************************************************************************/
 #include <cstdio>
 #include <hardware/cpu_specs.h>
+#include <hardware/display_monitor.h>
 
 using namespace pandora::hardware;
 
@@ -40,6 +41,29 @@ void displaySpecs(const CpuSpecs& specs) {
         specs.vendor().c_str(), specs.brand().c_str(), architecture.c_str(),
         specs.physicalCores(), specs.logicalCores(), specs.isHyperThreadingCapable() ? "true" : "false",
         instructionSets.c_str());
+
+  DisplayMonitor::setDpiAwareness(true);
+  std::vector<DisplayMonitor> monitors = DisplayMonitor::listAvailableMonitors();
+  printf(" Display monitors:\n");
+  for (auto& it : monitors) {
+    DisplayMode mode = it.getDisplayMode();
+
+#   ifdef _WINDOWS
+      printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+            it.attributes().screenArea.width, it.attributes().screenArea.height,
+            it.attributes().workArea.width, it.attributes().workArea.height,
+            it.attributes().isPrimary ? "- primary" : " ",
+            it.attributes().description.c_str(), it.attributes().adapter.c_str(),
+            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
+#   else
+      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s (%s)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+            it.attributes().screenArea.width, it.attributes().screenArea.height,
+            it.attributes().workArea.width, it.attributes().workArea.height,
+            it.attributes().isPrimary ? "- primary" : " ",
+            it.attributes().description.c_str(), it.attributes().adapter.c_str(),
+            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
+#   endif
+  }
   printf("\n____________________________________________________________\n\n");
 }
 
