@@ -3,6 +3,7 @@ set(display_io_libs__FOUND ON)
 if(NOT IOS AND NOT ANDROID)
     if(APPLE)
         set(_EXTERNAL_FRAMEWORKS
+            Cocoa
             IOKit
             CoreFoundation
         )
