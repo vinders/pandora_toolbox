@@ -92,7 +92,7 @@ namespace pandora {
       // -- display mode --
 
       /// @brief Read current display mode of a monitor
-      DisplayMode DisplayMonitor::getDisplayMode() const noexcept;
+      DisplayMode getDisplayMode() const noexcept;
       /// @brief Change display mode of a monitor (for fullscreen apps)
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
       bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true) noexcept;
@@ -129,7 +129,11 @@ namespace pandora {
 
     private:
       Handle _handle = (Handle)0;
-      Attributes _attributes{ DeviceId{}, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+#     if defined(_WINDOWS)
+        Attributes _attributes{ DeviceId{}, L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+#     else
+        Attributes _attributes{ DeviceId{}, "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+#     endif
     };
   }
 }
