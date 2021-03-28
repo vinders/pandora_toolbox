@@ -84,12 +84,23 @@ TEST_F(DisplayMonitorTest, readPrimaryMonitorAreaAndDpi) {
 
 TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) { 
   DisplayMonitor::setDpiAwareness(true);
+  auto monitors = DisplayMonitor::listAvailableMonitors();
 
   DisplayMonitor monitor;
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().adapter.empty() : monitor.attributes().adapter.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
+
+  EXPECT_TRUE((monitor.handle()) ? !monitors.empty() : monitors.empty());
+  if (!monitors.empty()) {
+    bool isFound = false;
+    for (auto& it : monitors) {
+      if (it.handle() == monitor.handle())
+        isFound = true;
+    }
+    EXPECT_TRUE(isFound);
+  }
 
   auto modes = monitor.listAvailableDisplayModes();
   EXPECT_TRUE(modes.size() >= size_t{ 1u });
