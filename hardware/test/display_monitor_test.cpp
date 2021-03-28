@@ -160,14 +160,14 @@ TEST_F(DisplayMonitorTest, moveInstance) {
 TEST_F(DisplayMonitorTest, monitorByHandle) {
   EXPECT_THROW(DisplayMonitor((DisplayMonitor::Handle)0, false), std::invalid_argument);
 
-  DisplayMonitor default;
+  DisplayMonitor defaultMonitor;
   DisplayMonitor invalidUseDefault((DisplayMonitor::Handle)0, true);
-  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
-  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
-  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+  EXPECT_EQ(defaultMonitor.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
-  if (default.handle()) { // if a monitor exists
-    EXPECT_EQ(default.handle(), DisplayMonitor(default.handle(), false).handle()); // would throw if invalid handle
+  if (defaultMonitor.handle()) { // if a monitor exists
+    EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.handle(), false).handle()); // would throw if invalid handle
   }
 }
 
@@ -180,27 +180,27 @@ TEST_F(DisplayMonitorTest, monitorById) {
 
   EXPECT_THROW(DisplayMonitor(invalidId, false), std::invalid_argument);
 
-  DisplayMonitor default;
+  DisplayMonitor defaultMonitor;
   DisplayMonitor invalidUseDefault(invalidId, true);
-  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
-  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
-  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+  EXPECT_EQ(defaultMonitor.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
-  if (default.handle()) { // if a monitor exists
-    EXPECT_EQ(default.handle(), DisplayMonitor(default.attributes().id, false).handle()); // would throw if invalid id
+  if (defaultMonitor.handle()) { // if a monitor exists
+    EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.attributes().id, false).handle()); // would throw if invalid id
   }
 }
 
 TEST_F(DisplayMonitorTest, monitorByIndex) {
   EXPECT_THROW(DisplayMonitor(false, 999999999u), std::invalid_argument);
 
-  DisplayMonitor default;
+  DisplayMonitor defaultMonitor;
   DisplayMonitor invalidUseDefault(true, 999999999u);
-  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
-  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
-  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+  EXPECT_EQ(defaultMonitor.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
-  if (default.handle()) { // if a monitor exists
+  if (defaultMonitor.handle()) { // if a monitor exists
     DisplayMonitor target(false, 0u); // would throw if invalid index
 
     auto list = DisplayMonitor::listAvailableMonitors();
