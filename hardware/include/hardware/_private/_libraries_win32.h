@@ -10,6 +10,7 @@ License :     MIT
 # if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)
 #   include <shellscalingapi.h>
 # endif
+# include <system/api/windows_version.h>
 
 // windows 8.1+ features
 # if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)

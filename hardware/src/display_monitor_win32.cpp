@@ -7,7 +7,6 @@ Description : Display monitor - Win32 implementation (Windows)
 #ifdef _WINDOWS
 # pragma warning(push)
 # pragma warning(disable : 26812)
-# include <system/api/windows_version.h>
 # include <cstdint>
 # include <string>
 # include <stdexcept>
