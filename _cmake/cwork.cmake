@@ -39,6 +39,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
             message("  Platform: ${CMAKE_SYSTEM_NAME}-${CWORK_SYSTEM_ARCH_BITS}")
             message("  Build type: C++ ${CWORK_CPP_REVISION}")
             message("——————————————————————————————————————————————————————————————————————————————")
+            cwork_print_options()
         endif()
         
         if (CWORK_TESTS)
