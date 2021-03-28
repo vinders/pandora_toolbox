@@ -53,10 +53,10 @@ build_script:
   - mkdir %BUILD_DIR%
   - cd ..
   # build project
-  - if [%COMPILER%]==[MSVC19] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR% -DCWORK_WINDOWS_VERSION="10"
+  - if [%COMPILER%]==[MSVC19] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR%
   - if [%COMPILER%]==[MSVC17] cmake -G "Visual Studio 15 2017" -A %PLATFORM% -S . -B ./_build/%BUILD_DIR% -DCWORK_CPP_REVISION="14"
   - if [%COMPILER%]==[MinGW-w64] cmake -G "MinGW Makefiles" -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
-  - if [%COMPILER%]==[clang-cl] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -T ClangCL -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m64"
+  - if [%COMPILER%]==[clang-cl] cmake -G "Visual Studio 16 2019" -A %PLATFORM% -T ClangCL -S . -B ./_build/%BUILD_DIR% -DCMAKE_FLAGS="-m64"
   - if [%COMPILER%]==[LLVM/Clang] cmake -G "Ninja" -S . -B ./_build/%BUILD_DIR% -DCMAKE_C_COMPILER=clang.exe -DCMAKE_CXX_COMPILER=clang++.exe -DCMAKE_LINKER=lld-link.exe -DCMAKE_MAKE_PROGRAM=ninja.exe -DCMAKE_CXX_FLAGS="-target x86_64-w64-mingw32" -DCMAKE_C_FLAGS="-target x86_64-w64-mingw32"
   # compile
   - cmake --build ./_build/%BUILD_DIR% --config %BUILD_TYPE% --target install
