@@ -96,8 +96,10 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   if (!monitors.empty()) {
     bool isFound = false;
     for (auto& it : monitors) {
-      if (it.handle() == monitor.handle())
+      if (it.handle() == monitor.handle()) {
         isFound = true;
+        break;
+      }
     }
     EXPECT_TRUE(isFound);
   }
@@ -114,6 +116,7 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   for (auto& it : modes) {
     if (it.width == mode.width && it.height == mode.height && it.bitDepth == mode.bitDepth && it.refreshRate == mode.refreshRate) {
       isFound = true;
+      break;
     }
   }
   EXPECT_TRUE(isFound);
@@ -126,6 +129,9 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   EXPECT_EQ(mode.bitDepth, mode2.bitDepth);
   EXPECT_EQ(mode.refreshRate, mode2.refreshRate);
 }
+
+
+// -- other constructors --
 
 TEST_F(DisplayMonitorTest, moveInstance) { 
   DisplayMonitor monitor;
@@ -149,4 +155,62 @@ TEST_F(DisplayMonitorTest, moveInstance) {
   EXPECT_EQ(0, memcmp((void*)&(attr.screenArea), (void*)&(monitor.attributes().screenArea), sizeof(DisplayArea)));
   EXPECT_EQ(0, memcmp((void*)&(attr.workArea), (void*)&(monitor.attributes().workArea), sizeof(DisplayArea)));
   EXPECT_EQ(attr.isPrimary, monitor.attributes().isPrimary);
+}
+
+TEST_F(DisplayMonitorTest, monitorByHandle) {
+  EXPECT_THROW(DisplayMonitor((DisplayMonitor::Handle)0, false), std::invalid_argument);
+
+  DisplayMonitor default;
+  DisplayMonitor invalidUseDefault((DisplayMonitor::Handle)0, true);
+  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+
+  if (default.handle()) { // if a monitor exists
+    EXPECT_EQ(default.handle(), DisplayMonitor(default.handle(), false).handle()); // would throw if invalid handle
+  }
+}
+
+TEST_F(DisplayMonitorTest, monitorById) {
+# ifdef _WINDOWS
+    std::wstring invalidId = L"--DUMMY_INVALID_ID!!!--";
+# else
+    std::string invalidId = "--DUMMY_INVALID_ID!!!--";
+# endif
+
+  EXPECT_THROW(DisplayMonitor(invalidId, false), std::invalid_argument);
+
+  DisplayMonitor default;
+  DisplayMonitor invalidUseDefault(invalidId, true);
+  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+
+  if (default.handle()) { // if a monitor exists
+    EXPECT_EQ(default.handle(), DisplayMonitor(default.attributes().id, false).handle()); // would throw if invalid id
+  }
+}
+
+TEST_F(DisplayMonitorTest, monitorByIndex) {
+  EXPECT_THROW(DisplayMonitor(false, 999999999u), std::invalid_argument);
+
+  DisplayMonitor default;
+  DisplayMonitor invalidUseDefault(true, 999999999u);
+  EXPECT_EQ(default.handle(), invalidUseDefault.handle());
+  EXPECT_EQ(default.attributes().id, invalidUseDefault.attributes().id);
+  EXPECT_EQ(default.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
+
+  if (default.handle()) { // if a monitor exists
+    DisplayMonitor target(false, 0u); // would throw if invalid index
+
+    auto list = DisplayMonitor::listAvailableMonitors();
+    bool isFound = false;
+    for (auto& it : list) {
+      if (it.handle() == target.handle()) {
+        isFound = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(isFound);
+  }
 }

@@ -71,7 +71,7 @@ namespace pandora {
       DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault);
       /// @brief Get monitor description by index (or primary if not found and usePrimaryAsDefault==true)
       /// @warning Throws invalid_argument if index not found and usePrimaryAsDefault==false
-      DisplayMonitor(uint32_t index, bool usePrimaryAsDefault);
+      explicit DisplayMonitor(bool usePrimaryAsDefault, uint32_t index);
 
       DisplayMonitor(const DisplayMonitor&) = delete;
       DisplayMonitor(DisplayMonitor&&) = default;

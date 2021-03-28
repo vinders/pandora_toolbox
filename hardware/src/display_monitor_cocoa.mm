@@ -69,7 +69,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
         throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
     }
   }
-  DisplayMonitor::DisplayMonitor(uint32_t index, bool usePrimaryAsDefault) {
+  DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
     std::vector<DisplayMonitor::Handle> handles;
     if (_listDisplayMonitors(handles) && index < handles.size())
       this->_handle = handles[index];
