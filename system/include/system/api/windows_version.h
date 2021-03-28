@@ -1,7 +1,7 @@
 /*******************************************************************************
 Description : Microsoft Windows feature version constants
 *******************************************************************************/
-//#pragma once // allow multiple includes, to overwrite constants if some system lib redefined them
+#pragma once
 
 #ifdef _WINDOWS
 // Windows constants (to enable all features available on platform versions up to the one specified)
