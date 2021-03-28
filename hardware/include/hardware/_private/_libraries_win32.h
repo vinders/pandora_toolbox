@@ -8,8 +8,15 @@ License :     MIT
 # include <cstddef>
 # include <cstdint>
 # include <system/api/windows_api.h>
+# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)
+#   include <shellscalingapi.h>
+# endif
 
-# ifndef DPI_ENUMS_DECLARED
+// windows 8.1+ features
+# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)
+#   define _P_WIN32_SetProcessDpiAwareness_SUPPORTED 1
+#   define _P_WIN32_GetDpiForMonitor_SUPPORTED 1
+# elif !defined(DPI_ENUMS_DECLARED)
     typedef enum PROCESS_DPI_AWARENESS {
       PROCESS_DPI_UNAWARE = 0,
       PROCESS_SYSTEM_DPI_AWARE = 1,
@@ -23,20 +30,32 @@ License :     MIT
     } MONITOR_DPI_TYPE;
 #   define DPI_ENUMS_DECLARED
 # endif
-# ifndef DPI_AWARENESS_CONTEXT_UNAWARE
-#   define DPI_AWARENESS_CONTEXT_UNAWARE ((HANDLE)-1)
+
+// windows 10+ features
+# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS1) && !defined(__MINGW32__)
+#   define _P_WIN32_GetDpiForWindow_SUPPORTED 1
+#   define _P_WIN32_GetSystemMetricsForDpi_SUPPORTED 1
+#   define _P_WIN32_AdjustWindowRectExForDpi_SUPPORTED 1
 # endif
-# ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-#   define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((HANDLE)-4)
+# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS2) && !defined(__MINGW32__)
+#   define _P_WIN32_SetProcessDpiAwarenessContext_SUPPORTED 1
+# else
+#   ifndef DPI_AWARENESS_CONTEXT_UNAWARE
+#     define DPI_AWARENESS_CONTEXT_UNAWARE ((HANDLE)-1)
+#   endif
+#   ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+#     define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((HANDLE)-4)
+#   endif
 # endif
 
+// windows build versions
 # define __P_WIN_10_RS2_BUILD 15063
 # define __P_WIN_10_RS1_BUILD 14393
 # define __P_WIN_8_1_BLUE_BUILD 9600
 # define __P_WIN_7_BUILD 7601
 # define __P_WIN_VISTA_SP1_BUILD 6001
 
-# if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS2)
+# if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WIN10_RS2) && !defined(__MINGW32__))
     namespace pandora {
       namespace hardware {
         // user32.dll functions
@@ -46,9 +65,11 @@ License :     MIT
         typedef int  (WINAPI * __win32_GetSystemMetricsForDpi)(int,UINT);
         typedef BOOL (WINAPI * __win32_AdjustWindowRectExForDpi)(LPRECT,DWORD,BOOL,DWORD,UINT);
 
-        // shcore.dll functions
-        typedef HRESULT (WINAPI * __win32_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
-        typedef HRESULT (WINAPI * __win32_GetDpiForMonitor)(HMONITOR,MONITOR_DPI_TYPE,UINT*,UINT*);
+#       if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WINBLUE) && !defined(__MINGW32__))
+          // shcore.dll functions
+          typedef HRESULT (WINAPI * __win32_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
+          typedef HRESULT (WINAPI * __win32_GetDpiForMonitor)(HMONITOR,MONITOR_DPI_TYPE,UINT*,UINT*);
+#       endif
 
 
         // library loader - Win32
@@ -64,11 +85,13 @@ License :     MIT
             __win32_GetSystemMetricsForDpi        GetSystemMetricsForDpi_ = nullptr;
             __win32_AdjustWindowRectExForDpi      AdjustWindowRectExForDpi_ = nullptr;
           } user32;
-          struct {
-            HINSTANCE                       instance = nullptr;
-            __win32_SetProcessDpiAwareness  SetProcessDpiAwareness_ = nullptr;
-            __win32_GetDpiForMonitor        GetDpiForMonitor_ = nullptr;
-          } shcore;
+#         if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WINBLUE) && !defined(__MINGW32__))
+            struct {
+              HINSTANCE                       instance = nullptr;
+              __win32_SetProcessDpiAwareness  SetProcessDpiAwareness_ = nullptr;
+              __win32_GetDpiForMonitor        GetDpiForMonitor_ = nullptr;
+            } shcore;
+#         endif
           
           // verify if Windows version >= Windows 10 Creators RS2
           inline bool isAtLeastWindows10_RS2() const noexcept { return (this->_windowsReferenceBuild >= __P_WIN_10_RS2_BUILD); }

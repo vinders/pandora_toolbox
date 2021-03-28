@@ -12,12 +12,7 @@ Description : Display monitor - Win32 implementation (Windows)
 # include <stdexcept>
 # include <vector>
 # include <system/api/windows_api.h>
-# if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS2)
-#   include "hardware/_private/_libraries_win32.h"
-# endif
-# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE)
-#   include <shellscalingapi.h>
-# endif
+# include "hardware/_private/_libraries_win32.h"
 # include "hardware/display_monitor.h"
 
   using namespace pandora::hardware;
@@ -348,7 +343,7 @@ Description : Display monitor - Win32 implementation (Windows)
 // -- DPI awareness -- ---------------------------------------------------------
 
   bool DisplayMonitor::setDpiAwareness(bool isEnabled) noexcept {
-#   if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS2)
+#   ifdef _P_WIN32_SetProcessDpiAwarenessContext_SUPPORTED
       return (SetProcessDpiAwarenessContext(isEnabled ? DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 : DPI_AWARENESS_CONTEXT_UNAWARE) != FALSE
            || SetProcessDpiAwareness(isEnabled ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE) == S_OK);
 #   else
@@ -357,7 +352,7 @@ Description : Display monitor - Win32 implementation (Windows)
       && libs.user32.SetProcessDpiAwarenessContext_(isEnabled ? DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 : DPI_AWARENESS_CONTEXT_UNAWARE) != FALSE)
         return true;
 
-#     if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE)
+#     ifdef _P_WIN32_SetProcessDpiAwareness_SUPPORTED
         return (SetProcessDpiAwareness(isEnabled ? PROCESS_PER_MONITOR_DPI_AWARE : PROCESS_DPI_UNAWARE) == S_OK);
 #     else
         if (libs.isAtLeastWindows8_1_Blue() && libs.shcore.SetProcessDpiAwareness_
@@ -370,13 +365,13 @@ Description : Display monitor - Win32 implementation (Windows)
 
   // read per-window/per-monitor DPI if supported (Win10.RS2+ and valid windowHandle), or system DPI (if DPI aware process)
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle windowHandle) const noexcept {
-#   if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS1)
+#   if !defined(_P_WIN32_GetDpiForWindow_SUPPORTED) || !defined(_P_WIN32_GetDpiForMonitor_SUPPORTED)
       LibrariesWin32& libs = LibrariesWin32::instance();
 #   endif
 
     // per monitor DPI (better, but only if Win10 RS1+ and valid window handle)
     if (windowHandle != nullptr) {
-#     if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS1)
+#     ifdef _P_WIN32_GetDpiForWindow_SUPPORTED
         UINT dpi = GetDpiForWindow((HWND)windowHandle);
         if (dpi > 0)
           outDpiX = outDpiY = static_cast<uint32_t>(dpi);
@@ -390,7 +385,7 @@ Description : Display monitor - Win32 implementation (Windows)
     }
     // per system DPI (fallback, if Win8.1+)
     UINT dpiX, dpiY;
-#   if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE)
+#   ifdef _P_WIN32_GetDpiForMonitor_SUPPORTED
       if (GetDpiForMonitor((HMONITOR)(this->_handle), MDT_EFFECTIVE_DPI, &dpiX, &dpiY) == S_OK) {
         outDpiX = static_cast<uint32_t>(dpiX);
         outDpiY = static_cast<uint32_t>(dpiY);
@@ -424,7 +419,7 @@ Description : Display monitor - Win32 implementation (Windows)
 // -- metrics -- ---------------------------------------------------------------
 
   // read system metrics with DPI, if supported
-# if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS1)
+# ifdef _P_WIN32_GetSystemMetricsForDpi_SUPPORTED
     static inline int32_t __getSystemMetrics(int index, uint32_t dpi, int32_t defaultValue) noexcept {
       int value = GetSystemMetricsForDpi(index, dpi);
       if (value > 0)
@@ -447,8 +442,8 @@ Description : Display monitor - Win32 implementation (Windows)
 
   // manually calculate window area from client area
   static DisplayArea _calculateWindowArea(const DisplayArea& clientArea, DWORD styleFlags, DWORD styleExtendedFlags, bool hasMenu, int32_t dpiX, int32_t dpiY) noexcept {
-#   if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS1)
-      LibrariesWin32& libs = LibrariesWin32::instance(); // used by macro __getSystemMetrics if NTDDI_VERSION < NTDDI_WIN10_RS1
+#   ifndef _P_WIN32_GetSystemMetricsForDpi_SUPPORTED
+      LibrariesWin32& libs = LibrariesWin32::instance(); // used by macro __getSystemMetrics (if GetSystemMetricsForDpi not supported)
 #   endif
 
     int32_t borderLeft = 0;
@@ -511,7 +506,7 @@ Description : Display monitor - Win32 implementation (Windows)
     area.right = area.left + static_cast<LONG>(clientArea.width);
     area.bottom = area.top + static_cast<LONG>(clientArea.height);
 
-#   if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS1)
+#   ifdef _P_WIN32_AdjustWindowRectExForDpi_SUPPORTED
       bool isSuccess = (AdjustWindowRectExForDpi(&area, styleFlags, hasMenu ? TRUE : FALSE, styleExtendedFlags, dpiY) != FALSE);
 #   else
       LibrariesWin32& libs = LibrariesWin32::instance();

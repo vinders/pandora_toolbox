@@ -12,6 +12,7 @@ Description : Display monitor - Android implementation
 # include <cstdlib>
 # include <climits>
 # include <cmath>
+# include <native_window.h>
 # include "hardware/display_monitor.h"
 
   using namespace pandora::hardware;
