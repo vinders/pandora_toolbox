@@ -21,12 +21,6 @@ environment:
       BUILD_DIR: mingw64
       BUILD_TYPE: Debug
       COMPILER: MinGW-w64
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      APPVEYOR_JOB_NAME: windows-clangcl
-      BUILD_DIR: clangcl
-      BUILD_TYPE: Debug
-      COMPILER: clang-cl
-      PLATFORM: x64
 
 install:
   - call _scripts/ci/install_dependencies.bat
