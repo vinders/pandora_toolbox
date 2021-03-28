@@ -32,6 +32,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   static inline void _readPrimaryDisplayMonitorInfo(DisplayMonitor::Handle& outHandle, DisplayMonitor::Attributes& outAttr) {
     //...
+    outAttr.isPrimary = true;
   }
   
   static inline DisplayMonitor::Handle _getDisplayMonitorById(DisplayMonitor::DeviceId id, DisplayMonitor::Attributes* outAttr) {
@@ -196,6 +197,6 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- metrics -- ---------------------------------------------------------------
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, bool hasMenu, uint32_t, uint32_t) const noexcept {
-    return DisplayArea{ 0, 0, 0, 0 };
+    return clientArea;
   }
 #endif

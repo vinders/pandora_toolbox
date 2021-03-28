@@ -126,9 +126,9 @@ void print_dpi(android_app* app) {
 // -- monitor handle & description/attributes -- -------------------------------
 
   static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) { 
-    ANativeWindow nativeWindow = ANativeWindow_fromSurface(env, surface);
-    int width =  ANativeWindow_getWidth(renderEngine->nativeWindow);
-    int height = ANativeWindow_getHeight(renderEngine->nativeWindow);
+    //ANativeWindow nativeWindow = ANativeWindow_fromSurface(env, surface);
+    //int width =  ANativeWindow_getWidth(renderEngine->nativeWindow);
+    //int height = ANativeWindow_getHeight(renderEngine->nativeWindow);
   
   /*
     JNIEnv* jni;
