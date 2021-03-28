@@ -16,7 +16,8 @@ License :     MIT
 # if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)
 #   define _P_WIN32_SetProcessDpiAwareness_SUPPORTED 1
 #   define _P_WIN32_GetDpiForMonitor_SUPPORTED 1
-# elif !defined(DPI_ENUMS_DECLARED)
+# endif
+# if !defined(DPI_ENUMS_DECLARED)
     typedef enum PROCESS_DPI_AWARENESS {
       PROCESS_DPI_UNAWARE = 0,
       PROCESS_SYSTEM_DPI_AWARE = 1,
@@ -40,13 +41,12 @@ License :     MIT
 # endif
 # if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WIN10_RS2) && !defined(__MINGW32__)
 #   define _P_WIN32_SetProcessDpiAwarenessContext_SUPPORTED 1
-# else
-#   ifndef DPI_AWARENESS_CONTEXT_UNAWARE
-#     define DPI_AWARENESS_CONTEXT_UNAWARE ((HANDLE)-1)
-#   endif
-#   ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-#     define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((HANDLE)-4)
-#   endif
+# endif
+# ifndef DPI_AWARENESS_CONTEXT_UNAWARE
+#   define DPI_AWARENESS_CONTEXT_UNAWARE ((HANDLE)-1)
+# endif
+# ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+#   define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((HANDLE)-4)
 # endif
 
 // windows build versions
