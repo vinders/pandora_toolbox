@@ -26,8 +26,6 @@ environment:
       BUILD_DIR: clangcl
       BUILD_TYPE: Debug
       COMPILER: clang-cl
-      CC: clang-cl
-      CXX: clang-cl
       PLATFORM: x64
 
 install:
