@@ -30,7 +30,7 @@ namespace pandora {
       marvell
     };
     /// @brief Convert CPU vendor enumeration ID to vendor string
-    inline std::string toString(CpuVendor vendor) noexcept {
+    inline std::string toString(CpuVendor vendor) {
       switch (vendor) {
         case CpuVendor::intel:    return "GenuineIntel";
         case CpuVendor::amd:      return "AuthenticAMD";

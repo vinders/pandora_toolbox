@@ -20,7 +20,7 @@ Description : Display monitor - Win32 implementation (Windows)
 // -- monitor handle & description/attributes -- -------------------------------
 
   // read brand/description string of monitor and associated adapter
-  static inline void __readDeviceDescription(const DisplayMonitor::DeviceId& id, std::wstring& outDescription, std::wstring& outAdapter) noexcept {
+  static inline void __readDeviceDescription(const DisplayMonitor::DeviceId& id, std::wstring& outDescription, std::wstring& outAdapter) {
     DISPLAY_DEVICEW device;
     ZeroMemory(&device, sizeof(device));
     device.cb = sizeof(device);
@@ -45,7 +45,7 @@ Description : Display monitor - Win32 implementation (Windows)
   }
 
   // convert and fill attributes of a monitor (id, position/size, primary)
-  static inline void __fillMonitorAttributes(MONITORINFOEXW& info, DisplayMonitor::Attributes& outAttr) noexcept {
+  static inline void __fillMonitorAttributes(MONITORINFOEXW& info, DisplayMonitor::Attributes& outAttr) {
     outAttr.id = info.szDevice;
     outAttr.screenArea.x = info.rcMonitor.left;
     outAttr.screenArea.y = info.rcMonitor.top;
@@ -58,7 +58,7 @@ Description : Display monitor - Win32 implementation (Windows)
     outAttr.isPrimary = ((info.dwFlags & MONITORINFOF_PRIMARY) != 0);
   }
   // read attributes of a monitor handle
-  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) noexcept {
+  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) {
     MONITORINFOEXW info;
     ZeroMemory(&info, sizeof(info));
     info.cbSize = sizeof(info);
@@ -158,7 +158,7 @@ Description : Display monitor - Win32 implementation (Windows)
     return TRUE;
   }
   // get handle/attributes of any monitor by ID
-  static inline DisplayMonitor::Handle _getDisplayMonitorById(const DisplayMonitor::DeviceId& id, DisplayMonitor::Attributes* outAttr) noexcept {
+  static inline DisplayMonitor::Handle _getDisplayMonitorById(const DisplayMonitor::DeviceId& id, DisplayMonitor::Attributes* outAttr) {
     __DisplayMonitorHandleSearch query{ &id, nullptr, outAttr };
     if (EnumDisplayMonitors(nullptr, nullptr, __getDisplayMonitorByIdCallback, (LPARAM)&query) != FALSE)
       return query.handle;
@@ -179,7 +179,7 @@ Description : Display monitor - Win32 implementation (Windows)
 
 // -- contructors/list -- ------------------------------------------------------
 
-  DisplayMonitor::DisplayMonitor() noexcept {
+  DisplayMonitor::DisplayMonitor() {
     _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
   }
   DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
@@ -212,7 +212,7 @@ Description : Display monitor - Win32 implementation (Windows)
     }
   }
 
-  std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() noexcept {
+  std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitors;
 
     std::vector<DisplayMonitor::Handle> handles;
@@ -282,7 +282,7 @@ Description : Display monitor - Win32 implementation (Windows)
     else // primary monitor
       return (ChangeDisplaySettingsW(&screenMode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL);
   }
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) noexcept {
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
       if (refreshAttributes) {
         if (this->_attributes.isPrimary) {
@@ -305,7 +305,7 @@ Description : Display monitor - Win32 implementation (Windows)
     else // primary monitor
       return (ChangeDisplaySettingsW(nullptr, 0) == DISP_CHANGE_SUCCESSFUL);
   }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) noexcept {
+  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
     if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
       if (refreshAttributes) {
         if (this->_attributes.isPrimary) {
@@ -320,7 +320,7 @@ Description : Display monitor - Win32 implementation (Windows)
   }
 
   // list all display modes of a monitor
-  std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const noexcept {
+  std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
     BOOL result = TRUE;
     for (DWORD index = 0; result != FALSE; ++index) {

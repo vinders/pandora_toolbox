@@ -26,7 +26,7 @@ using namespace pandora::io;
 
 // -- absolute path of current location --
 
-pandora::io::SystemPath FileSystemLocationFinder::currentLocation() noexcept {
+pandora::io::SystemPath FileSystemLocationFinder::currentLocation() {
 # ifndef _USE_NATIVE_FILESYSTEM // C++17
     std::error_code errorCode;
 #   ifdef _WINDOWS
@@ -52,7 +52,7 @@ pandora::io::SystemPath FileSystemLocationFinder::currentLocation() noexcept {
 
 // -- absolute path of user home directory --
 
-pandora::io::SystemPath FileSystemLocationFinder::homeLocation() noexcept {
+pandora::io::SystemPath FileSystemLocationFinder::homeLocation() {
 # if !defined(__ANDROID__) || defined(_WINDOWS) || defined(__APPLE__)
     return _getUserHomePath();
 # else
@@ -65,7 +65,7 @@ pandora::io::SystemPath FileSystemLocationFinder::homeLocation() noexcept {
 
 #if !defined(__APPLE__) && !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
   // linux/unix - read customizable user directory path
-  static inline std::string _getUserDataDirectoryPath(const char* prop, const char* defaultSuffix) noexcept {
+  static inline std::string _getUserDataDirectoryPath(const char* prop, const char* defaultSuffix) {
     char buffer[_MAX_PATH_SIZE+1];
 
     // local directory settings
@@ -86,7 +86,7 @@ pandora::io::SystemPath FileSystemLocationFinder::homeLocation() noexcept {
 #endif
 
 // - get absolute path(s) of standard user/app/system location -
-std::vector<pandora::io::SystemPath> FileSystemLocationFinder::standardLocation(FileSystemLocation location, const pandora::io::SystemPathChar* appDirLabel, uint32_t systemFlags) noexcept {
+std::vector<pandora::io::SystemPath> FileSystemLocationFinder::standardLocation(FileSystemLocation location, const pandora::io::SystemPathChar* appDirLabel, uint32_t systemFlags) {
   std::vector<pandora::io::SystemPath> paths;
 
 # if defined(_WINDOWS) // windows x86/x86_64

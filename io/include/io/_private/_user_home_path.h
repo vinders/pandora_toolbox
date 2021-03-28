@@ -22,12 +22,12 @@ namespace pandora {
   
 #   ifdef _WINDOWS
       /// @brief Get path of user home directory
-      inline std::wstring _getUserHomePath() noexcept {
+      inline std::wstring _getUserHomePath() {
         return _findLocation(FOLDERID_Profile, 0u, L"%USERPROFILE%");
       }
       
       /// @brief Get path of user local config directory
-      inline std::wstring _getUserLocalConfigPath() noexcept {
+      inline std::wstring _getUserLocalConfigPath() {
         return _findLocation(FOLDERID_LocalAppData, 0u, L"%USERPROFILE%\\AppData\\Local");
       }
     
@@ -40,7 +40,7 @@ namespace pandora {
         }
     
         /// @brief Get path of user home directory
-        inline std::string _getUserHomePath() noexcept {
+        inline std::string _getUserHomePath() {
           char* buffer = getenv("HOME");
           if (buffer != nullptr)
             return std::string(buffer);
@@ -51,7 +51,7 @@ namespace pandora {
     
 #     else
         /// @brief Get path of user home directory
-        inline std::string _getUserHomePath() noexcept {
+        inline std::string _getUserHomePath() {
           std::string homePath = _findFirstLocation(SYSDIR_DIRECTORY_USER, SYSDIR_DOMAIN_MASK_USER);
           if (!homePath.empty())
             return homePath;
@@ -62,7 +62,7 @@ namespace pandora {
 #     endif
       
       /// @brief Get path of user local config directory
-      inline std::string _getUserLocalConfigPath() noexcept {
+      inline std::string _getUserLocalConfigPath() {
         char *envBuffer = getenv("XDG_CONFIG_HOME");
         return (envBuffer != nullptr) ? std::string(envBuffer) : _getUserHomePath() + "/.config";
       }

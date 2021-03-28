@@ -101,7 +101,7 @@ static inline char _getPathSuffixSeparator(const char* path) noexcept {
     return FileSystemEntryType::unknown;
   }
   // read entry type from attributes - C++17 with native fallback
-  static FileSystemEntryType _readFileSystemEntryType_fallback(const std::filesystem::directory_entry& dirEntry, std::error_code& errorCode) noexcept {
+  static FileSystemEntryType _readFileSystemEntryType_fallback(const std::filesystem::directory_entry& dirEntry, std::error_code& errorCode) {
     FileSystemEntryType entryType = _readFileSystemEntryType_cpp17(dirEntry, errorCode);
     if (entryType == FileSystemEntryType::unknown) {
 #     ifdef _WINDOWS
@@ -118,7 +118,7 @@ static inline char _getPathSuffixSeparator(const char* path) noexcept {
 #endif
 
 // - get entry type from path -
-FileSystemEntryType pandora::io::getFileSystemEntryType(const char* path) noexcept {
+FileSystemEntryType pandora::io::getFileSystemEntryType(const char* path) {
   if (path == nullptr || *path == 0)
     return FileSystemEntryType::unknown;
 
@@ -135,7 +135,7 @@ FileSystemEntryType pandora::io::getFileSystemEntryType(const char* path) noexce
 # endif
 }
 #ifdef _WINDOWS
-  FileSystemEntryType pandora::io::getFileSystemEntryType(const wchar_t* path) noexcept {
+  FileSystemEntryType pandora::io::getFileSystemEntryType(const wchar_t* path) {
     if (path == nullptr || *path == 0)
       return FileSystemEntryType::unknown;
 
@@ -234,7 +234,7 @@ static inline size_t _findPathDelimiter(const std::string& path, size_t offset) 
 
 // split a path into segments (implementation)
 template <typename _CharType>
-inline std::vector<std::basic_string<_CharType> > _getFileSystemPathSegments(const std::basic_string<_CharType>& path) noexcept {
+inline std::vector<std::basic_string<_CharType> > _getFileSystemPathSegments(const std::basic_string<_CharType>& path) {
   std::vector<std::basic_string<_CharType> > segments;
   size_t current = 0u;
   size_t last = 0u;
@@ -254,9 +254,9 @@ inline std::vector<std::basic_string<_CharType> > _getFileSystemPathSegments(con
 }
 
 // - split a path into segments -
-std::vector<std::string> pandora::io::getFileSystemPathSegments(const std::string& path) noexcept { return _getFileSystemPathSegments<char>(path); }
+std::vector<std::string> pandora::io::getFileSystemPathSegments(const std::string& path) { return _getFileSystemPathSegments<char>(path); }
 #ifdef _WINDOWS
-  std::vector<std::wstring> pandora::io::getFileSystemPathSegments(const std::wstring& path) noexcept { return _getFileSystemPathSegments<wchar_t>(path); }
+  std::vector<std::wstring> pandora::io::getFileSystemPathSegments(const std::wstring& path) { return _getFileSystemPathSegments<wchar_t>(path); }
 #endif
 
 
@@ -352,7 +352,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
     
     // fill metadata structure for a file system entry - windows native
     template <typename _CharType, typename _FileInfo, bool _WideChar>
-    static inline FileSystemEntryMetadata<_WideChar> _fillFileSystemEntryMetadata_native(const _CharType* path, _FileInfo& fileInfo) noexcept {
+    static inline FileSystemEntryMetadata<_WideChar> _fillFileSystemEntryMetadata_native(const _CharType* path, _FileInfo& fileInfo) {
       return FileSystemEntryMetadata<_WideChar>{
         std::basic_string<_CharType>(fileInfo.cFileName),
         _toWriteTime(fileInfo.ftLastWriteTime),
@@ -364,7 +364,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
     }
     // read file system entry metadata - windows native
     template <typename _CharType, typename _FileInfo, bool _WideChar>
-    static inline bool _readFileSystemEntryMetadata_native(const _CharType* path, FileSystemEntryMetadata<_WideChar>& outMetadata) noexcept {
+    static inline bool _readFileSystemEntryMetadata_native(const _CharType* path, FileSystemEntryMetadata<_WideChar>& outMetadata) {
       _FileInfo fileInfo;
       HANDLE fileHandle = _findFirstFileInfo_native(path, fileInfo);
       SetLastError(0);
@@ -378,7 +378,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
       return (error == 0 || error == ERROR_NO_MORE_FILES);
     }
 # else // read file system entry metadata - linux/unix native
-    static inline bool _readFileSystemEntryMetadata_native(const std::string& path, FileSystemEntryMetadata& outMetadata) noexcept {
+    static inline bool _readFileSystemEntryMetadata_native(const std::string& path, FileSystemEntryMetadata& outMetadata) {
       if (!verifyFileSystemAccessMode(path.c_str(), FileSystemAccessMode::existence))
         return false;
       size_t lastSeparator = path.find_last_of("/\\");
@@ -399,13 +399,13 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 # endif
 #else // C++17
   template <typename _CharType>
-  inline std::basic_string<_CharType> _extractFileName_cpp17(const std::filesystem::directory_entry& entry) noexcept;
-  template <> inline std::basic_string<char> _extractFileName_cpp17<char>(const std::filesystem::directory_entry& entry) noexcept { return entry.path().filename().string(); }
-  template <> inline std::basic_string<wchar_t> _extractFileName_cpp17<wchar_t>(const std::filesystem::directory_entry& entry) noexcept { return entry.path().filename().wstring(); }
+  inline std::basic_string<_CharType> _extractFileName_cpp17(const std::filesystem::directory_entry& entry);
+  template <> inline std::basic_string<char> _extractFileName_cpp17<char>(const std::filesystem::directory_entry& entry) { return entry.path().filename().string(); }
+  template <> inline std::basic_string<wchar_t> _extractFileName_cpp17<wchar_t>(const std::filesystem::directory_entry& entry) { return entry.path().filename().wstring(); }
     
   // read file system entry metadata - C++17
   template <typename _CharType, typename _EntryMetadata>
-  static inline bool _readFileSystemEntryMetadata_cpp17(const std::basic_string<_CharType>& path, _EntryMetadata& outMetadata) noexcept {
+  static inline bool _readFileSystemEntryMetadata_cpp17(const std::basic_string<_CharType>& path, _EntryMetadata& outMetadata) {
     std::error_code errorCode; // to disable exceptions
     std::filesystem::directory_entry entry(path, errorCode);
     if (errorCode || !entry.exists())
@@ -432,7 +432,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 
 // - read file system entry metadata -
 #ifndef _WINDOWS
-  bool pandora::io::readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata& out) noexcept {
+  bool pandora::io::readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata& out) {
     auto noSepPath = path;
     while (!noSepPath.empty() && (noSepPath.back() == '/' || noSepPath.back() == '\\'))
       noSepPath.pop_back();
@@ -444,7 +444,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 #   endif
   }
 #else
-  bool pandora::io::readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata<false>& out) noexcept {
+  bool pandora::io::readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata<false>& out) {
     auto noSepPath = path;
     while (!noSepPath.empty() && (noSepPath.back() == '/' || noSepPath.back() == '\\'))
       noSepPath.pop_back();
@@ -455,7 +455,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
       return _readFileSystemEntryMetadata_native<char,WIN32_FIND_DATAA,false>(noSepPath.c_str(), out);
 #   endif
   }
-  bool pandora::io::readFileSystemEntryMetadata(const std::wstring& path, FileSystemEntryMetadata<true>& out) noexcept {
+  bool pandora::io::readFileSystemEntryMetadata(const std::wstring& path, FileSystemEntryMetadata<true>& out) {
     auto noSepPath = path;
     while (!noSepPath.empty() && (noSepPath.back() == L'/' || noSepPath.back() == L'\\'))
       noSepPath.pop_back();
@@ -475,7 +475,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 # ifdef _WINDOWS 
     // list file system entries in a directory - windows native
     template <typename _CharType, typename _FileInfo, bool _WideChar>
-    static inline bool _listFileSystemEntries_native(std::basic_string<_CharType>& directoryPathWithSeparator, std::vector<FileSystemEntry<_WideChar> >& outList) noexcept {
+    static inline bool _listFileSystemEntries_native(std::basic_string<_CharType>& directoryPathWithSeparator, std::vector<FileSystemEntry<_WideChar> >& outList) {
       _FileInfo fileInfo;
       directoryPathWithSeparator.push_back(static_cast<_CharType>('*')); // query subcontent
       HANDLE fileHandle = _findFirstFileInfo_native(directoryPathWithSeparator.c_str(), fileInfo);
@@ -495,7 +495,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
     }
     // read metadata of a list of file system entries - windows native
     template <typename _CharType, typename _FileInfo, bool _WideChar>
-    static inline bool _readFileSystemListMetadata_native(std::basic_string<_CharType>& directoryPathWithSeparator, std::vector<FileSystemEntryMetadata<_WideChar> >& outMetadataList) noexcept {
+    static inline bool _readFileSystemListMetadata_native(std::basic_string<_CharType>& directoryPathWithSeparator, std::vector<FileSystemEntryMetadata<_WideChar> >& outMetadataList) {
       _FileInfo fileInfo;
       directoryPathWithSeparator.push_back(static_cast<_CharType>('*')); // query subcontent
       HANDLE fileHandle = _findFirstFileInfo_native(directoryPathWithSeparator.c_str(), fileInfo);
@@ -516,7 +516,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
     }
 # else 
     // list file system entries in a directory - linux/unix native
-    static inline bool _listFileSystemEntries_native(const std::string& path, std::vector<FileSystemEntry>& outList) noexcept {
+    static inline bool _listFileSystemEntries_native(const std::string& path, std::vector<FileSystemEntry>& outList) {
       DIR* access = opendir(path.c_str());
       if (access == nullptr)
         return false;
@@ -528,7 +528,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
       return true;
     }
     // read metadata of a list of file system entries - linux/unix native
-    static inline bool _readFileSystemListMetadata_native(const std::string& directoryPathWithSeparator, std::vector<FileSystemEntryMetadata>& outMetadataList) noexcept {
+    static inline bool _readFileSystemListMetadata_native(const std::string& directoryPathWithSeparator, std::vector<FileSystemEntryMetadata>& outMetadataList) {
       DIR* access = opendir(directoryPathWithSeparator.c_str());
       if (access == nullptr)
         return false;
@@ -555,7 +555,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 #else 
   // list file system entries in a directory - C++17
   template <typename _CharType, typename _Entry>
-  static inline bool _listFileSystemEntries_cpp17(const std::basic_string<_CharType>& path, std::vector<_Entry>& outList) noexcept {
+  static inline bool _listFileSystemEntries_cpp17(const std::basic_string<_CharType>& path, std::vector<_Entry>& outList) {
     std::error_code errorCode; // to disable exceptions
     for (auto& entry : std::filesystem::directory_iterator(path, errorCode)) {
       if (errorCode || !entry.exists())
@@ -567,7 +567,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
   // read metadata of a list of file system entries - C++17
   template <typename _CharType, typename _EntryMetadata>
   static inline bool _readFileSystemListMetadata_cpp17(const std::basic_string<_CharType>& directoryPathWithSeparator, 
-                                                       std::vector<_EntryMetadata>& outMetadataList) noexcept {
+                                                       std::vector<_EntryMetadata>& outMetadataList) {
     std::error_code errorCode; // to disable exceptions
     for (auto& entry : std::filesystem::directory_iterator(directoryPathWithSeparator, errorCode)) {
       if (errorCode || !entry.exists())
@@ -596,7 +596,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 
 // - read metadata of a list of file system entries -
 #ifndef _WINDOWS
-  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata>& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata>& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != '/' && path.back() != '\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM
@@ -606,7 +606,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 #   endif
   }
 #else
-  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata<false> >& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata<false> >& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != '/' && path.back() != '\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM
@@ -615,7 +615,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
       return _readFileSystemListMetadata_native<char,WIN32_FIND_DATAA,false>(directoryPathWithSeparator, outFiles);
 #   endif
   }
-  bool pandora::io::listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntryMetadata<true> >& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntryMetadata<true> >& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != L'/' && path.back() != L'\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM
@@ -628,7 +628,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 
 // - list file system entries in a directory -
 #ifndef _WINDOWS
-  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry>& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry>& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != '/' && path.back() != '\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM
@@ -638,7 +638,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 #   endif
   }
 #else
-  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry<false> >& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry<false> >& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != '/' && path.back() != '\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM
@@ -647,7 +647,7 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
       return _listFileSystemEntries_native<char,WIN32_FIND_DATAA,false>(directoryPathWithSeparator, outFiles);
 #   endif
   }
-  bool pandora::io::listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntry<true> >& outFiles) noexcept {
+  bool pandora::io::listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntry<true> >& outFiles) {
     auto directoryPathWithSeparator = (!path.empty() && path.back() != L'/' && path.back() != L'\\') ? path +  _getPathSuffixSeparator(path.c_str()) : path;
     outFiles.clear();
 #   ifndef _USE_NATIVE_FILESYSTEM

@@ -24,7 +24,7 @@ using namespace pandora::hardware;
   // -- x86 / x86_64 --
   
   // Convert raw CPUID register value to vendor string
-  static inline std::string _toCpuVendorString(const CpuRegister128& rawValue) noexcept {
+  static inline std::string _toCpuVendorString(const CpuRegister128& rawValue) {
     char vendor[3*sizeof(uint32_t) + 1];
     memset(vendor, 0, sizeof(vendor));
     uint32_t* cursor = reinterpret_cast<uint32_t*>(vendor);
@@ -37,7 +37,7 @@ using namespace pandora::hardware;
     return std::string(vendor);
   }
   // Read brand name in CPUID register  and convert raw value to brand string
-  static inline std::string _readCpuBrandString(int32_t maxExtendedRegisterId) noexcept {
+  static inline std::string _readCpuBrandString(int32_t maxExtendedRegisterId) {
     char brand[3*4*sizeof(uint32_t) + 1];
     memset(brand, 0, sizeof(brand));
       
@@ -56,7 +56,7 @@ using namespace pandora::hardware;
   }
 
   // Process CPU specifications detection (x86)
-  CpuSpecs::CpuSpecs(CpuSpecs::SpecMode mode) noexcept {
+  CpuSpecs::CpuSpecs(CpuSpecs::SpecMode mode) {
     CpuRegister128 buffer{ 0 };
     CpuidRegisterReader::fillCpuid(buffer, cpuid_x86::RegisterId::sizeAndVendor);
     this->_maxBaseRegisterId = CpuidRegisterReader::extractRegisterBits(buffer, cpuid_x86::baseSize()); // number of base register IDs
@@ -138,7 +138,7 @@ using namespace pandora::hardware;
   }
    
   // Process CPU specifications detection (ARM)
-  CpuSpecs::CpuSpecs(SpecMode mode) noexcept {
+  CpuSpecs::CpuSpecs(SpecMode mode) {
     CpuRegister64 cpuInfo = CpuidRegisterReader::readCpuid(static_cast<cpuid_arm::RegisterId>(cpuid_arm::id().registerId()));
     
     if ((mode & SpecMode::vendor) == true || (mode & SpecMode::cores) == true) { // vendor info required for cores count too

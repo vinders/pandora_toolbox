@@ -74,7 +74,7 @@ Code generators : _P_SERIALIZABLE_ENUM,
 
 // make an enum serializable/deserializable
 #define _P_SERIALIZABLE_ENUM(type, ...) \
-        inline std::string toString(type _val) noexcept { \
+        inline std::string toString(type _val) { \
           switch (_val) { \
             _P_PARAM_FOREACH(__P_SERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
             default: return ""; \

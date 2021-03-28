@@ -66,16 +66,16 @@ namespace pandora {
 
       /// @brief Get absolute path of current directory
       /// @warning: in special environments (sandboxes,...), this may return the relative location of the app (empty string)
-      static SystemPath currentLocation() noexcept;
+      static SystemPath currentLocation();
       /// @brief Get absolute path of user home directory
       /// @warning: in special environments (sandboxes,...), this may return the relative location of the app (empty string)
-      static SystemPath homeLocation() noexcept;
+      static SystemPath homeLocation();
 
       /// @brief Get absolute path(s) of standard user/app/system location
       /// @warning: - may contain multiple results
       ///           - may be empty if not found on current system
       ///           - returns all potential known locations paths: some of them may currently not exist.
-      static std::vector<SystemPath> standardLocation(FileSystemLocation location, const SystemPathChar* appDirLabel = __P_DEFAULT_APP_SUBDIR, uint32_t systemFlags = 0u) noexcept;
+      static std::vector<SystemPath> standardLocation(FileSystemLocation location, const SystemPathChar* appDirLabel = __P_DEFAULT_APP_SUBDIR, uint32_t systemFlags = 0u);
     };
 
   }

@@ -72,33 +72,33 @@ namespace pandora {
     /// @brief Get type of any path
     FileSystemPathType getFileSystemPathType(const char* path) noexcept;
     /// @brief Get type of entry targeted by any path
-    FileSystemEntryType getFileSystemEntryType(const char* path) noexcept;
+    FileSystemEntryType getFileSystemEntryType(const char* path);
     /// @brief Verify if any directory / file is hidden
     bool isFileSystemEntryHidden(const char* path) noexcept;
     /// @brief Verify if any path is existing / readable / writable / all
     bool verifyFileSystemAccessMode(const char* path, FileSystemAccessMode mode) noexcept;
     
     /// @brief Split any path (on '/' or '\') into a vector of segments
-    std::vector<std::string> getFileSystemPathSegments(const std::string& path) noexcept;
+    std::vector<std::string> getFileSystemPathSegments(const std::string& path);
 #   ifndef _WINDOWS
       /// @brief Read metadata of a file / directory
-      bool readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata& out) noexcept;
+      bool readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata& out);
 #   else
       /// @brief Get type of any path
       FileSystemPathType getFileSystemPathType(const wchar_t* path) noexcept;
       /// @brief Get type of entry targeted by any path
-      FileSystemEntryType getFileSystemEntryType(const wchar_t* path) noexcept;
+      FileSystemEntryType getFileSystemEntryType(const wchar_t* path);
       /// @brief Verify if any directory / file is hidden
       bool isFileSystemEntryHidden(const wchar_t* path) noexcept;
       /// @brief Verify if any path is existing / readable / writable / all
       bool verifyFileSystemAccessMode(const wchar_t* path, FileSystemAccessMode mode) noexcept;
       
       /// @brief Split any path (on '/' or '\') into a vector of segments
-      std::vector<std::wstring> getFileSystemPathSegments(const std::wstring& path) noexcept;
+      std::vector<std::wstring> getFileSystemPathSegments(const std::wstring& path);
       /// @brief Read metadata of a file / directory
-      bool readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata<false>& out) noexcept;
+      bool readFileSystemEntryMetadata(const std::string& path, FileSystemEntryMetadata<false>& out);
       /// @brief Read metadata of a file / directory
-      bool readFileSystemEntryMetadata(const std::wstring& path, FileSystemEntryMetadata<true>& out) noexcept;
+      bool readFileSystemEntryMetadata(const std::wstring& path, FileSystemEntryMetadata<true>& out);
 #   endif
 
     // -- entry creation/removal --
@@ -140,18 +140,18 @@ namespace pandora {
     
 #   ifndef _WINDOWS
       /// @brief List files in directory
-      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry>& outFiles) noexcept;
+      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry>& outFiles);
       /// @brief List files in directory with their metadata
-      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata>& outFiles) noexcept;
+      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata>& outFiles);
 #   else
       /// @brief List files in directory
-      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry<false> >& outFiles) noexcept;
+      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntry<false> >& outFiles);
       /// @brief List files in directory
-      bool listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntry<true> >& outFiles) noexcept;
+      bool listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntry<true> >& outFiles);
       /// @brief List files in directory with their metadata
-      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata<false> >& outFiles) noexcept;
+      bool listFilesInDirectory(const std::string& path, std::vector<FileSystemEntryMetadata<false> >& outFiles);
       /// @brief List files in directory with their metadata
-      bool listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntryMetadata<true> >& outFiles) noexcept;
+      bool listFilesInDirectory(const std::wstring& path, std::vector<FileSystemEntryMetadata<true> >& outFiles);
 #   endif
     
     
@@ -179,10 +179,10 @@ namespace pandora {
       /// @brief Create relative path to current/active directory
       FileSystemEntry() = default;
       /// @brief Initialize existing directory/file path
-      FileSystemEntry(const PathChar* path) noexcept
+      FileSystemEntry(const PathChar* path)
         : _entryPath(path), _entryType(getFileSystemEntryType(path)) { assert(path != nullptr); }
       /// @brief Initialize existing directory/file path
-      explicit FileSystemEntry(const Path& path) noexcept
+      explicit FileSystemEntry(const Path& path)
         : _entryPath(path), _entryType(getFileSystemEntryType(path.c_str())) {}
       
       /// @brief Initialize new/potential directory/file path
@@ -221,9 +221,9 @@ namespace pandora {
       inline bool hasAccessMode(FileSystemAccessMode mode) const noexcept { return verifyFileSystemAccessMode(this->_entryPath.c_str(), mode); }
       
       /// @brief Split stored path (on '/' or '\') into a vector of segments
-      inline std::vector<Path> pathSegments() const noexcept { return getFileSystemPathSegments(this->_entryPath.c_str()); }
+      inline std::vector<Path> pathSegments() const { return getFileSystemPathSegments(this->_entryPath.c_str()); }
       /// @brief Read metadata of a file / directory
-      inline bool readMetadata(Metadata& out) noexcept { return readFileSystemEntryMetadata(this->_entryPath, out); }
+      inline bool readMetadata(Metadata& out) { return readFileSystemEntryMetadata(this->_entryPath, out); }
       
       // -- path creation/removal --
       

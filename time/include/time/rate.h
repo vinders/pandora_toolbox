@@ -41,7 +41,7 @@ namespace pandora {
 
       // -- formatters --
 
-      std::string toString(char separator = ':') const noexcept { return std::to_string(this->_numerator) + separator + std::to_string(this->_denominator); }
+      std::string toString(char separator = ':') const { return std::to_string(this->_numerator) + separator + std::to_string(this->_denominator); }
       
       constexpr double compute() const noexcept { return (static_cast<double>(this->_numerator) / static_cast<double>(this->_denominator)); }
       

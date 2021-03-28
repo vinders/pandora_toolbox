@@ -36,7 +36,7 @@ namespace pandora {
       };
       
       /// @brief Verify all the CPU specifications requested in 'mode' (SpecMode bit-map) and store results
-      explicit CpuSpecs(SpecMode mode = SpecMode::all) noexcept;
+      explicit CpuSpecs(SpecMode mode = SpecMode::all);
       CpuSpecs(const CpuSpecs&) = default;
       CpuSpecs(CpuSpecs&&) noexcept = default;
       CpuSpecs& operator=(const CpuSpecs&) = default;

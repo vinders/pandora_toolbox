@@ -174,7 +174,7 @@ namespace pandora {
       }
     
       /// @brief Convert model number of ARM CPUs to model brand string
-      inline std::string toString(cpuid_arm::ModelNumber part) noexcept {
+      inline std::string toString(cpuid_arm::ModelNumber part) {
         switch (part) {
           case cpuid_arm::ModelNumber::arm1136:    return "ARM(R) ARM1136";
           case cpuid_arm::ModelNumber::arm1156:    return "ARM(R) ARM1156";

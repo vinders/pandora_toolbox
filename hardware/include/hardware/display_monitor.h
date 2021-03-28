@@ -62,7 +62,7 @@ namespace pandora {
       // -- monitor description --
 
       /// @brief Get primary monitor description
-      DisplayMonitor() noexcept;
+      DisplayMonitor();
       /// @brief Get monitor description from handle
       /// @warning Throws invalid_argument if handle is invalid or can't be read
       DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault);
@@ -74,13 +74,13 @@ namespace pandora {
       DisplayMonitor(uint32_t index, bool usePrimaryAsDefault);
 
       DisplayMonitor(const DisplayMonitor&) = delete;
-      DisplayMonitor(DisplayMonitor&&) noexcept = default;
+      DisplayMonitor(DisplayMonitor&&) = default;
       DisplayMonitor& operator=(const DisplayMonitor&) = delete;
-      DisplayMonitor& operator=(DisplayMonitor&&) noexcept = default;
+      DisplayMonitor& operator=(DisplayMonitor&&) = default;
       ~DisplayMonitor() = default;
 
       /// @brief Get list of monitors available for display
-      static std::vector<DisplayMonitor> listAvailableMonitors() noexcept;
+      static std::vector<DisplayMonitor> listAvailableMonitors();
 
       // -- accessors --
 
@@ -95,13 +95,13 @@ namespace pandora {
       DisplayMode getDisplayMode() const noexcept;
       /// @brief Change display mode of a monitor (for fullscreen apps)
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
-      bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true) noexcept;
+      bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true);
       /// @brief Reset monitor to its default display mode
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
-      bool setDefaultDisplayMode(bool refreshAttributes = true) noexcept;
+      bool setDefaultDisplayMode(bool refreshAttributes = true);
 
       /// @brief Read available display modes for a monitor
-      std::vector<DisplayMode> listAvailableDisplayModes() const noexcept;
+      std::vector<DisplayMode> listAvailableDisplayModes() const;
 
       // -- DPI awareness --
 

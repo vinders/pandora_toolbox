@@ -175,7 +175,7 @@ namespace pandora {
       
 #     if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
         /// @brief Read value in CPU info file (Linux)
-        static std::string readCpuInfoFile(const std::string& prop) noexcept {
+        static std::string readCpuInfoFile(const std::string& prop) {
           std::string result;
           FILE* cpuInfoFile = fopen("/proc/cpuinfo", "r");
           if (cpuInfoFile != nullptr) {

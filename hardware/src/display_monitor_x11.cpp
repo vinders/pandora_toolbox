@@ -22,7 +22,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 
 // -- monitor handle & description/attributes -- -------------------------------
 
-  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) noexcept {
+  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) {
     //...
     return false; 
   }
@@ -31,7 +31,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     //...
   }
   
-  static inline DisplayMonitor::Handle _getDisplayMonitorById(DisplayMonitor::DeviceId id, DisplayMonitor::Attributes* outAttr) noexcept {
+  static inline DisplayMonitor::Handle _getDisplayMonitorById(DisplayMonitor::DeviceId id, DisplayMonitor::Attributes* outAttr) {
     //...
     return 0; 
   }
@@ -44,7 +44,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 
 // -- contructors/list -- ------------------------------------------------------
 
-  DisplayMonitor::DisplayMonitor() noexcept {
+  DisplayMonitor::DisplayMonitor() {
     _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
   }
   DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
@@ -77,7 +77,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     }
   }
 
-  std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() noexcept {
+  std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitors;
 
     std::vector<DisplayMonitor::Handle> handles;
@@ -122,7 +122,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     return false; 
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) noexcept {
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
       if (refreshAttributes) {
         if (this->_attributes.isPrimary) {
@@ -143,7 +143,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     return false; 
   }
   
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) noexcept {
+  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
     if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
       if (refreshAttributes) {
         if (this->_attributes.isPrimary) {
@@ -157,7 +157,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     return false;
   }
 
-  std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const noexcept {
+  std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
     //...
     

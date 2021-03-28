@@ -49,7 +49,7 @@ namespace pandora {
       }
     
       /// @brief Find known system location
-      inline std::wstring _findLocation(KNOWNFOLDERID location, uint32_t systemFlags = 0u, const std::wstring& fallbackValue = L"") noexcept {
+      inline std::wstring _findLocation(KNOWNFOLDERID location, uint32_t systemFlags = 0u, const std::wstring& fallbackValue = L"") {
         std::wstring path;
         return (_findLocation(location, path, systemFlags))
               ? path
@@ -118,7 +118,7 @@ namespace pandora {
 #     endif
 
       /// @brief Find known system locations
-      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask = __P_DEFAULT_DOMAIN_MASK_VALUE) noexcept {
+      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask = __P_DEFAULT_DOMAIN_MASK_VALUE) {
         std::vector<std::string> paths;
         char buffer[PATH_MAX];
         LocationSearchState state = __P_START_PATH_SEARCH(location, domainMask);
@@ -128,7 +128,7 @@ namespace pandora {
       }
     
       /// @brief Find known system locations
-      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask, const std::string& fallbackValue) noexcept {
+      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask, const std::string& fallbackValue) {
         std::vector<std::string> paths = _findLocation(location, domainMask);
         if (paths.empty())
           paths.emplace_back(fallbackValue);
@@ -136,7 +136,7 @@ namespace pandora {
       }
 
       /// @brief Find known system locations
-      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask, const std::string& fallbackValue, const std::string& suffix) noexcept {
+      inline std::vector<std::string> _findLocation(NativeLocationId location, NativeDomainMask domainMask, const std::string& fallbackValue, const std::string& suffix) {
         std::vector<std::string> paths;
         char buffer[PATH_MAX];
         LocationSearchState state = __P_START_PATH_SEARCH(location, domainMask);
@@ -148,7 +148,7 @@ namespace pandora {
       }
     
       /// @brief Find known system location - only first result
-      inline std::string _findFirstLocation(NativeLocationId location, NativeDomainMask domainMask = __P_DEFAULT_DOMAIN_MASK_VALUE, const std::string& fallbackValue = "") noexcept {
+      inline std::string _findFirstLocation(NativeLocationId location, NativeDomainMask domainMask = __P_DEFAULT_DOMAIN_MASK_VALUE, const std::string& fallbackValue = "") {
         char buffer[PATH_MAX];
         LocationSearchState state = __P_START_PATH_SEARCH(location, domainMask);
         return ((state = __P_GET_NEXT_PATH_VALUE(state, buffer)) != 0)
