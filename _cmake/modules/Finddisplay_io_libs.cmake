@@ -22,7 +22,7 @@ if(NOT IOS AND NOT ANDROID)
         endif()   
         
     else()
-        set(display_io_libs__LINKED X11)
+        set(display_io_libs__LINKED X11 ${CMAKE_DL_LIBS})
     endif()
     
     if(CWORK_EXTERN_FRAMEWORKS AND NOT CWORK_EXTERN_FRAMEWORKS_SCOPE)
