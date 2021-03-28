@@ -5,7 +5,6 @@ License :     MIT
 #pragma once
 
 #ifdef _WINDOWS
-# include <cstddef>
 # include <cstdint>
 # include <system/api/windows_api.h>
 # if defined(NTDDI_VERSION) && (NTDDI_VERSION >= NTDDI_WINBLUE) && !defined(__MINGW32__)
