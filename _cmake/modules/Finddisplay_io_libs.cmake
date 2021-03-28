@@ -32,4 +32,7 @@ if(NOT IOS AND NOT ANDROID)
             set(CWORK_EXTERN_FRAMEWORKS_SCOPE PUBLIC)
         endif()
     endif()
+    
+elseif(ANDROID)
+    set(display_io_libs__LINKED jnigraphics android)
 endif()
