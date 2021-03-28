@@ -7,7 +7,7 @@ License :     MIT
 # pragma warning(disable : 26812)
 # include "hardware/_private/_libraries_win32.h"
 
-# if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WIN10_RS2) && !defined(__MINGW32__))
+# if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS2) || defined(__MINGW32__)
     pandora::hardware::LibrariesWin32 pandora::hardware::LibrariesWin32::_libs{};
 
     // ntdll.dll functions
@@ -62,7 +62,7 @@ License :     MIT
         this->user32.AdjustWindowRectExForDpi_ = (__win32_AdjustWindowRectExForDpi)GetProcAddress(this->user32.instance, "AdjustWindowRectExForDpi");
       }
 
-#     if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WINBLUE) && !defined(__MINGW32__))
+#     if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WINBLUE) || defined(__MINGW32__)
         this->shcore.instance = LoadLibraryA("shcore.dll");
         if (this->shcore.instance != nullptr) {
           this->shcore.SetProcessDpiAwareness_ = (__win32_SetProcessDpiAwareness)GetProcAddress(this->shcore.instance, "SetProcessDpiAwareness");
@@ -100,7 +100,7 @@ License :     MIT
         FreeLibrary(user32.instance);
         this->user32.instance = nullptr;
       }
-#     if !defined(NTDDI_VERSION) || ((NTDDI_VERSION < NTDDI_WINBLUE) && !defined(__MINGW32__))
+#     if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WINBLUE) || defined(__MINGW32__)
         if (this->shcore.instance != nullptr) {
           FreeLibrary(shcore.instance);
           this->shcore.instance = nullptr;

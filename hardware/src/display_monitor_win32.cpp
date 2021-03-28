@@ -11,7 +11,6 @@ Description : Display monitor - Win32 implementation (Windows)
 # include <string>
 # include <stdexcept>
 # include <vector>
-# include <system/api/windows_api.h>
 # include "hardware/_private/_libraries_win32.h"
 # include "hardware/display_monitor.h"
 
