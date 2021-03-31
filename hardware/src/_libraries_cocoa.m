@@ -3,13 +3,17 @@ Author  :     Romain Vinders
 License :     MIT
 *******************************************************************************/
 #if !defined(_WINDOWS) && defined(__APPLE__)
-# import <TargetConditionals.h>
+# include <TargetConditionals.h>
 #endif
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
-# import <stdlib.h>
-# import <string.h>
-# import <Carbon/Carbon.h>
+# include <stdlib.h>
+# include <string.h>
+# include <Carbon/Carbon.h>
 # import <Cocoa/Cocoa.h>
+
+#include <IOKit/graphics/IOGraphicsLib.h>
+#include <ApplicationServices/ApplicationServices.h>
+
 # define __P_LIBRARIES_COCOA_OBJC 1
 # include "hardware/_private/_libraries_cocoa.h"
 
