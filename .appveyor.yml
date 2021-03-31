@@ -27,8 +27,9 @@ environment:
     GENERATOR: Ninja
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
+    PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
+    LIB_PATH: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
     PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
-    PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%
     CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe
   
   # Mingw-w64 x86_64 / C++17
@@ -40,9 +41,10 @@ environment:
     BUILD_TYPE: Debug
     GENERATOR: MinGW Makefiles
     VULKAN: true
-    PATH: C:\mingw64\bin;C:\mingw64\x86_64-w64-mingw32\lib;C:\mingw64\x86_64-w64-mingw32\include;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64;C:\Windows\System32"
+    PATH: C:\mingw64\bin;C:\mingw64\x86_64-w64-mingw32\lib;C:\mingw64\x86_64-w64-mingw32\include;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH%;C:\Windows\System32
+    LIB_PATH: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
     INCLUDE: C:\mingw64\x86_64-w64-mingw32\include;%INCLUDE%
-    LIB: C:\mingw64\x86_64-w64-mingw32\lib;%LIB%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
+    LIB: C:\mingw64\x86_64-w64-mingw32\lib;%LIB%
     MINGW_URL: http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
   
   # MSVC-VS2019 x86_64 / C++17
@@ -76,43 +78,50 @@ environment:
     APPVEYOR_JOB_NAME: msvc-vs2017-64
     BUILD_TYPE: Debug
     CMAKE_ARGS: -A x64 -DCWORK_CPP_REVISION="14"
-    GENERATOR: Visual Studio 15 2017 Win64
+    GENERATOR: Visual Studio 15 2017
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
 
 install:
+  # ---- set environment ----
   - if defined VCVARS call "%VCVARS%" %VCVARSARG%
   - set PATH=C:\Python38-x64;C:\Python38-x64\Scripts;%PATH%
  
-  #- if defined MINGW_URL echo "---- Vulkan install ----"
+  # ---- Vulkan install ----
   #- if defined VULKAN call _scripts/ci/install_vulkan.bat
-  - if defined PACMAN_PACKAGES echo "---- Pacman packages install ----"
+  # ---- Pacman packages install ----
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc ""
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman -Rd --noconfirm mingw-w64-i686-gcc-ada mingw-w64-x86_64-gcc-ada mingw-w64-i686-gcc-objc mingw-w64-x86_64-gcc-objc"
-  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -Syu"
-  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -Syu"
-  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -S %PACMAN_PACKAGES%"
-  - if defined MINGW_URL echo "---- MinGW install ----"
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -Suy" & exit 0
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -Suy" & exit 0
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -Suy" & exit 0
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -Suy"
+  - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "for i in {1..3}; do pacman --noconfirm -S %PACMAN_PACKAGES% && break || sleep 15 ; done"
+  # ---- MinGW install ----
   - if defined MINGW_URL choco upgrade chocolatey
-  - if defined MINGW_URL if not exist "C:\mingw.7z" appveyor-retry appveyor DownloadFile %MINGW_URL% -FileName "C:\mingw.7z"
-  - if defined MINGW_URL 7z x -y -oC:\ "C:\mingw.7z" > nul
-  - if defined CLANG_URL echo "---- Clang install ----"
-  - if defined CLANG_URL if not exist llvm-installer.exe appveyor-retry appveyor DownloadFile %CLANG_URL% -FileName llvm-installer.exe
-  - if defined CLANG_URL START /WAIT llvm-installer.exe /S /D=C:\"Program Files\LLVM"
+  - if defined MINGW_URL if not exist C:\mingw.7z appveyor-retry appveyor DownloadFile %MINGW_URL% -FileName C:\mingw.7z
+  - if defined MINGW_URL 7z x -y -oC:\ C:\mingw.7z > nul
+  # ---- Clang install ----
+  - if defined CLANG_URL if not exist C:\llvm-installer.exe appveyor-retry appveyor DownloadFile %CLANG_URL% -FileName C:\llvm-installer.exe
+  - if defined CLANG_URL START /WAIT C:\llvm-installer.exe /S /D=C:\"Program Files\LLVM"
  
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
+  - if defined LIB_PATH set PATH=%PATH%;%LIB_PATH%
+  - if defined LIB_PATH set LIB=%LIB%;%LIB_PATH%
 
 build_script:
-  # build directory + project version
+  # ---- project version + build directory ----
   - cd C:\projects\pandora_toolbox
   - call _scripts/update_version.bat
   - mkdir _build
   - cd _build
   - mkdir %PACKAGE_ID%
   - cd ..
-  # cmake build
+  # ---- cmake generation + build ----
   - cmake -S . -B ./_build/%PACKAGE_ID% -G"%GENERATOR%" %CMAKE_ARGS% || (echo CMAKEERROR && echo CMAKEOUTPUT && exit 1)
   - cmake --build ./_build/%PACKAGE_ID% --config %BUILD_TYPE% --target install
 
 test_script:
-  - cd C:\projects\pandora_toolbox\_build\%BUILD_DIR%
+  # ---- unit testing ----
+  - cd C:\projects\pandora_toolbox\_build\%PACKAGE_ID%
   - ctest --output-on-failure
