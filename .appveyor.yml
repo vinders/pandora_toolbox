@@ -40,7 +40,6 @@ environment:
     CMAKE_ARGS: -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
     BUILD_TYPE: Debug
     GENERATOR: MinGW Makefiles
-    VULKAN: true
     PATH: C:\mingw64\bin;%PATH%;C:\Windows\System32
     INCLUDE_PREFIX: C:\mingw64\x86_64-w64-mingw32\include
     LIB_PREFIX: C:\mingw64\x86_64-w64-mingw32\lib
@@ -55,9 +54,9 @@ environment:
     BUILD_TYPE: Release
     CMAKE_ARGS: -A x64
     GENERATOR: Visual Studio 16 2019
-    VULKAN: true
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
+    VULKAN: true
     
   # MSVC-VS2019 x86 (x32) / C++17
   - TOOLCHAIN: "Visual Studio 2019"
@@ -67,7 +66,6 @@ environment:
     BUILD_TYPE: Debug
     CMAKE_ARGS: -A Win32
     GENERATOR: Visual Studio 16 2019
-    VULKAN: true
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: x86
   
