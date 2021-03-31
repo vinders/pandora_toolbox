@@ -6,16 +6,16 @@ configuration: Release
 environment:
   matrix:
   # ClangCL-VS2019 x86_64 / C++17
-  - TOOLCHAIN: "ClangCL x64"
-    PACKAGE_ID: vs2019clang_x86_64
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    APPVEYOR_JOB_NAME: clangcl-vs2019-64
-    BUILD_TYPE: Debug
-    CMAKE_ARGS: -A x64 -T ClangCL -DCMAKE_FLAGS="-m64"
-    GENERATOR: Visual Studio 16 2019
-    VULKAN: true
-    VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
-    VCVARSARG: amd64
+  # - TOOLCHAIN: "ClangCL x64"
+  # PACKAGE_ID: vs2019clang_x86_64
+  # APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+  # APPVEYOR_JOB_NAME: clangcl-vs2019-64
+  # BUILD_TYPE: Debug
+  # CMAKE_ARGS: -A x64 -T ClangCL -DCMAKE_FLAGS="-m64"
+  # GENERATOR: Visual Studio 16 2019
+  # VULKAN: true
+  # VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
+  # VCVARSARG: amd64
     
   # Clang10-LLVM x86_64 / C++17
   - TOOLCHAIN: "Visual Studio 2019 Clang/LLVM 10.0.0"
@@ -30,6 +30,20 @@ environment:
     PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
     PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%
     CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe
+  
+  # Mingw-w64 x86_64 / C++17
+  - TOOLCHAIN: "MinGW-w64 GCC"
+    PACKAGE_ID: mingw_x86_64
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    APPVEYOR_JOB_NAME: gcc-mingw-64
+    CMAKE_ARGS: -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
+    BUILD_TYPE: Debug
+    GENERATOR: MinGW Makefiles
+    VULKAN: true
+    PATH: C:\mingw64\bin;C:\mingw64\x86_64-w64-mingw32\lib;C:\mingw64\x86_64-w64-mingw32\include;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64;C:\Windows\System32"
+    INCLUDE: C:\mingw64\x86_64-w64-mingw32\include;%INCLUDE%
+    LIB: C:\mingw64\x86_64-w64-mingw32\lib;%LIB%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
+    MINGW_URL: http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
   
   # MSVC-VS2019 x86_64 / C++17
   - TOOLCHAIN: "Visual Studio 2019 x64"
@@ -53,7 +67,7 @@ environment:
     GENERATOR: Visual Studio 16 2019
     VULKAN: true
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
-    VCVARSARG: amd64
+    VCVARSARG: x86
   
   # MSVC-VS2017 x86_64 / C++14
   - TOOLCHAIN: "Visual Studio 2017 x64"
@@ -66,33 +80,23 @@ environment:
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
 
-  # Mingw-w64 x86_64 / C++17
-  - TOOLCHAIN: "MinGW-w64 GCC"
-    PACKAGE_ID: mingw_x86_64
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    APPVEYOR_JOB_NAME: gcc-mingw-64
-    CMAKE_ARGS: -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
-    BUILD_TYPE: Debug
-    GENERATOR: MinGW Makefiles
-    VULKAN: true
-    PATH: C:\mingw64\bin;C:\mingw64\x86_64-w64-mingw32\lib;C:\mingw64\x86_64-w64-mingw32\include;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64;C:\Windows\System32"
-    INCLUDE: C:\mingw64\x86_64-w64-mingw32\include;%INCLUDE%
-    LIB: C:\mingw64\x86_64-w64-mingw32\lib;%LIB%;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
-    MINGW_URL: http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
-
 install:
   - if defined VCVARS call "%VCVARS%" %VCVARSARG%
   - set PATH=C:\Python38-x64;C:\Python38-x64\Scripts;%PATH%
  
+  #- if defined MINGW_URL echo "---- Vulkan install ----"
   #- if defined VULKAN call _scripts/ci/install_vulkan.bat
+  - if defined PACMAN_PACKAGES echo "---- Pacman packages install ----"
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman -Rd --noconfirm mingw-w64-i686-gcc-ada mingw-w64-x86_64-gcc-ada mingw-w64-i686-gcc-objc mingw-w64-x86_64-gcc-objc"
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -Syu"
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -Syu"
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman --needed --noconfirm -S %PACMAN_PACKAGES%"
+  - if defined MINGW_URL echo "---- MinGW install ----"
   - if defined MINGW_URL choco upgrade chocolatey
   - if defined MINGW_URL if not exist "C:\mingw.7z" appveyor-retry appveyor DownloadFile %MINGW_URL% -FileName "C:\mingw.7z"
   - if defined MINGW_URL 7z x -y -oC:\ "C:\mingw.7z" > nul
-  - if defined CLANG_URL appveyor-retry appveyor DownloadFile %CLANG_URL% -FileName llvm-installer.exe
+  - if defined CLANG_URL echo "---- Clang install ----"
+  - if defined CLANG_URL if not exist llvm-installer.exe appveyor-retry appveyor DownloadFile %CLANG_URL% -FileName llvm-installer.exe
   - if defined CLANG_URL START /WAIT llvm-installer.exe /S /D=C:\"Program Files\LLVM"
  
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
