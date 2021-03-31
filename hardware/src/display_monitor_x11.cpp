@@ -171,7 +171,10 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 // -- DPI awareness -- ---------------------------------------------------------
 
   bool DisplayMonitor::setDpiAwareness(bool isEnabled) noexcept {
-    LibrariesX11& libs = LibrariesX11::instance();
+    LibrariesX11* libs = LibrariesX11::instance();
+    if (libs == nullptr)
+      return false;
+    
     if (isEnabled) {
       if (libs.displayServer == nullptr)
         return false;
@@ -183,15 +186,22 @@ Description : Display monitor - X11 implementation (Linux/BSD)
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesX11& libs = LibrariesX11::instance();
-    outDpiX = static_cast<uint32_t>(libs.dpiX + 0.5f); // round value
-    outDpiY = static_cast<uint32_t>(libs.dpiY + 0.5f);
+    LibrariesX11* libs = LibrariesX11::instance();
+    if (libs != nullptr) {
+      outDpiX = static_cast<uint32_t>(libs.dpiX + 0.5f); // round value
+      outDpiY = static_cast<uint32_t>(libs.dpiY + 0.5f);
+    }
+    else
+      outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_X11_BASE_DPI);
   }
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesX11& libs = LibrariesX11::instance();
-    outScaleX = libs.dpiX / __P_HARDWARE_X11_BASE_DPI;
-    outScaleY = libs.dpiY / __P_HARDWARE_X11_BASE_DPI;
+    LibrariesX11* libs = LibrariesX11::instance();
+    if (libs != nullptr) {
+      outScaleX = libs.dpiX / __P_HARDWARE_X11_BASE_DPI;
+      outScaleY = libs.dpiY / __P_HARDWARE_X11_BASE_DPI;}
+    else
+      outScaleX = outScaleY = 1.0f;
   }
 
 

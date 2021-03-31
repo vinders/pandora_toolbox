@@ -96,10 +96,8 @@ License :     MIT
         void readSystemDpi() noexcept;
         
         // get global instance
-        static inline LibrariesX11& instance() noexcept {
-          if (!_libs._isInit)
-            _libs.init();
-          return _libs;
+        static inline LibrariesX11* instance() noexcept {
+          return (_libs._isInit || _libs.init()) ? &_libs : nullptr;
         }
 
       private:

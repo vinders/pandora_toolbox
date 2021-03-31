@@ -128,11 +128,15 @@ namespace pandora {
                                                 uint32_t nativeStyleFlags = 0, uint32_t nativeSecondaryFlags = 0) const noexcept;
 
     private:
-      Handle _handle = (Handle)0;
 #     if defined(_WINDOWS)
         Attributes _attributes{ DeviceId{}, L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     else
         Attributes _attributes{ DeviceId{}, "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+#     endif
+
+      Handle _handle = (Handle)0;
+#     if defined(__APPLE__)
+        uint32_t unitNumber = 0;
 #     endif
     };
   }

@@ -174,22 +174,22 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- DPI awareness -- ---------------------------------------------------------
 
   bool DisplayMonitor::setDpiAwareness(bool isEnabled) noexcept {
-    return isEnabled;
+    return isEnabled; // always enabled: on->true (can't be disabled: off->false)
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesCocoa& libs = LibrariesCocoa::instance();
-    //refresh handle, si graphic switch a eu lieu
-    //...
-    if (!libs.readScreenScaling((NSScreen*)(this->_handle), outDpiX, outDpiY))
+    LibrariesCocoa* libs = LibrariesCocoa::instance();
+    //libs->refreshHandleForMonitor((NSScreen**)&(this->_handle), this->_attributes.unitNumber);
+
+    if (libs == nullptr || !libs.readScreenScaling((NSScreen*)(this->_handle), outDpiX, outDpiY))
       outDpiX = outDpiY = 110u;
   }
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesCocoa& libs = LibrariesCocoa::instance();
-    //refresh handle, si graphic switch a eu lieu
-    //...
-    if (!libs.readScreenScaling((NSScreen*)(this->_handle), outScaleX, outScaleY))
+    LibrariesCocoa* libs = LibrariesCocoa::instance();
+    //libs->refreshHandleForMonitor((NSScreen**)&(this->_handle), this->_attributes.unitNumber);
+    
+    if (libs == nullptr || !libs.readScreenScaling((NSScreen*)(this->_handle), outScaleX, outScaleY))
       outScaleX = outScaleY = 1.27f;
   }
 
@@ -197,6 +197,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- metrics -- ---------------------------------------------------------------
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, bool hasMenu, uint32_t, uint32_t) const noexcept {
+    //...
     return clientArea;
   }
 #endif
