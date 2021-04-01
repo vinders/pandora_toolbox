@@ -11,21 +11,21 @@ License :     MIT
 # include <Carbon/Carbon.h>
 # import <Cocoa/Cocoa.h>
 
-#include <IOKit/graphics/IOGraphicsLib.h>
-#include <ApplicationServices/ApplicationServices.h>
+# include <IOKit/graphics/IOGraphicsLib.h>
+# include <ApplicationServices/ApplicationServices.h>
 
 # define __P_LIBRARIES_COCOA_OBJC 1
 # include "hardware/_private/_libraries_cocoa.h"
 
   // -- utilities --
   
-  (bool) LibrariesCocoa_readScreenDpi:(NSScreen*)screen :(uint32_t*)outDpiX :(uint32_t*)outDpiY) {
+  (bool) LibrariesCocoa_readScreenDpi:(ScreenHandle)screen :(uint32_t*)outDpiX :(uint32_t*)outDpiY) {
     @autoreleasepool {
       if (!screen)
         return false;
       
       @try {
-        NSDictionary *description = [screen deviceDescription];
+        NSDictionary *description = [(NSScreen*)screen deviceDescription];
         NSSize pixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
         CGSize physicalSize = CGDisplayScreenSize([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
 
@@ -36,14 +36,14 @@ License :     MIT
       @catch (NSException*) { return false; }
     }
   }
-  (bool) LibrariesCocoa_readScreenScaling:(NSScreen*)screen :(float*)outScaleX :(float*)outScaleY) {
+  (bool) LibrariesCocoa_readScreenScaling:(ScreenHandle)screen :(float*)outScaleX :(float*)outScaleY) {
     @autoreleasepool {
       if (!screen)
         return false;
 
       @try {
-        NSRect points = [screen frame];
-        NSRect pixels = [screen convertRectToBacking:points];
+        NSRect points = [(NSScreen*)screen frame];
+        NSRect pixels = [(NSScreen*)screen convertRectToBacking:points];
 
         *outScaleX = static_cast<float>(pixels.size.width) / static_cast<float>(points.size.width);
         *outScaleY = static_cast<float>(pixels.size.height) / static_cast<float>(points.size.height);
@@ -52,14 +52,14 @@ License :     MIT
       @catch (NSException*) { return false; }
     }
   }
-  (bool) LibrariesCocoa_refreshHandleForMonitor:(NSScreen**)outScreen :(uint32_t)unitNumber) {
+  (bool) LibrariesCocoa_refreshHandleForMonitor:(ScreenHandle*)outScreen :(uint32_t)unitNumber) {
     @try {
       for (NSScreen* screen in [NSScreen screens]) {
         NSNumber* displayNb = [screen deviceDescription][@"NSScreenNumber"];
 
         // use screen number instead of display ID -> that way, it also works with automatic graphics switching
         if (CGDisplayUnitNumber([displayNb unsignedIntValue]) == unitNumber) {
-          *outScreen = screen;
+          *((NSScreen*)outScreen) = screen;
           return true;
         }
       }

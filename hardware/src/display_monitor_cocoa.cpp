@@ -16,8 +16,6 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 # include <climits>
 # include <cmath>
 # include "hardware/_private/_libraries_cocoa.h"
-# include <IOKit/graphics/IOGraphicsLib.h>
-# include <ApplicationServices/ApplicationServices.h>
 # include "hardware/display_monitor.h"
 
   using namespace pandora::hardware;
