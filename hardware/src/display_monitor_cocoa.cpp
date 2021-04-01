@@ -176,18 +176,18 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesCocoa* libs = LibrariesCocoa::instance();
-    //libs->refreshHandleForMonitor(this->_handle, this->_attributes.unitNumber);
+    //LibrariesCocoa* libs = LibrariesCocoa::instance();
+    //?  libs->refreshHandleForMonitor(this->_handle, this->_attributes.unitNumber);
 
-    if (libs == nullptr || !libs->readScreenScaling((ScreenHandle)(this->_handle), outDpiX, outDpiY))
+    //if (libs == nullptr || !libs->readScreenDpi((ScreenHandle)(this->_handle), outDpiX, outDpiY))
       outDpiX = outDpiY = 110u;
   }
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
-    LibrariesCocoa* libs = LibrariesCocoa::instance();
-    //libs->refreshHandleForMonitor(this->_handle, this->_attributes.unitNumber);
+    //LibrariesCocoa* libs = LibrariesCocoa::instance();
+    //?  libs->refreshHandleForMonitor(this->_handle, this->_attributes.unitNumber);
     
-    if (libs == nullptr || !libs->readScreenScaling((ScreenHandle)(this->_handle), outScaleX, outScaleY))
+    //if (libs == nullptr || !libs->readScreenScaling((ScreenHandle)(this->_handle), outScaleX, outScaleY))
       outScaleX = outScaleY = 1.27f;
   }
 
