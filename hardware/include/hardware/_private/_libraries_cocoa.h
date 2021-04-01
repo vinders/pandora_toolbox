@@ -17,22 +17,25 @@ License :     MIT
 #   import <Cocoa/Cocoa.h>
 # endif
   
+  typedef int Bool;
+# define Bool_TRUE  1
+# define Bool_FALSE 0
   typedef void* ScreenHandle;
 
 # ifndef __P_LIBRARIES_COCOA_OBJC
     extern "C" {
 # endif
       struct LibrariesCocoa_data {
-        bool isAppReady;
+        Bool isAppReady;
       };
       
-      bool LibrariesCocoa_init();
+      Bool LibrariesCocoa_init();
       void LibrariesCocoa_shutdown();
       LibrariesCocoa_data* LibrariesCocoa_getData();
 
-      bool LibrariesCocoa_readScreenDpi(ScreenHandle screen, uint32_t* outDpiX, uint32_t* outDpiY);
-      bool LibrariesCocoa_readScreenScaling(ScreenHandle screen, float* outScaleX, float* outScaleY);
-      bool LibrariesCocoa_refreshHandleForMonitor(ScreenHandle* screen, uint32_t unitNumber);
+      Bool LibrariesCocoa_readScreenDpi(ScreenHandle screen, uint32_t* outDpiX, uint32_t* outDpiY);
+      Bool LibrariesCocoa_readScreenScaling(ScreenHandle screen, float* outScaleX, float* outScaleY);
+      Bool LibrariesCocoa_refreshHandleForMonitor(ScreenHandle* screen, uint32_t unitNumber);
 
 # ifndef __P_LIBRARIES_COCOA_OBJC
     }
@@ -45,20 +48,18 @@ License :     MIT
           inline LibrariesCocoa_data& data() noexcept { return *LibrariesCocoa_getData(); }
           
           // read current DPI value of a screen
-          static inline bool readScreenDpi(ScreenHandle screen, uint32_t& outDpiX, uint32_t& outDpiY) noexcept { return LibrariesCocoa_readScreenDpi(screen, &outDpiX, &outDpiY); }
+          static inline bool readScreenDpi(ScreenHandle screen, uint32_t& outDpiX, uint32_t& outDpiY) noexcept { return (bool)LibrariesCocoa_readScreenDpi(screen, &outDpiX, &outDpiY); }
           // read current scaling factor of a screen
-          static inline bool readScreenScaling(ScreenHandle screen, float& outScaleX, float& outScaleY) noexcept { return LibrariesCocoa_readScreenScaling(screen, &outScaleX, &outScaleY); }
+          static inline bool readScreenScaling(ScreenHandle screen, float& outScaleX, float& outScaleY) noexcept { return (bool)LibrariesCocoa_readScreenScaling(screen, &outScaleX, &outScaleY); }
           // get up-to-date handle of a screen
-          static inline bool refreshHandleForMonitor(ScreenHandle& screenOut, uint32_t unitNumber) noexcept { return LibrariesCocoa_refreshHandleForMonitor(&screenOut, unitNumber); }
+          static inline bool refreshHandleForMonitor(ScreenHandle& screenOut, uint32_t unitNumber) noexcept { return (bool)LibrariesCocoa_refreshHandleForMonitor(&screenOut, unitNumber); }
           
           // get global instance
           static inline LibrariesCocoa* instance() noexcept {
-            return (_isInit || (_isInit = LibrariesCocoa_init())) ? &_libs : nullptr;
+            static LibrariesCocoa _libs;
+            static bool _isInit = false;
+            return (_isInit || (_isInit = (bool)LibrariesCocoa_init())) ? &_libs : nullptr;
           }
-
-        private:
-          static bool _isInit = false;
-          static LibrariesCocoa _libs;
         };
       }
     }
