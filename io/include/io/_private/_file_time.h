@@ -29,7 +29,7 @@ namespace pandora {
 #       ifdef _WINDOWS
           struct _stat64 fileInfo;
           return (_wstati64(entry.path().wstring().c_str(), &fileInfo) == 0) ? fileInfo.st_mtime : time_t(0);
-#       elif defined(__GNUC__) && __GNUC__ <= 9
+#       elif defined(__GNUC__) || defined(__clang__)
           std::error_code errorCode;
           auto timePoint = std::chrono::time_point_cast<std::chrono::system_clock::duration>(entry.last_write_time(errorCode) - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
           return std::chrono::system_clock::to_time_t(timePoint);
