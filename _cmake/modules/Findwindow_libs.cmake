@@ -1,6 +1,7 @@
 set(window_libs__FOUND ON)
 
 if(NOT IOS AND NOT ANDROID)
+    # MacOS
     if(APPLE)
         set(_EXTERNAL_FRAMEWORKS
             Cocoa
@@ -13,12 +14,16 @@ if(NOT IOS AND NOT ANDROID)
         endif()
         unset(_EXTERNAL_FRAMEWORKS)
 
+    # Windows
     elseif(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set(window_libs__LINKED kernel32 user32 comdlg32 ole32 oleaut32 gdi32)
         if(_DRAG_DROP_SUPPORT)
             set(window_libs__LINKED ${window_libs__LINKED} shell32)
         endif()
         
+    # Linux
+    elseif(CWORK_LINUX_WAYLAND)
+        #TODO
     else()
         set(window_libs__LINKED X11)
     endif()
