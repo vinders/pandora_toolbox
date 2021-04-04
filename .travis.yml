@@ -19,6 +19,7 @@ notifications:
 jobs:
   fast_finish: true
   include:
+    # linux - clang9 - x86_64
     - &Linux-clang9
       branches:
         only:
@@ -26,15 +27,19 @@ jobs:
       if: branch = develop
       os: linux
       dist: bionic
+      services:
+        - xvfb
       language: cpp
       compiler: clang
       env:
         - CC=clang-9
         - CXX=clang++-9
-        - OS_NAME=linux
         - PLATFORM_NAME=linux-clang
         - BUILD_TYPE=Debug
         - ENABLE_VULKAN=OFF
+        - ENABLE_XVFB=ON
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON"
       addons:
         apt:
           sources:
@@ -50,6 +55,7 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
+    # linux - gcc9 - x86_64
     - &Linux-gcc
       branches:
         only:
@@ -61,15 +67,19 @@ jobs:
           - /^test.*$/
       os: linux
       dist: bionic
+      services:
+        - xvfb
       language: cpp
       compiler: gcc
       env:
         - CC=gcc-9
         - CXX=g++-9
-        - OS_NAME=linux
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Release
         - ENABLE_VULKAN=ON
+        - ENABLE_XVFB=ON
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON"
       addons:
         apt:
           sources:
@@ -83,22 +93,27 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
+    # linux - gcc7 - x86_64 (coverage)
     - &Linux-gcc7-cov
       branches:
         only:
           - develop
       if: branch = develop AND fork = false
       os: linux
+      services:
+        - xvfb
       language: cpp
       compiler: gcc
       env:
         - CC=gcc-7
         - CXX=g++-7
-        - OS_NAME=linux
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Debug
-        - COVERAGE_MODE=1
+        - ENABLE_COVERAGE=ON
         - ENABLE_VULKAN=ON
+        - ENABLE_XVFB=ON
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON"
       addons:
         apt:
           sources:
@@ -112,6 +127,7 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
+    # linux - gcc5 - x86_64 (C++14)
     - &Linux-gcc5
       branches:
         only:
@@ -128,11 +144,11 @@ jobs:
       env:
         - CC=gcc-5
         - CXX=g++-5
-        - OS_NAME=linux
         - PLATFORM_NAME=linux-gcc5
         - BUILD_TYPE=Debug
-        - CPP_REVISION=14
         - ENABLE_VULKAN=OFF
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_CPP_REVISION=14 -DCWORK_TOOLS=OFF -DCWORK_TESTS=ON"
       addons:
         apt:
           sources:
@@ -146,6 +162,7 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
+    # macOS - clang - x86_64
     - &MacOS-clang
       branches:
         only:
@@ -161,10 +178,11 @@ jobs:
       env:
         - CC=clang
         - CXX=clang++
-        - OS_NAME=osx
         - PLATFORM_NAME=osx
         - BUILD_TYPE=Release
         - ENABLE_VULKAN=ON
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON"
       addons:
         apt:
           sources:
@@ -172,6 +190,7 @@ jobs:
           packages:
             - libasound2-dev
             - python3.5
+    # iOS - xcode - arm64
     - &iOS
       branches:
         only:
@@ -185,9 +204,12 @@ jobs:
       language: cpp
       compiler: clang
       env:
-        - OS_NAME=osx
         - PLATFORM_NAME=ios
+        - BUILD_TYPE=Release
         - ENABLE_VULKAN=OFF
+        - GENERATOR=Xcode
+        - CMAKE_ARGS="-DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION=14 -DCWORK_DUMMY_SOURCES=ON"
+        - CMAKE_PLATFORM_ARGS="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64;i386;x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=9.3 -DCMAKE_INSTALL_PREFIX=`pwd`/_install -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO -DCMAKE_IOS_INSTALL_COMBINED=YES"
       addons:
         apt:
           sources:
@@ -195,6 +217,7 @@ jobs:
           packages:
             - libasound2-dev
             - python3.5
+    # android - NDK - arm64
     - &Android64
       branches:
         only:
@@ -207,14 +230,16 @@ jobs:
       os: linux
       language: android
       env:
-        - OS_NAME=android
         - PLATFORM_NAME=android64
+        - BUILD_TYPE=Release
+        - ENABLE_VULKAN=ON
+        - GENERATOR=Ninja
+        - CMAKE_ARGS="-DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION=14 -DCWORK_DUMMY_SOURCES=ON"
         - ANDROID_TARGET=android-26
         - ANDROID_TARGET_VERSION=26
         - ANDROID_ABI=arm64-v8a
         - ANDROID_ARCH=arm64
         - ANDROID_NEON=TRUE
-        - ENABLE_VULKAN=ON
       android:
         components:
           - tools
@@ -234,7 +259,7 @@ jobs:
 
 before_install:
   - |
-    if [ "$OS_NAME" = "android" ]; then
+    if [ "$PLATFORM_NAME" = "android64" ]; then
       export ANDROID_HOME=/usr/local/android-sdk
       export ARCH="$(uname -m)"
       wget "http://dl.google.com/android/repository/android-ndk-r17c-linux-${ARCH}.zip" -O ndk.bin
@@ -251,43 +276,47 @@ before_install:
     fi
 
 before_script:
-  # install recent cmake
+  # ---- install cmake 3.14 ----
   - sh ./_scripts/ci/install_cmake.sh 3.14.7 3.14 _addons
   - sudo chmod -R 777 "./_addons"
   - sudo chmod -R 777 "./video"
   - PATH=$(pwd)/_addons/cmake_3.14.7:$(pwd)/_addons/cmake_3.14.7/bin:$PATH
   - export CTEST_OUTPUT_ON_FAILURE=1
-  # install libs / toolchain
+  # ---- install libs / toolchain ----
   - |
-    if [ "$OS_NAME" = "android" ]; then
+    if [ "$PLATFORM_NAME" = "android64" ]; then
       python3 "${ANDROID_NDK_HOME}/build/tools/make_standalone_toolchain.py" --arch arm64 --install-dir "${HOME}/arm_toolchain"
       export PATH=$HOME/arm_toolchain:$HOME/arm_toolchain/bin:$PATH
       export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
     else
       sh ./_scripts/ci/install_opengl.sh
-      if [ "$PLATFORM_NAME" = "icc" ]; then
-        sudo chmod -R 777 /opt/intel/oneapi
-        source /opt/intel/oneapi/setvars.sh
+      if [ "$ENABLE_VULKAN" = "ON" ]; then
+        #sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
+        #if [ "$PLATFORM_NAME" = "osx" ]; then
+        #  export VULKAN_SDK=/usr/local
+        #else
+        #  export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
+        #fi
       fi
-      if [ "$ENABLE_VULKAN" = "ON___DISABLED_UNTIL_USED_IN_CODE" ]; then
-        sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
-        if [ "$OS_NAME" = "osx" ]; then
-          export VULKAN_SDK=/usr/local
-        else
-          export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
+      if [ -n "$ENABLE_XVFB" ]; then
+        if [ "$ENABLE_XVFB" = "ON" ]; then
+          xvfb-run make test
+          xvfb-run --server-args="-screen 0 1024x768x24" make test
         fi
       fi
     fi
   - cmake --version
-  # dependencies
+  # ---- project dependencies ----
   - sh ./_scripts/ci/install_dependencies.sh "${PLATFORM_NAME}"
 
 script:
+  # ---- project version + build directory ----
   - sh ./_scripts/update_version.sh
   - mkdir _build && cd ./_build && mkdir "${PLATFORM_NAME}" && cd ..
+  # ---- cmake generation ----
   - |
-    if [ "$OS_NAME" = "android" ]; then
-      cmake -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="14" -DCWORK_DUMMY_SOURCES=ON \
+    if [ "$PLATFORM_NAME" = "android64" ]; then
+      cmake -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" $CMAKE_ARGS \
         -G Ninja \
         -DANDROID_ABI=$ANDROID_ABI \
         -DANDROID_ARM_NEON=$ANDROID_NEON \
@@ -302,31 +331,24 @@ script:
         -DCMAKE_EXE_LINKER_FLAGS="-pie" \
         -DCMAKE_ANDROID_ARM_NEON=$ANDROID_NEON \
         || exit 1
-    elif [ "$PLATFORM_NAME" = "ios" ]; then
-      cmake -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="14" -DCWORK_DUMMY_SOURCES=ON \
-        -G Xcode \
-        -DCMAKE_SYSTEM_NAME=iOS \
-        "-DCMAKE_OSX_ARCHITECTURES=armv7;armv7s;arm64;i386;x86_64" \
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=9.3 \
-        -DCMAKE_INSTALL_PREFIX=`pwd`/_install \
-        -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-        -DCMAKE_IOS_INSTALL_COMBINED=YES \
-        || exit 1
-    elif [ "$PLATFORM_NAME" = "icc" ]; then
-      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc || exit 1
-    elif [ -n "$COVERAGE_MODE" ]; then
-      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCWORK_COVERAGE=1 || exit 1
-    elif [ -z "$CPP_REVISION" ]; then
-      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" || exit 1
     else
-      cmake -G "Unix Makefiles" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -DCWORK_TOOLS=OFF -DCWORK_CPP_REVISION="${CPP_REVISION}" || exit 1
+      if [ -n "$ENABLE_COVERAGE" ]; then
+        if [ "$ENABLE_COVERAGE" = "ON" ]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -DCWORK_COVERAGE=1"
+        fi
+      fi
+      if [ -n "$CMAKE_PLATFORM_ARGS" ]; then
+        CMAKE_ARGS="${CMAKE_ARGS} ${CMAKE_PLATFORM_ARGS}"
+      fi
+      cmake -G $GENERATOR -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" $CMAKE_ARGS || exit 1
     fi
+  # ---- cmake build / unit testing ----
   - |
-    if [ "$OS_NAME" = "android" ]; then
+    if [ "$PLATFORM_NAME" = "android64" ]; then
       cd "./_build/${PLATFORM_NAME}"
       ninja -j4 || exit 1
     elif [ "$PLATFORM_NAME" = "ios" ]; then
-      cmake --build "./_build/${PLATFORM_NAME}" --config Release --target install || exit 1
+      cmake --build "./_build/${PLATFORM_NAME}" --config $BUILD_TYPE --target install || exit 1
     else
       cd "./_build/${PLATFORM_NAME}"
       make -j4 || exit 1
@@ -334,9 +356,12 @@ script:
       cd ../..
     fi
 
+# ---- coverage ----
 after_success: |
-  if [ -n "$COVERAGE_MODE" ]; then
-    sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
-    bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
-    sudo rm -rf $COVERAGE_DIR
+  if [ -n "$ENABLE_COVERAGE" ]; then
+    if [ "$ENABLE_COVERAGE" = "ON" ]; then
+      sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
+      bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
+      sudo rm -rf $COVERAGE_DIR
+    fi
   fi
