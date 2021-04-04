@@ -27,6 +27,7 @@ jobs:
       if: branch = develop
       os: linux
       dist: bionic
+      name: "Linux-Xorg: clang"
       services:
         - xvfb
       language: cpp
@@ -67,6 +68,7 @@ jobs:
           - /^test.*$/
       os: linux
       dist: bionic
+      name: "Linux-Xorg: gcc (release)"
       services:
         - xvfb
       language: cpp
@@ -100,6 +102,7 @@ jobs:
           - develop
       if: branch = develop AND fork = false
       os: linux
+      name: "Linux-Xorg: gcc-7 (coverage)"
       services:
         - xvfb
       language: cpp
@@ -139,6 +142,7 @@ jobs:
       if: branch != master
       os: linux
       dist: trusty
+      name: "Linux-Xorg: gcc-5 (cpp14)"
       language: cpp
       compiler: gcc
       env:
@@ -173,6 +177,7 @@ jobs:
           - /^fix.*$/
           - /^test.*$/
       os: osx
+      name: "MacOS X: clang"
       language: cpp
       compiler: clang
       env:
@@ -201,6 +206,7 @@ jobs:
           - /^fix.*$/
           - /^test.*$/
       os: osx
+      name: "iOS: cross-compiled (xcode/MacOS)"
       language: cpp
       compiler: clang
       env:
@@ -228,6 +234,7 @@ jobs:
           - /^fix.*$/
           - /^test.*$/
       os: linux
+      name: "Android: cross-compiled (ndk/Linux)"
       language: android
       env:
         - PLATFORM_NAME=android64
