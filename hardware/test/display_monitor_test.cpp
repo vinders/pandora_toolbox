@@ -135,7 +135,6 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   DisplayMode mode = monitor.getDisplayMode();
   EXPECT_TRUE((monitor.handle()) ? (mode.width > 0) : (mode.width == 0));
   EXPECT_TRUE((monitor.handle()) ? (mode.height > 0) : (mode.height == 0));
-  EXPECT_TRUE((monitor.handle()) ? (mode.refreshRate != undefinedRefreshRate()) : (mode.refreshRate == undefinedRefreshRate()));
 
   bool isFound = false;
   for (auto& it : modes) {

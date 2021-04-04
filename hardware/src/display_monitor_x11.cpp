@@ -271,7 +271,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
       double rate = (double)modeInfo.dotClock / ((double)modeInfo.hTotal * (double)modeInfo.vTotal);
       return static_cast<uint32_t>(rate + 0.0000001); // show "59.94" as "59", to distinguish it from "60"
     }
-    return 0;
+    return undefinedRefreshRate();
   }
   static inline uint32_t __getBitDepth(LibrariesX11& libs) {
     int depth = DefaultDepth(libs.displayServer, libs.screenIndex);
