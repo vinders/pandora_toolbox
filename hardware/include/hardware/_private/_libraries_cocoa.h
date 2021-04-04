@@ -2,7 +2,7 @@
 Author  :     Romain Vinders
 License :     MIT
 *******************************************************************************/
-#ifndef __P_LIBRARIES_COCOA_OBJC
+#ifndef __OBJC__
 # pragma once
 #endif
 
@@ -12,19 +12,16 @@ License :     MIT
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
 # include <stddef.h>
 # include <stdint.h>
-# include <Carbon/Carbon.h>
-# if defined(__OBJC__)
-#   import <Cocoa/Cocoa.h>
-# endif
   
-  typedef int Bool;
-# define Bool_TRUE  1
-# define Bool_FALSE 0
-  typedef void* ScreenHandle;
-
-# ifndef __P_LIBRARIES_COCOA_OBJC
+# ifndef __OBJC__
     extern "C" {
 # endif
+      typedef int Bool;
+#     define Bool_TRUE  1
+#     define Bool_FALSE 0
+      typedef void* ScreenHandle;
+
+      // properties of LibrariesCocoa
       struct LibrariesCocoa_data {
         Bool isAppReady;
       };
@@ -37,7 +34,7 @@ License :     MIT
       Bool LibrariesCocoa_readScreenScaling(ScreenHandle screen, float* outScaleX, float* outScaleY);
       Bool LibrariesCocoa_refreshHandleForMonitor(ScreenHandle* screen, uint32_t unitNumber);
 
-# ifndef __P_LIBRARIES_COCOA_OBJC
+# ifndef __OBJC__
     }
     namespace pandora {
       namespace hardware {
@@ -45,6 +42,7 @@ License :     MIT
           LibrariesCocoa() = default;
           ~LibrariesCocoa() noexcept { LibrariesCocoa_shutdown(); }
           
+          // get properties of instance
           inline LibrariesCocoa_data& data() noexcept { return *LibrariesCocoa_getData(); }
           
           // read current DPI value of a screen

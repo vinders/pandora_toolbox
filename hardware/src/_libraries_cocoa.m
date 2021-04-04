@@ -8,14 +8,12 @@ License :     MIT
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
 # include <stdlib.h>
 # include <string.h>
-# include <Carbon/Carbon.h>
+# import <Carbon/Carbon.h>
 # import <Cocoa/Cocoa.h>
+# import <IOKit/graphics/IOGraphicsLib.h>
+# import <ApplicationServices/ApplicationServices.h>
 
-# include <IOKit/graphics/IOGraphicsLib.h>
-# include <ApplicationServices/ApplicationServices.h>
-
-# define __P_LIBRARIES_COCOA_OBJC 1
-# include "hardware/_private/_libraries_cocoa.h"
+# import "hardware/_private/_libraries_cocoa.h"
 
   // -- utilities --
   
