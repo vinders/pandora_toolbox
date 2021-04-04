@@ -123,6 +123,11 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
+  if (!monitor.handle()) { // for CI with virtual monitor
+    auto monitors = DisplayMonitor::listAvailableMonitors();
+    if (!monitors.empty())
+      monitor = std::move(monitors[0]);
+  }
 
   auto modes = monitor.listAvailableDisplayModes();
   EXPECT_TRUE((monitor.handle()) ? modes.size() >= size_t{ 1u } : modes.empty());
@@ -186,6 +191,11 @@ TEST_F(DisplayMonitorTest, monitorByHandle) {
   EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
   EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
+  if (!defaultMonitor.handle()) { // for CI with virtual monitor
+    auto monitors = DisplayMonitor::listAvailableMonitors();
+    if (!monitors.empty())
+      defaultMonitor = std::move(monitors[0]);
+  }
   if (defaultMonitor.handle()) { // if a monitor exists
     EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.handle(), false).handle()); // would throw if invalid handle
   }
@@ -206,7 +216,12 @@ TEST_F(DisplayMonitorTest, monitorById) {
   EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
   EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
-  if (defaultMonitor.handle()) { // if a monitor exists
+  if (!defaultMonitor.handle()) { // for CI with virtual monitor
+    auto monitors = DisplayMonitor::listAvailableMonitors();
+    if (!monitors.empty())
+      defaultMonitor = std::move(monitors[0]);
+  }
+  if (defaultMonitor.handle() && !defaultMonitor.attributes().id.empty()) { // if a monitor exists
     EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.attributes().id, false).handle()); // would throw if invalid id
   }
 }
@@ -220,6 +235,11 @@ TEST_F(DisplayMonitorTest, monitorByIndex) {
   EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
   EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
 
+  if (!defaultMonitor.handle()) { // for CI with virtual monitor
+    auto monitors = DisplayMonitor::listAvailableMonitors();
+    if (!monitors.empty())
+      defaultMonitor = std::move(monitors[0]);
+  }
   if (defaultMonitor.handle()) { // if a monitor exists
     DisplayMonitor target(false, 0u); // would throw if invalid index
 
