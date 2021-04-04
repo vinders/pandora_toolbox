@@ -300,8 +300,7 @@ before_script:
       fi
       if [ -n "$ENABLE_XVFB" ]; then
         if [ "$ENABLE_XVFB" = "ON" ]; then
-          xvfb-run make test
-          xvfb-run --server-args="-screen 0 1024x768x24" make test
+          xvfb-run --auto-servernum --server-num=1 --server-args="-screen 0 1024x768x24" make test
         fi
       fi
     fi
@@ -340,7 +339,7 @@ script:
       if [ -n "$CMAKE_PLATFORM_ARGS" ]; then
         CMAKE_ARGS="${CMAKE_ARGS} ${CMAKE_PLATFORM_ARGS}"
       fi
-      cmake -G $GENERATOR -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" $CMAKE_ARGS || exit 1
+      cmake -G "${GENERATOR}" -S . -B "./_build/${PLATFORM_NAME}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" $CMAKE_ARGS || exit 1
     fi
   # ---- cmake build / unit testing ----
   - |
