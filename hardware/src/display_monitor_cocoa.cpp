@@ -94,7 +94,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
     if (monitors.empty()) { // primary monitor as default
       monitors.emplace_back();
-      if (monitors[0].attributes().screenArea.width == 0) // no display monitor
+      if (monitors[0]._handle == (DisplayMonitor::Handle)0) // no display monitor
         monitors.clear();
     }
     return monitors;
