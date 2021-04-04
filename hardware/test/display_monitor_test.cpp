@@ -103,7 +103,8 @@ TEST_F(DisplayMonitorTest, listMonitors) {
   EXPECT_TRUE(monitor.attributes().isPrimary);
 
   auto monitors = DisplayMonitor::listAvailableMonitors();
-  if (!monitors.empty()) {
+  EXPECT_TRUE((monitor.handle()) ? !monitors.empty() : true);
+  if (!monitors.empty() && monitor.handle()) {
     bool isFound = false;
     for (auto& it : monitors) {
       if (it.handle() == monitor.handle()) {
