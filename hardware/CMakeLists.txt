@@ -38,6 +38,7 @@ elseif(APPLE) # cocoa
     set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" 
                                 "display_monitor_win32.cpp" "display_monitor_x11.cpp" 
                                 "display_monitor_ios.cpp" "display_monitor_android.cpp")
+    set_source_files_properties(_libraries_cocoa.m PROPERTIES LANGUAGE C)
 else() # x11
     set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_cocoa.m" 
                                 "display_monitor_win32.cpp" "display_monitor_cocoa.cpp" 
