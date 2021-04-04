@@ -290,13 +290,13 @@ before_script:
       export TOOLCHAIN_PATH=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake
     else
       sh ./_scripts/ci/install_opengl.sh
-      if [ "$ENABLE_VULKAN" = "ON" ]; then
-        #sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
-        #if [ "$PLATFORM_NAME" = "osx" ]; then
-        #  export VULKAN_SDK=/usr/local
-        #else
-        #  export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
-        #fi
+      if [ "$ENABLE_VULKAN" = "ON___CURRENTLY_DISABLED" ]; then
+        sh ./_scripts/ci/install_vulkan.sh 1.2.154.0
+        if [ "$PLATFORM_NAME" = "osx" ]; then
+          export VULKAN_SDK=/usr/local
+        else
+          export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
+        fi
       fi
       if [ -n "$ENABLE_XVFB" ]; then
         if [ "$ENABLE_XVFB" = "ON" ]; then
