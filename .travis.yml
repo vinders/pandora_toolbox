@@ -298,11 +298,6 @@ before_script:
           export VULKAN_SDK=$TRAVIS_BUILD_DIR/_libs/VulkanSDK/1.2.154.0/x86_64
         fi
       fi
-      if [ -n "$ENABLE_XVFB" ]; then
-        if [ "$ENABLE_XVFB" = "ON" ]; then
-          xvfb-run --auto-servernum --server-num=1 --server-args="-screen 0 1024x768x24" make test
-        fi
-      fi
     fi
   - cmake --version
   # ---- project dependencies ----
@@ -331,10 +326,8 @@ script:
         -DCMAKE_ANDROID_ARM_NEON=$ANDROID_NEON \
         || exit 1
     else
-      if [ -n "$ENABLE_COVERAGE" ]; then
-        if [ "$ENABLE_COVERAGE" = "ON" ]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -DCWORK_COVERAGE=1"
-        fi
+      if [ "$ENABLE_COVERAGE" = "ON" ]; then
+        CMAKE_ARGS="${CMAKE_ARGS} -DCWORK_COVERAGE=1"
       fi
       if [ -n "$CMAKE_PLATFORM_ARGS" ]; then
         CMAKE_ARGS="${CMAKE_ARGS} ${CMAKE_PLATFORM_ARGS}"
@@ -351,16 +344,18 @@ script:
     else
       cd "./_build/${PLATFORM_NAME}"
       make -j4 || exit 1
-      make test || exit 1
+      if [ "$ENABLE_XVFB" = "ON" ]; then
+        xvfb-run --auto-servernum --server-num=1 --server-args="-screen 0 1024x768x24" make test || exit 1
+      else
+        make test || exit 1
+      fi
       cd ../..
     fi
 
 # ---- coverage ----
 after_success: |
-  if [ -n "$ENABLE_COVERAGE" ]; then
-    if [ "$ENABLE_COVERAGE" = "ON" ]; then
-      sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
-      bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
-      sudo rm -rf $COVERAGE_DIR
-    fi
+  if [ "$ENABLE_COVERAGE" = "ON" ]; then
+    sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
+    bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
+    sudo rm -rf $COVERAGE_DIR
   fi
