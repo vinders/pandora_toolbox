@@ -94,16 +94,15 @@ TEST_F(DisplayMonitorTest, readPrimaryMonitorAreaAndDpi) {
 # endif
 }
 
-TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) { 
+TEST_F(DisplayMonitorTest, listMonitors) {
   DisplayMonitor::setDpiAwareness(true);
-  auto monitors = DisplayMonitor::listAvailableMonitors();
 
   DisplayMonitor monitor;
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
 
-  EXPECT_TRUE((monitor.handle()) ? !monitors.empty() : monitors.empty());
+  auto monitors = DisplayMonitor::listAvailableMonitors();
   if (!monitors.empty()) {
     bool isFound = false;
     for (auto& it : monitors) {
@@ -114,6 +113,15 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
     }
     EXPECT_TRUE(isFound);
   }
+}
+
+TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) { 
+  DisplayMonitor::setDpiAwareness(true);
+
+  DisplayMonitor monitor;
+  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
+  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
+  EXPECT_TRUE(monitor.attributes().isPrimary);
 
   auto modes = monitor.listAvailableDisplayModes();
   EXPECT_TRUE((monitor.handle()) ? modes.size() >= size_t{ 1u } : modes.empty());
