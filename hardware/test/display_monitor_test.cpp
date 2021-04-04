@@ -116,7 +116,7 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   }
 
   auto modes = monitor.listAvailableDisplayModes();
-  EXPECT_TRUE(modes.size() >= size_t{ 1u });
+  EXPECT_TRUE((monitor.handle()) ? modes.size() >= size_t{ 1u } : modes.empty());
   
   DisplayMode mode = monitor.getDisplayMode();
   EXPECT_TRUE((monitor.handle()) ? (mode.width > 0) : (mode.width == 0));
@@ -130,7 +130,7 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
       break;
     }
   }
-  EXPECT_TRUE(isFound);
+  EXPECT_TRUE(isFound || !monitor.handle());
   
   monitor.setDefaultDisplayMode();
   monitor.setDisplayMode(mode);
