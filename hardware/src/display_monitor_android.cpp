@@ -292,9 +292,6 @@ void print_dpi(android_app* app) {
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
     //...
-    
-    if (modes.empty())
-      modes.emplace_back(getDisplayMode());
     return modes;
   }
 

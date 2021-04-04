@@ -332,9 +332,6 @@ Description : Display monitor - Win32 implementation (Windows)
       if (result != FALSE && info.dmPelsWidth != 0u && info.dmPelsHeight != 0u && (info.dmBitsPerPel >= 15u || info.dmBitsPerPel == 0))
         modes.push_back(DisplayMode{ info.dmPelsWidth, info.dmPelsHeight, info.dmBitsPerPel, info.dmDisplayFrequency });
     }
-
-    if (modes.empty())
-      modes.emplace_back(getDisplayMode());
     return modes;
   }
 

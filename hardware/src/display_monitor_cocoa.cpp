@@ -162,9 +162,6 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
     //...
-    
-    if (modes.empty())
-      modes.emplace_back(getDisplayMode());
     return modes;
   }
 

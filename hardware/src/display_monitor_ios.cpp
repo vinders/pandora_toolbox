@@ -157,9 +157,6 @@ var screenOrientation: UIInterfaceOrientation {
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
     //...
-    
-    if (modes.empty())
-      modes.emplace_back(getDisplayMode());
     return modes;
   }
 

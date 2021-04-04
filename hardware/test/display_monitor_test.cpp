@@ -25,14 +25,26 @@ TEST_F(DisplayMonitorTest, dataStructures) {
   DisplayArea area1{ 0, 10, 800u, 600u };
   DisplayArea area2{ 0, 10, 800u, 600u };
   DisplayArea area3{ 10, 0, 600u, 800u };
-  EXPECT_EQ(0, memcmp((void*)&area1, (void*)&area2, sizeof(DisplayArea)));
-  EXPECT_NE(0, memcmp((void*)&area1, (void*)&area3, sizeof(DisplayArea)));
+  EXPECT_EQ(area1.x, area2.x);
+  EXPECT_EQ(area1.y, area2.y);
+  EXPECT_EQ(area1.width, area2.width);
+  EXPECT_EQ(area1.height, area2.height);
+  EXPECT_NE(area1.x, area3.x);
+  EXPECT_NE(area1.y, area3.y);
+  EXPECT_NE(area1.width, area3.width);
+  EXPECT_NE(area1.height, area3.height);
 
   DisplayMode mode1{ 800u, 600u, 32u, 60u };
   DisplayMode mode2{ 800u, 600u, 32u, 60u };
   DisplayMode mode3{ 600u, 800u, 24u, undefinedRefreshRate() };
-  EXPECT_EQ(0, memcmp((void*)&mode1, (void*)&mode2, sizeof(DisplayMode)));
-  EXPECT_NE(0, memcmp((void*)&mode1, (void*)&mode3, sizeof(DisplayMode)));
+  EXPECT_EQ(mode1.width, mode2.width);
+  EXPECT_EQ(mode1.height, mode2.height);
+  EXPECT_EQ(mode1.bitDepth, mode2.bitDepth);
+  EXPECT_EQ(mode1.refreshRate, mode2.refreshRate);
+  EXPECT_NE(mode1.width, mode3.width);
+  EXPECT_NE(mode1.height, mode3.height);
+  EXPECT_NE(mode1.bitDepth, mode3.bitDepth);
+  EXPECT_NE(mode1.refreshRate, mode3.refreshRate);
 }
 
 
@@ -89,7 +101,6 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   DisplayMonitor monitor;
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
-  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().adapter.empty() : monitor.attributes().adapter.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
 
   EXPECT_TRUE((monitor.handle()) ? !monitors.empty() : monitors.empty());
