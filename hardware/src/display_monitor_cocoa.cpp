@@ -99,6 +99,13 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     }
     return monitors;
   }
+  
+  
+// -- accessors -- -------------------------------------------------------------
+
+  DisplayMonitor::String DisplayMonitor::adapterName() const {
+    return "";
+  }
 
 
 // -- display modes -- ---------------------------------------------------------

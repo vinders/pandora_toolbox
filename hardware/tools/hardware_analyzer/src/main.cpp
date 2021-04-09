@@ -49,18 +49,19 @@ void displaySpecs(const CpuSpecs& specs) {
     DisplayMode mode = it.getDisplayMode();
 
 #   ifdef _WINDOWS
+    std::wstring adapterName = it.adapterName();
       printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
-            it.attributes().description.c_str(), it.attributes().adapter.c_str(),
+            it.attributes().description.c_str(), adapterName.c_str(),
             mode.width, mode.height, mode.bitDepth, mode.refreshRate);
 #   else
-      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s (%s)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
-            it.attributes().description.c_str(), it.attributes().adapter.c_str(),
+            it.attributes().description.c_str(),
             mode.width, mode.height, mode.bitDepth, mode.refreshRate);
 #   endif
   }

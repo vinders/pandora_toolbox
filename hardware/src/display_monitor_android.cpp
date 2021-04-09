@@ -243,6 +243,13 @@ void print_dpi(android_app* app) {
   }
 
 
+// -- accessors -- -------------------------------------------------------------
+
+  DisplayMonitor::String DisplayMonitor::adapterName() const {
+    return "";
+  }
+  
+
 // -- display modes -- ---------------------------------------------------------
 
   static inline bool _getMonitorDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept { return false; }
@@ -261,10 +268,7 @@ void print_dpi(android_app* app) {
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
       if (refreshAttributes) {
-        if (this->_attributes.isPrimary) {
-          _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-        }
-        else if (!_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+        if (!_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
           this->_attributes.screenArea.width = mode.width;
           this->_attributes.screenArea.height = mode.height;
         }
@@ -277,13 +281,8 @@ void print_dpi(android_app* app) {
   static inline bool _setDefaultMonitorDisplayMode(const DisplayMonitor::DeviceId& id) noexcept { return false; }
   bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
     if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
-      if (refreshAttributes) {
-        if (this->_attributes.isPrimary) {
-          _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-        }
-        else
-          _readDisplayMonitorAttributes(this->_handle, this->_attributes);
-      }
+      if (refreshAttributes)
+        _readDisplayMonitorAttributes(this->_handle, this->_attributes);
       return true;
     }
     return false;

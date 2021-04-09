@@ -8,9 +8,7 @@ License :     MIT
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
 # include <stdlib.h>
 # include <string.h>
-# import <Carbon/Carbon.h>
 # import <Cocoa/Cocoa.h>
-# import <IOKit/graphics/IOGraphicsLib.h>
 # import <ApplicationServices/ApplicationServices.h>
 
 # import "hardware/_private/_libraries_cocoa.h"
@@ -27,7 +25,7 @@ License :     MIT
         NSSize pixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
         CGSize physicalSize = CGDisplayScreenSize([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
 
-        float dpi = static_cast<float>(pixelSize.width) / static_cast<float>(physicalSize.width))*25.4f;
+        float dpi = (static_cast<float>(pixelSize.width) / static_cast<float>(physicalSize.width))*25.4f;
         *outDpiX = *outDpiY = static_cast<uint32_t>(dpi + 0.5f); // round
         return Bool_TRUE;
       }

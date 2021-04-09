@@ -40,10 +40,11 @@ namespace pandora {
 #     else
 #       if defined(__APPLE__)
           using Handle = void*;
+          using DeviceId = uint32_t;
 #       else
           using Handle = uint64_t;
+          using DeviceId = std::string;
 #       endif
-        using DeviceId = std::string;
         using WindowHandle = int32_t;
         using String = std::string;
 #     endif
@@ -53,7 +54,6 @@ namespace pandora {
       struct Attributes final {
         DeviceId id;            ///< Unique identifier on the system.
         String description;     ///< Description string of the monitor (usually a type of monitor or a brand).
-        String adapter;         ///< Description string of the associated adapter (usually the brand of the GPU).
         DisplayArea screenArea; ///< Display position/area of the entire screen in "virtual desktop". Can contain negative values if not a primary monitor.
         DisplayArea workArea;   ///< Max work area in "virtual desktop": screen area excluding taskbar/toolbars. Can contain negative values if not a primary monitor.
         bool isPrimary;         ///< Primary or secondary display monitor.
@@ -88,6 +88,10 @@ namespace pandora {
       inline Handle handle() noexcept { return this->_handle; }
       /// @brief Get display attributes of monitor
       inline const Attributes& attributes() const noexcept { return this->_attributes; }
+      /// @brief Read associated adapter name/brand
+      /// @warning - May be empty if virtual monitor, or if running in a VM with no GPU support
+      ///          - Not supported on Apple systems (Mac, iOS)
+      String adapterName() const;
 
       // -- display mode --
 
@@ -129,14 +133,16 @@ namespace pandora {
 
     private:
 #     if defined(_WINDOWS)
-        Attributes _attributes{ DeviceId{}, L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+        Attributes _attributes{ L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+#     elif defined(__APPLE__)
+        Attributes _attributes{ 0, "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     else
-        Attributes _attributes{ DeviceId{}, "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+        Attributes _attributes{ "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     endif
 
       Handle _handle = (Handle)0;
 #     if defined(__APPLE__)
-        uint32_t _index = 0;
+        uint32_t _unitNumber = 0;
 #     elif !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
         Handle _controller = (Handle)0;
 #     endif

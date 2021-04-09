@@ -23,20 +23,20 @@ endif()
 # │  File detection                                                  │
 # └──────────────────────────────────────────────────────────────────┘
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32
-    set(_HARDWARE_IGNORED_FILES "_libraries_x11.cpp" "_libraries_wlnd.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_x11.cpp" "display_monitor_wlnd.cpp" "display_monitor_cocoa.cpp"
+    set(_HARDWARE_IGNORED_FILES "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
+                                "display_monitor_x11.cpp" "display_monitor_wln.cpp" "display_monitor_cocoa.cpp"
                                 "display_monitor_ios.cpp" "display_monitor_android.cpp")
 elseif(IOS) # ios
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wlnd.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wlnd.cpp"
+    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
+                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
                                 "display_monitor_cocoa.cpp" "display_monitor_android.cpp")
 elseif(ANDROID) # android
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wlnd.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wlnd.cpp"
+    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
+                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
                                 "display_monitor_cocoa.cpp" "display_monitor_ios.cpp")
 elseif(APPLE) # cocoa
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wlnd.cpp"
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wlnd.cpp"
+    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp"
+                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
                                 "display_monitor_ios.cpp" "display_monitor_android.cpp")
     set_source_files_properties(_libraries_cocoa.m PROPERTIES LANGUAGE C)
 elseif(CWORK_LINUX_WAYLAND) # linux-wayland
@@ -44,8 +44,8 @@ elseif(CWORK_LINUX_WAYLAND) # linux-wayland
                                 "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_cocoa.cpp" 
                                 "display_monitor_ios.cpp" "display_monitor_android.cpp")
 else() # linux/unix-x11
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_wlnd.cpp" "_libraries_cocoa.m"
-                                "display_monitor_win32.cpp" "display_monitor_wlnd.cpp" "display_monitor_cocoa.cpp" 
+    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m"
+                                "display_monitor_win32.cpp" "display_monitor_wln.cpp" "display_monitor_cocoa.cpp" 
                                 "display_monitor_ios.cpp" "display_monitor_android.cpp")
 endif()
 

@@ -109,6 +109,9 @@ TEST_F(DisplayMonitorTest, listMonitors) {
     for (auto& it : monitors) {
       if (it.handle() == monitor.handle()) {
         isFound = true;
+        EXPECT_EQ(monitor.attributes().id, it.attributes().id);
+        EXPECT_EQ(monitor.attributes().description, it.attributes().description);
+        EXPECT_EQ(monitor.adapterName(), it.adapterName());
         break;
       }
     }
@@ -166,7 +169,6 @@ TEST_F(DisplayMonitorTest, moveInstance) {
   EXPECT_EQ(handle, moved.handle());
   EXPECT_EQ(attr.id, moved.attributes().id);
   EXPECT_EQ(attr.description, moved.attributes().description);
-  EXPECT_EQ(attr.adapter, moved.attributes().adapter);
   EXPECT_EQ(0, memcmp((void*)&(attr.screenArea), (void*)&(moved.attributes().screenArea), sizeof(DisplayArea)));
   EXPECT_EQ(0, memcmp((void*)&(attr.workArea), (void*)&(moved.attributes().workArea), sizeof(DisplayArea)));
   EXPECT_EQ(attr.isPrimary, moved.attributes().isPrimary);
@@ -175,7 +177,6 @@ TEST_F(DisplayMonitorTest, moveInstance) {
   EXPECT_EQ(handle, monitor.handle());
   EXPECT_EQ(attr.id, monitor.attributes().id);
   EXPECT_EQ(attr.description, monitor.attributes().description);
-  EXPECT_EQ(attr.adapter, monitor.attributes().adapter);
   EXPECT_EQ(0, memcmp((void*)&(attr.screenArea), (void*)&(monitor.attributes().screenArea), sizeof(DisplayArea)));
   EXPECT_EQ(0, memcmp((void*)&(attr.workArea), (void*)&(monitor.attributes().workArea), sizeof(DisplayArea)));
   EXPECT_EQ(attr.isPrimary, monitor.attributes().isPrimary);
@@ -196,7 +197,12 @@ TEST_F(DisplayMonitorTest, monitorByHandle) {
       defaultMonitor = std::move(monitors[0]);
   }
   if (defaultMonitor.handle()) { // if a monitor exists
-    EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.handle(), false).handle()); // would throw if invalid handle
+    DisplayMonitor monitorByHandle(defaultMonitor.handle(), false); // would throw if invalid handle
+    EXPECT_EQ(defaultMonitor.handle(), monitorByHandle.handle());
+    EXPECT_EQ(defaultMonitor.attributes().id, monitorByHandle.attributes().id);
+    EXPECT_EQ(defaultMonitor.attributes().description, monitorByHandle.attributes().description);
+    EXPECT_EQ(defaultMonitor.attributes().isPrimary, monitorByHandle.attributes().isPrimary);
+    EXPECT_EQ(defaultMonitor.adapterName(), monitorByHandle.adapterName());
   }
 }
 
@@ -221,7 +227,12 @@ TEST_F(DisplayMonitorTest, monitorById) {
       defaultMonitor = std::move(monitors[0]);
   }
   if (defaultMonitor.handle() && !defaultMonitor.attributes().id.empty()) { // if a monitor exists
-    EXPECT_EQ(defaultMonitor.handle(), DisplayMonitor(defaultMonitor.attributes().id, false).handle()); // would throw if invalid id
+    DisplayMonitor monitorById(defaultMonitor.attributes().id, false); // would throw if invalid id
+    EXPECT_EQ(defaultMonitor.handle(), monitorById.handle());
+    EXPECT_EQ(defaultMonitor.attributes().id, monitorById.attributes().id);
+    EXPECT_EQ(defaultMonitor.attributes().description, monitorById.attributes().description);
+    EXPECT_EQ(defaultMonitor.attributes().isPrimary, monitorById.attributes().isPrimary);
+    EXPECT_EQ(defaultMonitor.adapterName(), monitorById.adapterName());
   }
 }
 

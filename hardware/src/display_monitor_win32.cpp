@@ -17,242 +17,319 @@ Description : Display monitor - Win32 implementation (Windows)
   using namespace pandora::hardware;
 
 
-// -- monitor handle & description/attributes -- -------------------------------
+// -- monitor attributes - id/area/description/primary -- ----------------------
 
-  // read brand/description string of monitor and associated adapter
-  static inline void __readDeviceDescription(const DisplayMonitor::DeviceId& id, std::wstring& outDescription, std::wstring& outAdapter) {
-    DISPLAY_DEVICEW device;
-    ZeroMemory(&device, sizeof(device));
-    device.cb = sizeof(device);
-
-    if (!id.empty() && EnumDisplayDevicesW(id.c_str(), 0, &device, 0) != FALSE)
-      outDescription = device.DeviceString;
-    else
-      outDescription = L"Generic PnP Monitor";
-
-    if (!id.empty()) {
-      BOOL result = TRUE;
-      for (uint32_t index = 0; result; ++index) {
-        result = (EnumDisplayDevicesW(nullptr, index, &device, 0) != FALSE);
-        if (result != FALSE && id == device.DeviceName)
-          outAdapter = device.DeviceString;
+  namespace attributes {
+    // verify if a monitor is the primary device
+    static inline bool _isPrimaryDevice(const MONITORINFOEXW& info) {
+      return ((info.dwFlags & MONITORINFOF_PRIMARY) != 0);
+    }
+    
+    // read brand/description string of monitor
+    static inline std::wstring _readDeviceDescription(const DisplayMonitor::DeviceId& id) {
+      DISPLAY_DEVICEW device;
+      ZeroMemory(&device, sizeof(device));
+      device.cb = sizeof(device);
+      return (!id.empty() && EnumDisplayDevicesW(id.c_str(), 0, &device, 0) != FALSE)
+            ? device.DeviceString 
+            : L"Generic PnP Monitor";
+    }
+    // read brand/description string of adapter
+    static inline std::wstring _readAdapterName(const DisplayMonitor::DeviceId& id) {
+      DISPLAY_DEVICEW device;
+      ZeroMemory(&device, sizeof(device));
+      device.cb = sizeof(device);
+      
+      if (!id.empty()) {
+        BOOL result = TRUE;
+        for (uint32_t index = 0; result; ++index) {
+          result = (EnumDisplayDevicesW(nullptr, index, &device, 0) != FALSE);
+          if (result != FALSE && id == device.DeviceName)
+            return device.DeviceString;
+        }
       }
-      if (outAdapter.empty() && EnumDisplayDevicesW(nullptr, 0, &device, 0) != FALSE)
-        outAdapter = device.DeviceString;
+      else if (EnumDisplayDevicesW(nullptr, 0, &device, 0) != FALSE)
+        return device.DeviceString;
+      return L"";
     }
-    else if (EnumDisplayDevicesW(nullptr, 0, &device, 0) != FALSE)
-      outAdapter = device.DeviceString;
-  }
-
-  // convert and fill attributes of a monitor (id, position/size, primary)
-  static inline void __fillMonitorAttributes(MONITORINFOEXW& info, DisplayMonitor::Attributes& outAttr) {
-    outAttr.id = info.szDevice;
-    outAttr.screenArea.x = info.rcMonitor.left;
-    outAttr.screenArea.y = info.rcMonitor.top;
-    outAttr.screenArea.width  = static_cast<uint32_t>(info.rcMonitor.right - info.rcMonitor.left);
-    outAttr.screenArea.height = static_cast<uint32_t>(info.rcMonitor.bottom - info.rcMonitor.top);
-    outAttr.workArea.x = info.rcWork.left;
-    outAttr.workArea.y = info.rcWork.top;
-    outAttr.workArea.width  = static_cast<uint32_t>(info.rcWork.right - info.rcWork.left);
-    outAttr.workArea.height = static_cast<uint32_t>(info.rcWork.bottom - info.rcWork.top);
-    outAttr.isPrimary = ((info.dwFlags & MONITORINFOF_PRIMARY) != 0);
-  }
-  // read attributes of a monitor handle
-  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) {
-    MONITORINFOEXW info;
-    ZeroMemory(&info, sizeof(info));
-    info.cbSize = sizeof(info);
-
-    if (GetMonitorInfoW((HMONITOR)monitorHandle, (MONITORINFO*)&info) != FALSE && info.rcMonitor.right > info.rcMonitor.left) {
-      __fillMonitorAttributes(info, outAttr);
-      __readDeviceDescription(outAttr.id, outAttr.description, outAttr.adapter);
-      return true;
+    
+    // read screen area of a monitor (screen position/size + work area)
+    static inline void _readScreenArea(const MONITORINFOEXW& info, DisplayArea& outScreenArea, DisplayArea& outWorkArea) {
+      outScreenArea.x = info.rcMonitor.left;
+      outScreenArea.y = info.rcMonitor.top;
+      outScreenArea.width  = static_cast<uint32_t>(info.rcMonitor.right - info.rcMonitor.left);
+      outScreenArea.height = static_cast<uint32_t>(info.rcMonitor.bottom - info.rcMonitor.top);
+      outWorkArea.x = info.rcWork.left;
+      outWorkArea.y = info.rcWork.top;
+      outWorkArea.width  = static_cast<uint32_t>(info.rcWork.right - info.rcWork.left);
+      outWorkArea.height = static_cast<uint32_t>(info.rcWork.bottom - info.rcWork.top);
     }
-    return false;
-  }
-  
-  // ---
-  
-  // read primary monitor size/position (fallback if no handle or if _readDisplayMonitorAttributes failed)
-  static bool __readPrimaryDisplayMonitorScreenArea_fallback(DisplayArea& out) {
-    DEVMODEW deviceInfo;
-    ZeroMemory(&deviceInfo, sizeof(deviceInfo));
-    deviceInfo.dmSize = sizeof(deviceInfo);
-
-    out.x = 0;
-    out.y = 0;
-    if (EnumDisplaySettingsExW(nullptr, ENUM_CURRENT_SETTINGS, &deviceInfo, 0) != FALSE && deviceInfo.dmPelsWidth > 0u && deviceInfo.dmPelsHeight > 0u) {
-      out.width  = static_cast<uint32_t>(deviceInfo.dmPelsWidth);
-      out.height = static_cast<uint32_t>(deviceInfo.dmPelsHeight);
-    }
-    else {
-      HDC screenDC = GetDC(nullptr);
-      int x = GetDeviceCaps(screenDC, HORZRES);
-      int y = GetDeviceCaps(screenDC, VERTRES);
-      ReleaseDC(nullptr, screenDC);
-      if (x > 0 && y > 0) {
-        out.width = static_cast<uint32_t>(x);
-        out.height = static_cast<uint32_t>(y);
+    // read primary screen area with default metrics (fallback if _readScreenArea can't be used)
+    static void _readDefaultPrimaryScreenArea(DisplayArea& out) {
+      out.x = out.y = 0;
+      
+      DEVMODEW deviceInfo;
+      ZeroMemory(&deviceInfo, sizeof(deviceInfo));
+      deviceInfo.dmSize = sizeof(deviceInfo);
+      if (EnumDisplaySettingsExW(nullptr, ENUM_CURRENT_SETTINGS, &deviceInfo, 0) != FALSE && deviceInfo.dmPelsWidth > 0u && deviceInfo.dmPelsHeight > 0u) {
+        out.width  = static_cast<uint32_t>(deviceInfo.dmPelsWidth);
+        out.height = static_cast<uint32_t>(deviceInfo.dmPelsHeight);
       }
       else {
-        x = GetSystemMetrics(SM_CXSCREEN);
-        y = GetSystemMetrics(SM_CYSCREEN);
-        if (x > 0 && y > 0) {
-          out.width = static_cast<uint32_t>(x);
-          out.height = static_cast<uint32_t>(y);
+        HDC screenDC = GetDC(nullptr);
+        int width = GetDeviceCaps(screenDC, HORZRES);
+        int height = GetDeviceCaps(screenDC, VERTRES);
+        ReleaseDC(nullptr, screenDC);
+        if (width <= 0 || height <= 0) {
+          width = GetSystemMetrics(SM_CXSCREEN);
+          height = GetSystemMetrics(SM_CYSCREEN);
         }
-        else
-          return false;
+        
+        out.width  = (width >= 0) ?  static_cast<uint32_t>(width)  : 0; // 0 == no display device connected
+        out.height = (height >= 0) ? static_cast<uint32_t>(height) : 0;
       }
     }
-    return true;
-  }
-  // read primary monitor work area size/position (fallback if no handle or if _readDisplayMonitorAttributes failed)
-  static bool __readPrimaryDisplayMonitorWorkArea_fallback(DisplayArea& out) {
-    RECT workArea;
-    if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0) != FALSE && workArea.right > workArea.left) {
-      out.x = workArea.left;
-      out.y = workArea.top;
-      out.width  = static_cast<uint32_t>(workArea.right - workArea.left);
-      out.height = static_cast<uint32_t>(workArea.bottom - workArea.top);
-      return true;
-    }
-    return false;
-  }
-  // read handle + attributes of primary/default monitor
-  static inline void _readPrimaryDisplayMonitorInfo(DisplayMonitor::Handle& outHandle, DisplayMonitor::Attributes& outAttr) {
-    outHandle = (DisplayMonitor::Handle)MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-    if (outHandle == nullptr || !_readDisplayMonitorAttributes(outHandle, outAttr)) {
-      outAttr.isPrimary = true;
-      outAttr.id.clear();
-      __readDeviceDescription(outAttr.id, outAttr.description, outAttr.adapter);
-      if (!__readPrimaryDisplayMonitorScreenArea_fallback(outAttr.screenArea)) {
-        outAttr.screenArea.width = 0u; // no display device connected
-        outAttr.screenArea.height = 0u;
+    // read primary work area size/position (fallback if _readScreenArea can't be used)
+    static bool _readDefaultPrimaryWorkArea(DisplayArea& out) {
+      RECT workArea;
+      if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0) != FALSE && workArea.right > workArea.left) {
+        out.x = workArea.left;
+        out.y = workArea.top;
+        out.width  = static_cast<uint32_t>(workArea.right - workArea.left);
+        out.height = static_cast<uint32_t>(workArea.bottom - workArea.top);
+        return true;
       }
-      if (!__readPrimaryDisplayMonitorWorkArea_fallback(outAttr.workArea))
-        outAttr.workArea = outAttr.screenArea;
+      return false;
+    }
+    
+    // ---
+    
+    // read all attributes of a monitor handle
+    static bool read(HMONITOR handle, DisplayMonitor::Attributes& outAttr) {
+      MONITORINFOEXW info;
+      ZeroMemory(&info, sizeof(info));
+      info.cbSize = sizeof(info);
+
+      if (GetMonitorInfoW(handle, (MONITORINFO*)&info) != FALSE && info.rcMonitor.right > info.rcMonitor.left) {
+        outAttr.id = info.szDevice;
+        outAttr.isPrimary = ::attributes::_isPrimaryDevice(info);
+        outAttr.description = ::attributes::_readDeviceDescription(outAttr.id);
+        ::attributes::_readScreenArea(info, outAttr.screenArea, outAttr.workArea);
+        return true;
+      }
+      return false;
+    }
+    // verify if monitor handle's ID equals the argument ID + read all attributes (if outAttr not null)
+    static inline bool readForId(HMONITOR handle, const DisplayMonitor::DeviceId& id, DisplayMonitor::Attributes* outAttr) {
+      MONITORINFOEXW info;
+      ZeroMemory(&info, sizeof(info));
+      info.cbSize = sizeof(info);
+
+      if (GetMonitorInfoW(handle, (MONITORINFO*)&info) != FALSE && wcscmp(info.szDevice, id.c_str()) == 0) {
+        if (outAttr != nullptr) {
+          outAttr->id = info.szDevice;
+          outAttr->isPrimary = ::attributes::_isPrimaryDevice(info);
+          outAttr->description = ::attributes::_readDeviceDescription(outAttr->id);
+          ::attributes::_readScreenArea(info, outAttr->screenArea, outAttr->workArea);
+        }
+        return true;
+      }
+      return false;
     }
   }
   
-  // ---
 
-  struct __DisplayMonitorHandleSearch final {
-    const DisplayMonitor::DeviceId* id;
-    DisplayMonitor::Handle handle;
-    DisplayMonitor::Attributes* attributes;
-  };
-  static BOOL CALLBACK __getDisplayMonitorByIdCallback(HMONITOR handle, HDC, RECT*, LPARAM data) {
-    MONITORINFOEXW info;
-    ZeroMemory(&info, sizeof(info));
-    info.cbSize = sizeof(info);
+// -- get display monitors (handle + attributes) -- ----------------------------
 
-    if (handle != nullptr && GetMonitorInfoW(handle, (MONITORINFO*)&info) != FALSE) {
-      __DisplayMonitorHandleSearch* query = (__DisplayMonitorHandleSearch*)data;
-      if (query != nullptr && query->id != nullptr && wcscmp(info.szDevice, query->id->c_str()) == 0) {
-        query->handle = (DisplayMonitor::Handle)handle;
-        if (query->attributes != nullptr)
-          __fillMonitorAttributes(info, *(query->attributes));
+  namespace monitors {
+    // read handle/attributes of primary/default monitor
+    static DisplayMonitor::Handle getPrimary(DisplayMonitor::Attributes& outAttr) {
+      HMONITOR handle = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+      if (handle == nullptr || !attributes::read(handle, outAttr)) {
+        outAttr.id.clear();
+        outAttr.description = attributes::_readDeviceDescription(outAttr.id);
+        attributes::_readDefaultPrimaryScreenArea(outAttr.screenArea);
+        if (!attributes::_readDefaultPrimaryWorkArea(outAttr.workArea))
+          outAttr.workArea = outAttr.screenArea;
       }
+      outAttr.isPrimary = true;
+      return (DisplayMonitor::Handle)handle;
     }
-    return TRUE;
-  }
-  // get handle/attributes of any monitor by ID
-  static inline DisplayMonitor::Handle _getDisplayMonitorById(const DisplayMonitor::DeviceId& id, DisplayMonitor::Attributes* outAttr) {
-    __DisplayMonitorHandleSearch query{ &id, nullptr, outAttr };
-    if (EnumDisplayMonitors(nullptr, nullptr, __getDisplayMonitorByIdCallback, (LPARAM)&query) != FALSE)
-      return query.handle;
-    return nullptr;
-  }
+    
+    // ---
 
-  static BOOL CALLBACK __listDisplayMonitorsCallback(HMONITOR handle, HDC, RECT*, LPARAM data) {
-    std::vector<DisplayMonitor::Handle>* handleList = (std::vector<DisplayMonitor::Handle>*)data;
-    if (handle != nullptr && handleList != nullptr)
-      handleList->emplace_back((DisplayMonitor::Handle)handle);
-    return TRUE;
-  }
-  // list handles of all active monitors
-  static inline bool _listDisplayMonitors(std::vector<DisplayMonitor::Handle>& out) {
-    return (EnumDisplayMonitors(nullptr, nullptr, __listDisplayMonitorsCallback, (LPARAM)&out) != FALSE);
+    struct __DisplayMonitorHandleSearch final {
+      const DisplayMonitor::DeviceId* id;
+      DisplayMonitor::Handle handle;
+      DisplayMonitor::Attributes* attributes;
+    };
+    static BOOL CALLBACK __getById_callback(HMONITOR handle, HDC, RECT*, LPARAM data) {
+      __DisplayMonitorHandleSearch* query = (__DisplayMonitorHandleSearch*)data;
+      if (handle != nullptr && query != nullptr && query->id != nullptr) {
+        if (attributes::readForId(handle, *(query->id), query->attributes))
+          query->handle = (DisplayMonitor::Handle)handle;
+      }
+      return TRUE;
+    }
+    // get handle/attributes of any monitor by ID
+    static inline DisplayMonitor::Handle getById(const DisplayMonitor::DeviceId& id, DisplayMonitor::Attributes* outAttr) {
+      __DisplayMonitorHandleSearch query{ &id, nullptr, outAttr };
+      if (EnumDisplayMonitors(nullptr, nullptr, __getById_callback, (LPARAM)&query) != FALSE)
+        return query.handle;
+      return nullptr;
+    }
+    
+    // ---
+
+    static BOOL CALLBACK __list_callback(HMONITOR handle, HDC, RECT*, LPARAM data) {
+      std::vector<DisplayMonitor::Handle>* handleList = (std::vector<DisplayMonitor::Handle>*)data;
+      if (handle != nullptr && handleList != nullptr)
+        handleList->emplace_back((DisplayMonitor::Handle)handle);
+      return TRUE;
+    }
+    // list handles of all active monitors
+    static inline bool listHandles(std::vector<DisplayMonitor::Handle>& out) {
+      return (EnumDisplayMonitors(nullptr, nullptr, __list_callback, (LPARAM)&out) != FALSE);
+    }
   }
 
 
 // -- contructors/list -- ------------------------------------------------------
 
   DisplayMonitor::DisplayMonitor() {
-    _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    this->_handle = monitors::getPrimary(this->_attributes);
   }
   DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
-    if (this->_handle == nullptr || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+    if (this->_handle == nullptr || !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
       if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+        this->_handle = monitors::getPrimary(this->_attributes);
       else
         throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
     }
   }
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
-    this->_handle = _getDisplayMonitorById(id, &(this->_attributes));
+    this->_handle = monitors::getById(id, &(this->_attributes));
     if (this->_handle == nullptr) {
       if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+        this->_handle = monitors::getPrimary(this->_attributes);
       else
         throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
     }
   }
   DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
     std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles) && index < handles.size())
+    if (monitors::listHandles(handles) && index < handles.size())
       this->_handle = handles[index];
-    if (this->_handle == nullptr || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+    if (this->_handle == nullptr || !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
       if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+        this->_handle = monitors::getPrimary(this->_attributes);
       else
         throw std::invalid_argument("DisplayMonitor: monitor index was not found on system.");
     }
   }
 
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
-    std::vector<DisplayMonitor> monitors;
+    std::vector<DisplayMonitor> monitorList;
 
     std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles)) {
+    if (monitors::listHandles(handles)) {
       for (auto it : handles) {
         try {
-          monitors.emplace_back(it, false);
+          monitorList.emplace_back(it, false);
         }
         catch (...) {}
       }
     }
 
-    if (monitors.empty()) { // primary monitor as default
-      monitors.emplace_back();
-      if (monitors[0].attributes().screenArea.width == 0) // no display monitor
-        monitors.clear();
+    if (monitorList.empty()) { // primary monitor as default
+      monitorList.emplace_back();
+      if (monitorList[0].attributes().screenArea.width == 0) // no display monitor
+        monitorList.clear();
     }
-    return monitors;
+    return monitorList;
+  }
+
+
+// -- accessors -- -------------------------------------------------------------
+
+  DisplayMonitor::String DisplayMonitor::adapterName() const {
+    return attributes::_readAdapterName(this->_attributes.id);
   }
 
 
 // -- display modes -- ---------------------------------------------------------
 
-  // read display resolution/depth/rate of a monitor
-  static inline bool _getMonitorDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept {
-    DEVMODEW screenMode;
-    ZeroMemory(&screenMode, sizeof(screenMode));
-    screenMode.dmSize = sizeof(screenMode);
-    if (EnumDisplaySettingsExW(id.c_str(), ENUM_CURRENT_SETTINGS, &screenMode, 0) != FALSE && screenMode.dmPelsWidth != 0) {
-      out.width = screenMode.dmPelsWidth;
-      out.height = screenMode.dmPelsHeight;    
-      out.bitDepth = screenMode.dmBitsPerPel;
-      out.refreshRate = screenMode.dmDisplayFrequency;
-      return true;
+  namespace monitors {
+    // read display resolution/depth/rate of a monitor
+    static inline bool getDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept {
+      DEVMODEW screenMode;
+      ZeroMemory(&screenMode, sizeof(screenMode));
+      screenMode.dmSize = sizeof(screenMode);
+      if (EnumDisplaySettingsExW(id.c_str(), ENUM_CURRENT_SETTINGS, &screenMode, 0) != FALSE && screenMode.dmPelsWidth != 0) {
+        out.width = screenMode.dmPelsWidth;
+        out.height = screenMode.dmPelsHeight;    
+        out.bitDepth = screenMode.dmBitsPerPel;
+        out.refreshRate = screenMode.dmDisplayFrequency;
+        return true;
+      }
+      return false;
     }
-    return false;
+    
+    // set display resolution/depth/rate of a monitor
+    static inline bool setDisplayMode(const DisplayMonitor::DeviceId& id, const DisplayMode& mode) noexcept {
+      DEVMODEW screenMode;
+      ZeroMemory(&screenMode, sizeof(screenMode));
+      screenMode.dmSize = sizeof(screenMode);   
+
+      screenMode.dmPelsWidth = mode.width;
+      screenMode.dmPelsHeight = mode.height;    
+      screenMode.dmBitsPerPel = mode.bitDepth;
+      screenMode.dmDisplayFrequency = mode.refreshRate;
+      screenMode.dmFields = (DM_PELSWIDTH | DM_PELSHEIGHT);
+      if (mode.bitDepth != 0)
+        screenMode.dmFields |= DM_BITSPERPEL;
+      if (mode.refreshRate != undefinedRefreshRate())
+        screenMode.dmFields |= DM_DISPLAYFREQUENCY;
+
+      if (!id.empty())
+        return (ChangeDisplaySettingsExW(id.c_str(), &screenMode, nullptr, CDS_FULLSCREEN, nullptr) == DISP_CHANGE_SUCCESSFUL);
+      else // primary monitor
+        return (ChangeDisplaySettingsW(&screenMode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL);
+    }
+    
+    // reset display resolution/depth/rate of a monitor to default values
+    static inline bool setDefaultDisplayMode(const DisplayMonitor::DeviceId& id) noexcept {
+      if (!id.empty())
+        return (ChangeDisplaySettingsExW(id.c_str(), nullptr, nullptr, 0, nullptr) == DISP_CHANGE_SUCCESSFUL);
+      else // primary monitor
+        return (ChangeDisplaySettingsW(nullptr, 0) == DISP_CHANGE_SUCCESSFUL);
+    }
+    
+    // ---
+    
+    // list all display modes of a monitor
+    static inline std::vector<DisplayMode> listDisplayModes(const DisplayMonitor::DeviceId& id) {
+      std::vector<DisplayMode> modes;
+      BOOL result = TRUE;
+      for (DWORD index = 0; result != FALSE; ++index) {
+        DEVMODEW info;
+        ZeroMemory(&info, sizeof(info));
+        info.dmSize = sizeof(info);
+
+        result = EnumDisplaySettingsExW(id.c_str(), index, &info, 0);
+        if (result != FALSE && info.dmPelsWidth != 0u && info.dmPelsHeight != 0u && (info.dmBitsPerPel >= 15u || info.dmBitsPerPel == 0))
+          modes.push_back(DisplayMode{ info.dmPelsWidth, info.dmPelsHeight, info.dmBitsPerPel, info.dmDisplayFrequency });
+      }
+      return modes;
+    }
   }
+  
+  // ---
+  
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
     DisplayMode mode;
-    if (!_getMonitorDisplayMode(this->_attributes.id, mode)) {
+    if (!monitors::getDisplayMode(this->_attributes.id, mode)) {
       mode.width = this->_attributes.screenArea.width;
       mode.height = this->_attributes.screenArea.height;
       mode.bitDepth = 32;
@@ -261,34 +338,10 @@ Description : Display monitor - Win32 implementation (Windows)
     return mode;
   }
   
-  // set display resolution/depth/rate of a monitor
-  static inline bool _setMonitorDisplayMode(const DisplayMonitor::DeviceId& id, const DisplayMode& mode) noexcept {
-    DEVMODEW screenMode;
-    ZeroMemory(&screenMode, sizeof(screenMode));
-    screenMode.dmSize = sizeof(screenMode);   
-
-    screenMode.dmPelsWidth = mode.width;
-    screenMode.dmPelsHeight = mode.height;    
-    screenMode.dmBitsPerPel = mode.bitDepth;
-    screenMode.dmDisplayFrequency = mode.refreshRate;
-    screenMode.dmFields = (DM_PELSWIDTH | DM_PELSHEIGHT);
-    if (mode.bitDepth != 0)
-      screenMode.dmFields |= DM_BITSPERPEL;
-    if (mode.refreshRate != undefinedRefreshRate())
-      screenMode.dmFields |= DM_DISPLAYFREQUENCY;
-
-    if (!id.empty())
-      return (ChangeDisplaySettingsExW(id.c_str(), &screenMode, nullptr, CDS_FULLSCREEN, nullptr) == DISP_CHANGE_SUCCESSFUL);
-    else // primary monitor
-      return (ChangeDisplaySettingsW(&screenMode, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL);
-  }
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
+    if (monitors::setDisplayMode(this->_attributes.id, mode)) {
       if (refreshAttributes) {
-        if (this->_attributes.isPrimary) {
-          _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-        }
-        else if (!_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+        if (!attributes::read((HMONITOR)this->_handle, this->_attributes)) {
           this->_attributes.screenArea.width = mode.width;
           this->_attributes.screenArea.height = mode.height;
         }
@@ -297,42 +350,17 @@ Description : Display monitor - Win32 implementation (Windows)
     }
     return false;
   }
-  
-  // reset display resolution/depth/rate of a monitor to default values
-  static inline bool _setDefaultMonitorDisplayMode(const DisplayMonitor::DeviceId& id) noexcept {
-    if (!id.empty())
-      return (ChangeDisplaySettingsExW(id.c_str(), nullptr, nullptr, 0, nullptr) == DISP_CHANGE_SUCCESSFUL);
-    else // primary monitor
-      return (ChangeDisplaySettingsW(nullptr, 0) == DISP_CHANGE_SUCCESSFUL);
-  }
   bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
-      if (refreshAttributes) {
-        if (this->_attributes.isPrimary) {
-          _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-        }
-        else
-          _readDisplayMonitorAttributes(this->_handle, this->_attributes);
-      }
+    if (monitors::setDefaultDisplayMode(this->_attributes.id)) {
+      if (refreshAttributes)
+        attributes::read((HMONITOR)this->_handle, this->_attributes);
       return true;
     }
     return false;
   }
 
-  // list all display modes of a monitor
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
-    std::vector<DisplayMode> modes;
-    BOOL result = TRUE;
-    for (DWORD index = 0; result != FALSE; ++index) {
-      DEVMODEW info;
-      ZeroMemory(&info, sizeof(info));
-      info.dmSize = sizeof(info);
-
-      result = EnumDisplaySettingsExW(this->_attributes.id.c_str(), index, &info, 0);
-      if (result != FALSE && info.dmPelsWidth != 0u && info.dmPelsHeight != 0u && (info.dmBitsPerPel >= 15u || info.dmBitsPerPel == 0))
-        modes.push_back(DisplayMode{ info.dmPelsWidth, info.dmPelsHeight, info.dmBitsPerPel, info.dmDisplayFrequency });
-    }
-    return modes;
+    return monitors::listDisplayModes(this->_attributes.id);
   }
 
 
