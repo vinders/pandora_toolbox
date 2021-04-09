@@ -30,11 +30,11 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             set_property(CACHE CWORK_WINDOWS_VERSION PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
         endif()
     endif()
-    # if(NOT DEFINED CWORK_LINUX_WAYLAND)
-        # if(NOT WIN32 AND NOT WIN64 AND NOT _WIN32 AND NOT _WIN64 AND NOT APPLE AND NOT ANDROID AND NOT IOS)
-            # option(CWORK_LINUX_WAYLAND "Wayland UI (instead of X.org)" OFF) # use Wayland display server instead of X11
-        # endif()
-    # endif()
+    if(NOT DEFINED CWORK_LINUX_WAYLAND)
+        if(NOT WIN32 AND NOT WIN64 AND NOT _WIN32 AND NOT _WIN64 AND NOT APPLE AND NOT ANDROID AND NOT IOS)
+            option(CWORK_LINUX_WAYLAND "Wayland UI (instead of X.org)" OFF) # use Wayland display server instead of X11
+        endif()
+    endif()
 
     # -- features to include --
     

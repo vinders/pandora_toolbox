@@ -19,7 +19,7 @@ notifications:
 jobs:
   fast_finish: true
   include:
-    # linux - clang9 - x86_64
+    # linux/X11 - clang9 - x86_64
     - &Linux-clang9
       branches:
         only:
@@ -52,11 +52,15 @@ jobs:
             - libc++abi-8-dev
             - libasound2-dev
             - libxrandr-dev
+            - libxinerama-dev
+            - libxcursor-dev
+            - libxi-dev
+            - libxext-dev
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
-    # linux - gcc9 - x86_64
+    # linux/X11 - gcc9 - x86_64
     - &Linux-gcc
       branches:
         only:
@@ -91,11 +95,15 @@ jobs:
             - g++-9
             - libasound2-dev
             - libxrandr-dev
+            - libxinerama-dev
+            - libxcursor-dev
+            - libxi-dev
+            - libxext-dev
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
-    # linux - gcc7 - x86_64 (coverage)
+    # linux/X11 - gcc7 - x86_64 (coverage)
     - &Linux-gcc7-cov
       branches:
         only:
@@ -126,11 +134,15 @@ jobs:
             - g++-7
             - libasound2-dev
             - libxrandr-dev
+            - libxinerama-dev
+            - libxcursor-dev
+            - libxi-dev
+            - libxext-dev
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
-    # linux - gcc5 - x86_64 (C++14)
+    # linux/X11 - gcc5 - x86_64 (C++14)
     - &Linux-gcc5
       branches:
         only:
@@ -162,9 +174,48 @@ jobs:
             - g++-5
             - libasound2-dev
             - libxrandr-dev
+            - libxinerama-dev
+            - libxcursor-dev
+            - libxi-dev
+            - libxext-dev
             - xorg-dev
             - libgl1-mesa-dev
             - libglu1-mesa-dev
+            - python3.5
+    # linux/wayland - gcc9 - x86_64
+    - &Linux-gcc
+      branches:
+        only:
+          - develop
+          - /^release.*$/
+          - /^feat.*$/
+          - /^fix.*$/
+          - /^test.*$/
+      os: linux
+      dist: focal
+      name: "Linux-Wayland: gcc"
+      language: cpp
+      compiler: gcc
+      env:
+        - CC=gcc
+        - CXX=g++
+        - PLATFORM_NAME=linux-gcc
+        - BUILD_TYPE=Debug
+        - ENABLE_VULKAN=OFF
+        - GENERATOR="Unix Makefiles"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc
+            - g++
+            - libasound2-dev
+            - wayland-protocols
+            - libwayland-dev
+            - libxkbcommon-dev
+            - libegl1-mesa-dev
             - python3.5
     # macOS - clang - x86_64
     - &MacOS-clang
