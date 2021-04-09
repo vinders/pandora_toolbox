@@ -48,20 +48,30 @@ void displaySpecs(const CpuSpecs& specs) {
   for (auto& it : monitors) {
     DisplayMode mode = it.getDisplayMode();
 
-#   ifdef _WINDOWS
-    std::wstring adapterName = it.adapterName();
+#   if defined(_WINDOWS)
+      std::wstring adapterName = it.adapterName();
       printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
             it.attributes().description.c_str(), adapterName.c_str(),
             mode.width, mode.height, mode.bitDepth, mode.refreshRate);
-#   else
-      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+#   elif defined(__APPLE__)
+       printf(" - %u: %ux%u (work area:%ux%u) %s\n   %s\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id,
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
             it.attributes().description.c_str(),
+            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
+#   else
+      std::string adapterName = it.adapterName();
+      if (adapterName.empty())
+        adapterName = "-";
+      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s (%s)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+            it.attributes().screenArea.width, it.attributes().screenArea.height,
+            it.attributes().workArea.width, it.attributes().workArea.height,
+            it.attributes().isPrimary ? "- primary" : " ",
+            it.attributes().description.c_str(), adapterName.c_str(),
             mode.width, mode.height, mode.bitDepth, mode.refreshRate);
 #   endif
   }
