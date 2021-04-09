@@ -6,7 +6,7 @@
 # include <Windows.h>
 #endif
 
-#ifdef __APPLE__
+#if !defined(_WINDOWS) && defined(__APPLE__)
 # define _EMPTY_ID(id) (id == 0)
 #else
 # define _EMPTY_ID(id) id .empty()
@@ -213,8 +213,10 @@ TEST_F(DisplayMonitorTest, monitorByHandle) {
 }
 
 TEST_F(DisplayMonitorTest, monitorById) {
-# ifdef _WINDOWS
+# if defined(_WINDOWS)
     std::wstring invalidId = L"--DUMMY_INVALID_ID!!!--";
+# elif defined(__APPLE__)
+  uint32_t invalidId = 987654321;
 # else
     std::string invalidId = "--DUMMY_INVALID_ID!!!--";
 # endif
