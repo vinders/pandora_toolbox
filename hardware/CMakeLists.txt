@@ -22,45 +22,35 @@ endif()
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  File detection                                                  │
 # └──────────────────────────────────────────────────────────────────┘
-if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32
-    set(_HARDWARE_IGNORED_FILES "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_x11.cpp" "display_monitor_wln.cpp" "display_monitor_cocoa.cpp"
-                                "display_monitor_ios.cpp" "display_monitor_android.cpp")
-elseif(IOS) # ios
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
-                                "display_monitor_cocoa.cpp" "display_monitor_android.cpp")
+if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32 (windows)
+    set(_HARDWARE_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_andr.cpp")
+elseif(IOS) # ios (iOS)
+    set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_andr.cpp")
 elseif(ANDROID) # android
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m" 
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
-                                "display_monitor_cocoa.cpp" "display_monitor_ios.cpp")
-elseif(APPLE) # cocoa
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_wln.cpp"
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_wln.cpp"
-                                "display_monitor_ios.cpp" "display_monitor_android.cpp")
-    set_source_files_properties(_libraries_cocoa.m PROPERTIES LANGUAGE C)
-elseif(CWORK_LINUX_WAYLAND) # linux-wayland
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_x11.cpp" "_libraries_cocoa.m"
-                                "display_monitor_win32.cpp" "display_monitor_x11.cpp" "display_monitor_cocoa.cpp" 
-                                "display_monitor_ios.cpp" "display_monitor_android.cpp")
-else() # linux/unix-x11
-    set(_HARDWARE_IGNORED_FILES "_libraries_win32.cpp" "_libraries_wln.cpp" "_libraries_cocoa.m"
-                                "display_monitor_win32.cpp" "display_monitor_wln.cpp" "display_monitor_cocoa.cpp" 
-                                "display_monitor_ios.cpp" "display_monitor_android.cpp")
+    set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp")
+elseif(APPLE) # cocoa (macOS)
+    set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_ios.cpp" "_andr.cpp")
+elseif(CWORK_LINUX_WAYLAND) # wayland (linux)
+    set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_andr.cpp")
+else() # x11 (linux/unix)
+    set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_andr.cpp")
 endif()
 
 autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "*.[hcm]*")
 if(CWORK_AUTODETECTED_FILES)
     set(_SOURCE_FILES)
     foreach(_file ${CWORK_AUTODETECTED_FILES})
-        foreach(_ignored ${_HARDWARE_IGNORED_FILES})
-            if(_file STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/src/${_ignored}" OR _file STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}\\src\\${_ignored}")
+        foreach(_ignored ${_HARDWARE_IGNORED_EXT})
+            if(_file MATCHES ".*${_ignored}$")
                 set(_IGNORED_FILE ON)
                 break()
             endif()
         endforeach()
         if(NOT _IGNORED_FILE)
             set(_SOURCE_FILES ${_SOURCE_FILES} ${_file})
+            if(APPLE AND _file MATCHES ".*\\.m$")
+                set_source_files_properties(${_file} PROPERTIES LANGUAGE C)
+            endif()
         else()
             unset(_IGNORED_FILE)
         endif()
