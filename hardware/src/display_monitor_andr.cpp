@@ -191,7 +191,7 @@ void print_dpi(android_app* app) {
   DisplayMonitor::DisplayMonitor() {
     _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
   }
-  DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
+  DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
     if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
       if (usePrimaryAsDefault)

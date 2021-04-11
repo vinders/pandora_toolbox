@@ -199,7 +199,7 @@ Description : Display monitor - Win32 implementation (Windows)
   DisplayMonitor::DisplayMonitor() {
     this->_handle = monitors::getPrimary(this->_attributes);
   }
-  DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
+  DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
     if (this->_handle == nullptr || !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
       if (usePrimaryAsDefault)

@@ -232,7 +232,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
   DisplayMonitor::DisplayMonitor() {
     this->_handle = monitors::getPrimary(this->_controller, this->_attributes);
   }
-  DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
+  DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
     if (!this->_handle || !attributes::read(this->_handle, true, this->_controller, this->_attributes)) {
       if (usePrimaryAsDefault)
@@ -553,6 +553,8 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     // fallback if not supported
     int32_t borderSize = (hasBorders) ? __getBorderSize(windowHandle) : 0;
     int32_t captionSize = (hasCaption && windowHandle != (DisplayMonitor::WindowHandle)0) ? 24 : 0;
+    if (hasMenu)
+      captionSize += 24;
     
     DisplayArea windowArea = clientArea;
     windowArea.x -= borderSize;

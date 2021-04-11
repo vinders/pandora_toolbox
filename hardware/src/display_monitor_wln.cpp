@@ -79,7 +79,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
   DisplayMonitor::DisplayMonitor() {
     this->_handle = monitors::getPrimary(this->_controller, this->_attributes);
   }
-  DisplayMonitor::DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault)
+  DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
     if (!this->_handle || !attributes::read(this->_handle, this->_controller, this->_attributes)) {
       if (usePrimaryAsDefault)

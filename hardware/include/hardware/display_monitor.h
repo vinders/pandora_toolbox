@@ -61,16 +61,19 @@ namespace pandora {
 
       // -- monitor description --
 
-      /// @brief Get primary monitor description
+      /// @brief Get primary/default monitor description
       DisplayMonitor();
       /// @brief Get monitor description from handle
-      /// @warning Throws invalid_argument if handle is invalid or can't be read
+      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      /// @warning Throws invalid_argument if handle is invalid and !usePrimaryAsDefault
       DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault);
       /// @brief Get monitor description by identifier (or primary if not found and usePrimaryAsDefault==true)
-      /// @warning Throws invalid_argument if ID not found and usePrimaryAsDefault==false
+      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      /// @warning Throws invalid_argument if ID not found and !usePrimaryAsDefault
       DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault);
       /// @brief Get monitor description by index (or primary if not found and usePrimaryAsDefault==true)
-      /// @warning Throws invalid_argument if index not found and usePrimaryAsDefault==false
+      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      /// @warning Throws invalid_argument if index not found and !usePrimaryAsDefault
       explicit DisplayMonitor(bool usePrimaryAsDefault, uint32_t index);
 
       DisplayMonitor(const DisplayMonitor&) = delete;
