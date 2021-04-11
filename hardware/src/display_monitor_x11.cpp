@@ -216,6 +216,23 @@ Description : Display monitor - X11 implementation (Linux/BSD)
       return (DisplayMonitor::Handle)handle;
     }
     
+    // read handle/attributes of primary/default monitor
+    static bool getByHandle(DisplayMonitor::Handle handle, DisplayMonitor::Handle& outController, DisplayMonitor::Attributes& outAttr) {
+      LibrariesX11* libs = LibrariesX11::instance();
+      if (libs != nullptr && libs->randr.isAvailable) {
+        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
+          for (int o = 0; o < resources->noutput; ++o) {
+            if (resources->outputs[o] == (RROutput)handle) {
+              libs->randr.FreeScreenResources_(resources);
+              return attributes::read(resources->outputs[o], true, outController, outAttr);
+            }
+          }
+          libs->randr.FreeScreenResources_(resources);
+        }
+      }
+      return false; 
+    }
+    
     // ---
     
     // list handles of all active monitors
@@ -248,7 +265,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
   }
   DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
-    if (!this->_handle || !attributes::read(this->_handle, true, this->_controller, this->_attributes)) {
+    if (!this->_handle || !monitors::getByHandle(this->_handle, this->_controller, this->_attributes)) {
       if (usePrimaryAsDefault)
         this->_handle = monitors::getPrimary(this->_controller, this->_attributes);
       else

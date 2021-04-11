@@ -111,14 +111,15 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     }
     
     MonitorAttributes_cocoa attributes;
-    if (this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa(id, &(this->_unitNumber), &attributes) ) {
+    this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)id, &(this->_unitNumber), &attributes);
+    if (this->_handle) {
       _moveAttributes(attributes, this->_attributes);
     }
     else { // failure
       if (!usePrimaryAsDefault)
         throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
       
-      this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes)
+      this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
         _moveAttributes(attributes, this->_attributes);
       else
@@ -132,26 +133,24 @@ Description : Display monitor - Cocoa implementation (Mac OS)
         throw std::invalid_argument("DisplayMonitor: cocoa libraries can't be used.");
       return;
     }
+    MonitorAttributes_cocoa attributes;
     
-    CocoaDisplayId* handles = nullptr;
+    CocoaDisplayId* ids = nullptr;
     uint32_t length = 0;
-    if (__listMonitorIds_cocoa(&handles, &length) && handles != nullptr) {
-      if (index < handles.size())
-        this->_handle = handles[index];
-      free(handles);
+    if (__listMonitorIds_cocoa(&ids, &length) && ids != nullptr) {
+      if (index < length)
+        this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa(__getMonitorIdFromList_cocoa(ids, index), &(this->_unitNumber), &attributes);
+      free(ids);
     }
     
     if (this->_handle) {
-      MonitorAttributes_cocoa attributes;
-      __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
       _moveAttributes(attributes, this->_attributes);
     }
     else { // failure
       if (!usePrimaryAsDefault)
         throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
       
-      MonitorAttributes_cocoa attributes;
-      this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes)
+      this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
         _moveAttributes(attributes, this->_attributes);
       else
@@ -162,17 +161,17 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitorList;
 
-    CocoaDisplayId* handles = nullptr;
+    CocoaDisplayId* ids = nullptr;
     uint32_t length = 0;
-    if (__listMonitorIds_cocoa(&handles, &length) && handles != nullptr) {
+    if (__listMonitorIds_cocoa(&ids, &length) && ids != nullptr) {
       for (uint32_t i = 0; i < length; ++i) {
         try {
-          monitorList.emplace_back(__getMonitorIdFromList_cocoa(handles, i), false);
+          monitorList.emplace_back(__getMonitorIdFromList_cocoa(ids, i), false);
         }
-        catch (const std::bad_alloc&) { free(handles); throw; }
+        catch (const std::bad_alloc&) { free(ids); throw; }
         catch (...) {} // ignore invalid_argument
       }
-      free(handles);
+      free(ids);
     }
     return monitorList;
   }
@@ -191,7 +190,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
     DisplayMode mode;
     
-    DisplayMode_cocoa modeCocoa,
+    DisplayMode_cocoa modeCocoa;
     if (__getDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, &modeCocoa) ) {
       _moveDisplayMode(modeCocoa, mode);
     }
