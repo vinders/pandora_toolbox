@@ -15,7 +15,7 @@ License :     MIT
 
   // -- utilities --
   
-  (Bool) LibrariesCocoa_readScreenDpi:(ScreenHandle)screen :(uint32_t*)outDpiX :(uint32_t*)outDpiY) {
+  Bool LibrariesCocoa_readScreenDpi(CocoaScreenHandle screen, uint32_t* outDpiX, uint32_t* outDpiY) {
     @autoreleasepool {
       if (!screen)
         return Bool_FALSE;
@@ -32,7 +32,8 @@ License :     MIT
       @catch (NSException*) { return Bool_FALSE; }
     }
   }
-  (Bool) LibrariesCocoa_readScreenScaling:(ScreenHandle)screen :(float*)outScaleX :(float*)outScaleY) {
+  
+  Bool LibrariesCocoa_readScreenScaling(CocoaScreenHandle screen, float* outScaleX, float* outScaleY) {
     @autoreleasepool {
       if (!screen)
         return Bool_FALSE;
@@ -47,21 +48,6 @@ License :     MIT
       }
       @catch (NSException*) { return Bool_FALSE; }
     }
-  }
-  (Bool) LibrariesCocoa_refreshHandleForMonitor:(ScreenHandle*)outScreen :(uint32_t)unitNumber) {
-    @try {
-      for (NSScreen* screen in [NSScreen screens]) {
-        NSNumber* displayNb = [screen deviceDescription][@"NSScreenNumber"];
-
-        // use screen number instead of display ID -> that way, it also works with automatic graphics switching
-        if (CGDisplayUnitNumber([displayNb unsignedIntValue]) == unitNumber) {
-          *((NSScreen*)outScreen) = screen;
-          return Bool_TRUE;
-        }
-      }
-      return Bool_FALSE;
-    }
-    @catch (NSException*) { return Bool_FALSE; }
   }
   
   // ---------------------------------------------------------------------------
@@ -84,24 +70,17 @@ License :     MIT
     return Bool_FALSE;
   [NSApp setDelegate:__LibrariesCocoa_delegate];
   */
-  
-  Bool __LibrariesCocoa_isInit = Bool_FALSE;
-  LibrariesCocoa_data* __LibrariesCocoa_data = nil;
-  
-  (LibrariesCocoa_data*) LibrariesCocoa_getData {
-    return __LibrariesCocoa_data;
-  }
-  
-  // -- init --
-  
-  (Bool) LibrariesCocoa_init {
-    @autoreleasepool {
-      if (__LibrariesCocoa_isInit)
-        return Bool_TRUE;
 
+
+  // -- library management --
+  
+  CocoaLibraryData* __LibrariesCocoa_data = nil;
+  
+  Bool __LibrariesCocoa_init() {
+    @autoreleasepool {
       @try {
         if (!__LibrariesCocoa_data) {
-          __LibrariesCocoa_data = [[LibrariesCocoa_data alloc] init];
+          __LibrariesCocoa_data = [[CocoaLibraryData alloc] init];
           __LibrariesCocoa_data.isAppReady = Bool_FALSE;
         }
         if (NSApp)
@@ -109,21 +88,18 @@ License :     MIT
         [NSApplication sharedApplication];
       }
       @catch (NSException*) { return Bool_FALSE; }
-
-      __LibrariesCocoa_isInit = Bool_TRUE;
       return Bool_TRUE;
     }
   }
-  
-  // -- shutdown --
-  
-  (void) LibrariesCocoa_shutdown {
+
+  void __LibrariesCocoa_shutdown() {
     @autoreleasepool {
-      if (__LibrariesCocoa_isInit) {
-        [__LibrariesCocoa_data release];
-        __LibrariesCocoa_data = nil;
-        __LibrariesCocoa_isInit = Bool_FALSE;
-      }
+      [__LibrariesCocoa_data release];
+      __LibrariesCocoa_data = nil;
     }
+  }
+  
+  CocoaLibraryData* __LibrariesCocoa_getData() {
+    return __LibrariesCocoa_data;
   }
 #endif

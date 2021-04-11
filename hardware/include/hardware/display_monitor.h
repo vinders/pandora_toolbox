@@ -143,7 +143,12 @@ namespace pandora {
         Attributes _attributes{ "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     endif
 
-      Handle _handle = (Handle)0;
+#     if defined(__APPLE__)
+        mutable Handle _handle = (Handle)0;
+#     else
+        Handle _handle = (Handle)0;
+#     endif
+      
 #     if defined(__APPLE__)
         uint32_t _unitNumber = 0;
 #     elif !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
