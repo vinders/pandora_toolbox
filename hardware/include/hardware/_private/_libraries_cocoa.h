@@ -39,7 +39,7 @@ License :     MIT
       
       Bool __LibrariesCocoa_init();
       void __LibrariesCocoa_shutdown();
-      CocoaLibraryData* __LibrariesCocoa_getData();
+      struct CocoaLibraryData* __LibrariesCocoa_getData();
 
 
       // -- utilities --

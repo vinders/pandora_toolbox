@@ -6,6 +6,7 @@ License :     MIT
 # include <TargetConditionals.h>
 #endif
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
+# include <stdint.h>
 # include <stdlib.h>
 # include <string.h>
 # import <Cocoa/Cocoa.h>
@@ -25,8 +26,8 @@ License :     MIT
         NSSize pixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
         CGSize physicalSize = CGDisplayScreenSize([[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
 
-        float dpi = (static_cast<float>(pixelSize.width) / static_cast<float>(physicalSize.width))*25.4f;
-        *outDpiX = *outDpiY = static_cast<uint32_t>(dpi + 0.5f); // round
+        float dpi = ((float)pixelSize.width / (float)physicalSize.width)*25.4f;
+        *outDpiX = *outDpiY = (uint32_t)(dpi + 0.5001f); // round
         return Bool_TRUE;
       }
       @catch (NSException*) { return Bool_FALSE; }
@@ -42,8 +43,8 @@ License :     MIT
         NSRect points = [(NSScreen*)screen frame];
         NSRect pixels = [(NSScreen*)screen convertRectToBacking:points];
 
-        *outScaleX = static_cast<float>(pixels.size.width) / static_cast<float>(points.size.width);
-        *outScaleY = static_cast<float>(pixels.size.height) / static_cast<float>(points.size.height);
+        *outScaleX = (float)pixels.size.width / (float)points.size.width;
+        *outScaleY = (float)pixels.size.height / (float)points.size.height;
         return Bool_TRUE;
       }
       @catch (NSException*) { return Bool_FALSE; }
@@ -74,17 +75,23 @@ License :     MIT
 
   // -- library management --
   
-  CocoaLibraryData* __LibrariesCocoa_data = nil;
+  struct CocoaLibraryData* __LibrariesCocoa_data = NULL;
   
   Bool __LibrariesCocoa_init() {
     @autoreleasepool {
+      if (__LibrariesCocoa_data != NULL)
+        return Bool_TRUE;
+    
       @try {
         if (!__LibrariesCocoa_data) {
-          __LibrariesCocoa_data = [[CocoaLibraryData alloc] init];
-          __LibrariesCocoa_data.isAppReady = Bool_FALSE;
+          __LibrariesCocoa_data = malloc(sizeof(struct CocoaLibraryData));
+          if (__LibrariesCocoa_data == NULL)
+            return Bool_FALSE;
+            
+          __LibrariesCocoa_data->isAppReady = Bool_FALSE;
         }
         if (NSApp)
-          __LibrariesCocoa_data.isAppReady = Bool_TRUE;
+          __LibrariesCocoa_data->isAppReady = Bool_TRUE;
         [NSApplication sharedApplication];
       }
       @catch (NSException*) { return Bool_FALSE; }
@@ -94,12 +101,14 @@ License :     MIT
 
   void __LibrariesCocoa_shutdown() {
     @autoreleasepool {
-      [__LibrariesCocoa_data release];
-      __LibrariesCocoa_data = nil;
+      if (__LibrariesCocoa_data != NULL) {
+        free(__LibrariesCocoa_data);
+        __LibrariesCocoa_data = NULL;
+      }
     }
   }
   
-  CocoaLibraryData* __LibrariesCocoa_getData() {
+  struct CocoaLibraryData* __LibrariesCocoa_getData() {
     return __LibrariesCocoa_data;
   }
 #endif

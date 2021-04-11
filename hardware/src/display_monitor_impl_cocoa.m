@@ -9,9 +9,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 #endif
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
 
-# import <stddef.h>
-# import <string.h>
+# include <stddef.h>
+# include <string.h>
 # import <Cocoa/Cocoa.h>
+# import <ApplicationServices/ApplicationServices.h>
 # if !defined(__aarch64__) && (defined(__x86_64__) || defined(__x86_64) || defined(__i686__) || defined(__i386__) || defined(__amd64__))
 #   import <IOKit/graphics/IOGraphicsLib.h>
 #   define __P_APPLE_IOKIT 1
