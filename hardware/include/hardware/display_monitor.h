@@ -40,12 +40,13 @@ namespace pandora {
 #     else
 #       if defined(__APPLE__)
           using Handle = void*;
+          using WindowHandle = void*;
           using DeviceId = uint32_t;
 #       else
           using Handle = uint64_t;
+          using WindowHandle = int32_t;
           using DeviceId = std::string;
 #       endif
-        using WindowHandle = int32_t;
         using String = std::string;
 #     endif
 

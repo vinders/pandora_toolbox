@@ -191,7 +191,7 @@ TEST_F(DisplayMonitorTest, moveInstance) {
 TEST_F(DisplayMonitorTest, monitorByHandle) {
   EXPECT_THROW(DisplayMonitor((DisplayMonitor::Handle)0, false), std::invalid_argument);
   EXPECT_THROW(DisplayMonitor((DisplayMonitor::Handle)123456789, false), std::invalid_argument);
-  EXPECT_NO_THROW(DisplayMonitor((DisplayMonitor::Handle)123456789, true), std::invalid_argument);
+  EXPECT_NO_THROW(DisplayMonitor((DisplayMonitor::Handle)123456789, true));
 
   DisplayMonitor defaultMonitor;
   DisplayMonitor invalidUseDefault((DisplayMonitor::Handle)0, true);

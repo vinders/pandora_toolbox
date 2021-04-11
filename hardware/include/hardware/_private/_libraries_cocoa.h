@@ -22,6 +22,7 @@ License :     MIT
       // -- types --
   
       typedef void* CocoaScreenHandle;
+      typedef void* CocoaWindowHandle;
       typedef uint32_t CocoaDisplayId;
       
       typedef int Bool;

@@ -223,6 +223,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 #     endif
 
       out->refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+      //if (out->refreshRate == 0)
+        //out->refreshRate = (uint32_t)getFallbackRefreshRate(displayID);
 
       CGDisplayModeRelease(modeRef);
       return Bool_FALSE;
@@ -255,7 +257,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- metrics -- ---------------------------------------------------------------
   
   // client area to window area (DPI adjusted)
-  void __clientAreaToWindowArea_cocoa(CocoaScreenHandle screen, const struct DisplayArea_cocoa* clientArea, CocoaScreenHandle windowHandle, 
+  void __clientAreaToWindowArea_cocoa(CocoaScreenHandle screen, const struct DisplayArea_cocoa* clientArea, CocoaWindowHandle windowHandle, 
                                       Bool hasMenu, uint32_t hasBorders, uint32_t hasCaption, struct DisplayArea_cocoa* outWindowArea) {
     //TODO
     outWindowArea.x = clientArea.x;
