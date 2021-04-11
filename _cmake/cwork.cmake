@@ -165,6 +165,24 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         unset(_file_list)
     endmacro()
     
+    #brief:   Specify compilation language for special files (Obj-C/Obj-C++/...)
+    #warning: Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
+    #params: - lang: cmake language ID: C, CXX
+    #        - ARGN: list of custom files
+    macro(cwork_set_source_language lang)
+        if(lang STREQUAL c)
+            set(lang C)
+        elseif(lang STREQUAL cxx OR lang STREQUAL cpp OR lang STREQUAL CPP OR lang STREQUAL "C++")
+            set(lang CXX)
+        endif()
+    
+        set(_file_list "${ARGN}")
+        if (_file_list)
+            set(${PROJECT_NAME}_LANG_${lang}_FILES "${_file_list}")
+        endif()
+        unset(_file_list)
+    endmacro()
+    
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Dependencies                                                    │
     # └──────────────────────────────────────────────────────────────────┘
@@ -657,6 +675,13 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 target_compile_definitions(${CWORK_PROJECT_NAME} PRIVATE -D_P_DYNAMIC_LIBRARY_BUILD=1)
             else() # static library
                 add_library(${CWORK_PROJECT_NAME} STATIC ${_CWORK_TARGET_FILES})
+            endif()
+            
+            if(${CWORK_PROJECT_NAME}_LANG_C_FILES)
+                set_source_files_properties(${${CWORK_PROJECT_NAME}_LANG_C_FILES} PROPERTIES LANGUAGE C)
+            endif()
+            if(${CWORK_PROJECT_NAME}_LANG_CXX_FILES)
+                set_source_files_properties(${${CWORK_PROJECT_NAME}_LANG_CXX_FILES} PROPERTIES LANGUAGE CXX)
             endif()
         else() # header-only library
             set(${CWORK_PROJECT_NAME}_INTERFACE ON CACHE STRING "${CWORK_PROJECT_NAME}_INTERFACE")
