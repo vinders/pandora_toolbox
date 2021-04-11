@@ -19,19 +19,19 @@ License :     MIT
       
       // -- types - obj-C bindings --
       
-      struct DisplayArea_cocoa final {
+      struct DisplayArea_cocoa {
         int32_t x;
         int32_t y;
         uint32_t width;
         uint32_t height;
       };
-      struct DisplayMode_cocoa final {
+      struct DisplayMode_cocoa {
         uint32_t width;
         uint32_t height;
         uint32_t bitDepth;
         uint32_t refreshRate;
       };
-      struct MonitorAttributes_cocoa final {
+      struct MonitorAttributes_cocoa {
         CocoaDisplayId id;
         char* description;
         struct DisplayArea_cocoa screenArea;

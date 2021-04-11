@@ -46,7 +46,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
             
             CFDictionaryRef nameList = CFDictionaryGetValue(dictionary, CFSTR(kDisplayProductName));
             CFStringRef nameRef;
-            if (nameList && CFDictionaryGetValueIfPresent(names, CFSTR("en_US"), (const void**)&nameRef)) {
+            if (nameList && CFDictionaryGetValueIfPresent(nameList, CFSTR("en_US"), (const void**)&nameRef)) {
               const CFIndex length = CFStringGetMaximumSizeForEncoding(CFStringGetLength(nameRef), kCFStringEncodingUTF8);
               monitorName = calloc(length + 1, sizeof(char));
               CFStringGetCString(nameRef, name, length, kCFStringEncodingUTF8);
