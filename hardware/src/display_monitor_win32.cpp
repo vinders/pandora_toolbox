@@ -238,7 +238,8 @@ Description : Display monitor - Win32 implementation (Windows)
         try {
           monitorList.emplace_back(it, false);
         }
-        catch (...) {}
+        catch (const std::bad_alloc&) { throw; }
+        catch (...) {} // ignore invalid_argument
       }
     }
 
@@ -340,11 +341,9 @@ Description : Display monitor - Win32 implementation (Windows)
   
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     if (monitors::setDisplayMode(this->_attributes.id, mode)) {
-      if (refreshAttributes) {
-        if (!attributes::read((HMONITOR)this->_handle, this->_attributes)) {
-          this->_attributes.screenArea.width = mode.width;
-          this->_attributes.screenArea.height = mode.height;
-        }
+      if (refreshAttributes && !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
+        this->_attributes.screenArea.width = mode.width;
+        this->_attributes.screenArea.height = mode.height;
       }
       return true;
     }
