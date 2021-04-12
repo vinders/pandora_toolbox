@@ -493,7 +493,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       if (hasMenu)
         captionSize += 46;
       
-      NSWindow* parent = [[NSApplication sharedApplication] mainWindow]
+      NSWindow* parent = [[NSApplication sharedApplication] mainWindow];
       if (parent != NULL) { // try to read actual values from main window, if available
         if (hasBorders) {
           int32_t decorationX = parent.frame.size.width - [parent contentRectForFrameRect: parent.frame].size.width;
