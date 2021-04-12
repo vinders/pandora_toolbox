@@ -50,7 +50,7 @@ License :     MIT
       
       // -- get display monitors (handle + attributes) --
       
-      CocoaScreenHandle __getMonitorHandle_cocoa(uint32_t unitNumber);
+      CocoaScreenHandle __getMonitorHandle_cocoa(uint32_t unitNumber, CocoaDisplayId* outId);
       CocoaScreenHandle __getPrimaryMonitor_cocoa(uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);
       Bool              __getMonitor_cocoa(CocoaScreenHandle screen, uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);
       CocoaScreenHandle __getMonitorById_cocoa(CocoaDisplayId displayId, uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);

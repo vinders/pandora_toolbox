@@ -122,7 +122,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       for (NSScreen* screen in [NSScreen screens]) {
         NSNumber* displayNb = [screen deviceDescription][@"NSScreenNumber"];
         if (CGDisplayUnitNumber([displayNb unsignedIntValue]) == unitNumber) {
-          outId = [displayNb unsignedIntValue];
+          *outId = [displayNb unsignedIntValue];
           return (CocoaScreenHandle)screen;
         }
       }
@@ -170,8 +170,6 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       // use unit number to support automatic graphics switching
       NSNumber* screenNumber = [screen deviceDescription][@"NSScreenNumber"];
       if (CGDisplayUnitNumber([screenNumber unsignedIntValue]) == unitNumber) { 
-        *outUnitNumber = unitNumber;
-        
         outAttr->id = (CocoaDisplayId)[screenNumber unsignedIntValue];
         outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->id);
         __readScreenArea_cocoa(screen, outAttr->id, &(outAttr->screenArea), &(outAttr->workArea));
@@ -217,7 +215,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
 # ifdef __P_APPLE_IOKIT
     // read refresh rate from IORegistry (if not readable from ModeRef)
-    static double __readRefreshRate__ioreg(CGDirectDisplayID displayID) {
+    static double __readRefreshRate__ioreg(CGDirectDisplayID displayId) {
       double refreshRate = 0.0; // undefinedRefreshRate
       
       io_iterator_t it;
@@ -231,7 +229,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
             CFNumberGetValue(indexRef, kCFNumberIntType, &index);
             CFRelease(indexRef);
             
-            if (CGOpenGLDisplayMaskToDisplayID(1 << index) == displayID) {
+            if (CGOpenGLDisplayMaskToDisplayID(1 << index) == displayId) {
               uint32_t clock = 0;
               CFNumberRef clockRef = IORegistryEntryCreateCFProperty(service, CFSTR("IOFBCurrentPixelClock"),
                                                                      kCFAllocatorDefault, kNilOptions);
@@ -261,7 +259,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 # endif
 
   // extract display resolution/depth/rate from native display mode
-  static void __readFromCGDisplayMode(CGDisplayModeRef modeRef, struct DisplayMode_cocoa* out) {
+  static void __readFromCGDisplayMode(CocoaDisplayId displayId, CGDisplayModeRef modeRef, struct DisplayMode_cocoa* out) {
     out->width = (int32_t)CGDisplayModeGetWidth(modeRef);
     out->height = (int32_t)CGDisplayModeGetHeight(modeRef);
     
@@ -276,13 +274,13 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     out->refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
 #   ifdef __P_APPLE_IOKIT
       if (out->refreshRate == 0)
-        out->refreshRate = (uint32_t)__readRefreshRate__ioreg(displayID); // floor -> distinguish 59.94 from 60
+        out->refreshRate = (uint32_t)__readRefreshRate__ioreg(displayId); // floor -> distinguish 59.94 from 60
 #   endif
   }
   
   // verify display mode validity
   static Bool __isDisplayModeValid_cocoa(CGDisplayModeRef modeRef) {
-    uint32_t modeFlags = CGDisplayModeGetIOFlags(modeRef);
+    uint32_t flags = CGDisplayModeGetIOFlags(modeRef);
     if ( (flags & (kDisplayModeValidFlag | kDisplayModeSafeFlag | kDisplayModeInterlacedFlag | kDisplayModeStretchedFlag)) 
          != (kDisplayModeValidFlag | kDisplayModeSafeFlag) ) {
       return Bool_FALSE;
@@ -304,8 +302,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   // find cocoa display mode reference
   static CGDisplayModeRef __findCGDisplayModeRef(CFArrayRef allModes, CocoaDisplayId displayId, const struct DisplayMode_cocoa* targetMode) {
     CGDisplayModeRef result = NULL;
+
+    CFIndex modesCount = CFArrayGetCount(allModes);
     for (CFIndex i = 0; i < modesCount; ++i) {
-      CGDisplayModeRef modeRef = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+      CGDisplayModeRef modeRef = (CGDisplayModeRef)CFArrayGetValueAtIndex(allModes, i);
       
       // if mode is valid, compare width/height
       if (__isDisplayModeValid_cocoa(modeRef) && targetMode->width == (int32_t)CGDisplayModeGetWidth(modeRef)
@@ -323,7 +323,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
         
         // if rate is not undefined, compare it
         if (targetMode->refreshRate > 0) {
-          refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+          uint32_t refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
 #         ifdef __P_APPLE_IOKIT
           if (refreshRate == 0)
             refreshRate = (uint32_t)__readRefreshRate__ioreg(displayId); // floor -> distinguish 59.94 from 60
@@ -341,7 +341,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   // apply cocoa display mode on target unit
   static Bool __applyDisplayModeWithFade_cocoa(CocoaDisplayId displayId, CGDisplayModeRef mode) {
-    if (modeRef == NULL)
+    if (mode == NULL)
       return Bool_FALSE;
     
     // reserve fade effect + fade in
@@ -369,7 +369,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       if (modeRef == NULL)
         return Bool_FALSE;
       
-      __readFromCGDisplayMode(modeRef, out);
+      __readFromCGDisplayMode(displayId, modeRef, out);
       
       CGDisplayModeRelease(modeRef);
       return Bool_TRUE;
@@ -388,7 +388,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       }
 
       // find + apply display mode
-      CFArrayRef allModes = CGDisplayCopyAllDisplayModes(displayID, NULL);
+      CFArrayRef allModes = CGDisplayCopyAllDisplayModes(displayId, NULL);
       if (allModes != NULL) {
         Bool isSuccess = Bool_FALSE;
         
@@ -430,7 +430,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   // list all display modes of a monitor
   Bool __listDisplayModes_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa** outModes, uint32_t* outLength) {
     @autoreleasepool {
-      CFArrayRef modes = CGDisplayCopyAllDisplayModes(displayID, NULL);
+      CFArrayRef modes = CGDisplayCopyAllDisplayModes(displayId, NULL);
       if (modes == NULL) {
         *outLength = 0;
         return Bool_FALSE;
@@ -447,12 +447,12 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       for (CFIndex i = 0, curIndex = 0; i < modesCount; ++i, ++curIndex) {
         CGDisplayModeRef modeRef = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
         if (__isDisplayModeValid_cocoa(modeRef)) {
-          __readFromCGDisplayMode(modeRef, &outModes[(uint32_t)curIndex]);
+          __readFromCGDisplayMode(displayId, modeRef, &(*outModes)[(uint32_t)curIndex]);
           
           // check if identical mode already listed
           for (CFIndex prev = 0; prev < curIndex; ++prev) {
-            struct DisplayMode_cocoa* prevMode = &outModes[(uint32_t)prev];
-            struct DisplayMode_cocoa* curMode = &outModes[(uint32_t)curIndex];
+            struct DisplayMode_cocoa* prevMode = &(*outModes)[(uint32_t)prev];
+            struct DisplayMode_cocoa* curMode = &(*outModes)[(uint32_t)curIndex];
             
             if (prevMode->width == curMode->width && prevMode->height == curMode->height 
             && prevMode->bitDepth == curMode->bitDepth && prevMode->refreshRate == curMode->refreshRate) {
