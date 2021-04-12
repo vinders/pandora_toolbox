@@ -204,7 +204,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
     
     DisplayMode mode;
     DisplayMode_cocoa modeCocoa;
@@ -222,7 +222,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
     
     DisplayMode_cocoa modeCocoa;
     _fillDisplayMode(mode, modeCocoa);
@@ -239,7 +239,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
     
     if (this->_handle && __setDefaultDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, this->_unitNumber) ) {
       if (refreshAttributes) {
@@ -256,7 +256,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     std::vector<DisplayMode> modes;
     
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
     if (!this->_handle)
       return modes;
     
@@ -305,7 +305,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- metrics -- ---------------------------------------------------------------
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, 
-                                                            bool hasMenu, uint32_t flag1, uint32_t flag2) const noexcept {
+                                                            bool hasMenu, uint32_t hasBorders, uint32_t hasCaption) const noexcept {
     // refresh handle (fix automatic graphics switching)
     this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
     
@@ -316,7 +316,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       DisplayArea_cocoa clientAreaCocoa;
       _fillDisplayArea(clientArea, clientAreaCocoa);
       __clientAreaToWindowArea_cocoa((CocoaScreenHandle)this->_handle, &clientAreaCocoa, (CocoaScreenHandle)windowHandle, 
-                                     hasMenu, flag1, flag2, &windowAreaCocoa);
+                                     hasMenu, hasBorders, hasCaption, &windowAreaCocoa);
 
       _moveDisplayArea(windowAreaCocoa, windowArea);
       return windowArea;

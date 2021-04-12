@@ -474,11 +474,46 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   // client area to window area (DPI adjusted)
   void __clientAreaToWindowArea_cocoa(CocoaScreenHandle screen, const struct DisplayArea_cocoa* clientArea, CocoaWindowHandle windowHandle, 
                                       Bool hasMenu, uint32_t hasBorders, uint32_t hasCaption, struct DisplayArea_cocoa* outWindowArea) {
-    //TODO
-    outWindowArea->x = clientArea->x;
-    outWindowArea->y = clientArea->y;
-    outWindowArea->width = clientArea->width;
-    outWindowArea->height = clientArea->height;
+    // get window size
+    if (windowHandle) {
+      NSSize windowSize = [[(NSWindow*)windowHandle contentView] frame].size;
+      
+      outWindowArea->width = windowSize.width;
+      if (outWindowArea->width < clientArea->width)
+        outWindowArea->width = clientArea->width;
+      
+      outWindowArea->height = windowSize.height;
+      if (outWindowArea->height < clientArea->height)
+        outWindowArea->height = clientArea->height;
+    }
+    else { // no handle -> guess value from flags
+      // "default" arbitrary values
+      uint32_t borderSize = (hasBorders) ? 1 : 0;
+      uint32_t captionSize = (hasCaption) ? 44 : 0;
+      if (hasMenu)
+        captionSize += 46;
+      
+      NSWindow* parent = [[NSApplication sharedApplication] mainWindow]
+      if (parent != NULL) { // try to read actual values from main window, if available
+        if (hasBorders) {
+          int32_t decorationX = parent.frame.size.width - [parent contentRectForFrameRect: parent.frame].size.width;
+          if (decorationX > 0)
+            borderSize = (uint32_t)(decorationX) >> 1;
+        }
+        if (hasCaption) {
+          int32_t decorationY = parent.frame.size.height - [parent contentRectForFrameRect: parent.frame].size.height;
+          if (decorationY > borderSize)
+            captionSize = (uint32_t)(decorationY - borderSize);
+        }
+      }
+      
+      outWindowArea->width = clientArea->width + (borderSize << 1);
+      outWindowArea->height = (hasCaption) ? clientArea->height + captionSize + borderSize : clientArea->height + (borderSize << 1);
+    }
+    
+    // update position
+    outWindowArea->x = clientArea->x - (int32_t)((outWindowArea->width - clientArea->width) >> 1);
+    outWindowArea->y = clientArea->y - (int32_t)((outWindowArea->height - clientArea->height) >> 1);
   }
 
 #endif
