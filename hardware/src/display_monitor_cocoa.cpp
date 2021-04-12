@@ -23,7 +23,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   // -- bindings --
   
   // move "cocoa" DisplayArea bindings to cross-platform data containers
-  static inline void _moveDisplayArea(DisplayArea_cocoa& src, DisplayArea& dest) {
+  static inline void _moveDisplayArea(const DisplayArea_cocoa& src, DisplayArea& dest) {
     dest.x = src.x;
     dest.y = src.y;
     dest.width = src.width;
@@ -38,7 +38,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
   
   // move "cocoa" DisplayMode bindings to cross-platform data containers
-  static void _moveDisplayMode(DisplayMode_cocoa& src, DisplayMode& dest) {
+  static void _moveDisplayMode(const DisplayMode_cocoa& src, DisplayMode& dest) {
     dest.width = src.width;
     dest.height = src.height;
     dest.bitDepth = src.bitDepth;
@@ -61,7 +61,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       src.description = nullptr;
     }
     else {
-      src.description = std::string("Generic monitor ") + std::to_string(unitNumber);
+      dest.description = std::string("Generic monitor ") + std::to_string(unitNumber);
     }
     
     _moveDisplayArea(src.screenArea, dest.screenArea);
