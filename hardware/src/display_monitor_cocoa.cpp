@@ -149,7 +149,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     }
   }
   
-  DisplayMonitor(DisplayMonitor::DeviceId, uint32_t unitNumber, bool usePrimaryAsDefault) {
+  DisplayMonitor::DisplayMonitor(DisplayMonitor::DeviceId, uint32_t unitNumber, bool usePrimaryAsDefault) {
     if (LibrariesCocoa::instance() == nullptr)
       throw std::invalid_argument("DisplayMonitor: cocoa libraries can't be used.");
     
@@ -203,7 +203,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- display modes -- ---------------------------------------------------------
 
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)) // refresh handle (fix automatic graphics switching)
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
     
     DisplayMode mode;
     DisplayMode_cocoa modeCocoa;
@@ -220,7 +221,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
   
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)) // refresh handle (fix automatic graphics switching)
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
     
     DisplayMode_cocoa modeCocoa;
     _fillDisplayMode(mode, modeCocoa);
@@ -236,7 +238,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
   
   bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)) // refresh handle (fix automatic graphics switching)
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
     
     if (this->_handle && __setDefaultDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, this->_unitNumber) ) {
       if (refreshAttributes) {
@@ -251,7 +254,9 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
     std::vector<DisplayMode> modes;
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)) // refresh handle (fix automatic graphics switching)
+    
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)) 
     if (!this->_handle)
       return modes;
     
@@ -279,7 +284,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)); // refresh handle (fix automatic graphics switching)
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
     
     if (!this->_handle || !LibrariesCocoa_readScreenDpi((CocoaScreenHandle)this->_handle, &outDpiX, &outDpiY)) { 
       outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_COCOA_DEFAULT_DPI);
@@ -287,7 +293,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)); // refresh handle (fix automatic graphics switching)
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
     
     if (!this->_handle || !LibrariesCocoa_readScreenScaling((CocoaScreenHandle)this->_handle, &outScaleX, &outScaleY)) { 
       outScaleX = outScaleY = __P_HARDWARE_COCOA_DEFAULT_SCALE;
@@ -297,8 +304,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
 // -- metrics -- ---------------------------------------------------------------
 
-  DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, bool hasMenu, uint32_t flag1, uint32_t flag2) const noexcept {
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &(this->_attributes.id)); // refresh handle (fix automatic graphics switching)
+  DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, 
+                                                            bool hasMenu, uint32_t flag1, uint32_t flag2) const noexcept {
+    // refresh handle (fix automatic graphics switching)
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
     
     if (this->_handle) { 
       DisplayArea windowArea;
@@ -306,8 +315,9 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       
       DisplayArea_cocoa clientAreaCocoa;
       _fillDisplayArea(clientArea, clientAreaCocoa);
-      __clientAreaToWindowArea_cocoa((CocoaScreenHandle)this->_handle, &clientAreaCocoa, (CocoaScreenHandle)windowHandle, hasMenu, flag1, flag2, &windowAreaCocoa);
-      
+      __clientAreaToWindowArea_cocoa((CocoaScreenHandle)this->_handle, &clientAreaCocoa, (CocoaScreenHandle)windowHandle, 
+                                     hasMenu, flag1, flag2, &windowAreaCocoa);
+
       _moveDisplayArea(windowAreaCocoa, windowArea);
       return windowArea;
     }

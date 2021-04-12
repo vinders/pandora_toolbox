@@ -168,7 +168,7 @@ namespace pandora {
 #     if defined(_WINDOWS)
         Attributes _attributes{ L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     elif defined(__APPLE__)
-        Attributes _attributes{ 0, "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
+        mutable Attributes _attributes{ 0, "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     else
         Attributes _attributes{ "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     endif
