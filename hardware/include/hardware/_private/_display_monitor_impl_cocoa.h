@@ -54,6 +54,7 @@ License :     MIT
       CocoaScreenHandle __getPrimaryMonitor_cocoa(uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);
       Bool              __getMonitor_cocoa(CocoaScreenHandle screen, uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);
       CocoaScreenHandle __getMonitorById_cocoa(CocoaDisplayId displayId, uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr);
+      CocoaScreenHandle __getMonitorByUnit_cocoa(uint32_t unitNumber, struct MonitorAttributes_cocoa* outAttr);
       
       Bool __listMonitorIds_cocoa(CocoaDisplayId** outList, uint32_t* outLength);
       CocoaDisplayId __getMonitorIdFromList_cocoa(CocoaDisplayId* list, uint32_t index);
@@ -62,10 +63,10 @@ License :     MIT
       // -- display modes --
       
       Bool __getDisplayMode_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa* out);
-      Bool __setDisplayMode_cocoa(CocoaDisplayId displayId, const struct DisplayMode_cocoa* mode);
-      Bool __setDefaultDisplayMode_cocoa(CocoaDisplayId displayId);
+      Bool __setDisplayMode_cocoa(CocoaDisplayId displayId, uint32_t unitNumber, const struct DisplayMode_cocoa* mode);
+      Bool __setDefaultDisplayMode_cocoa(CocoaDisplayId displayId, uint32_t unitNumber);
       
-      void __listDisplayModes_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa** outModes, uint32_t* outLength);
+      Bool __listDisplayModes_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa** outModes, uint32_t* outLength);
       
       
       // -- metrics --

@@ -8,6 +8,17 @@ License :     MIT
 #include <string>
 #include <vector>
 
+// macros for portability (to avoid "ifdef __APPLE__")
+#if defined(__APPLE__)
+  // throws if unitNbString does not contain a stringified number
+# define _P_DISPLAYMONITOR_BY_ID(unitNbString, allowDefaultPrimary) DisplayMonitor(0, (uint32_t)std::stoul(unitNbString), allowDefaultPrimary)
+# define _P_GET_DISPLAYMONITOR_ID(monitor)                          std::to_string(monitor.unitNumber())
+#else
+# define _P_DISPLAYMONITOR_BY_ID(id, allowDefaultPrimary) DisplayMonitor(id, allowDefaultPrimary)
+# define _P_GET_DISPLAYMONITOR_ID(monitor)                monitor.attributes().id
+#endif
+
+
 namespace pandora { 
   namespace hardware {
     /// @brief Display position/area ("virtual desktop" coordinates)
@@ -65,17 +76,28 @@ namespace pandora {
       /// @brief Get primary/default monitor description
       DisplayMonitor();
       /// @brief Get monitor description from handle
-      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
-      /// @warning Throws invalid_argument if handle is invalid and !usePrimaryAsDefault
+      /// @remarks - handles should not be stored in files or options -> they will change everytime the process is restarted
+      ///          - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      ///          - handles can be invalidated during runtime (new screen plugged, automatic GPU switching)
+      /// @warning Throws invalid_argument if handle is invalid and !usePrimaryAsDefault, or if system init failure
       DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault);
       /// @brief Get monitor description by identifier (or primary if not found and usePrimaryAsDefault==true)
-      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
-      /// @warning Throws invalid_argument if ID not found and !usePrimaryAsDefault
+      /// @remarks - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      ///          - only on Apple systems: display ID can change -> store unitNumber() instead (in your options)
+      /// @warning Throws invalid_argument if ID not found and !usePrimaryAsDefault, or if system init failure
       DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault);
       /// @brief Get monitor description by index (or primary if not found and usePrimaryAsDefault==true)
-      /// @remarks usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
-      /// @warning Throws invalid_argument if index not found and !usePrimaryAsDefault
+      /// @remarks - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+      ///          - index can change during runtime (new screen plugged, automatic GPU switching)
+      /// @warning Throws invalid_argument if index not found and !usePrimaryAsDefault, or if system init failure
       explicit DisplayMonitor(bool usePrimaryAsDefault, uint32_t index);
+#     if defined(__APPLE__)
+        /// @brief Get monitor description by unit number (or primary if not found and usePrimaryAsDefault==true)
+        /// @remarks - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
+        ///          - only useful for Apple systems -> use display ID for other systems
+        /// @warning Throws invalid_argument if unit not found and !usePrimaryAsDefault, or if system init failure
+        explicit DisplayMonitor(DisplayMonitor::DeviceId, uint32_t unitNumber, bool usePrimaryAsDefault);
+#     endif
 
       DisplayMonitor(const DisplayMonitor&) = delete;
       DisplayMonitor(DisplayMonitor&&) = default;
@@ -96,6 +118,12 @@ namespace pandora {
       /// @warning - May be empty if virtual monitor, or if running in a VM with no GPU support
       ///          - Not supported on Apple systems (Mac, iOS)
       String adapterName() const;
+      
+#     if defined(__APPLE__)
+        /// @brief Get unique display unit number (Apple systems)
+        /// @remarks Shouldn't be affected by automatic graphics switching
+        inline uint32_t unitNumber() noexcept { return this->_unitNumber; }
+#     endif
 
       // -- display mode --
 
@@ -103,6 +131,7 @@ namespace pandora {
       DisplayMode getDisplayMode() const noexcept;
       /// @brief Change display mode of a monitor (for fullscreen apps)
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
+      /// @warning Not thread safe: do not call simultaneously in multiple threads
       bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true);
       /// @brief Reset monitor to its default display mode
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false

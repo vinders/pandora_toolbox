@@ -49,7 +49,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
             if (nameList && CFDictionaryGetValueIfPresent(nameList, CFSTR("en_US"), (const void**)&nameRef)) {
               const CFIndex length = CFStringGetMaximumSizeForEncoding(CFStringGetLength(nameRef), kCFStringEncodingUTF8);
               monitorName = calloc(length + 1, sizeof(char));
-              CFStringGetCString(nameRef, name, length, kCFStringEncodingUTF8);
+              CFStringGetCString(nameRef, monitorName, length, kCFStringEncodingUTF8);
             }
           }
         }
@@ -117,12 +117,14 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 // -- get display monitors (handle + attributes) -- ----------------------------
   
   // get screen handle based on unit number (fix handle in case of automatic graphics switching)
-  CocoaScreenHandle __getMonitorHandle_cocoa(uint32_t unitNumber) {
+  CocoaScreenHandle __getMonitorHandle_cocoa(uint32_t unitNumber, CocoaDisplayId* outId) {
     @try {
       for (NSScreen* screen in [NSScreen screens]) {
         NSNumber* displayNb = [screen deviceDescription][@"NSScreenNumber"];
-        if (CGDisplayUnitNumber([displayNb unsignedIntValue]) == unitNumber)
+        if (CGDisplayUnitNumber([displayNb unsignedIntValue]) == unitNumber) {
+          outId = [displayNb unsignedIntValue];
           return (CocoaScreenHandle)screen;
+        }
       }
       return (CocoaScreenHandle)NULL;
     }
@@ -156,8 +158,12 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   // get handle/attributes of any monitor by ID
   CocoaScreenHandle __getMonitorById_cocoa(CocoaDisplayId displayId, uint32_t* outUnitNumber, struct MonitorAttributes_cocoa* outAttr) {
-    const uint32_t unitNumber = CGDisplayUnitNumber((CGDirectDisplayID)displayId);
-    
+    *outUnitNumber = (uint32_t)CGDisplayUnitNumber((CGDirectDisplayID)displayId);
+    return __getMonitorByUnit_cocoa(*outUnitNumber, outAttr);
+  }
+  
+  // get handle/attributes of any monitor by unit number
+  CocoaScreenHandle __getMonitorByUnit_cocoa(uint32_t unitNumber, struct MonitorAttributes_cocoa* outAttr) {
     uint32_t screenIndex = 0;
     NSScreen* screen = NULL;
     for (screen in [NSScreen screens]) {
@@ -166,21 +172,23 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       if (CGDisplayUnitNumber([screenNumber unsignedIntValue]) == unitNumber) { 
         *outUnitNumber = unitNumber;
         
-        outAttr->id = displayId;
-        outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->displayId);
-        __readScreenArea_cocoa(screen, outAttr->displayId, &(outAttr->screenArea), &(outAttr->workArea));
+        outAttr->id = (CocoaDisplayId)[screenNumber unsignedIntValue];
+        outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->id);
+        __readScreenArea_cocoa(screen, outAttr->id, &(outAttr->screenArea), &(outAttr->workArea));
         outAttr->isPrimary = (screenIndex == 0) ? Bool_TRUE : Bool_FALSE;
         return (CocoaScreenHandle)screen;
       }
       ++screenIndex;
     }
-    return (CocoaScreenHandle)NULL; 
+    return (CocoaScreenHandle)NULL;
   }
+  
+  // ---
   
   // list IDs of all active monitors
   Bool __listMonitorIds_cocoa(CocoaDisplayId** outList, uint32_t* outLength) {
     uint32_t displayCount = 0;
-    if (CGGetOnlineDisplayList(0, NULL, &displayCount) != CGError.success)
+    if (CGGetOnlineDisplayList(0, NULL, &displayCount) != kCGErrorSuccess)
       return Bool_FALSE;
     if (displayCount == 0) {
       *outLength = 0;
@@ -189,7 +197,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     
     CGDirectDisplayID* displays = calloc(displayCount, sizeof(CGDirectDisplayID));
     if (displays) {
-      if (CGGetOnlineDisplayList(displayCount, displays, &displayCount) == CGError.success) {
+      if (CGGetOnlineDisplayList(displayCount, displays, &displayCount) == kCGErrorSuccess) {
         *outList = (CocoaDisplayId*)displays;
         *outLength = displayCount;
         return Bool_TRUE;
@@ -206,51 +214,257 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   
 // -- display modes -- ---------------------------------------------------------
-  
-  // read display resolution/depth/rate of a monitor
-  Bool __getDisplayMode_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa* out) {
-    @autoreleasepool {
-      CGDisplayModeRef modeRef = CGDisplayCopyDisplayMode((CGDirectDisplayID)displayId);
 
-      out->width = (int32_t)CGDisplayModeGetWidth(modeRef);
-      out->height = (int32_t)CGDisplayModeGetHeight(modeRef);
+# ifdef __P_APPLE_IOKIT
+    // read refresh rate from IORegistry (if not readable from ModeRef)
+    static double __readRefreshRate__ioreg(CGDirectDisplayID displayID) {
+      double refreshRate = 0.0; // undefinedRefreshRate
       
-      out->bitDepth = 32;
-#     if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED <= 101100
+      io_iterator_t it;
+      if (IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("IOFramebuffer"), &it) == 0) {
+        io_service_t service;
+        while ((service = IOIteratorNext(it)) != 0) {
+          CFNumberRef indexRef = IORegistryEntryCreateCFProperty(service, CFSTR("IOFramebufferOpenGLIndex"), 
+                                                                 kCFAllocatorDefault, kNilOptions);
+          if (indexRef) {
+            uint32_t index = 0;
+            CFNumberGetValue(indexRef, kCFNumberIntType, &index);
+            CFRelease(indexRef);
+            
+            if (CGOpenGLDisplayMaskToDisplayID(1 << index) == displayID) {
+              uint32_t clock = 0;
+              CFNumberRef clockRef = IORegistryEntryCreateCFProperty(service, CFSTR("IOFBCurrentPixelClock"),
+                                                                     kCFAllocatorDefault, kNilOptions);
+              if (clockRef) {
+                CFNumberGetValue(clockRef, kCFNumberIntType, &clock);
+                CFRelease(clockRef);
+              }
+
+              uint32_t count = 0;
+              CFNumberRef countRef = IORegistryEntryCreateCFProperty(service, CFSTR("IOFBCurrentPixelCount"),
+                                                                     kCFAllocatorDefault, kNilOptions);
+              if (countRef) {
+                CFNumberGetValue(countRef, kCFNumberIntType, &count);
+                CFRelease(countRef);
+              }
+
+              if (clock > 0 && count > 0)
+                refreshRate = (double)clock / (double)count;
+              break;
+            }
+          }
+        }
+        IOObjectRelease(it);
+      }
+      return refreshRate;
+    }
+# endif
+
+  // extract display resolution/depth/rate from native display mode
+  static void __readFromCGDisplayMode(CGDisplayModeRef modeRef, struct DisplayMode_cocoa* out) {
+    out->width = (int32_t)CGDisplayModeGetWidth(modeRef);
+    out->height = (int32_t)CGDisplayModeGetHeight(modeRef);
+    
+    out->bitDepth = 32;
+#   if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED <= 101100
       CFStringRef pxFormat = CGDisplayModeCopyPixelEncoding(modeRef);
       if (CFStringCompare(pxFormat, CFSTR(IO16BitDirectPixels), 0) == 0)
         out->bitDepth = 16;
       CFRelease(pxFormat);
-#     endif
+#   endif
 
-      out->refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
-      //if (out->refreshRate == 0)
-        //out->refreshRate = (uint32_t)getFallbackRefreshRate(displayID);
-
-      CGDisplayModeRelease(modeRef);
+    out->refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+#   ifdef __P_APPLE_IOKIT
+      if (out->refreshRate == 0)
+        out->refreshRate = (uint32_t)__readRefreshRate__ioreg(displayID); // floor -> distinguish 59.94 from 60
+#   endif
+  }
+  
+  // verify display mode validity
+  static Bool __isDisplayModeValid_cocoa(CGDisplayModeRef modeRef) {
+    uint32_t modeFlags = CGDisplayModeGetIOFlags(modeRef);
+    if ( (flags & (kDisplayModeValidFlag | kDisplayModeSafeFlag | kDisplayModeInterlacedFlag | kDisplayModeStretchedFlag)) 
+         != (kDisplayModeValidFlag | kDisplayModeSafeFlag) ) {
       return Bool_FALSE;
+    }
+    
+#   if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED <= 101100
+      Bool isValid = Bool_TRUE;
+      CFStringRef format = CGDisplayModeCopyPixelEncoding(mode);
+      if (CFStringCompare(format, CFSTR(IO16BitDirectPixels), 0) != 0 && CFStringCompare(format, CFSTR(IO32BitDirectPixels), 0) != 0)
+        isValid = Bool_FALSE;
+      
+      CFRelease(format);
+      return isValid;
+#   else
+      return Bool_TRUE;
+#   endif
+  }
+  
+  // find cocoa display mode reference
+  static CGDisplayModeRef __findCGDisplayModeRef(CFArrayRef allModes, CocoaDisplayId displayId, const struct DisplayMode_cocoa* targetMode) {
+    CGDisplayModeRef result = NULL;
+    for (CFIndex i = 0; i < modesCount; ++i) {
+      CGDisplayModeRef modeRef = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+      
+      // if mode is valid, compare width/height
+      if (__isDisplayModeValid_cocoa(modeRef) && targetMode->width == (int32_t)CGDisplayModeGetWidth(modeRef)
+                                              && targetMode->height == (int32_t)CGDisplayModeGetHeight(modeRef)) {
+        // compare bit depth
+        uint32_t bitDepth = 32;
+#       if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED <= 101100
+          CFStringRef pxFormat = CGDisplayModeCopyPixelEncoding(modeRef);
+          if (CFStringCompare(pxFormat, CFSTR(IO16BitDirectPixels), 0) == 0)
+            bitDepth = 16;
+          CFRelease(pxFormat);
+#       endif
+        if (targetMode->bitDepth != bitDepth)
+          continue;
+        
+        // if rate is not undefined, compare it
+        if (targetMode->refreshRate > 0) {
+          refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+#         ifdef __P_APPLE_IOKIT
+          if (refreshRate == 0)
+            refreshRate = (uint32_t)__readRefreshRate__ioreg(displayId); // floor -> distinguish 59.94 from 60
+#         endif
+          if (refreshRate > 0 && targetMode->refreshRate != refreshRate)
+            continue;
+        }
+        
+        result = modeRef;
+        break;
+      }
+    }
+    return result;
+  }
+  
+  // apply cocoa display mode on target unit
+  static Bool __applyDisplayModeWithFade_cocoa(CocoaDisplayId displayId, CGDisplayModeRef mode) {
+    if (modeRef == NULL)
+      return Bool_FALSE;
+    
+    // reserve fade effect + fade in
+    CGDisplayFadeReservationToken fadeToken = kCGDisplayFadeReservationInvalidToken;
+    if (CGAcquireDisplayFadeReservation(5, &fadeToken) == kCGErrorSuccess)
+      CGDisplayFade(fadeToken, 0.3, kCGDisplayBlendNormal, kCGDisplayBlendSolidColor, 0.0, 0.0, 0.0, TRUE);
+    
+    // change display mode
+    Bool isSuccess = (CGDisplaySetDisplayMode(displayId, mode, NULL) == kCGErrorSuccess);
+    
+    // fade out + release fade effect
+    if (fadeToken != kCGDisplayFadeReservationInvalidToken) {
+      CGDisplayFade(fadeToken, 0.5, kCGDisplayBlendSolidColor, kCGDisplayBlendNormal, 0.0, 0.0, 0.0, FALSE);
+      CGReleaseDisplayFadeReservation(fadeToken);
+    }
+    return isSuccess;
+  }
+
+  // ---
+  
+  // get current display resolution/depth/rate of a monitor
+  Bool __getDisplayMode_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa* out) {
+    @autoreleasepool {
+      CGDisplayModeRef modeRef = CGDisplayCopyDisplayMode((CGDirectDisplayID)displayId);
+      if (modeRef == NULL)
+        return Bool_FALSE;
+      
+      __readFromCGDisplayMode(modeRef, out);
+      
+      CGDisplayModeRelease(modeRef);
+      return Bool_TRUE;
     }
   }
   
   // set display resolution/depth/rate of a monitor
-  Bool __setDisplayMode_cocoa(CocoaDisplayId displayId, const struct DisplayMode_cocoa* mode) {
+  Bool __setDisplayMode_cocoa(CocoaDisplayId displayId, uint32_t unitNumber, const struct DisplayMode_cocoa* targetMode) {
     @autoreleasepool {
+      // if no backup exists, pre-allocate new entry (on alloc failure, exit)
+      struct DisplayModeBackup* backupEntry = NULL;
+      if (__LibrariesCocoa_findOriginalMode(unitNumber) == NULL) {
+        backupEntry = __LibrariesCocoa_createDetachedOriginalMode(unitNumber, (CocoaDisplayModeRef)CGDisplayCopyDisplayMode((CGDirectDisplayID)displayId));
+        if (backupEntry == NULL)
+          return Bool_FALSE;
+      }
+
+      // find + apply display mode
+      CFArrayRef allModes = CGDisplayCopyAllDisplayModes(displayID, NULL);
+      if (allModes != NULL) {
+        Bool isSuccess = Bool_FALSE;
+        
+        CGDisplayModeRef newModeRef = __findCGDisplayModeRef(allModes, displayId, targetMode);
+        if (newModeRef != NULL) {
+          isSuccess = __applyDisplayModeWithFade_cocoa(displayId, newModeRef);
+          if (isSuccess && backupEntry != NULL) // store backup mode if not yet stored (to allow __setDefaultDisplayMode_cocoa)
+            __LibrariesCocoa_appendOriginalMode(backupEntry);
+        }
+        CFRelease(allModes);
+        return isSuccess;
+      }
+      
+      if (backupEntry != NULL) { // error -> release data
+        CGDisplayModeRelease((CGDisplayModeRef)backupEntry->mode);
+        free(backupEntry);
+      }
       return Bool_FALSE;
     }
   }
+  
   // reset display resolution/depth/rate of a monitor to default values
-  Bool __setDefaultDisplayMode_cocoa(CocoaDisplayId displayId) {
+  Bool __setDefaultDisplayMode_cocoa(CocoaDisplayId displayId, uint32_t unitNumber) {
     @autoreleasepool {
-      return Bool_FALSE;
+      // find entry in backup list
+      struct DisplayModeBackup* backupEntry = __LibrariesCocoa_findOriginalMode(unitNumber);
+      if (backupEntry != NULL) {
+        if (__applyDisplayModeWithFade_cocoa(displayId, backupEntry->mode)) { // restore
+          __LibrariesCocoa_eraseOriginalMode(unitNumber); // on success, remove entry from backup list
+          return Bool_TRUE;
+        }
+      }
+      return Bool_FALSE; // not found -> no previous display change (already original mode)
     }
   }
   
   // ---
   
   // list all display modes of a monitor
-  void __listDisplayModes_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa** outModes, uint32_t* outLength) {
+  Bool __listDisplayModes_cocoa(CocoaDisplayId displayId, struct DisplayMode_cocoa** outModes, uint32_t* outLength) {
     @autoreleasepool {
-      *outLength = 0;
+      CFArrayRef modes = CGDisplayCopyAllDisplayModes(displayID, NULL);
+      if (modes == NULL) {
+        *outLength = 0;
+        return Bool_FALSE;
+      }
+
+      CFIndex modesCount = CFArrayGetCount(modes);
+      *outLength = (uint32_t)modesCount;
+      *outModes = calloc(*outLength, sizeof(struct DisplayMode_cocoa));
+      if (*outModes == NULL) {
+        *outLength = 0;
+        return Bool_FALSE;
+      }
+      
+      for (CFIndex i = 0, curIndex = 0; i < modesCount; ++i, ++curIndex) {
+        CGDisplayModeRef modeRef = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+        if (__isDisplayModeValid_cocoa(modeRef)) {
+          __readFromCGDisplayMode(modeRef, &outModes[(uint32_t)curIndex]);
+          
+          // check if identical mode already listed
+          for (CFIndex prev = 0; prev < curIndex; ++prev) {
+            struct DisplayMode_cocoa* prevMode = &outModes[(uint32_t)prev];
+            struct DisplayMode_cocoa* curMode = &outModes[(uint32_t)curIndex];
+            
+            if (prevMode->width == curMode->width && prevMode->height == curMode->height 
+            && prevMode->bitDepth == curMode->bitDepth && prevMode->refreshRate == curMode->refreshRate) {
+              --curIndex;
+              *outLength = (*outLength) - 1;
+              break;
+            }
+          }
+        }
+      }
+      CFRelease(modes);
+      return Bool_TRUE;
     }
   }
   
@@ -261,10 +475,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   void __clientAreaToWindowArea_cocoa(CocoaScreenHandle screen, const struct DisplayArea_cocoa* clientArea, CocoaWindowHandle windowHandle, 
                                       Bool hasMenu, uint32_t hasBorders, uint32_t hasCaption, struct DisplayArea_cocoa* outWindowArea) {
     //TODO
-    outWindowArea.x = clientArea.x;
-    outWindowArea.y = clientArea.y;
-    outWindowArea.width = clientArea.width;
-    outWindowArea.height = clientArea.height;
+    outWindowArea->x = clientArea->x;
+    outWindowArea->y = clientArea->y;
+    outWindowArea->width = clientArea->width;
+    outWindowArea->height = clientArea->height;
   }
 
 #endif

@@ -24,14 +24,27 @@ License :     MIT
       typedef void* CocoaScreenHandle;
       typedef void* CocoaWindowHandle;
       typedef uint32_t CocoaDisplayId;
+#     ifdef __OBJC__
+        typedef CGDisplayModeRef CocoaDisplayModeRef;
+#     else
+        typedef void* CocoaDisplayModeRef;
+#     endif
       
       typedef int Bool;
 #     define Bool_TRUE  1
 #     define Bool_FALSE 0
 
+      // "original modes" linked-list item
+      struct DisplayModeBackup {
+        uint32_t unitNumber;
+        CocoaDisplayModeRef mode;
+        struct DisplayModeBackup* next;
+      };
+
       // properties of LibrariesCocoa
       struct CocoaLibraryData {
         Bool isAppReady;
+        struct DisplayModeBackup* originalModes;
       };
       
       
@@ -39,7 +52,16 @@ License :     MIT
       
       Bool __LibrariesCocoa_init();
       void __LibrariesCocoa_shutdown();
+      
+      
+      // -- library data --
+      
       struct CocoaLibraryData* __LibrariesCocoa_getData();
+      
+      struct DisplayModeBackup* __LibrariesCocoa_findOriginalMode(uint32_t unitNumber);
+      struct DisplayModeBackup* __LibrariesCocoa_createDetachedOriginalMode(uint32_t unitNumber, CocoaDisplayModeRef mode);
+      void __LibrariesCocoa_appendOriginalMode(struct DisplayModeBackup* newEntry);
+      void __LibrariesCocoa_eraseOriginalMode(uint32_t unitNumber);
 
 
       // -- utilities --
