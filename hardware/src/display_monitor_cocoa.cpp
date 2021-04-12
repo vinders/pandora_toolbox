@@ -53,12 +53,17 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   }
   
   // move "cocoa" Attributes bindings to cross-platform data containers
-  static void _moveAttributes(MonitorAttributes_cocoa& src, DisplayMonitor::Attributes& dest) {
+  static void _moveAttributes(MonitorAttributes_cocoa& src, uint32_t unitNumber, DisplayMonitor::Attributes& dest) {
     dest.id = std::move(src.id);
     if (src.description != nullptr) {
       try { dest.description = src.description; } catch (...) {}
       free(src.description);
+      src.description = nullptr;
     }
+    else {
+      src.description = std::string("Generic monitor ") + std::to_string(unitNumber);
+    }
+    
     _moveDisplayArea(src.screenArea, dest.screenArea);
     _moveDisplayArea(src.workArea, dest.workArea);
     dest.isPrimary = src.isPrimary;
@@ -74,7 +79,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     MonitorAttributes_cocoa attributes;
     this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
     if (this->_handle)
-      _moveAttributes(attributes, this->_attributes);
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     else
       this->_attributes.isPrimary = true;
   }
@@ -86,7 +91,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     
     MonitorAttributes_cocoa attributes;
     if (this->_handle && __getMonitor_cocoa((CocoaScreenHandle)this->_handle, &(this->_unitNumber), &attributes)) {
-      _moveAttributes(attributes, this->_attributes);
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     } 
     else { // failure
       if (!usePrimaryAsDefault)
@@ -94,7 +99,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       
       this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       else
         this->_attributes.isPrimary = true;
     }
@@ -107,7 +112,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     MonitorAttributes_cocoa attributes;
     this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)id, &(this->_unitNumber), &attributes);
     if (this->_handle) {
-      _moveAttributes(attributes, this->_attributes);
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     }
     else { // failure
       if (!usePrimaryAsDefault)
@@ -115,7 +120,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       
       this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       else
         this->_attributes.isPrimary = true;
     }
@@ -135,7 +140,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     }
     
     if (this->_handle) {
-      _moveAttributes(attributes, this->_attributes);
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     }
     else { // failure
       if (!usePrimaryAsDefault)
@@ -143,7 +148,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       
       this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       else
         this->_attributes.isPrimary = true;
     }
@@ -157,7 +162,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     this->_handle = (DisplayMonitor::Handle)__getMonitorByUnit_cocoa(unitNumber, &attributes);
     if (this->_handle) {
       this->_unitNumber = unitNumber;
-      _moveAttributes(attributes, this->_attributes);
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     }
     else { // failure
       if (!usePrimaryAsDefault)
@@ -165,7 +170,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       
       this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
       if (this->_handle)
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       else
         this->_attributes.isPrimary = true;
     }
@@ -230,7 +235,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       if (refreshAttributes) {
         MonitorAttributes_cocoa attributes;
         __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       }
       return true;
     }
@@ -245,7 +250,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       if (refreshAttributes) {
         MonitorAttributes_cocoa attributes;
         __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
-        _moveAttributes(attributes, this->_attributes);
+        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
       }
       return true;
     }
