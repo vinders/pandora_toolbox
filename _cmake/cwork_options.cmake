@@ -14,7 +14,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             set(CWORK_CPP_REVISION "14" CACHE STRING "C++ revision") # compiler too old for C++17 -> only C++14
         else()
             set(CWORK_CPP_REVISION AUTO CACHE STRING "C++ revision") # modern compiler -> customizable C++ revision
-            set_property(CACHE CWORK_CPP_REVISION PROPERTY STRINGS AUTO "17" "14") # possible values for GUI
+            set_property(CACHE CWORK_CPP_REVISION PROPERTY STRINGS AUTO "20" "17" "14") # possible values for GUI
         endif()
     endif()
     
@@ -99,6 +99,16 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         option(CWORK_DUMMY_SOURCES "compile header-only libs (generate dummy sources)" OFF) # generate source files for header-only libraries (to force compilation)
     endif()
     
+    # ┌──────────────────────────────────────────────────────────────────┐
+    # │  Helpers                                                         │
+    # └──────────────────────────────────────────────────────────────────┘
+    
+    # C++ revision label for messages
+    if(CWORK_CPP_REVISION AND NOT CWORK_CPP_REVISION STREQUAL "AUTO")
+        set(CWORK_CPP_REVISION_NAME ${CWORK_CPP_REVISION})
+    else()
+        set(CWORK_CPP_REVISION_NAME "17")
+    endif()
     
     #brief: Print message with active option values
     macro(cwork_print_options)
@@ -113,7 +123,14 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             message("> Symbol files: ON")
         endif()
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            message("> Minimum Windows version: ${CWORK_WINDOWS_VERSION}")
+            message("> Minimum Windows: ${CWORK_WINDOWS_VERSION}")
+        endif()
+        if(NOT WIN32 AND NOT WIN64 AND NOT _WIN32 AND NOT _WIN64 AND NOT APPLE AND NOT ANDROID AND NOT IOS)
+            if(CWORK_LINUX_WAYLAND)
+                message("> Display server: Wayland")
+            else()
+                message("> Display server: X11")
+            endif()
         endif()
 
         if(CWORK_VIDEO_OPENGL4)

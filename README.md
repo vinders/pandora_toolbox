@@ -62,11 +62,11 @@ Examples:
 
 |    Option    |    Name    |    Value(s)    |    Available for...    |
 |--------------|------------|----------------|------------------------|
-| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>   | CWORK_CPP_REVISION  | "17"<br>"14"  | all C++17-compliant compilers  |
+| Retro-compatibility with older<br>C++ revisions (ex: C++14).<br><sub>*Default: "17" if supported, otherwise "14"*</sub>   | CWORK_CPP_REVISION  | "20" "17"<br>"14"  | all C++17-compliant compilers  |
 | Build separate symbol files, for debuggers such as GDB.<br><sub>*Default: OFF*</sub>         | CWORK_BUILD_SYMBOL_FILES   | ON<br>OFF     | all systems                   |
-| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS                | ON<br>OFF     | all except cross-compilation & ARM  |
+| Include unit tests of each library<br>in the built solution.<br><sub>*Default: ON*</sub>     | CWORK_TESTS                | ON<br>OFF     | all except cross-compilation  |
 | Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                 | ON<br>OFF     | all except cross-compilation  |
-| Include special tools related to project in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS                | ON<br>OFF     | all systems                   |
+| Include special tools related to projects in the built solution.<br><sub>*Default: ON*</sub>  | CWORK_TOOLS                | ON<br>OFF     | all systems                   |
 | Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE             | ON<br>OFF     | only linux/unix systems       |
 | Minimum Windows version support (vista/7/8.1/10.rs2).<br><sub>*Default: "7"*</sub>           | CWORK_WINDOWS_VERSION      | "10" "8"<br>"7" "6"  | only windows systems   |
 | Use Linux Wayland display server (instead of X.org).<br><sub>*Default: OFF*</sub>            | CWORK_LINUX_WAYLAND        | ON<br>OFF     | only linux systems            |
