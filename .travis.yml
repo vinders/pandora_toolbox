@@ -1,5 +1,4 @@
 os: linux
-dist: xenial
 language: cpp
 sudo: require
 git:
@@ -70,6 +69,7 @@ jobs:
           - /^feat.*$/
           - /^fix.*$/
           - /^test.*$/
+      if: branch != develop OR fork = true
       os: linux
       dist: bionic
       name: "Linux-Xorg: gcc (release)"
@@ -103,21 +103,22 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
-    # linux/X11 - gcc7 - x86_64 (coverage)
-    - &Linux-gcc7-cov
+    # linux/X11 - gcc9 - x86_64 (coverage)
+    - &Linux-gcc9-cov
       branches:
         only:
           - develop
       if: branch = develop AND fork = false
       os: linux
-      name: "Linux-Xorg: gcc-7 (coverage)"
+      dist: bionic
+      name: "Linux-Xorg: gcc (coverage)"
       services:
         - xvfb
       language: cpp
       compiler: gcc
       env:
-        - CC=gcc-7
-        - CXX=g++-7
+        - CC=gcc-9
+        - CXX=g++-9
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Debug
         - ENABLE_COVERAGE=ON
@@ -130,8 +131,8 @@ jobs:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-7
-            - g++-7
+            - gcc-9
+            - g++-9
             - libasound2-dev
             - libxrandr-dev
             - libxinerama-dev
@@ -191,6 +192,7 @@ jobs:
           - /^feat.*$/
           - /^fix.*$/
           - /^test.*$/
+      if: branch != master
       os: linux
       dist: focal
       name: "Linux-Wayland: gcc"
@@ -200,7 +202,7 @@ jobs:
         - CC=gcc
         - CXX=g++
         - PLATFORM_NAME=linux-gcc
-        - BUILD_TYPE=Debug
+        - BUILD_TYPE=Release
         - ENABLE_VULKAN=OFF
         - GENERATOR="Unix Makefiles"
         - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON"
@@ -285,6 +287,7 @@ jobs:
           - /^fix.*$/
           - /^test.*$/
       os: linux
+      dist: xenial
       name: "Android: cross-compiled (ndk/Linux)"
       language: android
       env:

@@ -491,7 +491,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       uint32_t borderSize = (hasBorders) ? 1 : 0;
       uint32_t captionSize = (hasCaption) ? 44 : 0;
       if (hasMenu)
-        captionSize += 46;
+        captionSize += 44;
       
       NSWindow* parent = [[NSApplication sharedApplication] mainWindow];
       if (parent != NULL) { // try to read actual values from main window, if available
