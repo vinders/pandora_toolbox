@@ -136,7 +136,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   DisplayMonitor::DisplayMonitor(uint32_t displayId) {
     MonitorAttributes_cocoa attributes;
-    this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)id, &(this->_unitNumber), &attributes);
+    this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)displayId, &(this->_unitNumber), &attributes);
     if (this->_handle)
       _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     else // failure
@@ -181,7 +181,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     if (__listMonitorIds_cocoa(&ids, &length) && ids != nullptr) {
       for (uint32_t i = 0; i < length; ++i) {
         try {
-          monitorList.emplace_back(static_cast<uint32_t>(__getMonitorIdFromList_cocoa(ids, i))); // use getter (because of alloc type cast)
+          DisplayMonitor monitor(static_cast<uint32_t>(__getMonitorIdFromList_cocoa(ids, i))); // use getter (because of alloc type cast)
+          monitorList.push_back(std::move(monitor));
         }
         catch (const std::bad_alloc&) { free(ids); throw; }
         catch (...) {} // ignore invalid_argument
