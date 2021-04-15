@@ -156,6 +156,8 @@ jobs:
       os: linux
       dist: trusty
       name: "Linux-Xorg: gcc-5 (cpp14)"
+      services:
+        - xvfb
       language: cpp
       compiler: gcc
       env:
@@ -164,6 +166,7 @@ jobs:
         - PLATFORM_NAME=linux-gcc5
         - BUILD_TYPE=Debug
         - ENABLE_VULKAN=OFF
+        - ENABLE_XVFB=ON
         - GENERATOR="Unix Makefiles"
         - CMAKE_ARGS="-DCWORK_CPP_REVISION=14 -DCWORK_TOOLS=OFF -DCWORK_TESTS=ON"
       addons:
