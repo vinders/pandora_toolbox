@@ -2,10 +2,11 @@
 Author  :     Romain Vinders
 License :     MIT
 *******************************************************************************/
-#if !defined(_WINDOWS) && !defined(__APPLE__) && !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
+#if !defined(_WINDOWS) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(_P_ENABLE_LINUX_WAYLAND) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
 # include <cstdio>
 # include <cstdlib>
 # include <cstring>
+# include <stdexcept>
 # include <climits>
 # include <ctime>
 # include <dlfcn.h>
@@ -105,9 +106,9 @@ License :     MIT
   
   // -- init --
 
-  bool LibrariesX11::init() noexcept {
+  void LibrariesX11::init() {
     if (this->_isInit)
-      return true;
+      return;
     
 #   if !defined(X_HAVE_UTF8_STRING)
       // 'C' locale breaks wide-char input (used when no UTF-8 support) -> apply environment's locale instead
@@ -121,8 +122,11 @@ License :     MIT
 #else
       this->xlib.instance = _loadLibrary("libX11.so.6");
 #endif
-    if (this->xlib.instance == nullptr)
-      return false;
+    if (this->xlib.instance == nullptr) {
+      this->xlib.instance = _loadLibrary("libX11.so");
+      if (this->xlib.instance == nullptr)
+        throw std::runtime_error("LibrariesX11: libX11 could not be found");
+    }
     
     _bindXlib();
     
@@ -135,7 +139,7 @@ License :     MIT
     // obtain Xorg server connection - required
     this->displayServer = this->xlib.OpenDisplay_(nullptr);
     if (this->displayServer == nullptr)
-      return false;
+      throw std::runtime_error("LibrariesX11: connection failure to display");
     this->screenIndex = DefaultScreen(this->displayServer);
     this->rootWindow = RootWindow(this->displayServer, this->screenIndex);
 
@@ -178,7 +182,6 @@ License :     MIT
     }
 
     this->_isInit = true;
-    return true;
   }
 
   // -- shutdown --

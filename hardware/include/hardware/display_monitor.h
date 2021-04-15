@@ -62,6 +62,7 @@ namespace pandora {
       // -- monitor description --
 
       /// @brief Get primary/default monitor description
+      /// @warning Throws on system init failure
       DisplayMonitor();
       /// @brief Get monitor description from handle
       /// @remarks - handles should not be stored in files or options -> they will change everytime the process is restarted

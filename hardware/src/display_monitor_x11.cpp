@@ -4,7 +4,7 @@ License :     MIT
 --------------------------------------------------------------------------------
 Description : Display monitor - X11 implementation (Linux/BSD)
 *******************************************************************************/
-#if !defined(_WINDOWS) && !defined(__APPLE__) && !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
+#if !defined(_WINDOWS) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(_P_ENABLE_LINUX_WAYLAND) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
 # include <cstdint>
 # include <cstdlib>
 # include <string>
@@ -33,13 +33,13 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static inline std::string _readAdapterName(RROutput handle) {
       std::string adapterName;
       
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (handle && libs != nullptr && libs->randr.GetProviderInfo_) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
-          if (XRRProviderResources* providers = libs->randr.GetProviderResources_(libs->displayServer, libs->rootWindow)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (handle && libs.randr.GetProviderInfo_) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
+          if (XRRProviderResources* providers = libs.randr.GetProviderResources_(libs.displayServer, libs.rootWindow)) {
             
             for (int p = 0; adapterName.empty() && p < providers->nproviders; ++p) {
-              if (XRRProviderInfo* provider = libs->randr.GetProviderInfo_(libs->displayServer, resources, providers->providers[p])) {
+              if (XRRProviderInfo* provider = libs.randr.GetProviderInfo_(libs.displayServer, resources, providers->providers[p])) {
                 try {
                   for (int o = 0; o < provider->noutputs; ++o) {
                     if (provider->outputs[o] == handle) {
@@ -49,17 +49,17 @@ Description : Display monitor - X11 implementation (Linux/BSD)
                   }
                 } 
                 catch (...) { 
-                  libs->randr.FreeProviderInfo_(provider); 
-                  libs->randr.FreeProviderResources_(providers); 
-                  libs->randr.FreeScreenResources_(resources); 
+                  libs.randr.FreeProviderInfo_(provider); 
+                  libs.randr.FreeProviderResources_(providers); 
+                  libs.randr.FreeScreenResources_(resources); 
                   throw; 
                 }
-                libs->randr.FreeProviderInfo_(provider);
+                libs.randr.FreeProviderInfo_(provider);
               }
             }
-            libs->randr.FreeProviderResources_(providers);
+            libs.randr.FreeProviderResources_(providers);
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
         }
       }
       return adapterName;
@@ -68,7 +68,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     // read work area of a monitor (usable position/size)
     static inline void _readScreenArea(XRRCrtcInfo* crtc, XRRScreenResources* resources, 
                                        DisplayArea& outScreenArea, DisplayArea& outWorkArea) {
-      LibrariesX11& libs = *(LibrariesX11::instance()); // XRR params -> libs already instanced
+      LibrariesX11& libs = LibrariesX11::instance(); // XRR params -> libs already instanced
       
       outScreenArea.x = outWorkArea.x = crtc->x;
       outScreenArea.y = outWorkArea.y = crtc->y;
@@ -129,33 +129,33 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static bool read(RROutput handle, bool checkPrimary, DisplayMonitor::Handle& outController, DisplayMonitor::Attributes& outAttr) {
       bool isSuccess = false;
       
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (handle && libs != nullptr && libs->randr.isAvailable) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (handle && libs.randr.isAvailable) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
           
-          if (XRROutputInfo* outInfo = libs->randr.GetOutputInfo_(libs->displayServer, resources, handle)) {
+          if (XRROutputInfo* outInfo = libs.randr.GetOutputInfo_(libs.displayServer, resources, handle)) {
             if (outInfo->connection == RR_Connected && outInfo->crtc != None) {
-              if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, outInfo->crtc)) {
+              if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, outInfo->crtc)) {
                 try {
                   isSuccess = true;
                   outController = outInfo->crtc;
                   outAttr.description = outAttr.id = outInfo->name;
                   ::attributes::_readScreenArea(crtc, resources, outAttr.screenArea, outAttr.workArea);
                   if (checkPrimary)
-                    outAttr.isPrimary = ::attributes::_isPrimaryDevice(*libs, handle);
+                    outAttr.isPrimary = ::attributes::_isPrimaryDevice(libs, handle);
                 } 
                 catch (...) {
-                  libs->randr.FreeCrtcInfo_(crtc);
-                  libs->randr.FreeOutputInfo_(outInfo);
-                  libs->randr.FreeScreenResources_(resources);
+                  libs.randr.FreeCrtcInfo_(crtc);
+                  libs.randr.FreeOutputInfo_(outInfo);
+                  libs.randr.FreeScreenResources_(resources);
                   throw;
                 }
-                libs->randr.FreeCrtcInfo_(crtc);
+                libs.randr.FreeCrtcInfo_(crtc);
               }
             }
-            libs->randr.FreeOutputInfo_(outInfo);
+            libs.randr.FreeOutputInfo_(outInfo);
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
         }
       }
       return isSuccess;
@@ -164,34 +164,34 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static DisplayMonitor::Handle readForId(const DisplayMonitor::DeviceId& id, DisplayMonitor::Handle& outController, DisplayMonitor::Attributes& outAttr) {
       RROutput handle = (RROutput)0;
       
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (!id.empty() && libs != nullptr && libs->randr.isAvailable) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (!id.empty() && libs.randr.isAvailable) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
           
           for (int o = 0; handle == (RROutput)0 && o < resources->noutput; ++o) {
-            if (XRROutputInfo* outInfo = libs->randr.GetOutputInfo_(libs->displayServer, resources, resources->outputs[o])) {
+            if (XRROutputInfo* outInfo = libs.randr.GetOutputInfo_(libs.displayServer, resources, resources->outputs[o])) {
               if (id == outInfo->name && outInfo->connection == RR_Connected && outInfo->crtc != None) {
-                if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, outInfo->crtc)) {
+                if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, outInfo->crtc)) {
                   try {
                     handle = resources->outputs[o];
                     outController = outInfo->crtc;
                     outAttr.description = outAttr.id = outInfo->name;
                     ::attributes::_readScreenArea(crtc, resources, outAttr.screenArea, outAttr.workArea);
-                    outAttr.isPrimary = ::attributes::_isPrimaryDevice(*libs, handle);
+                    outAttr.isPrimary = ::attributes::_isPrimaryDevice(libs, handle);
                   }
                   catch (...) {
-                    libs->randr.FreeCrtcInfo_(crtc);
-                    libs->randr.FreeOutputInfo_(outInfo);
-                    libs->randr.FreeScreenResources_(resources);
+                    libs.randr.FreeCrtcInfo_(crtc);
+                    libs.randr.FreeOutputInfo_(outInfo);
+                    libs.randr.FreeScreenResources_(resources);
                     throw;
                   }
-                  libs->randr.FreeCrtcInfo_(crtc);
+                  libs.randr.FreeCrtcInfo_(crtc);
                 }
               }
-              libs->randr.FreeOutputInfo_(outInfo);
+              libs.randr.FreeOutputInfo_(outInfo);
             }
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
         }
       }
       return (DisplayMonitor::Handle)handle;
@@ -206,9 +206,9 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static DisplayMonitor::Handle getPrimary(DisplayMonitor::Handle& outController, DisplayMonitor::Attributes& outAttr) {
       DisplayMonitor::Handle handle = (DisplayMonitor::Handle)0;
       
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs != nullptr && libs->randr.isAvailable) {
-        RROutput primaryOutput = libs->randr.GetOutputPrimary_(libs->displayServer, libs->rootWindow);
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (libs.randr.isAvailable) {
+        RROutput primaryOutput = libs.randr.GetOutputPrimary_(libs.displayServer, libs.rootWindow);
         handle = (DisplayMonitor::Handle)primaryOutput;
         attributes::read(primaryOutput, false, outController, outAttr);
       }
@@ -218,16 +218,16 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     
     // read handle/attributes of primary/default monitor
     static bool getByHandle(DisplayMonitor::Handle handle, DisplayMonitor::Handle& outController, DisplayMonitor::Attributes& outAttr) {
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs != nullptr && libs->randr.isAvailable) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (libs.randr.isAvailable) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
           for (int o = 0; o < resources->noutput; ++o) {
             if (resources->outputs[o] == (RROutput)handle) {
-              libs->randr.FreeScreenResources_(resources);
+              libs.randr.FreeScreenResources_(resources);
               return attributes::read(resources->outputs[o], true, outController, outAttr);
             }
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
         }
       }
       return false; 
@@ -237,19 +237,19 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     
     // list handles of all active monitors
     static inline bool listHandles(std::vector<DisplayMonitor::Handle>& resultsOut) {
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs != nullptr && libs->randr.isAvailable) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (libs.randr.isAvailable) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
           
           for (int o = 0; o < resources->noutput; ++o) {
-            if (XRROutputInfo* outInfo = libs->randr.GetOutputInfo_(libs->displayServer, resources, resources->outputs[o])) {
+            if (XRROutputInfo* outInfo = libs.randr.GetOutputInfo_(libs.displayServer, resources, resources->outputs[o])) {
               if (outInfo->connection == RR_Connected && outInfo->crtc != None)
                 resultsOut.emplace_back((DisplayMonitor::Handle)resources->outputs[o]);
               
-              libs->randr.FreeOutputInfo_(outInfo);
+              libs.randr.FreeOutputInfo_(outInfo);
             }
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
           return true;
         }
       }
@@ -302,8 +302,8 @@ Description : Display monitor - X11 implementation (Linux/BSD)
         try {
           monitorList.emplace_back(it, false);
         }
-        catch (const std::bad_alloc&) { throw; }
-        catch (...) {} // ignore invalid_argument
+        catch (const std::invalid_argument&) {} // ignore display if "not found"
+        catch (...) { throw; }
       }
     }
     return monitorList;
@@ -358,94 +358,103 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 
     // read display resolution/depth/rate of a monitor
     static bool getDisplayMode(DisplayMonitor::Handle handle, DisplayMonitor::Handle controller, DisplayMode& out) noexcept { 
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs == nullptr || !libs->randr.isAvailable || controller == (DisplayMonitor::Handle)0)
-        return false;
+      try {
+        LibrariesX11& libs = LibrariesX11::instance();
+        if (!libs.randr.isAvailable || controller == (DisplayMonitor::Handle)0)
+          return false;
 
-      bool isSuccess = false;
-      if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
-        if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, (RRCrtc)controller)) {
-          
-          for (int m = 0; m < resources->nmode; ++m) {
-            if (resources->modes[m].id == crtc->mode) {
-              XRRModeInfo* modeInfo = resources->modes + m;
-              out.width = modeInfo->width;
-              out.height = modeInfo->height;
-              out.refreshRate = ::monitors::_readRefreshRate(*modeInfo);
-              out.bitDepth = ::monitors::_readBitDepth(*libs);
-              
-              isSuccess = true;
-              break;
+        bool isSuccess = false;
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
+          if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, (RRCrtc)controller)) {
+            
+            for (int m = 0; m < resources->nmode; ++m) {
+              if (resources->modes[m].id == crtc->mode) {
+                XRRModeInfo* modeInfo = resources->modes + m;
+                out.width = modeInfo->width;
+                out.height = modeInfo->height;
+                out.refreshRate = ::monitors::_readRefreshRate(*modeInfo);
+                out.bitDepth = ::monitors::_readBitDepth(libs);
+                
+                isSuccess = true;
+                break;
+              }
             }
+            libs.randr.FreeCrtcInfo_(crtc);
           }
-          libs->randr.FreeCrtcInfo_(crtc);
+          libs.randr.FreeScreenResources_(resources);
         }
-        libs->randr.FreeScreenResources_(resources);
-      }
-      return isSuccess;
+        return isSuccess;
+      } 
+      catch (...) { return false; }
     }
 
     // set display resolution/depth/rate of a monitor
     static inline bool setDisplayMode(DisplayMonitor::Handle handle, DisplayMonitor::Handle controller, const DisplayMode& desiredMode) noexcept { 
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs == nullptr || !libs->randr.isAvailable || controller == (DisplayMonitor::Handle)0)
-        return false;
+      try {
+        LibrariesX11& libs = LibrariesX11::instance();
+        if (!libs.randr.isAvailable || controller == (DisplayMonitor::Handle)0)
+          return false;
 
-      bool isSuccess = false;
-      if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
-        if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, (RRCrtc)controller)) {
-          if (XRROutputInfo* outInfo = libs->randr.GetOutputInfo_(libs->displayServer, resources, (RROutput)handle)) {
-            RRMode originalMode = crtc->mode;
-            
-            try {
-              RRMode nativeTargetMode = 0;
-              if (::monitors::_findDisplayModeId(desiredMode, *libs, outInfo, resources, nativeTargetMode)
-               && libs->randr.SetCrtcConfig_(libs->displayServer, resources, (RRCrtc)controller, CurrentTime,
-                                            crtc->x, crtc->y, nativeTargetMode, crtc->rotation, 
-                                            crtc->outputs, crtc->noutput)) {
+        bool isSuccess = false;
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
+          if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, (RRCrtc)controller)) {
+            if (XRROutputInfo* outInfo = libs.randr.GetOutputInfo_(libs.displayServer, resources, (RROutput)handle)) {
+              RRMode originalMode = crtc->mode;
               
-                if (libs->originalModes.find((RROutput)handle) == libs->originalModes.end())
-                  libs->originalModes.emplace((RROutput)handle, originalMode); // store original display mode (if it hasn't been changed before)
-                isSuccess = true;
+              try {
+                RRMode nativeTargetMode = 0;
+                if (::monitors::_findDisplayModeId(desiredMode, libs, outInfo, resources, nativeTargetMode)
+                 && libs.randr.SetCrtcConfig_(libs.displayServer, resources, (RRCrtc)controller, CurrentTime,
+                                              crtc->x, crtc->y, nativeTargetMode, crtc->rotation, 
+                                              crtc->outputs, crtc->noutput)) {
+                
+                  if (libs.originalModes.find((RROutput)handle) == libs.originalModes.end())
+                    libs.originalModes.emplace((RROutput)handle, originalMode); // store original display mode (if it hasn't been changed before)
+                  isSuccess = true;
+                }
+              } 
+              catch (...) { // alloc failure -> restore original mode
+                isSuccess = false;
+                libs.randr.SetCrtcConfig_(libs.displayServer, resources, (RRCrtc)controller, CurrentTime, crtc->x, crtc->y, 
+                                           originalMode, crtc->rotation, crtc->outputs, crtc->noutput);
               }
-            } 
-            catch (...) { // alloc failure -> restore original mode
-              isSuccess = false;
-              libs->randr.SetCrtcConfig_(libs->displayServer, resources, (RRCrtc)controller, CurrentTime, crtc->x, crtc->y, 
-                                         originalMode, crtc->rotation, crtc->outputs, crtc->noutput);
+              libs.randr.FreeOutputInfo_(outInfo);
             }
-            libs->randr.FreeOutputInfo_(outInfo);
+            libs.randr.FreeCrtcInfo_(crtc);
           }
-          libs->randr.FreeCrtcInfo_(crtc);
+          libs.randr.FreeScreenResources_(resources);
         }
-        libs->randr.FreeScreenResources_(resources);
-      }
-      return isSuccess;
+        return isSuccess;
+      } 
+      catch (...) { return false; }
     }
     
     // reset display resolution/depth/rate of a monitor to default values
     static inline bool setDefaultDisplayMode(DisplayMonitor::Handle handle, DisplayMonitor::Handle controller) noexcept { 
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (libs == nullptr || !libs->randr.isAvailable || controller == (DisplayMonitor::Handle)0)
-        return false;
-      if (libs->originalModes.find((RROutput)handle) == libs->originalModes.end()) // no previous display change -> already default mode
-        return true; 
+      try {
+        LibrariesX11& libs = LibrariesX11::instance();
+        if (!libs.randr.isAvailable || controller == (DisplayMonitor::Handle)0)
+          return false;
+        if (libs.originalModes.find((RROutput)handle) == libs.originalModes.end()) // no previous display change -> already default mode
+          return true; 
 
-      bool isSuccess = false;
-      if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
-        if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, (RRCrtc)controller)) {
-          
-          if (libs->randr.SetCrtcConfig_(libs->displayServer, resources, (RRCrtc)controller, CurrentTime,
-                                        crtc->x, crtc->y, libs->originalModes[(RROutput)handle], 
-                                        crtc->rotation, crtc->outputs, crtc->noutput)) {
-            libs->originalModes.erase((RROutput)handle); // restored to initial mode -> remove backup
-            isSuccess = true;
+        bool isSuccess = false;
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
+          if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, (RRCrtc)controller)) {
+            
+            if (libs.randr.SetCrtcConfig_(libs.displayServer, resources, (RRCrtc)controller, CurrentTime,
+                                          crtc->x, crtc->y, libs.originalModes[(RROutput)handle], 
+                                          crtc->rotation, crtc->outputs, crtc->noutput)) {
+              libs.originalModes.erase((RROutput)handle); // restored to initial mode -> remove backup
+              isSuccess = true;
+            }
+            libs.randr.FreeCrtcInfo_(crtc);
           }
-          libs->randr.FreeCrtcInfo_(crtc);
+          libs.randr.FreeScreenResources_(resources);
         }
-        libs->randr.FreeScreenResources_(resources);
-      }
-      return isSuccess;
+        return isSuccess;
+      } 
+      catch (...) { return false; }
     }
     
     // ---
@@ -454,11 +463,11 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static inline std::vector<DisplayMode> listDisplayModes(DisplayMonitor::Handle handle, DisplayMonitor::Handle controller) {
       std::vector<DisplayMode> modes;
       
-      LibrariesX11* libs = LibrariesX11::instance();
-      if (controller && libs != nullptr && libs->randr.isAvailable) {
-        if (XRRScreenResources* resources = libs->randr.GetScreenResourcesCurrent_(libs->displayServer, libs->rootWindow)) {
-          if (XRRCrtcInfo* crtc = libs->randr.GetCrtcInfo_(libs->displayServer, resources, (RRCrtc)controller)) {
-            if (XRROutputInfo* outInfo = libs->randr.GetOutputInfo_(libs->displayServer, resources, (RROutput)handle)) {
+      LibrariesX11& libs = LibrariesX11::instance();
+      if (controller && libs.randr.isAvailable) {
+        if (XRRScreenResources* resources = libs.randr.GetScreenResourcesCurrent_(libs.displayServer, libs.rootWindow)) {
+          if (XRRCrtcInfo* crtc = libs.randr.GetCrtcInfo_(libs.displayServer, resources, (RRCrtc)controller)) {
+            if (XRROutputInfo* outInfo = libs.randr.GetOutputInfo_(libs.displayServer, resources, (RROutput)handle)) {
               try {
                 std::set<RRMode> supportedModes; // list of all existing display modes
                 for (int m = 0; m < outInfo->nmode; ++m)
@@ -473,22 +482,22 @@ Description : Display monitor - X11 implementation (Linux/BSD)
                     data.width = modeInfo->width;
                     data.height = modeInfo->height;
                     data.refreshRate = ::monitors::_readRefreshRate(*modeInfo);
-                    data.bitDepth = ::monitors::_readBitDepth(*libs);
+                    data.bitDepth = ::monitors::_readBitDepth(libs);
                     modes.emplace_back(std::move(data));
                   }
                 }
               } 
               catch (...) { 
-                libs->randr.FreeOutputInfo_(outInfo); 
-                libs->randr.FreeCrtcInfo_(crtc); 
-                libs->randr.FreeScreenResources_(resources); 
+                libs.randr.FreeOutputInfo_(outInfo); 
+                libs.randr.FreeCrtcInfo_(crtc); 
+                libs.randr.FreeScreenResources_(resources); 
                 throw; 
               }
-              libs->randr.FreeOutputInfo_(outInfo);
+              libs.randr.FreeOutputInfo_(outInfo);
             }
-            libs->randr.FreeCrtcInfo_(crtc);
+            libs.randr.FreeCrtcInfo_(crtc);
           }
-          libs->randr.FreeScreenResources_(resources);
+          libs.randr.FreeScreenResources_(resources);
         }
       }
       return modes;
@@ -535,42 +544,40 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 // -- DPI awareness -- ---------------------------------------------------------
 
   bool DisplayMonitor::setDpiAwareness(bool isEnabled) noexcept {
-    LibrariesX11* libs = LibrariesX11::instance();
-    if (libs == nullptr)
-      return false;
-    
-    if (isEnabled) {
-      if (libs->displayServer == nullptr)
-        return false;
-      libs->readSystemDpi();
-    }
-    else
-      libs->dpiX = libs->dpiY = __P_HARDWARE_X11_BASE_DPI;
-    return true;
+    try {
+      LibrariesX11& libs = LibrariesX11::instance();     
+      if (isEnabled)
+        libs.readSystemDpi();
+      else
+        libs.dpiX = libs.dpiY = __P_HARDWARE_X11_BASE_DPI;
+      return true;
+    } 
+    catch (...) { return false; }
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
-    if (LibrariesX11* libs = LibrariesX11::instance()) {
-      outDpiX = static_cast<uint32_t>(libs->dpiX + 0.5f); // round value
-      outDpiY = static_cast<uint32_t>(libs->dpiY + 0.5f);
-    }
-    else
-      outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_X11_BASE_DPI);
+    try {
+      LibrariesX11& libs = LibrariesX11::instance();
+      outDpiX = static_cast<uint32_t>(libs.dpiX + 0.5f); // round value
+      outDpiY = static_cast<uint32_t>(libs.dpiY + 0.5f);
+    } 
+    catch (...) { outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_X11_BASE_DPI); }
   }
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
-    if (LibrariesX11* libs = LibrariesX11::instance()) {
-      outScaleX = libs->dpiX / __P_HARDWARE_X11_BASE_DPI;
-      outScaleY = libs->dpiY / __P_HARDWARE_X11_BASE_DPI;}
-    else
-      outScaleX = outScaleY = 1.0f;
+    try {
+      LibrariesX11& libs = LibrariesX11::instance();
+      outScaleX = libs.dpiX / __P_HARDWARE_X11_BASE_DPI;
+      outScaleY = libs.dpiY / __P_HARDWARE_X11_BASE_DPI;
+    } 
+    catch (...) { outScaleX = outScaleY = 1.0f; }
   }
 
 
 // -- metrics -- ---------------------------------------------------------------
 
-  static inline int32_t __getBorderSize(DisplayMonitor::WindowHandle windowHandle) noexcept {
-    LibrariesX11& libs = *(LibrariesX11::instance());
+  static inline int32_t __getBorderSize(DisplayMonitor::WindowHandle windowHandle) {
+    LibrariesX11& libs = LibrariesX11::instance();
     XWindowAttributes attributes;
     libs.xlib.GetWindowAttributes_(libs.displayServer, (windowHandle != (DisplayMonitor::WindowHandle)0) ? windowHandle : libs.rootWindow, &attributes);
     return attributes.border_width;
@@ -578,38 +585,39 @@ Description : Display monitor - X11 implementation (Linux/BSD)
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, 
                                                             bool hasMenu, uint32_t hasBorders, uint32_t hasCaption) const noexcept {
-    LibrariesX11* libs = LibrariesX11::instance();
-    if (libs == nullptr)
-      return clientArea;
+    try {
+      LibrariesX11& libs = LibrariesX11::instance();
 
-    // read window size with extents (if supported)
-    if (libs->atoms.NET_FRAME_EXTENTS && windowHandle != (DisplayMonitor::WindowHandle)0) {
-      // wait until extents are set up by window manager
-      int32_t* extents = nullptr;
-      if (libs->getWindowProperty(windowHandle, libs->atoms.NET_FRAME_EXTENTS, AnyPropertyType, 
-                                 (unsigned char**)&extents, 4, 1024) > 0) {
-        DisplayArea windowArea { extents[0], extents[2], static_cast<uint32_t>(extents[0]+extents[1]), static_cast<uint32_t>(extents[2]+extents[3]) };
-        libs->xlib.Free_(extents);
-        return windowArea;
+      // read window size with extents (if supported)
+      if (libs.atoms.NET_FRAME_EXTENTS && windowHandle != (DisplayMonitor::WindowHandle)0) {
+        // wait until extents are set up by window manager
+        int32_t* extents = nullptr;
+        if (libs.getWindowProperty(windowHandle, libs.atoms.NET_FRAME_EXTENTS, AnyPropertyType, 
+                                   (unsigned char**)&extents, 4, 1024) > 0) {
+          DisplayArea windowArea { extents[0], extents[2], static_cast<uint32_t>(extents[0]+extents[1]), static_cast<uint32_t>(extents[2]+extents[3]) };
+          libs.xlib.Free_(extents);
+          return windowArea;
+        }
       }
-    }
-    
-    // fallback if not supported
-    int32_t borderSize = (hasBorders) ? __getBorderSize(windowHandle) : 0;
-    int32_t captionSize = (hasCaption && windowHandle != (DisplayMonitor::WindowHandle)0) ? 24 : 0;
-    if (hasMenu)
-      captionSize += 24;
-    
-    DisplayArea windowArea = clientArea;
-    windowArea.x -= borderSize;
-    if (clientArea.x >= 0 && windowArea.x < 0)
-      windowArea.x = 0;
-    windowArea.width += borderSize << 1;
-    
-    windowArea.y -= (borderSize + captionSize) >> 1;
-    if (clientArea.y >= 0 && windowArea.y < 0)
-      windowArea.y = 0;
-    windowArea.height += borderSize + captionSize;
-    return windowArea;
+      
+      // fallback if not supported
+      int32_t borderSize = (hasBorders) ? __getBorderSize(windowHandle) : 0;
+      int32_t captionSize = (hasCaption && windowHandle != (DisplayMonitor::WindowHandle)0) ? 24 : 0;
+      if (hasMenu)
+        captionSize += 24;
+      
+      DisplayArea windowArea = clientArea;
+      windowArea.x -= borderSize;
+      if (clientArea.x >= 0 && windowArea.x < 0)
+        windowArea.x = 0;
+      windowArea.width += borderSize << 1;
+      
+      windowArea.y -= (borderSize + captionSize) >> 1;
+      if (clientArea.y >= 0 && windowArea.y < 0)
+        windowArea.y = 0;
+      windowArea.height += borderSize + captionSize;
+      return windowArea;
+    } 
+    catch (...) { return clientArea; }
   }
 #endif

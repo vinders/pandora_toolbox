@@ -74,7 +74,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
   DisplayMonitor::DisplayMonitor() {
     if (LibrariesCocoa::instance() == nullptr)
-      return; // allow "empty" instance for default constructor
+      throw std::invalid_argument("DisplayMonitor: cocoa libraries can't be used.");
     
     MonitorAttributes_cocoa attributes;
     this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
