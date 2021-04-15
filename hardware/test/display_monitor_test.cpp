@@ -212,7 +212,7 @@ TEST_F(DisplayMonitorTest, monitorById) {
 # if defined(_WINDOWS)
     std::wstring invalidId = L"--DUMMY_INVALID_ID!!!--";
 # elif defined(__APPLE__)
-  uint32_t invalidId = 987654321;
+    std::string invalidId = "987654321";
 # else
     std::string invalidId = "--DUMMY_INVALID_ID!!!--";
 # endif
@@ -239,32 +239,6 @@ TEST_F(DisplayMonitorTest, monitorById) {
     EXPECT_EQ(defaultMonitor.adapterName(), monitorById.adapterName());
   }
 }
-
-#ifdef __APPLE__
-TEST_F(DisplayMonitorTest, monitorByUnitNumber) {
-  EXPECT_THROW(DisplayMonitor(0, 987654321u, false), std::invalid_argument);
-
-  DisplayMonitor defaultMonitor;
-  DisplayMonitor invalidUseDefault(987654321u, true);
-  EXPECT_EQ(defaultMonitor.handle(), invalidUseDefault.handle());
-  EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
-  EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
-
-  if (!defaultMonitor.handle()) { // for CI with virtual monitor
-    auto monitors = DisplayMonitor::listAvailableMonitors();
-    if (!monitors.empty())
-      defaultMonitor = std::move(monitors[0]);
-  }
-  if (defaultMonitor.handle()) { // if a monitor exists
-    DisplayMonitor monitorById(0, defaultMonitor.unitNumber(), false); // would throw if invalid id
-    EXPECT_EQ(defaultMonitor.handle(), monitorById.handle());
-    EXPECT_EQ(defaultMonitor.attributes().id, monitorById.attributes().id);
-    EXPECT_EQ(defaultMonitor.attributes().description, monitorById.attributes().description);
-    EXPECT_EQ(defaultMonitor.attributes().isPrimary, monitorById.attributes().isPrimary);
-    EXPECT_EQ(defaultMonitor.adapterName(), monitorById.adapterName());
-  }
-}
-#endif
 
 TEST_F(DisplayMonitorTest, monitorByIndex) {
   EXPECT_THROW(DisplayMonitor(false, 999999999u), std::invalid_argument);

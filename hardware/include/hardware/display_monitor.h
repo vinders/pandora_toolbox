@@ -71,7 +71,7 @@ namespace pandora {
       DisplayMonitor(Handle monitorHandle, bool usePrimaryAsDefault);
       /// @brief Get monitor description by identifier (or primary if not found and usePrimaryAsDefault==true)
       /// @remarks - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
-      ///          - only on Apple systems: display ID can change -> store unitNumber() instead (in your options)
+      ///          - ID value can safely be stored (as long as the screen isn't unplugged or plugged somewhere else, the ID remains the same)
       /// @warning Throws invalid_argument if ID not found and !usePrimaryAsDefault, or if system init failure
       DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault);
       /// @brief Get monitor description by index (or primary if not found and usePrimaryAsDefault==true)
@@ -96,7 +96,7 @@ namespace pandora {
       /// @brief Get display attributes of monitor
       inline const Attributes& attributes() const noexcept { return this->_attributes; }
       /// @brief Read associated adapter name/brand
-      /// @warning - May be empty if virtual monitor, or if running in a VM with no GPU support
+      /// @warning - May be empty if virtual monitor (or running in a VM with no GPU support)
       ///          - Not supported on Apple systems (Mac, iOS)
       String adapterName() const;
 
