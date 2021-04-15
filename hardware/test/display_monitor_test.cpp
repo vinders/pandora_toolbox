@@ -6,12 +6,6 @@
 # include <Windows.h>
 #endif
 
-#if !defined(_WINDOWS) && defined(__APPLE__)
-# define _EMPTY_ID(id) (id == 0)
-#else
-# define _EMPTY_ID(id) id .empty()
-#endif
-
 using namespace pandora::hardware;
 
 class DisplayMonitorTest : public testing::Test {
@@ -61,7 +55,7 @@ TEST_F(DisplayMonitorTest, readPrimaryMonitorAreaAndDpi) {
 
   DisplayMonitor monitor;
   // verify handle in tests: when executed on CI (without any monitor), the handle will be empty (and sizes will be 0)
-  EXPECT_TRUE((monitor.handle()) ? !_EMPTY_ID(monitor.attributes().id) : _EMPTY_ID(monitor.attributes().id));
+  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? (monitor.attributes().screenArea.height > 0) : (monitor.attributes().screenArea.height == 0));
   EXPECT_TRUE((monitor.handle()) ? (monitor.attributes().screenArea.width > 0) : (monitor.attributes().screenArea.width == 0));
   EXPECT_TRUE((monitor.handle()) ? (monitor.attributes().workArea.height > 0) : (monitor.attributes().workArea.height == 0));
@@ -104,7 +98,7 @@ TEST_F(DisplayMonitorTest, listMonitors) {
   DisplayMonitor::setDpiAwareness(true);
 
   DisplayMonitor monitor;
-  EXPECT_TRUE((monitor.handle()) ? !_EMPTY_ID(monitor.attributes().id) : _EMPTY_ID(monitor.attributes().id));
+  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
 
@@ -129,7 +123,7 @@ TEST_F(DisplayMonitorTest, getSetPrimaryMonitorDisplayModes) {
   DisplayMonitor::setDpiAwareness(true);
 
   DisplayMonitor monitor;
-  EXPECT_TRUE((monitor.handle()) ? !_EMPTY_ID(monitor.attributes().id) : _EMPTY_ID(monitor.attributes().id));
+  EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().id.empty() : monitor.attributes().id.empty());
   EXPECT_TRUE((monitor.handle()) ? !monitor.attributes().description.empty() : monitor.attributes().description.empty());
   EXPECT_TRUE(monitor.attributes().isPrimary);
   if (!monitor.handle()) { // for CI with virtual monitor
@@ -236,7 +230,7 @@ TEST_F(DisplayMonitorTest, monitorById) {
     if (!monitors.empty())
       defaultMonitor = std::move(monitors[0]);
   }
-  if (defaultMonitor.handle() && !_EMPTY_ID(defaultMonitor.attributes().id)) { // if a monitor exists
+  if (defaultMonitor.handle() && !defaultMonitor.attributes().id.empty()) { // if a monitor exists
     DisplayMonitor monitorById(defaultMonitor.attributes().id, false); // would throw if invalid id
     EXPECT_EQ(defaultMonitor.handle(), monitorById.handle());
     EXPECT_EQ(defaultMonitor.attributes().id, monitorById.attributes().id);

@@ -54,14 +54,14 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   // move "cocoa" Attributes bindings to cross-platform data containers
   static void _moveAttributes(MonitorAttributes_cocoa& src, uint32_t unitNumber, DisplayMonitor::Attributes& dest) {
-    dest.id = std::move(src.id);
+    dest.id = std::to_string(unitNumber); // use unit number instead of displayId (not sensitive to graphics switching)
     if (src.description != nullptr) {
-      try { dest.description = src.description; } catch (...) {}
+      try { dest.description = src.description; } catch (...) {} // description not mandatory -> if alloc failure, do not report
       free(src.description);
       src.description = nullptr;
     }
     else {
-      dest.description = std::string("Generic monitor ") + std::to_string(unitNumber);
+      dest.description = std::string("Generic monitor ") + dest.id;
     }
     
     _moveDisplayArea(src.screenArea, dest.screenArea);
@@ -105,12 +105,20 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     }
   }
   
-  DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
+  DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& unitId, bool usePrimaryAsDefault) {
     if (LibrariesCocoa::instance() == nullptr)
       throw std::invalid_argument("DisplayMonitor: cocoa libraries can't be used.");
     
     MonitorAttributes_cocoa attributes;
-    this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)id, &(this->_unitNumber), &attributes);
+    try {
+      this->_unitNumber = (uint32_t)std::stoul(unitId);
+      this->_handle = (DisplayMonitor::Handle)__getMonitorByUnit_cocoa(this->_unitNumber, &attributes);
+    }
+    catch (...) { // ID is not a number -> invalid
+      if (!usePrimaryAsDefault)
+        throw;
+    }
+
     if (this->_handle) {
       _moveAttributes(attributes, this->_unitNumber, this->_attributes);
     }
@@ -124,6 +132,15 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       else
         this->_attributes.isPrimary = true;
     }
+  }
+  
+  DisplayMonitor::DisplayMonitor(uint32_t displayId) {
+    MonitorAttributes_cocoa attributes;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorById_cocoa((CocoaDisplayId)id, &(this->_unitNumber), &attributes);
+    if (this->_handle)
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+    else // failure
+      throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
   }
   
   DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
@@ -153,28 +170,6 @@ Description : Display monitor - Cocoa implementation (Mac OS)
         this->_attributes.isPrimary = true;
     }
   }
-  
-  DisplayMonitor::DisplayMonitor(DisplayMonitor::DeviceId, uint32_t unitNumber, bool usePrimaryAsDefault) {
-    if (LibrariesCocoa::instance() == nullptr)
-      throw std::invalid_argument("DisplayMonitor: cocoa libraries can't be used.");
-    
-    MonitorAttributes_cocoa attributes;
-    this->_handle = (DisplayMonitor::Handle)__getMonitorByUnit_cocoa(unitNumber, &attributes);
-    if (this->_handle) {
-      this->_unitNumber = unitNumber;
-      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
-    }
-    else { // failure
-      if (!usePrimaryAsDefault)
-        throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
-      
-      this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_cocoa(&(this->_unitNumber), &attributes);
-      if (this->_handle)
-        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
-      else
-        this->_attributes.isPrimary = true;
-    }
-  }
 
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     if (LibrariesCocoa::instance() == nullptr)
@@ -186,7 +181,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     if (__listMonitorIds_cocoa(&ids, &length) && ids != nullptr) {
       for (uint32_t i = 0; i < length; ++i) {
         try {
-          monitorList.emplace_back(__getMonitorIdFromList_cocoa(ids, i), false);
+          monitorList.emplace_back(static_cast<uint32_t>(__getMonitorIdFromList_cocoa(ids, i))); // use getter (because of alloc type cast)
         }
         catch (const std::bad_alloc&) { free(ids); throw; }
         catch (...) {} // ignore invalid_argument
@@ -209,11 +204,12 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     DisplayMode mode;
     DisplayMode_cocoa modeCocoa;
-    if (this->_handle && __getDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, &modeCocoa) ) {
+    if (this->_handle && __getDisplayMode_cocoa(displayId, &modeCocoa) ) {
       _moveDisplayMode(modeCocoa, mode);
     }
     else {
@@ -227,11 +223,12 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     DisplayMode_cocoa modeCocoa;
     _fillDisplayMode(mode, modeCocoa);
-    if (this->_handle && __setDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, this->_unitNumber, &modeCocoa) ) {
+    if (this->_handle && __setDisplayMode_cocoa(displayId, this->_unitNumber, &modeCocoa) ) {
       if (refreshAttributes) {
         MonitorAttributes_cocoa attributes;
         __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
@@ -244,9 +241,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
-    if (this->_handle && __setDefaultDisplayMode_cocoa((CocoaDisplayId)this->_attributes.id, this->_unitNumber) ) {
+    if (this->_handle && __setDefaultDisplayMode_cocoa(displayId, this->_unitNumber) ) {
       if (refreshAttributes) {
         MonitorAttributes_cocoa attributes;
         __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
@@ -261,13 +259,14 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     std::vector<DisplayMode> modes;
     
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id));
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     if (!this->_handle)
       return modes;
     
     DisplayMode_cocoa* modesCocoa = nullptr;
     uint32_t length = 0;
-    __listDisplayModes_cocoa((CocoaDisplayId)this->_attributes.id, &modesCocoa, &length);
+    __listDisplayModes_cocoa(displayId, &modesCocoa, &length);
     if (modesCocoa != nullptr) {
       try {
         for (int i = 0; i < length; ++i) {
@@ -290,7 +289,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle) const noexcept {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     if (!this->_handle || !LibrariesCocoa_readScreenDpi((CocoaScreenHandle)this->_handle, &outDpiX, &outDpiY)) { 
       outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_COCOA_DEFAULT_DPI);
@@ -299,7 +299,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle) const noexcept {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     if (!this->_handle || !LibrariesCocoa_readScreenScaling((CocoaScreenHandle)this->_handle, &outScaleX, &outScaleY)) { 
       outScaleX = outScaleY = __P_HARDWARE_COCOA_DEFAULT_SCALE;
@@ -312,7 +313,8 @@ Description : Display monitor - Cocoa implementation (Mac OS)
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, 
                                                             bool hasMenu, uint32_t hasBorders, uint32_t hasCaption) const noexcept {
     // refresh handle (fix automatic graphics switching)
-    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, (CocoaDisplayId*)&(this->_attributes.id)); 
+    CocoaDisplayId displayId = 0;
+    this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     if (this->_handle) { 
       DisplayArea windowArea;

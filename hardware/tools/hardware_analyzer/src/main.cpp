@@ -56,13 +56,6 @@ void displaySpecs(const CpuSpecs& specs) {
             it.attributes().isPrimary ? "- primary" : " ",
             it.attributes().description.c_str(), adapterName.c_str(),
             mode.width, mode.height, mode.bitDepth, mode.refreshRate);
-#   elif defined(__APPLE__)
-       printf(" - %u: %ux%u (work area:%ux%u) %s\n   %s\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id,
-            it.attributes().screenArea.width, it.attributes().screenArea.height,
-            it.attributes().workArea.width, it.attributes().workArea.height,
-            it.attributes().isPrimary ? "- primary" : " ",
-            it.attributes().description.c_str(),
-            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
 #   else
       std::string adapterName = it.adapterName();
       if (adapterName.empty())

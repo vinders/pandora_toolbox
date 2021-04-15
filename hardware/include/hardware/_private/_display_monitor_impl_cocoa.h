@@ -32,7 +32,7 @@ License :     MIT
         uint32_t refreshRate;
       };
       struct MonitorAttributes_cocoa {
-        CocoaDisplayId id;
+        CocoaDisplayId displayId;
         char* description;
         struct DisplayArea_cocoa screenArea;
         struct DisplayArea_cocoa workArea;

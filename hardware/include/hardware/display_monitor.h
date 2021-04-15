@@ -8,17 +8,6 @@ License :     MIT
 #include <string>
 #include <vector>
 
-// macros for portability (to avoid "ifdef __APPLE__")
-#if defined(__APPLE__)
-  // throws if unitNbString does not contain a stringified number
-# define _P_DISPLAYMONITOR_BY_ID(unitNbString, allowDefaultPrimary) DisplayMonitor(0, (uint32_t)std::stoul(unitNbString), allowDefaultPrimary)
-# define _P_GET_DISPLAYMONITOR_ID(monitor)                          std::to_string(monitor.unitNumber())
-#else
-# define _P_DISPLAYMONITOR_BY_ID(id, allowDefaultPrimary) DisplayMonitor(id, allowDefaultPrimary)
-# define _P_GET_DISPLAYMONITOR_ID(monitor)                monitor.attributes().id
-#endif
-
-
 namespace pandora { 
   namespace hardware {
     /// @brief Display position/area ("virtual desktop" coordinates)
@@ -35,7 +24,7 @@ namespace pandora {
       uint32_t bitDepth;    ///< Color depth (bits per pixel). Usually 32.
       uint32_t refreshRate; ///< Display rate (hertz)
     };
-    constexpr inline uint32_t undefinedRefreshRate() noexcept { return 0; } ///< Unknown refresh rate (when used to set a display mode, the refresh rate isn't changed)
+    constexpr inline uint32_t undefinedRefreshRate() noexcept { return 0; } ///< Unknown refresh rate
 
     // ---
 
@@ -45,19 +34,18 @@ namespace pandora {
     public:
 #     if defined(_WINDOWS)
         using Handle = void*;
-        using DeviceId = std::wstring;
         using WindowHandle = void*;
+        using DeviceId = std::wstring;
         using String = std::wstring;
 #     else
 #       if defined(__APPLE__)
           using Handle = void*;
           using WindowHandle = void*;
-          using DeviceId = uint32_t;
 #       else
           using Handle = uint64_t;
           using WindowHandle = int32_t;
-          using DeviceId = std::string;
 #       endif
+        using DeviceId = std::string;
         using String = std::string;
 #     endif
 
@@ -91,13 +79,6 @@ namespace pandora {
       ///          - index can change during runtime (new screen plugged, automatic GPU switching)
       /// @warning Throws invalid_argument if index not found and !usePrimaryAsDefault, or if system init failure
       explicit DisplayMonitor(bool usePrimaryAsDefault, uint32_t index);
-#     if defined(__APPLE__)
-        /// @brief Get monitor description by unit number (or primary if not found and usePrimaryAsDefault==true)
-        /// @remarks - usePrimaryAsDefault: if the monitor can't be found, the primary/default monitor will be used instead
-        ///          - only useful for Apple systems -> use display ID for other systems
-        /// @warning Throws invalid_argument if unit not found and !usePrimaryAsDefault, or if system init failure
-        explicit DisplayMonitor(DisplayMonitor::DeviceId, uint32_t unitNumber, bool usePrimaryAsDefault);
-#     endif
 
       DisplayMonitor(const DisplayMonitor&) = delete;
       DisplayMonitor(DisplayMonitor&&) = default;
@@ -118,12 +99,6 @@ namespace pandora {
       /// @warning - May be empty if virtual monitor, or if running in a VM with no GPU support
       ///          - Not supported on Apple systems (Mac, iOS)
       String adapterName() const;
-      
-#     if defined(__APPLE__)
-        /// @brief Get unique display unit number (Apple systems)
-        /// @remarks Shouldn't be affected by automatic graphics switching
-        inline uint32_t unitNumber() noexcept { return this->_unitNumber; }
-#     endif
 
       // -- display mode --
 
@@ -167,8 +142,6 @@ namespace pandora {
     private:
 #     if defined(_WINDOWS)
         Attributes _attributes{ L"", L"", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
-#     elif defined(__APPLE__)
-        mutable Attributes _attributes{ 0, "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     else
         Attributes _attributes{ "", "", { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, false };
 #     endif
@@ -180,6 +153,7 @@ namespace pandora {
 #     endif
       
 #     if defined(__APPLE__)
+        DisplayMonitor(uint32_t displayId);
         uint32_t _unitNumber = 0;
 #     elif !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
         Handle _controller = (Handle)0;

@@ -102,9 +102,9 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     NSNumber* screenNumber = [(NSScreen*)screen deviceDescription][@"NSScreenNumber"];
     *outUnitNumber = CGDisplayUnitNumber([screenNumber unsignedIntValue]);
     
-    outAttr->id = [screenNumber unsignedIntValue];
-    outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->id);
-    __readScreenArea_cocoa(screen, outAttr->id, &(outAttr->screenArea), &(outAttr->workArea));
+    outAttr->displayId = [screenNumber unsignedIntValue];
+    outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->displayId);
+    __readScreenArea_cocoa(screen, outAttr->displayId, &(outAttr->screenArea), &(outAttr->workArea));
     
     if (checkPrimary && [[NSScreen screens] count] > 0) {
       NSScreen* primaryScreen = [[NSScreen screens] objectAtIndex:0];
@@ -170,9 +170,9 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       // use unit number to support automatic graphics switching
       NSNumber* screenNumber = [screen deviceDescription][@"NSScreenNumber"];
       if (CGDisplayUnitNumber([screenNumber unsignedIntValue]) == unitNumber) { 
-        outAttr->id = (CocoaDisplayId)[screenNumber unsignedIntValue];
-        outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->id);
-        __readScreenArea_cocoa(screen, outAttr->id, &(outAttr->screenArea), &(outAttr->workArea));
+        outAttr->displayId = (CocoaDisplayId)[screenNumber unsignedIntValue];
+        outAttr->description = __readDeviceDescription_cocoa(screen, outAttr->displayId);
+        __readScreenArea_cocoa(screen, outAttr->displayId, &(outAttr->screenArea), &(outAttr->workArea));
         outAttr->isPrimary = (screenIndex == 0) ? Bool_TRUE : Bool_FALSE;
         return (CocoaScreenHandle)screen;
       }
