@@ -22,7 +22,7 @@ namespace pandora {
       uint32_t width;       ///< Horizontal size (pixels).
       uint32_t height;      ///< Vertical size (pixels).
       uint32_t bitDepth;    ///< Color depth (bits per pixel). Usually 32.
-      uint32_t refreshRate; ///< Display rate (hertz)
+      uint32_t refreshRate; ///< Display rate (milli-hertz)
     };
     constexpr inline uint32_t undefinedRefreshRate() noexcept { return 0; } ///< Unknown refresh rate
 
@@ -105,12 +105,14 @@ namespace pandora {
 
       /// @brief Read current display mode of a monitor
       DisplayMode getDisplayMode() const noexcept;
-      /// @brief Change display mode of a monitor (for fullscreen apps)
+      
+      /// @brief Change display mode of a monitor
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
-      /// @warning Not thread safe: do not call simultaneously in multiple threads
+      /// @warning - Not thread safe: do not call simultaneously in multiple threads
       bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true);
       /// @brief Reset monitor to its default display mode
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
+      /// @warning - Not thread safe: do not call simultaneously in multiple threads
       bool setDefaultDisplayMode(bool refreshAttributes = true);
 
       /// @brief Read available display modes for a monitor

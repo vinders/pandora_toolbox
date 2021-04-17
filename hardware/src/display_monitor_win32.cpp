@@ -262,6 +262,19 @@ Description : Display monitor - Win32 implementation (Windows)
 // -- display modes -- ---------------------------------------------------------
 
   namespace monitors {
+    // convert frequency flag to refresh rate (mHz)
+    static inline uint32_t _getRefreshRate(DWORD displayFrequency) {
+      uint32_t refreshRate;
+      switch (displayFrequency) {
+        case 59u: refreshRate = 59940u; break;
+        case 29u: refreshRate = 29970u; break;
+        case 27u: refreshRate = 27500u; break;
+        case 23u: refreshRate = 23976u; break;
+        default:  refreshRate = displayFrequency * 1000u; break;
+      }
+      return refreshRate;
+    }
+    
     // read display resolution/depth/rate of a monitor
     static inline bool getDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept {
       DEVMODEW screenMode;
@@ -271,7 +284,7 @@ Description : Display monitor - Win32 implementation (Windows)
         out.width = screenMode.dmPelsWidth;
         out.height = screenMode.dmPelsHeight;    
         out.bitDepth = screenMode.dmBitsPerPel;
-        out.refreshRate = screenMode.dmDisplayFrequency;
+        out.refreshRate = _getRefreshRate(screenMode.dmDisplayFrequency);
         return true;
       }
       return false;
@@ -286,7 +299,7 @@ Description : Display monitor - Win32 implementation (Windows)
       screenMode.dmPelsWidth = mode.width;
       screenMode.dmPelsHeight = mode.height;    
       screenMode.dmBitsPerPel = mode.bitDepth;
-      screenMode.dmDisplayFrequency = mode.refreshRate;
+      screenMode.dmDisplayFrequency = mode.refreshRate/1000u;
       screenMode.dmFields = (DM_PELSWIDTH | DM_PELSHEIGHT);
       if (mode.bitDepth != 0)
         screenMode.dmFields |= DM_BITSPERPEL;
@@ -319,8 +332,19 @@ Description : Display monitor - Win32 implementation (Windows)
         info.dmSize = sizeof(info);
 
         result = EnumDisplaySettingsExW(id.c_str(), index, &info, 0);
-        if (result != FALSE && info.dmPelsWidth != 0u && info.dmPelsHeight != 0u && (info.dmBitsPerPel >= 15u || info.dmBitsPerPel == 0))
-          modes.push_back(DisplayMode{ info.dmPelsWidth, info.dmPelsHeight, info.dmBitsPerPel, info.dmDisplayFrequency });
+        if (result != FALSE && info.dmPelsWidth != 0u && info.dmPelsHeight != 0u && (info.dmBitsPerPel >= 15u || info.dmBitsPerPel == 0)) {
+          uint32_t refreshRate = _getRefreshRate(info.dmDisplayFrequency);
+          
+          bool isAlreadyListed = false;
+          for (auto& it : modes) {
+            if (it.width == info.dmPelsWidth && it.height == info.dmPelsHeight && it.bitDepth == info.dmBitsPerPel && it.refreshRate == refreshRate) {
+              isAlreadyListed = true;
+              break;
+            }
+          }
+          if (!isAlreadyListed)
+            modes.push_back(DisplayMode{ info.dmPelsWidth, info.dmPelsHeight, info.dmBitsPerPel, refreshRate });
+        }
       }
       return modes;
     }

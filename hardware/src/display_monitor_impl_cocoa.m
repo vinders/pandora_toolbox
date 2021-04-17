@@ -271,10 +271,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       CFRelease(pxFormat);
 #   endif
 
-    out->refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+    out->refreshRate = (uint32_t)(CGDisplayModeGetRefreshRate(modeRef) * 1000.0 + 0.5000001); // round
 #   ifdef __P_APPLE_IOKIT
       if (out->refreshRate == 0)
-        out->refreshRate = (uint32_t)__readRefreshRate__ioreg(displayId); // floor -> distinguish 59.94 from 60
+        out->refreshRate = (uint32_t)(__readRefreshRate__ioreg(displayId) * 1000.0 + 0.5000001); // round
 #   endif
   }
   
@@ -323,10 +323,10 @@ Description : Display monitor - Cocoa implementation (Mac OS)
         
         // if rate is not undefined, compare it
         if (targetMode->refreshRate > 0) {
-          uint32_t refreshRate = (uint32_t)CGDisplayModeGetRefreshRate(modeRef);
+          uint32_t refreshRate = (uint32_t)(CGDisplayModeGetRefreshRate(modeRef) * 1000.0 + 0.5000001); // round
 #         ifdef __P_APPLE_IOKIT
           if (refreshRate == 0)
-            refreshRate = (uint32_t)__readRefreshRate__ioreg(displayId); // floor -> distinguish 59.94 from 60
+            refreshRate = (uint32_t)(__readRefreshRate__ioreg(displayId) * 1000.0 + 0.5000001); // round
 #         endif
           if (refreshRate > 0 && targetMode->refreshRate != refreshRate)
             continue;

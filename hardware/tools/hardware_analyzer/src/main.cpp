@@ -50,22 +50,22 @@ void displaySpecs(const CpuSpecs& specs) {
 
 #   if defined(_WINDOWS)
       std::wstring adapterName = it.adapterName();
-      printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+      printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%.2fHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
             it.attributes().description.c_str(), adapterName.c_str(),
-            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
+            mode.width, mode.height, mode.bitDepth, (float)mode.refreshRate/1000.0f);
 #   else
       std::string adapterName = it.adapterName();
       if (adapterName.empty())
         adapterName = "-";
-      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s (%s)\n   Display mode: %ux%u:%u @%uHz\n", it.attributes().id.c_str(),
+      printf(" - %s: %ux%u (work area:%ux%u) %s\n   %s (%s)\n   Display mode: %ux%u:%u @%.2fHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,
             it.attributes().isPrimary ? "- primary" : " ",
             it.attributes().description.c_str(), adapterName.c_str(),
-            mode.width, mode.height, mode.bitDepth, mode.refreshRate);
+            mode.width, mode.height, mode.bitDepth, (float)mode.refreshRate/1000.0f);
 #   endif
   }
   printf("\n____________________________________________________________\n\n");

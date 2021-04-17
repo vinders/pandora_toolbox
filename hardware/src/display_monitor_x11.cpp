@@ -324,7 +324,7 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     static inline uint32_t _readRefreshRate(XRRModeInfo& modeInfo) {
       if (modeInfo.hTotal && modeInfo.vTotal) {
         double rate = (double)modeInfo.dotClock / ((double)modeInfo.hTotal * (double)modeInfo.vTotal);
-        return static_cast<uint32_t>(rate + 0.0000001); // show "59.94" as "59", to distinguish it from "60"
+        return static_cast<uint32_t>(rate * 1000.0 + 0.5000001); // round
       }
       return undefinedRefreshRate();
     }
@@ -477,13 +477,21 @@ Description : Display monitor - X11 implementation (Linux/BSD)
                 for (int m = 0; m < resources->nmode; ++m) {
                   XRRModeInfo* modeInfo = resources->modes + m;
                   if (supportedModes.find(modeInfo->id) != supportedModes.end() && (modeInfo->modeFlags & RR_Interlace) == 0) {
-
                     DisplayMode data;
                     data.width = modeInfo->width;
                     data.height = modeInfo->height;
                     data.refreshRate = ::monitors::_readRefreshRate(*modeInfo);
                     data.bitDepth = ::monitors::_readBitDepth(libs);
-                    modes.emplace_back(std::move(data));
+                    
+                    bool isAlreadyListed = false;
+                    for (auto& it : modes) {
+                      if (it.width == data.width && it.height == data.height && it.bitDepth == data.bitDepth && it.refreshRate == data.refreshRate) {
+                        isAlreadyListed = true;
+                        break;
+                      }
+                    }
+                    if (!isAlreadyListed)
+                      modes.emplace_back(std::move(data));
                   }
                 }
               } 

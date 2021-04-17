@@ -26,10 +26,10 @@ License :     MIT
         uint32_t height;
       };
       struct DisplayMode_cocoa {
-        uint32_t width;
-        uint32_t height;
-        uint32_t bitDepth;
-        uint32_t refreshRate;
+        uint32_t width;  // px
+        uint32_t height; // px
+        uint32_t bitDepth; // bits
+        uint32_t refreshRate; // mHz
       };
       struct MonitorAttributes_cocoa {
         CocoaDisplayId displayId;
