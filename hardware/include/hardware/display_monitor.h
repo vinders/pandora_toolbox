@@ -38,7 +38,7 @@ namespace pandora {
         using DeviceId = std::wstring;
         using String = std::wstring;
 #     else
-#       if defined(__APPLE__)
+#       if defined(__APPLE__) || defined(_P_ENABLE_LINUX_WAYLAND)
           using Handle = void*;
           using WindowHandle = void*;
 #       else
@@ -98,7 +98,7 @@ namespace pandora {
       inline const Attributes& attributes() const noexcept { return this->_attributes; }
       /// @brief Read associated adapter name/brand
       /// @warning - May be empty if virtual monitor (or running in a VM with no GPU support)
-      ///          - Not supported on Apple systems (Mac, iOS)
+      ///          - Not supported on Apple systems (Mac, iOS) and Wayland (display server on some Linux environments)
       String adapterName() const;
 
       // -- display mode --
@@ -109,10 +109,12 @@ namespace pandora {
       /// @brief Change display mode of a monitor
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
       /// @warning - Not thread safe: do not call simultaneously in multiple threads
+      ///          - Not supported by Wayland (display server on some Linux environments) -> must be changed via fullscreen window
       bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true);
       /// @brief Reset monitor to its default display mode
       /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
       /// @warning - Not thread safe: do not call simultaneously in multiple threads
+      ///          - Not supported by Wayland (display server on some Linux environments) -> must be changed via fullscreen window
       bool setDefaultDisplayMode(bool refreshAttributes = true);
 
       /// @brief Read available display modes for a monitor
@@ -158,6 +160,8 @@ namespace pandora {
 #     if defined(__APPLE__)
         DisplayMonitor(uint32_t displayId);
         uint32_t _unitNumber = 0;
+#     elif defined(_P_ENABLE_LINUX_WAYLAND)
+        uint32_t _id = 0;
 #     elif !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
         Handle _controller = (Handle)0;
 #     endif

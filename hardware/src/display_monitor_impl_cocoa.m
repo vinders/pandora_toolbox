@@ -48,7 +48,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
             CFStringRef nameRef;
             if (nameList && CFDictionaryGetValueIfPresent(nameList, CFSTR("en_US"), (const void**)&nameRef)) {
               const CFIndex length = CFStringGetMaximumSizeForEncoding(CFStringGetLength(nameRef), kCFStringEncodingUTF8);
-              monitorName = calloc(length + 1, sizeof(char));
+              monitorName = (char*)calloc(length + 1, sizeof(char));
               CFStringGetCString(nameRef, monitorName, length, kCFStringEncodingUTF8);
             }
           }
@@ -193,7 +193,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
       return Bool_TRUE;
     }
     
-    CGDirectDisplayID* displays = calloc(displayCount, sizeof(CGDirectDisplayID));
+    CGDirectDisplayID* displays = (CGDirectDisplayID*)calloc(displayCount, sizeof(CGDirectDisplayID));
     if (displays) {
       if (CGGetOnlineDisplayList(displayCount, displays, &displayCount) == kCGErrorSuccess) {
         *outList = (CocoaDisplayId*)displays;
@@ -438,7 +438,7 @@ Description : Display monitor - Cocoa implementation (Mac OS)
 
       CFIndex modesCount = CFArrayGetCount(modes);
       *outLength = (uint32_t)modesCount;
-      *outModes = calloc(*outLength, sizeof(struct DisplayMode_cocoa));
+      *outModes = (struct DisplayMode_cocoa*)calloc(*outLength, sizeof(struct DisplayMode_cocoa));
       if (*outModes == NULL) {
         *outLength = 0;
         return Bool_FALSE;
