@@ -34,6 +34,16 @@ elseif(ANDROID)
     
     set(opengl_libs__LINKED android EGL GLESv3)
     
+elseif(CWORK_LINUX_WAYLAND)
+    include(GNUInstallDirs)
+    include(FindPkgConfig)
+    pkg_check_modules(Wayland REQUIRED
+        wayland-client>=0.2.7
+        wayland-egl>=0.2.7
+    )
+    set(opengl_libs__INCLUDE ${Wayland_INCLUDE_DIRS})
+    set(opengl_libs__LINKED ${Wayland_LINK_LIBRARIES})
+
 else()
     find_package(OpenGL REQUIRED)
     set(opengl_libs__LINKED ${OPENGL_LIBRARIES})

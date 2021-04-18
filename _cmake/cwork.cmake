@@ -117,6 +117,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         endif()
     endmacro()
     
+    
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Source files                                                    │
     # └──────────────────────────────────────────────────────────────────┘
@@ -182,6 +183,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         endif()
         unset(_file_list)
     endmacro()
+    
     
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Dependencies                                                    │
@@ -308,6 +310,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         endif()
         unset(_cmd_list)
     endmacro()
+    
     
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Projects                                                        │
@@ -658,7 +661,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
             add_compile_options(${CWORK_COMPILE_CMD})
         endif()
         
-        if(${CWORK_PROJECT_NAME}_SOURCE_FILES)
+        if(${CWORK_PROJECT_NAME}_SOURCE_FILES) # linked library/executable
             set(CWORK_PROJECT_SCOPE PUBLIC)
             set(_CWORK_TARGET_FILES ${${CWORK_PROJECT_NAME}_SOURCE_FILES})
             if(${CWORK_PROJECT_NAME}_INCLUDE_FILES)
@@ -668,6 +671,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 set(_CWORK_TARGET_FILES ${_CWORK_TARGET_FILES} ${${CWORK_PROJECT_NAME}_CUSTOM_FILES})
             endif()
             
+            # create project target
             if(${CWORK_BUILD_TYPE} STREQUAL "executable") # executable
                 add_executable(${CWORK_PROJECT_NAME} ${_CWORK_TARGET_FILES})
             elseif(${CWORK_BUILD_TYPE} STREQUAL "dynamic") # library
@@ -677,11 +681,22 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 add_library(${CWORK_PROJECT_NAME} STATIC ${_CWORK_TARGET_FILES})
             endif()
             
+            # set language for special files (objC, ...)
             if(${CWORK_PROJECT_NAME}_LANG_C_FILES)
                 set_source_files_properties(${${CWORK_PROJECT_NAME}_LANG_C_FILES} PROPERTIES LANGUAGE C)
             endif()
             if(${CWORK_PROJECT_NAME}_LANG_CXX_FILES)
                 set_source_files_properties(${${CWORK_PROJECT_NAME}_LANG_CXX_FILES} PROPERTIES LANGUAGE CXX)
+            endif()
+            
+            # linux-wayland: generate protocol files
+            if(CWORK_LINUX_WAYLAND AND _LINUX_WAYLAND_LINKED)
+                cwork_wayland_set_protocol_files(${CWORK_PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                if(NOT DEFINED CWORK_INCLUDED_LIBRARIES OR NOT CWORK_INCLUDED_LIBRARIES)
+                    set(CWORK_INCLUDED_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                else()
+                    set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                endif()
             endif()
         else() # header-only library
             set(${CWORK_PROJECT_NAME}_INTERFACE ON CACHE STRING "${CWORK_PROJECT_NAME}_INTERFACE")

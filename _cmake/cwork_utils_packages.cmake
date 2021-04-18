@@ -37,5 +37,43 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
           )
         endif()
     endfunction() 
+    
+    
+    # ┌──────────────────────────────────────────────────────────────────┐
+    # │  Wayland packages                                                │
+    # └──────────────────────────────────────────────────────────────────┘
+    
+    #brief:  Generate protocol files for Wayland display server
+    #params: - target_name: name of the project
+    #        - include_dir: project include directory
+    function(cwork_wayland_set_protocol_files target_name include_dir)
+        find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
+        pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols>=1.15)
+        pkg_get_variable(WAYLAND_PROTOCOLS_BASE wayland-protocols pkgdatadir)
+        
+        macro(cwork_wayland_generate_file target_name src_file output_file)
+            add_custom_command(OUTPUT "${output_file}.h"
+                COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${src_file}" "${output_file}.h"
+                DEPENDS "${src_file}" VERBATIM)
+            add_custom_command(OUTPUT "${output_file}.cpp"
+                COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code "${src_file}" "${output_file}.cpp"
+                DEPENDS "${src_file}" VERBATIM)
+            target_sources(${target_name} PRIVATE "${output_file}.h" "${output_file}.cpp")
+        endmacro()
+
+        file(MAKE_DIRECTORY ${include_dir})
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/stable/xdg-shell/xdg-shell.xml"
+                                    "${include_dir}/wayland-xdg-shell-client-protocol")
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
+                                    "${include_dir}/wayland-xdg-decoration-client-protocol")
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/stable/viewporter/viewporter.xml"
+                                    "${include_dir}/wayland-viewporter-client-protocol")
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/unstable/relative-pointer/relative-pointer-unstable-v1.xml"
+                                    "${include_dir}/wayland-relative-pointer-unstable-v1-client-protocol")
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml"
+                                    "${include_dir}/wayland-pointer-constraints-unstable-v1-client-protocol")
+        cwork_wayland_generate_file(${target_name} "${WAYLAND_PROTOCOLS_BASE}/unstable/idle-inhibit/idle-inhibit-unstable-v1.xml"
+                                    "${include_dir}/wayland-idle-inhibit-unstable-v1-client-protocol")
+    endfunction()
 
 endif()
