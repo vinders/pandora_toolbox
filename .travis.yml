@@ -208,7 +208,8 @@ jobs:
         - BUILD_TYPE=Release
         - ENABLE_VULKAN=OFF
         - GENERATOR="Unix Makefiles"
-        - CMAKE_ARGS="-DCWORK_TESTS=OFF -DCWORK_LINUX_WAYLAND=ON"
+        - IGNORE_TESTS=ON
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON"
       addons:
         apt:
           sources:
@@ -400,20 +401,24 @@ script:
     fi
   # ---- cmake build / unit testing ----
   - |
-    if [ "$PLATFORM_NAME" = "android64" ]; then
-      cd "./_build/${PLATFORM_NAME}"
-      ninja -j4 || exit 1
-    elif [ "$PLATFORM_NAME" = "ios" ]; then
-      cmake --build "./_build/${PLATFORM_NAME}" --config $BUILD_TYPE --target install || exit 1
+    if [ "$IGNORE_TESTS" = "ON" ]; then
+      echo "-- Tests not executed on current build --"
     else
-      cd "./_build/${PLATFORM_NAME}"
-      make -j4 || exit 1
-      if [ "$ENABLE_XVFB" = "ON" ]; then
-        xvfb-run --auto-servernum --server-num=1 --server-args="-screen 0 1024x768x24" make test || exit 1
+      if [ "$PLATFORM_NAME" = "android64" ]; then
+        cd "./_build/${PLATFORM_NAME}"
+        ninja -j4 || exit 1
+      elif [ "$PLATFORM_NAME" = "ios" ]; then
+        cmake --build "./_build/${PLATFORM_NAME}" --config $BUILD_TYPE --target install || exit 1
       else
-        make test || exit 1
+        cd "./_build/${PLATFORM_NAME}"
+        make -j4 || exit 1
+        if [ "$ENABLE_XVFB" = "ON" ]; then
+          xvfb-run --auto-servernum --server-num=1 --server-args="-screen 0 1024x768x24" make test || exit 1
+        else
+          make test || exit 1
+        fi
+        cd ../..
       fi
-      cd ../..
     fi
 
 # ---- coverage ----
