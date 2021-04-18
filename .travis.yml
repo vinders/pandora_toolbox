@@ -207,6 +207,7 @@ jobs:
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Release
         - ENABLE_VULKAN=OFF
+        - ENABLE_XVFB=ON
         - GENERATOR="Unix Makefiles"
         - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON"
       addons:
@@ -222,6 +223,13 @@ jobs:
             - libxkbcommon-dev
             - libegl1-mesa-dev
             - python3.5
+            - mesa-utils
+            - linux-generic
+            - xserver-xorg-core
+            - xserver-xorg
+            - xserver-xorg-video-all
+            - xserver-xorg-input-all
+            - libwayland-egl1-mesa
     # macOS - clang - x86_64
     - &MacOS-clang
       branches:
