@@ -45,7 +45,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       DisplayMonitor::Handle handle = (DisplayMonitor::Handle)0;
       if (libs.wl.outputs) {
         attributes::read(*(libs.wl.outputs), 0, outAttr);
@@ -61,7 +61,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       uint32_t index = 0;
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         if (cur->output == (wl_output*)handle) {
@@ -85,7 +85,7 @@ Description : Display monitor - Wayland implementation (Linux)
       }
       catch (...) { return (DisplayMonitor::Handle)0; }
 
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       uint32_t index = 0;
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         if (cur->id == id) {
@@ -103,7 +103,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
 
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       uint32_t index = 0;
       WaylandOutput* it = libs.wl.outputs;
       while (it != nullptr && index < targetIndex) {
@@ -126,7 +126,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         try {
           resultsOut.emplace_back((DisplayMonitor::Handle)cur->output, false);
@@ -195,7 +195,7 @@ Description : Display monitor - Wayland implementation (Linux)
         LibrariesWayland& libs = LibrariesWayland::instance();
         wl_display_roundtrip(libs.wl.display);
         
-        std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+        std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
         for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
           if (cur->id == id) {
             if (cur->modes != nullptr && cur->modesLength > 0) {
@@ -224,7 +224,7 @@ Description : Display monitor - Wayland implementation (Linux)
       
       std::vector<DisplayMode> modes;
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         if (cur->id == id) {
           if (cur->modes != nullptr) {
@@ -290,7 +290,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         if (cur->id == this->_id) {
           outDpiX = outDpiY = libs.getMonitorDpi(*cur);
@@ -307,7 +307,7 @@ Description : Display monitor - Wayland implementation (Linux)
       LibrariesWayland& libs = LibrariesWayland::instance();
       wl_display_roundtrip(libs.wl.display);
       
-      std::lock_guard<std::mutex> guard(libs.wl.outputsLock);
+      std::lock_guard<std::recursive_mutex> guard(libs.wl.outputsLock);
       for (WaylandOutput* cur = libs.wl.outputs; cur != nullptr; cur = cur->next) {
         if (cur->id == this->_id) {
           outScaleX = outScaleY = static_cast<float>(cur->scaleFactor);

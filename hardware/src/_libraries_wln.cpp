@@ -66,7 +66,7 @@ License :     MIT
   void LibrariesWayland::_outputGeometryHandler(void* data, struct wl_output*,
                                                 int32_t x, int32_t y, int32_t physWidth, int32_t physHeight,
                                                 int32_t, const char* brand, const char* model, int32_t) {
-    std::lock_guard<std::mutex> guard(_libs.wl.outputsLock);
+    std::lock_guard<std::recursive_mutex> guard(_libs.wl.outputsLock);
     if (!_libs._isOutputAvailable((WaylandOutput*)data))
       return;
     WaylandOutput* outputData = (WaylandOutput*)data;
@@ -100,7 +100,7 @@ License :     MIT
   // read output display mode
   void LibrariesWayland::_outputModeHandler(void* data, struct wl_output*, uint32_t flags,
                                             int32_t width, int32_t height, int32_t refreshRate) {
-    std::lock_guard<std::mutex> guard(_libs.wl.outputsLock);
+    std::lock_guard<std::recursive_mutex> guard(_libs.wl.outputsLock);
     if (!_libs._isOutputAvailable((WaylandOutput*)data))
       return;
     WaylandOutput* outputData = (WaylandOutput*)data;
@@ -147,7 +147,7 @@ License :     MIT
 
   // read output scaling factor
   void LibrariesWayland::_outputScaleHandler(void* data, struct wl_output* output, int32_t factor) {
-    std::lock_guard<std::mutex> guard(_libs.wl.outputsLock);
+    std::lock_guard<std::recursive_mutex> guard(_libs.wl.outputsLock);
     if (!_libs._isOutputAvailable((WaylandOutput*)data))
       return;
     ((WaylandOutput*)data)->scaleFactor = factor;
@@ -155,7 +155,7 @@ License :     MIT
   
   // end of operations -> verify consistency
   void LibrariesWayland::_outputDoneHandler(void* data, struct wl_output* output) {
-    std::lock_guard<std::mutex> guard(_libs.wl.outputsLock);
+    std::lock_guard<std::recursive_mutex> guard(_libs.wl.outputsLock);
     if (!_libs._isOutputAvailable((WaylandOutput*)data))
       return;
     WaylandOutput* outputData = (WaylandOutput*)data;
@@ -191,6 +191,7 @@ License :     MIT
   
   // verify output existence
   bool LibrariesWayland::_isOutputAvailable(WaylandOutput* data) noexcept {
+    // no lock (callers already own lock)
     WaylandOutput* cur = _libs.wl.outputs;
     while (cur != nullptr && cur != (WaylandOutput*)data)
       cur = cur->next;
@@ -217,7 +218,7 @@ License :     MIT
     wl_output_add_listener(output, &_outputListener, newEntry);
     
     // find position in linked list
-    std::lock_guard<std::mutex> guard(wl.outputsLock);
+    std::lock_guard<std::recursive_mutex> guard(wl.outputsLock);
     WaylandOutput* parent = nullptr;
     WaylandOutput* child = wl.outputs;
     while (child != nullptr && child->id < id) {
@@ -242,27 +243,30 @@ License :     MIT
   
   // remove output entry
   void LibrariesWayland::_eraseOutput(uint32_t id) noexcept {
-    std::lock_guard<std::mutex> guard(wl.outputsLock);
-    
-    WaylandOutput* parent = nullptr;
-    for (WaylandOutput* cur = wl.outputs; cur != nullptr; cur = cur->next) {
-      if (cur->id == id) {
-        if (cur->output)
-          wl_output_destroy(cur->output);
-        if (cur->description)
-          free(cur->description);
-        if (cur->modes)
-          free(cur->modes);
-      
-        if (parent != nullptr)
-          parent->next = cur->next;
-        else
-          wl.outputs = cur->next;
-        free(cur);
-        break;
+    wl_output* output = nullptr;
+    { // lock scope
+      std::lock_guard<std::recursive_mutex> guard(wl.outputsLock);
+      WaylandOutput* parent = nullptr;
+      for (WaylandOutput* cur = wl.outputs; cur != nullptr; cur = cur->next) {
+        if (cur->id == id) {
+          output = cur->output;
+          if (cur->description)
+            free(cur->description);
+          if (cur->modes)
+            free(cur->modes);
+        
+          if (parent != nullptr)
+            parent->next = cur->next;
+          else
+            wl.outputs = cur->next;
+          free(cur);
+          break;
+        }
+        parent = cur;
       }
-      parent = cur;
     }
+    if (output)
+      wl_output_destroy(output);
   }
   
   // -- registry handlers --
@@ -345,21 +349,22 @@ License :     MIT
   // -- shutdown --
 
   void LibrariesWayland::shutdown() noexcept {
-    std::lock_guard<std::mutex> guard(wl.outputsLock);
-    
-    WaylandOutput* output = wl.outputs;
-    while (output) {
-      WaylandOutput* cur = output;
-      if (cur->output)
-        wl_output_destroy(cur->output);
-      if (cur->description)
-        free(cur->description);
-      if (cur->modes)
-        free(cur->modes);
-      output = output->next;
-      free(cur);
+    { // lock scope
+      std::lock_guard<std::recursive_mutex> guard(wl.outputsLock);
+      WaylandOutput* output = wl.outputs;
+      while (output) {
+        WaylandOutput* cur = output;
+        if (cur->output)
+          wl_output_destroy(cur->output);
+        if (cur->description)
+          free(cur->description);
+        if (cur->modes)
+          free(cur->modes);
+        output = output->next;
+        free(cur);
+      }
+      wl.outputs = nullptr;
     }
-    wl.outputs = nullptr;
     
     if (wl.subCompositor)
       wl_subcompositor_destroy(wl.subCompositor);

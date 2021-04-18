@@ -55,10 +55,10 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
             add_custom_command(OUTPUT "${output_file}.h"
                 COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${src_file}" "${output_file}.h"
                 DEPENDS "${src_file}" VERBATIM)
-            add_custom_command(OUTPUT "${output_file}.cpp"
-                COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code "${src_file}" "${output_file}.cpp"
+            add_custom_command(OUTPUT "${output_file}.c"
+                COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" private-code "${src_file}" "${output_file}.c"
                 DEPENDS "${src_file}" VERBATIM)
-            target_sources(${target_name} PRIVATE "${output_file}.h" "${output_file}.cpp")
+            target_sources(${target_name} PRIVATE "${output_file}.h" "${output_file}.c")
         endmacro()
 
         file(MAKE_DIRECTORY ${include_dir})

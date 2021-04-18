@@ -60,7 +60,7 @@ License :     MIT
         ~LibrariesWayland() noexcept { shutdown(); }
         
         struct {
-          std::mutex        outputsLock;
+          std::recursive_mutex outputsLock;
           WaylandOutput*    outputs       = nullptr;
           
           wl_display*       display       = nullptr;
