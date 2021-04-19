@@ -240,7 +240,7 @@ Description : Display monitor - iOS implementation
     DisplayArea_ios clientAreaIos;
     DisplayArea_ios windowAreaIos;
     _fillDisplayArea(clientArea, clientAreaIos);
-    __clientAreaToWindowArea_ios(&clientAreaIos, (IosAppHandle)windowHandle, hasMenu, &windowAreaIos);
+    __clientAreaToWindowArea_ios(&clientAreaIos, (IosAppHandle)windowHandle, &windowAreaIos);
     
     DisplayArea windowArea;
     _moveDisplayArea(windowAreaIos, windowArea);

@@ -38,26 +38,26 @@ Description : Display monitor - iOS implementation
       outAttr->screenArea.width = boundaries.size.width;
       outAttr->screenArea.height = boundaries.size.height;
       
-#     if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
       Bool isWorkAreaValid = Bool_FALSE;
-      @try {
-        if ([[UIApplication sharedApplication] keyWindow]) {
-          UIEdgeInsets insets = [[[UIApplication sharedApplication] keyWindow] safeAreaInsets];
-          uint32_t paddingX = insets.left + insets.right;
-          uint32_t paddingY = insets.top + insets.bottom;
-          if (paddingX > 0 || paddingY > 0) {
-            outAttr->workArea.x = outAttr->screenArea.x + insets.left;
-            outAttr->workArea.y = outAttr->screenArea.y + insets.top;
-            outAttr->workArea.width = outAttr->screenArea.width - paddingX;
-            outAttr->workArea.height = outAttr->screenArea.height - paddingY;
-            isWorkAreaValid = Bool_TRUE;
+      if (@available(iOS 11, *)) {
+        @try {
+          if ([[UIApplication sharedApplication] keyWindow]) {
+            UIEdgeInsets insets = [[[UIApplication sharedApplication] keyWindow] safeAreaInsets];
+            uint32_t paddingX = insets.left + insets.right;
+            uint32_t paddingY = insets.top + insets.bottom;
+            if (paddingX > 0 || paddingY > 0) {
+              outAttr->workArea.x = outAttr->screenArea.x + insets.left;
+              outAttr->workArea.y = outAttr->screenArea.y + insets.top;
+              outAttr->workArea.width = outAttr->screenArea.width - paddingX;
+              outAttr->workArea.height = outAttr->screenArea.height - paddingY;
+              isWorkAreaValid = Bool_TRUE;
+            }
           }
         }
+        @catch (NSException*) { isWorkAreaValid = Bool_FALSE; }
       }
-      @catch (NSException*) { isWorkAreaValid = Bool_FALSE; }
         
       if (!isWorkAreaValid) {
-#     endif
         if (outAttr->screenArea.width <= outAttr->screenArea.height) {
           outAttr->workArea.x = outAttr->screenArea.x;
           outAttr->workArea.y = outAttr->screenArea.y + __P_DEFAULT_STATUS_BAR_SIZE;
@@ -70,9 +70,7 @@ Description : Display monitor - iOS implementation
           outAttr->workArea.width = outAttr->screenArea.width - __P_DEFAULT_STATUS_BAR_SIZE;
           outAttr->workArea.height = outAttr->screenArea.height;
         }
-#     if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
       }
-#     endif
     }
   }
   
@@ -160,11 +158,12 @@ Description : Display monitor - iOS implementation
   // set display resolution/depth/rate of a monitor
   Bool __setDisplayMode_ios(uint32_t index, const struct DisplayMode_ios* mode) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*) __getMonitorHandle_ios(index);
+      UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
       if (screen != NULL && [[screen availableModes] count] > 0) {
+        //if ([screen respondsToSelector:@selector(setCurrentMode:UIScreenMode*:)])
         for (UIScreenMode* modeInfo in [screen availableModes]) {
           if (mode->width == modeInfo.size.width && mode->height == modeInfo.size.height) {
-            screen->setCurrentMode(modeInfo);
+            [screen setCurrentMode:modeInfo];
             return Bool_TRUE;
           }
         }
@@ -176,10 +175,14 @@ Description : Display monitor - iOS implementation
   // reset display resolution/depth/rate of a monitor to default values
   Bool __setDefaultDisplayMode_ios(uint32_t index) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*) __getMonitorHandle_ios(index);
-      if (screen != NULL && [screen preferredMode]) {
-        screen->setCurrentMode([screen preferredMode]);
-        return Bool_TRUE;
+      UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
+      if (screen != NULL) {
+        //if ([screen respondsToSelector:@selector(setCurrentMode:UIScreenMode*:)]) {
+        UIScreenMode* modeInfo = [screen preferredMode];
+        if (modeInfo) {
+          [screen setCurrentMode:modeInfo];
+          return Bool_TRUE;
+        }
       }
       return Bool_FALSE;
     }
@@ -202,10 +205,10 @@ Description : Display monitor - iOS implementation
         uint32_t refreshRate = (uint32_t)((double)[screen maximumFramesPerSecond] * 1000.0 + 0.500001);
         uint32_t index = 0;
         for (UIScreenMode* modeInfo in [screen availableModes]) {
-          outModes[index].width = modeInfo.size.width;
-          outModes[index].height = modeInfo.size.height;
-          outModes[index].bitDepth = 32;
-          outModes[index].refreshRate = refreshRate;
+          (*outModes)[index].width = modeInfo.size.width;
+          (*outModes)[index].height = modeInfo.size.height;
+          (*outModes)[index].bitDepth = 32;
+          (*outModes)[index].refreshRate = refreshRate;
           ++index;
         }
         return Bool_TRUE;
@@ -219,7 +222,7 @@ Description : Display monitor - iOS implementation
   
   // client area to window area (DPI adjusted)
   void __clientAreaToWindowArea_ios(const struct DisplayArea_ios* clientArea, IosAppHandle windowHandle, 
-                                    Bool hasStatusBar, struct DisplayArea_ios* outWindowArea) {
+                                    struct DisplayArea_ios* outWindowArea) {
     Bool isWindowAreaValid = Bool_FALSE;
     @try {
       UIApplication* app = (UIApplication*)windowHandle;
@@ -238,19 +241,10 @@ Description : Display monitor - iOS implementation
     @catch (NSException*) { isWindowAreaValid = Bool_FALSE; }
     
     if (!isWindowAreaValid) {
-      uint32_t offset = (hasStatusBar) ? __P_DEFAULT_STATUS_BAR_SIZE : 0;
-      if (clientArea->width <= clientArea->height) {
-        outWindowArea->x = clientArea->x;
-        outWindowArea->y = clientArea->y + offset;
-        outWindowArea->width = clientArea->width;
-        outWindowArea->height = clientArea->height - offset;
-      }
-      else {
-        outWindowArea->x = clientArea->x + offset;
-        outWindowArea->y = clientArea->y;
-        outWindowArea->width = clientArea->width - offset;
-        outWindowArea->height = clientArea->height;
-      }
+      outWindowArea->x = clientArea->x;
+      outWindowArea->y = clientArea->y;
+      outWindowArea->width = clientArea->width;
+      outWindowArea->height = clientArea->height;
     }
   }
 

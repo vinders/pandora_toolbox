@@ -77,7 +77,7 @@ License :     MIT
       // -- metrics --
       
       void __clientAreaToWindowArea_ios(const struct DisplayArea_ios* clientArea, IosAppHandle windowHandle, 
-                                        Bool hasStatusBar, struct DisplayArea_ios* outWindowArea);
+                                        struct DisplayArea_ios* outWindowArea);
 
 #     ifndef __OBJC__
         } // extern "C"
