@@ -98,7 +98,7 @@ Description : Display monitor - iOS implementation
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
     uint32_t index = 0;
     try {
-      index = std::stoul(id);
+      index = (uint32_t)std::stoul(id);
     }
     catch (...) { 
       if (!usePrimaryAsDefault)

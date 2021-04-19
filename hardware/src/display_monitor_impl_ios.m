@@ -130,7 +130,7 @@ Description : Display monitor - iOS implementation
   // count all active monitors
   uint32_t __countMonitorHandles_ios() {
     @try {
-      uint32_t displayCount = [[UIScreen screens] count];
+      uint32_t displayCount = (uint32_t) [[UIScreen screens] count];
       return displayCount;
     }
     @catch (NSException*) { return 0; }
@@ -160,7 +160,7 @@ Description : Display monitor - iOS implementation
     @autoreleasepool {
       UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
       if (screen != NULL && [[screen availableModes] count] > 0) {
-        //if ([screen respondsToSelector:@selector(setCurrentMode:UIScreenMode*:)])
+        
         for (UIScreenMode* modeInfo in [screen availableModes]) {
           if (mode->width == modeInfo.size.width && mode->height == modeInfo.size.height) {
             [screen setCurrentMode:modeInfo];
@@ -177,7 +177,7 @@ Description : Display monitor - iOS implementation
     @autoreleasepool {
       UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
       if (screen != NULL) {
-        //if ([screen respondsToSelector:@selector(setCurrentMode:UIScreenMode*:)]) {
+        
         UIScreenMode* modeInfo = [screen preferredMode];
         if (modeInfo) {
           [screen setCurrentMode:modeInfo];
