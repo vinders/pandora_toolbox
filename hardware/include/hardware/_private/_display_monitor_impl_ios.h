@@ -18,6 +18,10 @@ License :     MIT
 
 #     define __P_HARDWARE_IOS_BASE_DPI 150.0
 
+      typedef int Bool;
+#     define Bool_TRUE  1
+#     define Bool_FALSE 0
+
       typedef void* IosScreenHandle; // UIScreen*
       typedef void* IosAppHandle;    // UIApplication*
       

@@ -38,26 +38,26 @@ Description : Display monitor - iOS implementation
       outAttr->screenArea.width = boundaries.size.width;
       outAttr->screenArea.height = boundaries.size.height;
       
+#     if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
       Bool isWorkAreaValid = Bool_FALSE;
-#     if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
-        @try {
-          if ([[UIApplication shared] keyWindow]) {
-            UIEdgeInsets insets = [[[UIApplication shared] keyWindow] safeAreaInsets];
-            uint32_t paddingX = insets.left + insets.right;
-            uint32_t paddingY = insets.top + insets.bottom;
-            if (paddingX > 0 || paddingY > 0) {
-              outAttr->workArea.x = outAttr->screenArea.x + insets.left;
-              outAttr->workArea.y = outAttr->screenArea.y + insets.top;
-              outAttr->workArea.width = outAttr->screenArea.width - paddingX;
-              outAttr->workArea.height = outAttr->screenArea.height - paddingY;
-              isWorkAreaValid = Bool_TRUE;
-            }
+      @try {
+        if ([[UIApplication sharedApplication] keyWindow]) {
+          UIEdgeInsets insets = [[[UIApplication sharedApplication] keyWindow] safeAreaInsets];
+          uint32_t paddingX = insets.left + insets.right;
+          uint32_t paddingY = insets.top + insets.bottom;
+          if (paddingX > 0 || paddingY > 0) {
+            outAttr->workArea.x = outAttr->screenArea.x + insets.left;
+            outAttr->workArea.y = outAttr->screenArea.y + insets.top;
+            outAttr->workArea.width = outAttr->screenArea.width - paddingX;
+            outAttr->workArea.height = outAttr->screenArea.height - paddingY;
+            isWorkAreaValid = Bool_TRUE;
           }
         }
-        @catch (NSException*) { isWorkAreaValid = Bool_FALSE; }
-#     endif
-      
+      }
+      @catch (NSException*) { isWorkAreaValid = Bool_FALSE; }
+        
       if (!isWorkAreaValid) {
+#     endif
         if (outAttr->screenArea.width <= outAttr->screenArea.height) {
           outAttr->workArea.x = outAttr->screenArea.x;
           outAttr->workArea.y = outAttr->screenArea.y + __P_DEFAULT_STATUS_BAR_SIZE;
@@ -70,7 +70,9 @@ Description : Display monitor - iOS implementation
           outAttr->workArea.width = outAttr->screenArea.width - __P_DEFAULT_STATUS_BAR_SIZE;
           outAttr->workArea.height = outAttr->screenArea.height;
         }
+#     if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
       }
+#     endif
     }
   }
   
@@ -147,7 +149,7 @@ Description : Display monitor - iOS implementation
         UIScreenMode* modeInfo = [screen currentMode];
         out->width = modeInfo.size.width;
         out->height = modeInfo.size.height;
-        out->bitDepth = [screen bitsPerComponent] * 4;
+        out->bitDepth = 32;
         out->refreshRate = (uint32_t)((double)[screen maximumFramesPerSecond] * 1000.0 + 0.500001);
         return Bool_TRUE;
       }
@@ -197,14 +199,12 @@ Description : Display monitor - iOS implementation
           return Bool_FALSE;
         }
         
-        uint32_t bitDepth = [screen bitsPerComponent] * 4;
         uint32_t refreshRate = (uint32_t)((double)[screen maximumFramesPerSecond] * 1000.0 + 0.500001);
-        
         uint32_t index = 0;
         for (UIScreenMode* modeInfo in [screen availableModes]) {
           outModes[index].width = modeInfo.size.width;
           outModes[index].height = modeInfo.size.height;
-          outModes[index].bitDepth = bitDepth;
+          outModes[index].bitDepth = 32;
           outModes[index].refreshRate = refreshRate;
           ++index;
         }
@@ -233,18 +233,6 @@ Description : Display monitor - iOS implementation
         outWindowArea->width = position.size.width;
         outWindowArea->height = position.size.height;
         isWindowAreaValid = Bool_TRUE;
-      }
-      else if (hasStatusBar && [[UIApplication shared] keyWindow]) {
-        UIEdgeInsets insets = [[[UIApplication shared] keyWindow] safeAreaInsets];
-        uint32_t paddingX = insets.left + insets.right;
-        uint32_t paddingY = insets.top + insets.bottom;
-        if (paddingX > 0 || paddingY > 0) {
-          outWindowArea->x = clientArea->x + insets.left;
-          outWindowArea->y = clientArea->y + insets.top;
-          outWindowArea->width = clientArea->width - paddingX;
-          outWindowArea->height = clientArea->height - paddingY;
-          isWindowAreaValid = Bool_TRUE;
-        }
       }
     }
     @catch (NSException*) { isWindowAreaValid = Bool_FALSE; }
