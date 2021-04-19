@@ -14,8 +14,8 @@ namespace pandora {
     struct DisplayArea final {
       int32_t x;       ///< Horizontal position of a screen/context/window. Can be negative if it's not the primary display.
       int32_t y;       ///< Vertical position of a screen/context/window. Can be negative if it's not the primary display.
-      uint32_t width;  ///< Horizontal size of a screen/context/window.
-      uint32_t height; ///< Vertical size of a screen/context/window.
+      uint32_t width;  ///< Horizontal size of a screen/context/window (pixels on desktops, points on iOS).
+      uint32_t height; ///< Vertical size of a screen/context/window (pixels on desktops, points on iOS).
     };
     /// @brief Display mode settings for a monitor
     struct DisplayMode final {

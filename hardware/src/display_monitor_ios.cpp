@@ -12,97 +12,146 @@ Description : Display monitor - iOS implementation
 # include <string>
 # include <stdexcept>
 # include <vector>
-# include <cstdlib>
-# include <climits>
-# include <cmath>
+# include "hardware/_private/_display_monitor_impl_ios.h"
 # include "hardware/display_monitor.h"
 
   using namespace pandora::hardware;
   
-//obj-C:
-// CGRect Rect=[[UIScreen mainScreen] bounds];
   
-/*//swift:
-var screenWidth: CGFloat {
-    if UIInterfaceOrientationIsPortrait(screenOrientation) {
-        return UIScreen.mainScreen().bounds.size.width
-    } else {
-        return UIScreen.mainScreen().bounds.size.height
+  // -- bindings --
+  
+  // move "ios" DisplayArea bindings to cross-platform data containers
+  static inline void _moveDisplayArea(const DisplayArea_ios& src, DisplayArea& dest) {
+    dest.x = src.x;
+    dest.y = src.y;
+    dest.width = src.width;
+    dest.height = src.height;
+  }
+  // fill "ios" DisplayArea bindings from cross-platform data containers
+  static inline void _fillDisplayArea(const DisplayArea& src, DisplayArea_ios& dest) {
+    dest.x = src.x;
+    dest.y = src.y;
+    dest.width = src.width;
+    dest.height = src.height;
+  }
+  
+  // move "ios" DisplayMode bindings to cross-platform data containers
+  static void _moveDisplayMode(const DisplayMode_ios& src, DisplayMode& dest) {
+    dest.width = src.width;
+    dest.height = src.height;
+    dest.bitDepth = src.bitDepth;
+    dest.refreshRate = src.refreshRate;
+  }
+  // fill "ios" DisplayMode bindings from cross-platform data containers
+  static inline void _fillDisplayMode(const DisplayMode& src, DisplayMode_ios& dest) {
+    dest.width = src.width;
+    dest.height = src.height;
+    dest.bitDepth = src.bitDepth;
+    dest.refreshRate = src.refreshRate;
+  }
+  
+  // move "ios" Attributes bindings to cross-platform data containers
+  static void _moveAttributes(MonitorAttributes_ios& src, uint32_t& outUnitNumber, DisplayMonitor::Attributes& dest) {
+    outUnitNumber = src.index;
+    dest.id = std::to_string(src.index);
+    if (src.description != nullptr) {
+      try { dest.description = src.description; } catch (...) {} // description not mandatory -> if alloc failure, do not report
+      free(src.description);
+      src.description = nullptr;
     }
-}
-var screenHeight: CGFloat {
-    if UIInterfaceOrientationIsPortrait(screenOrientation) {
-        return UIScreen.mainScreen().bounds.size.height
-    } else {
-        return UIScreen.mainScreen().bounds.size.width
+    else {
+      dest.description = std::string("Screen ") + dest.id;
     }
-}
-var screenOrientation: UIInterfaceOrientation {
-    return UIApplication.sharedApplication().statusBarOrientation
-}
-*/
-
-
-// -- monitor handle & description/attributes -- -------------------------------
-
-  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) { return false; }
-  static inline void _readPrimaryDisplayMonitorInfo(DisplayMonitor::Handle& outHandle, DisplayMonitor::Attributes& outAttr) {}
-  static inline DisplayMonitor::Handle _getDisplayMonitorById(DisplayMonitor::DeviceId id, DisplayMonitor::Attributes* outAttr) { return 0; }
-  static inline bool _listDisplayMonitors(std::vector<DisplayMonitor::Handle>& out) { return false; }
-
+    
+    _moveDisplayArea(src.screenArea, dest.screenArea);
+    _moveDisplayArea(src.workArea, dest.workArea);
+    dest.isPrimary = src.isPrimary;
+  }
+  
 
 // -- contructors/list -- ------------------------------------------------------
 
   DisplayMonitor::DisplayMonitor() {
-    _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    MonitorAttributes_ios attributes;
+    this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_ios(&attributes);
+    if (this->_handle)
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
   }
+  
   DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
-    if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    MonitorAttributes_ios attributes;
+    if (this->_handle && __getMonitor_ios(this->_handle, &attributes)) {
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+    }
+    else {
+      if (usePrimaryAsDefault) {
+        this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_ios(&attributes);
+        if (this->_handle)
+          _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+      }
       else
         throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
     }
   }
+  
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
-    this->_handle = _getDisplayMonitorById(id, &(this->_attributes));
-    if (!this->_handle) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    uint32_t index = 0;
+    try {
+      index == std::stoul(id);
+    }
+    catch (...) { 
+      if (!usePrimaryAsDefault)
+        throw;
+    }
+    
+    MonitorAttributes_ios attributes;
+    this->_handle = __getMonitorByIndex_ios(index, &attributes);
+    if (this->_handle) {
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+    }
+    else {
+      if (usePrimaryAsDefault) {
+        this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_ios(&attributes);
+        if (this->_handle)
+          _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+      }
       else
         throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
     }
   }
+  
   DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
-    std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles) && index < handles.size())
-      this->_handle = handles[index];
-    if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    MonitorAttributes_ios attributes;
+    this->_handle = __getMonitorByIndex_ios(index, &attributes);
+    if (this->_handle) {
+      _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+    }
+    else {
+      if (usePrimaryAsDefault) {
+        this->_handle = (DisplayMonitor::Handle)__getPrimaryMonitor_ios(&attributes);
+        if (this->_handle)
+          _moveAttributes(attributes, this->_unitNumber, this->_attributes);
+      }
       else
         throw std::invalid_argument("DisplayMonitor: monitor index was not found on system.");
     }
   }
+  
+  // ---
 
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitors;
-
-    std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles)) {
-      for (auto it : handles) {
+    
+    uint32_t length = __countMonitorHandles_ios();
+    if (length > 0) {
+      for (uint32_t i = 0; i < length; ++i) {
         try {
-          monitors.emplace_back(it, false);
+          monitors.emplace_back(false, i);
         }
-        catch (...) {}
+        catch (std::bad_alloc) { throw; }
+        catch (...) {} // ignore if "not found"
       }
-    }
-
-    if (monitors.empty()) { // primary monitor as default
-      monitors.emplace_back();
-      if (monitors[0]._handle == (DisplayMonitor::Handle)0) // no display monitor
-        monitors.clear();
     }
     return monitors;
   }
@@ -111,51 +160,57 @@ var screenOrientation: UIInterfaceOrientation {
 // -- accessors -- -------------------------------------------------------------
 
   DisplayMonitor::String DisplayMonitor::adapterName() const {
-    return "";
+    return ""; // not supported
   }
   
 
 // -- display modes -- ---------------------------------------------------------
 
-  static inline bool _getMonitorDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept { return false; }
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
     DisplayMode mode;
-    if (!_getMonitorDisplayMode(this->_attributes.id, mode)) {
-      mode.width = this->_attributes.screenArea.width;
-      mode.height = this->_attributes.screenArea.height;
+    
+    DisplayMode_ios displayModeIos;
+    if (__getDisplayMode_ios(this->_unitNumber, &displayModeIos)) {
+      _moveDisplayMode(displayModeIos, mode);
+    }
+    else {
+      double scale = __getScaling_ios(this->_handle);
+      mode.width = (uint32_t)((double)(this->_attributes.screenArea.width) * scale + 0.5000001); // points to pixels
+      mode.height = (uint32_t)((double)(this->_attributes.screenArea.height) * scale + 0.5000001);
       mode.bitDepth = 32;
       mode.refreshRate = undefinedRefreshRate();
     }
     return mode;
   }
   
-  static inline bool _setMonitorDisplayMode(const DisplayMonitor::DeviceId& id, const DisplayMode& mode) noexcept { return false; }
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
-      if (refreshAttributes) {
-        if (!_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-          this->_attributes.screenArea.width = mode.width;
-          this->_attributes.screenArea.height = mode.height;
-        }
-      }
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool) {
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
+    
+    DisplayMode_ios desiredModeIos;
+    _fillDisplayMode(mode, desiredModeIos);
+    return (__setDisplayMode_ios(this->_unitNumber, &desiredModeIos)) ? true : false;
   }
   
-  static inline bool _setDefaultMonitorDisplayMode(const DisplayMonitor::DeviceId& id) noexcept { return false; }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
-      if (refreshAttributes)
-        _readDisplayMonitorAttributes(this->_handle, this->_attributes);
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDefaultDisplayMode(bool) {
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
+    return (__setDefaultDisplayMode_ios(this->_unitNumber)) ? true : false;
   }
 
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
     std::vector<DisplayMode> modes;
-    //...
+    
+    DisplayMode_ios* modesIos = nullptr;
+    uint32_t length = 0;
+    if (__listDisplayModes_ios(this->_unitNumber, &modesIos, &length) && modes != nullptr) {
+      for (int i = 0; i < length; ++i) {
+        DisplayMode cur;
+        _moveDisplayMode(modesIos[i], cur);
+        modes.push_back(cur);
+      }
+      free(modesIos);
+    }
     return modes;
   }
 
@@ -163,20 +218,32 @@ var screenOrientation: UIInterfaceOrientation {
 // -- DPI awareness -- ---------------------------------------------------------
 
   bool DisplayMonitor::setDpiAwareness(bool isEnabled) noexcept {
-    return true;
+    return isEnabled; // always enabled
   }
 
   void DisplayMonitor::getMonitorDpi(uint32_t& outDpiX, uint32_t& outDpiY, DisplayMonitor::WindowHandle windowHandle) const noexcept {
-
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
+    double scale = __getScaling_ios(this->_handle);
+    outDpiX = outDpiY = static_cast<uint32_t>(__P_HARDWARE_IOS_BASE_DPI * scale + 0.5000001);
   }
+  
   void DisplayMonitor::getMonitorScaling(float& outScaleX, float& outScaleY, DisplayMonitor::WindowHandle windowHandle) const noexcept {
-    //...
+    this->_handle = __getMonitorHandle_ios(this->_unitNumber);
+    double scale = __getScaling_ios(this->_handle);
+    outScaleX = outScaleY = (float)scale;
   }
 
 
 // -- metrics -- ---------------------------------------------------------------
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, bool hasMenu, uint32_t, uint32_t) const noexcept {
-    return DisplayArea{ 0, 0, 0, 0 };
+    DisplayArea_ios clientAreaIos;
+    DisplayArea_ios windowAreaIos;
+    _fillDisplayArea(clientArea, clientAreaIos);
+    __clientAreaToWindowArea_ios(&clientAreaIos, (IosAppHandle)windowHandle, hasMenu, &windowAreaIos);
+    
+    DisplayArea windowArea;
+    _moveDisplayArea(windowAreaIos, windowArea);
+    return windowArea;
   }
 #endif
