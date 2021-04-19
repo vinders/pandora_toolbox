@@ -98,7 +98,7 @@ Description : Display monitor - iOS implementation
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
     uint32_t index = 0;
     try {
-      index == std::stoul(id);
+      index = std::stoul(id);
     }
     catch (...) { 
       if (!usePrimaryAsDefault)
@@ -203,11 +203,11 @@ Description : Display monitor - iOS implementation
     
     DisplayMode_ios* modesIos = nullptr;
     uint32_t length = 0;
-    if (__listDisplayModes_ios(this->_unitNumber, &modesIos, &length) && modes != nullptr) {
+    if (__listDisplayModes_ios(this->_unitNumber, &modesIos, &length) && modesIos != nullptr) {
       for (int i = 0; i < length; ++i) {
         DisplayMode cur;
         _moveDisplayMode(modesIos[i], cur);
-        modes.push_back(cur);
+        modes.push_back(std::move(cur));
       }
       free(modesIos);
     }
