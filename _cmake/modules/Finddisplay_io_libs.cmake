@@ -2,11 +2,13 @@ set(display_io_libs__FOUND ON)
 
 # Android
 if(ANDROID)
-  set(display_io_libs__LINKED jnigraphics android)
-  set(display_io_libs__INCLUDE 
-      ${ANDROID_NDK}/sources/android/native_app_glue 
-      ${ANDROID_NDK}/sources
-  )
+    include(${CMAKE_CURRENT_LIST_DIR}/arch_detect.cmake)
+    set(display_io_libs__LINKED jnigraphics android)
+    set(display_io_libs__INCLUDE 
+        ${ANDROID_NDK}/sources/android/native_app_glue 
+        ${ANDROID_NDK}/sources
+        ${ANDROID_NDK}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_DETECT}/usr/include
+    )
 
 # iOS
 elseif(IOS)
