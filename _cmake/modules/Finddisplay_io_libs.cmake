@@ -3,6 +3,10 @@ set(display_io_libs__FOUND ON)
 # Android
 if(ANDROID)
   set(display_io_libs__LINKED jnigraphics android)
+  set(display_io_libs__INCLUDE 
+      ${ANDROID_NDK}/sources/android/native_app_glue 
+      ${ANDROID_NDK}/sources
+  )
 
 # iOS
 elseif(IOS)
