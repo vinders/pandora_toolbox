@@ -13,7 +13,7 @@ project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  System APIs                                                     │
 # └──────────────────────────────────────────────────────────────────┘
-if (ANDROID AND NOT WIN32 AND NOT APPLE)
+if(ANDROID AND NOT WIN32 AND NOT APPLE)
     cwork_set_external_libs("private" android_libs)
     set(_ANDROID_SOURCE_FILES ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
     
@@ -25,7 +25,6 @@ if (ANDROID AND NOT WIN32 AND NOT APPLE)
     
     cwork_set_source_files(${_ANDROID_SOURCE_FILES})
 endif()
-
 
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │

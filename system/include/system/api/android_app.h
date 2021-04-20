@@ -15,6 +15,7 @@ License :     MIT
       /// @brief Singleton to access Android application state anywhere
       /// @warning Must be explicitly initialized before using any display/monitor/window class.
       class AndroidApp final {
+      public:
         AndroidApp() = default;
         
         /// @brief Initialize application state
