@@ -14,12 +14,7 @@ project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES
 # │  System APIs                                                     │
 # └──────────────────────────────────────────────────────────────────┘
 if(ANDROID AND CWORK_DUMMY_SOURCES)
-    autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "*.[hcm]*")
-    if(CWORK_AUTODETECTED_FILES)
-        unset(CWORK_AUTODETECTED_FILES)
-    else() # no sources + "dummy sources" option -> system API headers will be included
-        cwork_set_external_libs("private" android_libs)
-    endif()
+    cwork_set_external_libs("private" android_libs) # "dummy sources" option -> system API headers will be included
 endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
