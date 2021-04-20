@@ -13,17 +13,13 @@ project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  System APIs                                                     │
 # └──────────────────────────────────────────────────────────────────┘
-if(ANDROID AND NOT WIN32 AND NOT APPLE)
-    cwork_set_external_libs("private" android_libs)
-    set(_ANDROID_SOURCE_FILES ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
-    
+if(ANDROID AND CWORK_DUMMY_SOURCES)
     autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "*.[hcm]*")
     if(CWORK_AUTODETECTED_FILES)
-        set(_ANDROID_SOURCE_FILES ${_ANDROID_SOURCE_FILES} ${CWORK_AUTODETECTED_FILES})
         unset(CWORK_AUTODETECTED_FILES)
+    else() # no sources + "dummy sources" option -> system API headers will be included
+        cwork_set_external_libs("private" android_libs)
     endif()
-    
-    cwork_set_source_files(${_ANDROID_SOURCE_FILES})
 endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
