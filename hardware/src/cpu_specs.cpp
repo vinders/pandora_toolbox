@@ -194,10 +194,6 @@ using namespace pandora::hardware;
     }
   }
 
-# if !defined(_WINDOWS) && !defined(__APPLE__) && (defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__linux__))
-    static inline bool _hasCpuNeonOnLinux() noexcept { return CpuidRegisterReader::readAuxVectorsFile(AT_HWCAP, 4096); }
-# endif
-
   uint64_t CpuSpecs::getProperty(const CpuidPropertyLocation& prop) const noexcept {
     switch (static_cast<cpuid_arm::RegisterId>(prop.registerId())) {
       case cpuid_arm::RegisterId::id:
@@ -230,8 +226,10 @@ using namespace pandora::hardware;
           return (type == CpuInstructionSet::cpp);
 #       endif
 #     else
-        if (type == CpuInstructionSet::neon)
-          return _hasCpuNeonOnLinux();
+#       if !defined(__APPLE__) && (defined(__linux__) || defined(__linux))
+          if (type == CpuInstructionSet::neon)
+            return (CpuidRegisterReader::readAuxVectorsFile(AT_HWCAP, 4096)); // verify NEON support on linux
+#       endif
         return (type == CpuInstructionSet::cpp);
 #     endif
 #   else

@@ -19,11 +19,14 @@ Description : Display monitor - Android implementation
 
   namespace attributes {
     // read all attributes of a monitor handle
-    static bool read(HMONITOR handle, DisplayMonitor::Attributes& outAttr) {
+    static bool read(DisplayMonitor::Handle handle, DisplayMonitor::Attributes& outAttr) {
 
       return false;
     }
   }
+  
+  //TODO - stocker aussi dpi/scale -> les invalider uniquement si on fait setDisplayMode/setDefaultDisplayMode
+  //-> on ne réinstancie JNI que pour faire un changement de mode
 
 
 // -- contructors/list -- ------------------------------------------------------
