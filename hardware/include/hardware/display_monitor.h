@@ -12,10 +12,10 @@ namespace pandora {
   namespace hardware {
     /// @brief Display position/area ("virtual desktop" coordinates)
     struct DisplayArea final {
-      int32_t x;       ///< Horizontal position of a screen/context/window. Can be negative if it's not the primary display.
-      int32_t y;       ///< Vertical position of a screen/context/window. Can be negative if it's not the primary display.
-      uint32_t width;  ///< Horizontal size of a screen/context/window (pixels on desktops, points on iOS).
-      uint32_t height; ///< Vertical size of a screen/context/window (pixels on desktops, points on iOS).
+      int32_t x;       ///< Horizontal position of a screen/context. Can be negative if it's not the primary display.
+      int32_t y;       ///< Vertical position of a screen/context. Can be negative if it's not the primary display.
+      uint32_t width;  ///< Horizontal size of a screen/context (pixels on desktops, points on iOS/Android).
+      uint32_t height; ///< Vertical size of a screen/context (pixels on desktops, points on iOS/Android).
     };
     /// @brief Display mode settings for a monitor
     struct DisplayMode final {
@@ -30,6 +30,7 @@ namespace pandora {
 
     /// @class DisplayMonitor
     /// @brief Display monitor description (handle and attributes) + discovery utilities.
+    /// @warning On Android, <system/android_app.h> must have been initialized with the app state object.
     class DisplayMonitor final {
     public:
 #     if defined(_WINDOWS)
@@ -107,15 +108,13 @@ namespace pandora {
       DisplayMode getDisplayMode() const noexcept;
       
       /// @brief Change display mode of a monitor
-      /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
       /// @warning - Not thread safe: do not call simultaneously in multiple threads
       ///          - Not supported by Wayland (display server on some Linux environments) -> must be changed via fullscreen window
-      bool setDisplayMode(const DisplayMode& mode, bool refreshAttributes = true);
+      bool setDisplayMode(const DisplayMode& mode);
       /// @brief Reset monitor to its default display mode
-      /// @remarks To keep the original attribute values in object (for later use), set refreshAttributes to false
       /// @warning - Not thread safe: do not call simultaneously in multiple threads
       ///          - Not supported by Wayland (display server on some Linux environments) -> must be changed via fullscreen window
-      bool setDefaultDisplayMode(bool refreshAttributes = true);
+      bool setDefaultDisplayMode();
 
       /// @brief Read available display modes for a monitor
       std::vector<DisplayMode> listAvailableDisplayModes() const;

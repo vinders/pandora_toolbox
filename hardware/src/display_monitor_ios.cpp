@@ -184,7 +184,7 @@ Description : Display monitor - iOS implementation
     return mode;
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool) {
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
     this->_handle = __getMonitorHandle_ios(this->_unitNumber);
     
     DisplayMode_ios desiredModeIos;
@@ -192,7 +192,7 @@ Description : Display monitor - iOS implementation
     return (__setDisplayMode_ios(this->_unitNumber, &desiredModeIos)) ? true : false;
   }
   
-  bool DisplayMonitor::setDefaultDisplayMode(bool) {
+  bool DisplayMonitor::setDefaultDisplayMode() {
     this->_handle = __getMonitorHandle_ios(this->_unitNumber);
     return (__setDefaultDisplayMode_ios(this->_unitNumber)) ? true : false;
   }

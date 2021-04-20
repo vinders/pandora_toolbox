@@ -525,23 +525,11 @@ Description : Display monitor - X11 implementation (Linux/BSD)
     return mode;
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    if (monitors::setDisplayMode(this->_handle, this->_controller, mode)) {
-      if (refreshAttributes && !attributes::read(this->_handle, true, this->_controller, this->_attributes)) {
-        this->_attributes.screenArea.width = mode.width;
-        this->_attributes.screenArea.height = mode.height;
-      }
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
+    return monitors::setDisplayMode(this->_handle, this->_controller, mode);
   }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    if (monitors::setDefaultDisplayMode(this->_handle, this->_controller)) {
-      if (refreshAttributes)
-        attributes::read(this->_handle, true, this->_controller, this->_attributes);
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDefaultDisplayMode() {
+    return monitors::setDefaultDisplayMode(this->_handle, this->_controller);
   }
 
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {

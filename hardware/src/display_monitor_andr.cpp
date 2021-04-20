@@ -9,236 +9,61 @@ Description : Display monitor - Android implementation
 # include <string>
 # include <stdexcept>
 # include <vector>
-# include <cstdlib>
-# include <climits>
-# include <cmath>
-# include <android/native_window.h>
+//# include "hardware/_private/_libraries_andr.h"
 # include "hardware/display_monitor.h"
 
   using namespace pandora::hardware;
-  
-  /*//EXAMPLE
-#define JNI_ASSERT(jni, cond) { \
-  if (!(cond)) {\
-    std::stringstream ss; \
-    ss << __FILE__ << ":" << __LINE__; \
-    throw std::runtime_error(ss.str()); \
-  } \
-  if (jni->ExceptionCheck()) { \
-    std::stringstream ss; \
-    ss << __FILE__ << ":" << __LINE__; \
-    throw std::runtime_error("Exception: " + ss.str()); \
-  } \
-}
-void print_dpi(android_app* app) {
-  JNIEnv* jni;
-  app->activity->vm->AttachCurrentThread(&jni, NULL);
 
-  jclass activityClass = jni->FindClass("android/app/NativeActivity");
-  JNI_ASSERT(jni, activityClass);
 
-  jmethodID getWindowManager = jni->GetMethodID
-                                    ( activityClass
-                                    , "getWindowManager"
-                                    , "()Landroid/view/WindowManager;"); 
-  JNI_ASSERT(jni, getWindowManager);
+// -- monitor attributes - id/area/description/primary -- ----------------------
 
-  jobject wm = jni->CallObjectMethod(app->activity->clazz, getWindowManager);
-  JNI_ASSERT(jni, wm);
+  namespace attributes {
+    // read all attributes of a monitor handle
+    static bool read(HMONITOR handle, DisplayMonitor::Attributes& outAttr) {
 
-  jclass windowManagerClass = jni->FindClass("android/view/WindowManager");
-  JNI_ASSERT(jni, windowManagerClass);
-
-  jmethodID getDefaultDisplay = jni->GetMethodID( windowManagerClass
-                                                , "getDefaultDisplay"
-                                                , "()Landroid/view/Display;");
-  JNI_ASSERT(jni, getDefaultDisplay);
-
-  jobject display = jni->CallObjectMethod(wm, getDefaultDisplay);
-  JNI_ASSERT(jni, display);
-
-  jclass displayClass = jni->FindClass("android/view/Display");
-  JNI_ASSERT(jni, displayClass);
-
-  // Check if everything is OK so far, it is, the values it prints
-  // are sensible.
-  { 
-    jmethodID getWidth = jni->GetMethodID(displayClass, "getWidth", "()I");
-    JNI_ASSERT(jni, getWidth);
-
-    jmethodID getHeight = jni->GetMethodID(displayClass, "getHeight", "()I");
-    JNI_ASSERT(jni, getHeight);
-
-    int width = jni->CallIntMethod(display, getWidth);
-    JNI_ASSERT(jni, true);
-    log("Width: ", width); // Width: 320
-
-    int height = jni->CallIntMethod(display, getHeight);
-    JNI_ASSERT(jni, true);
-    log("Height: ", height); // Height: 480
+      return false;
+    }
   }
-
-  jclass displayMetricsClass = jni->FindClass("android/util/DisplayMetrics");
-  JNI_ASSERT(jni, displayMetricsClass);
-
-  jmethodID displayMetricsConstructor = jni->GetMethodID( displayMetricsClass
-                                                        , "<init>", "()V");
-  JNI_ASSERT(jni, displayMetricsConstructor);
-
-  jobject displayMetrics = jni->NewObject( displayMetricsClass
-                                         , displayMetricsConstructor);
-  JNI_ASSERT(jni, displayMetrics);
-
-  jmethodID getMetrics = jni->GetMethodID( displayClass
-                                         , "getMetrics"
-                                         , "(Landroid/util/DisplayMetrics;)V");
-  JNI_ASSERT(jni, getMetrics);
-
-  jni->CallVoidMethod(display, getMetrics, displayMetrics);
-  JNI_ASSERT(jni, true);
-
-  {
-    jfieldID xdpi_id = jni->GetFieldID(displayMetricsClass, "xdpi", "F");
-    JNI_ASSERT(jni, xdpi_id);
-
-    float xdpi = jni->GetFloatField(displayMetrics, xdpi_id);
-    JNI_ASSERT(jni, true);
-
-    log("XDPI: ", xdpi); // XDPI: 0
-  }
-
-  {
-    jfieldID height_id = jni->GetFieldID( displayMetricsClass
-                                        , "heightPixels", "I");
-    JNI_ASSERT(jni, height_id);
-
-    int height = jni->GetIntField(displayMetrics, height_id);
-    JNI_ASSERT(jni, true);
-
-    log("Height: ", height); // Height: 0
-  }
-  // TODO: Delete objects here.
-  app->activity->vm->DetachCurrentThread();
-}
-*/
-
-
-// -- monitor handle & description/attributes -- -------------------------------
-
-  static bool _readDisplayMonitorAttributes(DisplayMonitor::Handle monitorHandle, DisplayMonitor::Attributes& outAttr) { 
-    //ANativeWindow nativeWindow = ANativeWindow_fromSurface(env, surface);
-    //int width =  ANativeWindow_getWidth(renderEngine->nativeWindow);
-    //int height = ANativeWindow_getHeight(renderEngine->nativeWindow);
-  
-  /*
-    JNIEnv* jni;
-    app->activity->vm->AttachCurrentThread(&jni, NULL);
-
-    jclass activityClass = jni->FindClass("android/app/NativeActivity");
-    JNI_ASSERT(jni, activityClass);
-
-    jmethodID getWindowManager = jni->GetMethodID (activityClass, "getWindowManager" , "()Landroid/view/WindowManager;"); 
-    JNI_ASSERT(jni, getWindowManager);
-
-    jobject wm = jni->CallObjectMethod(app->activity->clazz, getWindowManager);
-    JNI_ASSERT(jni, wm);
-
-    jclass windowManagerClass = jni->FindClass("android/view/WindowManager");
-    JNI_ASSERT(jni, windowManagerClass);
-
-    jmethodID getDefaultDisplay = jni->GetMethodID(windowManagerClass, "getDefaultDisplay" , "()Landroid/view/Display;");
-    JNI_ASSERT(jni, getDefaultDisplay);
-
-    jobject display = jni->CallObjectMethod(wm, getDefaultDisplay);
-    JNI_ASSERT(jni, display);
-
-    jclass displayClass = jni->FindClass("android/view/Display");
-    JNI_ASSERT(jni, displayClass);
-
-    jclass displayMetricsClass = jni->FindClass("android/util/DisplayMetrics");
-    JNI_ASSERT(jni, displayMetricsClass);
-
-    jmethodID displayMetricsConstructor = jni->GetMethodID(displayMetricsClass, "<init>", "()V");
-    JNI_ASSERT(jni, displayMetricsConstructor);
-
-    jobject displayMetrics = jni->NewObject(displayMetricsClass, displayMetricsConstructor);
-    JNI_ASSERT(jni, displayMetrics);
-
-    jmethodID getMetrics = jni->GetMethodID(displayClass, "getMetrics", "(Landroid/util/DisplayMetrics;)V");
-    JNI_ASSERT(jni, getMetrics);
-
-    jni->CallVoidMethod(display, getMetrics, displayMetrics);
-    JNI_ASSERT(jni, true);
-
-    jfieldID xdpi_id = jni->GetFieldID(displayMetricsClass, "xdpi", "F");
-    JNI_ASSERT(jni, xdpi_id);
-
-    float xdpi = jni->GetFloatField( displayMetrics, xdpi_id);
-    JNI_ASSERT(jni, true);
-  */
-
-
-  
-    return true; 
-  }
-  static inline void _readPrimaryDisplayMonitorInfo(DisplayMonitor::Handle& outHandle, DisplayMonitor::Attributes& outAttr) {}
-  static inline DisplayMonitor::Handle _getDisplayMonitorById(DisplayMonitor::DeviceId id, DisplayMonitor::Attributes* outAttr) { return 0; }
-  static inline bool _listDisplayMonitors(std::vector<DisplayMonitor::Handle>& out) { return false; }
 
 
 // -- contructors/list -- ------------------------------------------------------
 
   DisplayMonitor::DisplayMonitor() {
-    _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+    //_readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
   }
   DisplayMonitor::DisplayMonitor(DisplayMonitor::Handle monitorHandle, bool usePrimaryAsDefault)
     : _handle(monitorHandle) {
-    if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-      else
-        throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
-    }
+    // if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+      // if (usePrimaryAsDefault)
+        // _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+      // else
+        // throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
+    // }
   }
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
-    this->_handle = _getDisplayMonitorById(id, &(this->_attributes));
-    if (!this->_handle) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-      else
-        throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
-    }
+    // this->_handle = _getDisplayMonitorById(id, &(this->_attributes));
+    // if (!this->_handle) {
+      // if (usePrimaryAsDefault)
+        // _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+      // else
+        // throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
+    // }
   }
   DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
-    std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles) && index < handles.size())
-      this->_handle = handles[index];
-    if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-      if (usePrimaryAsDefault)
-        _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
-      else
-        throw std::invalid_argument("DisplayMonitor: monitor index was not found on system.");
-    }
+    // std::vector<DisplayMonitor::Handle> handles;
+    // if (_listDisplayMonitors(handles) && index < handles.size())
+      // this->_handle = handles[index];
+    // if (!this->_handle || !_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
+      // if (usePrimaryAsDefault)
+        // _readPrimaryDisplayMonitorInfo(this->_handle, this->_attributes);
+      // else
+        // throw std::invalid_argument("DisplayMonitor: monitor index was not found on system.");
+    // }
   }
 
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitors;
-
-    std::vector<DisplayMonitor::Handle> handles;
-    if (_listDisplayMonitors(handles)) {
-      for (auto it : handles) {
-        try {
-          monitors.emplace_back(it, false);
-        }
-        catch (...) {}
-      }
-    }
-
-    if (monitors.empty()) { // primary monitor as default
-      monitors.emplace_back();
-      if (monitors[0]._handle == (DisplayMonitor::Handle)0) // no display monitor
-        monitors.clear();
-    }
+    
     return monitors;
   }
 
@@ -252,10 +77,9 @@ void print_dpi(android_app* app) {
 
 // -- display modes -- ---------------------------------------------------------
 
-  static inline bool _getMonitorDisplayMode(const DisplayMonitor::DeviceId& id, DisplayMode& out) noexcept { return false; }
   DisplayMode DisplayMonitor::getDisplayMode() const noexcept {
     DisplayMode mode;
-    if (!_getMonitorDisplayMode(this->_attributes.id, mode)) {
+    if (false) {
       mode.width = this->_attributes.screenArea.width;
       mode.height = this->_attributes.screenArea.height;
       mode.bitDepth = 32;
@@ -264,27 +88,10 @@ void print_dpi(android_app* app) {
     return mode;
   }
   
-  static inline bool _setMonitorDisplayMode(const DisplayMonitor::DeviceId& id, const DisplayMode& mode) noexcept { return false; }
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    if (_setMonitorDisplayMode(this->_attributes.id, mode)) {
-      if (refreshAttributes) {
-        if (!_readDisplayMonitorAttributes(this->_handle, this->_attributes)) {
-          this->_attributes.screenArea.width = mode.width;
-          this->_attributes.screenArea.height = mode.height;
-        }
-      }
-      return true;
-    }
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
     return false;
   }
-  
-  static inline bool _setDefaultMonitorDisplayMode(const DisplayMonitor::DeviceId& id) noexcept { return false; }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    if (_setDefaultMonitorDisplayMode(this->_attributes.id)) {
-      if (refreshAttributes)
-        _readDisplayMonitorAttributes(this->_handle, this->_attributes);
-      return true;
-    }
+  bool DisplayMonitor::setDefaultDisplayMode() {
     return false;
   }
 
@@ -312,6 +119,6 @@ void print_dpi(android_app* app) {
 // -- metrics -- ---------------------------------------------------------------
 
   DisplayArea DisplayMonitor::convertClientAreaToWindowArea(const DisplayArea& clientArea, DisplayMonitor::WindowHandle windowHandle, bool hasMenu, uint32_t, uint32_t) const noexcept {
-    return DisplayArea{ 0, 0, 0, 0 };
+    return clientArea;
   }
 #endif

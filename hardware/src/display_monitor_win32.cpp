@@ -363,23 +363,11 @@ Description : Display monitor - Win32 implementation (Windows)
     return mode;
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
-    if (monitors::setDisplayMode(this->_attributes.id, mode)) {
-      if (refreshAttributes && !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
-        this->_attributes.screenArea.width = mode.width;
-        this->_attributes.screenArea.height = mode.height;
-      }
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
+    return monitors::setDisplayMode(this->_attributes.id, mode);
   }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
-    if (monitors::setDefaultDisplayMode(this->_attributes.id)) {
-      if (refreshAttributes)
-        attributes::read((HMONITOR)this->_handle, this->_attributes);
-      return true;
-    }
-    return false;
+  bool DisplayMonitor::setDefaultDisplayMode() {
+    return monitors::setDefaultDisplayMode(this->_attributes.id);
   }
 
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {

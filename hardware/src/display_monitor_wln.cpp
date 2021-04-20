@@ -267,10 +267,10 @@ Description : Display monitor - Wayland implementation (Linux)
     return mode;
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
     return false; // not supported by wayland
   }
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
+  bool DisplayMonitor::setDefaultDisplayMode() {
     return false; // not supported by wayland... again...
   }
   

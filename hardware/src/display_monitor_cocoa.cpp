@@ -222,38 +222,22 @@ Description : Display monitor - Cocoa implementation (Mac OS)
     return mode;
   }
   
-  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode, bool refreshAttributes) {
+  bool DisplayMonitor::setDisplayMode(const DisplayMode& mode) {
     // refresh handle (fix automatic graphics switching)
     CocoaDisplayId displayId = 0;
     this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
     DisplayMode_cocoa modeCocoa;
     _fillDisplayMode(mode, modeCocoa);
-    if (this->_handle && __setDisplayMode_cocoa(displayId, this->_unitNumber, &modeCocoa) ) {
-      if (refreshAttributes) {
-        MonitorAttributes_cocoa attributes;
-        __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
-        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
-      }
-      return true;
-    }
-    return false;
+    return (this->_handle && __setDisplayMode_cocoa(displayId, this->_unitNumber, &modeCocoa) );
   }
   
-  bool DisplayMonitor::setDefaultDisplayMode(bool refreshAttributes) {
+  bool DisplayMonitor::setDefaultDisplayMode() {
     // refresh handle (fix automatic graphics switching)
     CocoaDisplayId displayId = 0;
     this->_handle = (DisplayMonitor::Handle)__getMonitorHandle_cocoa(this->_unitNumber, &displayId);
     
-    if (this->_handle && __setDefaultDisplayMode_cocoa(displayId, this->_unitNumber) ) {
-      if (refreshAttributes) {
-        MonitorAttributes_cocoa attributes;
-        __readAttributes_cocoa((CocoaScreenHandle)this->_handle, Bool_TRUE, &(this->_unitNumber), &attributes);
-        _moveAttributes(attributes, this->_unitNumber, this->_attributes);
-      }
-      return true;
-    }
-    return false;
+    return (this->_handle && __setDefaultDisplayMode_cocoa(displayId, this->_unitNumber) );
   }
 
   std::vector<DisplayMode> DisplayMonitor::listAvailableDisplayModes() const {
