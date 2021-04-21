@@ -11,12 +11,11 @@ if(ANDROID)
     else()
         set(_PATH_PREFIX /usr/local/android-ndk)
     endif()
-    if(NOT IS_ABSOLUTE ${_PATH_PREFIX})
-        get_filename_component(_ABS_PATH_PREFIX "${_PATH_PREFIX}" ABSOLUTE)
-        set(_PATH_PREFIX ${_ABS_PATH_PREFIX})
-        unset(_ABS_PATH_PREFIX)
-    endif()
-
-    set(android_glue_interface__INCLUDE ${_PATH_PREFIX}/sources/android/native_app_glue)
+    
+    include(${CMAKE_CURRENT_LIST_DIR}/path_utils.cmake)
+    
+    cwork_unknown_path_to_absolute(${_PATH_PREFIX} "/sources/android/native_app_glue/android_native_app_glue.c")
+    set(android_glue_interface__INCLUDE ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue)
+    unset(CWORK_VALID_ABSOLUTE_PATH)
     unset(_PATH_PREFIX)
 endif()

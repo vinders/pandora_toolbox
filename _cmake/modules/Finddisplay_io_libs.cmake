@@ -11,19 +11,18 @@ if(ANDROID)
     else()
         set(_PATH_PREFIX /usr/local/android-ndk)
     endif()
-    if(NOT IS_ABSOLUTE ${_PATH_PREFIX})
-        get_filename_component(_ABS_PATH_PREFIX "${_PATH_PREFIX}" ABSOLUTE)
-        set(_PATH_PREFIX ${_ABS_PATH_PREFIX})
-        unset(_ABS_PATH_PREFIX)
-    endif()
+    
+    include(${CMAKE_CURRENT_LIST_DIR}/path_utils.cmake)
 
-    include(${CMAKE_CURRENT_LIST_DIR}/arch_detect.cmake)
+    cwork_find_arch_label()
+    cwork_unknown_path_to_absolute(${_PATH_PREFIX} "/sources/android/native_app_glue/android_native_app_glue.c")
     set(display_io_libs__LINKED jnigraphics android)
     set(display_io_libs__INCLUDE 
-        ${_PATH_PREFIX}/sources/android/native_app_glue 
-        ${_PATH_PREFIX}/sources
-        ${_PATH_PREFIX}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_DETECT}/usr/include
+        ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue 
+        ${CWORK_VALID_ABSOLUTE_PATH}/sources
+        ${CWORK_VALID_ABSOLUTE_PATH}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_LABEL}/usr/include
     )
+    unset(CWORK_VALID_ABSOLUTE_PATH)
     unset(_PATH_PREFIX)
 
 # iOS
