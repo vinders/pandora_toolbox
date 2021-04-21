@@ -7,7 +7,7 @@ License :     MIT
 #if !defined(_WINDOWS) && defined(__ANDROID__)
 # include <cstddef>
 # include <stdexcept>
-# include <android_native_app_glue>
+# include <android_native_app_glue.h>
 
   namespace pandora {
     namespace system {
