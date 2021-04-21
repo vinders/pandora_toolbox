@@ -7,6 +7,9 @@ Local hardware specifications analyzer (CPU, monitors, display adapters)
 #include <cstdio>
 #include <hardware/cpu_specs.h>
 #include <hardware/display_monitor.h>
+#if defined(__ANDROID__)
+# include <system/api/android_app.h>
+#endif
 
 using namespace pandora::hardware;
 
@@ -71,12 +74,24 @@ void displaySpecs(const CpuSpecs& specs) {
   printf("\n____________________________________________________________\n\n");
 }
 
-// CPU analysis
-int main() {
-  CpuSpecs cpuAnalyzer(CpuSpecs::SpecMode::all);
-  displaySpecs(cpuAnalyzer);
+// ---
+
+#if defined(__ANDROID__)
+  // CPU analysis - entry point for Android
+  void android_main(struct android_app* state) {
+    pandora::system::AndroidApp::instance().init(state);
+    CpuSpecs cpuAnalyzer(CpuSpecs::SpecMode::all);
+    displaySpecs(cpuAnalyzer);
+  }
   
-  printf(" Press enter to exit...");
-  getchar();
-  return 0;
-}
+#else
+  // CPU analysis - entry point
+  int main() {
+    CpuSpecs cpuAnalyzer(CpuSpecs::SpecMode::all);
+    displaySpecs(cpuAnalyzer);
+    
+    printf(" Press enter to exit...");
+    getchar();
+    return 0;
+  }
+#endif

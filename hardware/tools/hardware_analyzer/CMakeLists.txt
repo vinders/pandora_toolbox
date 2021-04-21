@@ -12,6 +12,9 @@ project("${CWORK_SOLUTION_NAME}.hardware_analyzer" VERSION ${CWORK_BUILD_VERSION
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_internal_libs(hardware)
+if(ANDROID)
+    cwork_set_external_libs("private" android_glue)
+endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │

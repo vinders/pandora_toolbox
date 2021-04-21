@@ -6,6 +6,9 @@ List common system-specific directories
 *******************************************************************************/
 #include <cstdio>
 #include <io/file_system_locations.h>
+#if defined(__ANDROID__)
+# include <system/api/android_app.h>
+#endif
 
 using namespace pandora::io;
 
@@ -36,8 +39,8 @@ void displayDirectories(const std::string& title, const std::vector<SystemPath>&
     printf("-\n");
 }
 
-// CPU analysis
-int main() {
+// System directories
+void listSystemDirectories() {
 # ifdef _WINDOWS
     std::wstring appName = L"system_directories";
 # else
@@ -83,6 +86,21 @@ int main() {
   
   printf("\n____________________________________________________________\n\n"
          " Press enter to exit...");
-  getchar();
-  return 0;
 }
+
+// ---
+
+#if defined(__ANDROID__)
+  void android_main(struct android_app* state) {
+    pandora::system::AndroidApp::instance().init(state);
+    listSystemDirectories();
+  }
+
+#else
+  int main() {
+    listSystemDirectories();
+    
+    getchar();
+    return 0;
+  }
+#endif

@@ -12,6 +12,9 @@ project("${CWORK_SOLUTION_NAME}.search_sort_benchmark" VERSION ${CWORK_BUILD_VER
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_internal_libs(logic)
+if(ANDROID)
+    cwork_set_external_libs("private" android_glue)
+endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │

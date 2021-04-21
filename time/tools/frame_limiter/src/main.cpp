@@ -7,6 +7,9 @@ Small utility to test pandora.time.Timer as a frame limiter
 #include <cstdio>
 #include <time/rate_factory.h>
 #include <time/timer.h>
+#if defined(__ANDROID__)
+# include <system/api/android_app.h>
+#endif
 
 using namespace pandora::time;
 
@@ -24,8 +27,8 @@ void displayFrameRate(double computedRate, const TimerStats& stats, int64_t nbPe
         static_cast<unsigned long long>(worst));
 }
 
-// Main loop with frame limiter
-int main() {
+// Frame limiter loop
+void limitFrameRate() {
   bool isRunning = true;
   Rate expectedFrameRate = RateFactory::fromSmpteRate(SmpteRate::ntsc_60pi);
   double computedRate = expectedFrameRate.compute();
@@ -47,5 +50,18 @@ int main() {
       displayFrameRate(computedRate, lastStats, nbPeriodsBeforeRefresh, static_cast<int64_t>(timer.periodDuration().count()) + worstLateness);
     }
   }
-  return 0;
 }
+
+// ---
+
+#if defined(__ANDROID__)
+  void android_main(struct android_app* state) {
+    pandora::system::AndroidApp::instance().init(state);
+    limitFrameRate();
+  }
+#else
+  int main() {
+    limitFrameRate();
+    return 0;
+  }
+#endif

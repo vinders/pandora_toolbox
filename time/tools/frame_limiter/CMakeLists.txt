@@ -12,6 +12,9 @@ project("${CWORK_SOLUTION_NAME}.frame_limiter" VERSION ${CWORK_BUILD_VERSION} LA
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_internal_libs(time)
+if(ANDROID)
+    cwork_set_external_libs("private" android_glue)
+endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │

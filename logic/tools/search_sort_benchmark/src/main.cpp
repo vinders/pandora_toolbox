@@ -7,6 +7,9 @@ Benchmark utility to test the efficiency of search & sorting algorithms, dependi
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
 #endif
+#if defined(__ANDROID__)
+# include <system/api/android_app.h>
+#endif
 #include <cstdio>
 #include <string>
 #include <chrono>
@@ -115,7 +118,7 @@ void showSortBenchmarksMenu() noexcept {
 // ---
 
 // Main loop of benchmark utility
-int main() {
+void mainLoop() {
   bool isRunning = true;
   while (isRunning) {
     clearScreen();
@@ -133,5 +136,18 @@ int main() {
     if (option != 0)
       printReturn();
   }
-  exit(0);
 }
+
+// ---
+
+#if defined(__ANDROID__)
+  void android_main(struct android_app* state) {
+    pandora::system::AndroidApp::instance().init(state);
+    mainLoop();
+  }
+#else
+  int main() {
+    mainLoop();
+    exit(0);
+  }
+#endif

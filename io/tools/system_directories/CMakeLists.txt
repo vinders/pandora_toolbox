@@ -12,6 +12,9 @@ project("${CWORK_SOLUTION_NAME}.system_directories" VERSION ${CWORK_BUILD_VERSIO
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_internal_libs(io)
+if(ANDROID)
+    cwork_set_external_libs("private" android_glue)
+endif()
 
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
