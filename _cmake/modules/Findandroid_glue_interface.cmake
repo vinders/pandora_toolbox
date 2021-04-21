@@ -1,6 +1,6 @@
 # Android
 if(ANDROID)
-    set(android_glue__FOUND ON)
+    set(android_glue_interface__FOUND ON)
     
     if(ANDROID_NDK)
         set(_PATH_PREFIX ${ANDROID_NDK})
@@ -12,7 +12,6 @@ if(ANDROID)
         set(_PATH_PREFIX /usr/local/android-ndk)
     endif()
 
-    set(android_glue__INCLUDE ${_PATH_PREFIX}/sources/android/native_app_glue)
-    set(android_glue__SOURCE ${_PATH_PREFIX}/sources/android/native_app_glue/android_native_app_glue.c)
+    set(android_glue_interface__INCLUDE ${_PATH_PREFIX}/sources/android/native_app_glue)
     unset(_PATH_PREFIX)
 endif()

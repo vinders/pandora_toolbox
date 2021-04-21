@@ -2,13 +2,24 @@ set(display_io_libs__FOUND ON)
 
 # Android
 if(ANDROID)
+    if(ANDROID_NDK)
+        set(_PATH_PREFIX ${ANDROID_NDK})
+    elseif(ANDROID_NDK_HOME)
+        set(_PATH_PREFIX ${ANDROID_NDK_HOME})
+    elseif(DEFINED ENV{ANDROID_NDK_HOME})
+        set(_PATH_PREFIX $ENV{ANDROID_NDK_HOME})
+    else()
+        set(_PATH_PREFIX /usr/local/android-ndk)
+    endif()
+
     include(${CMAKE_CURRENT_LIST_DIR}/arch_detect.cmake)
     set(display_io_libs__LINKED jnigraphics android)
     set(display_io_libs__INCLUDE 
-        ${ANDROID_NDK}/sources/android/native_app_glue 
-        ${ANDROID_NDK}/sources
-        ${ANDROID_NDK}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_DETECT}/usr/include
+        ${_PATH_PREFIX}/sources/android/native_app_glue 
+        ${_PATH_PREFIX}/sources
+        ${_PATH_PREFIX}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_DETECT}/usr/include
     )
+    unset(_PATH_PREFIX)
 
 # iOS
 elseif(IOS)

@@ -11,8 +11,15 @@ cwork_read_version_from_file("${CMAKE_CURRENT_SOURCE_DIR}/../build_version.txt" 
 project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 # ┌──────────────────────────────────────────────────────────────────┐
+# │  Dependencies                                                    │
+# └──────────────────────────────────────────────────────────────────┘
+if(ANDROID)
+    cwork_set_external_libs("public" android_glue_interface)
+    set(CWORK_IGNORE_DUMMY_SOURCES ON)
+endif()
+
+# ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
-set(CWORK_IGNORE_DUMMY_SOURCES ON)
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")
