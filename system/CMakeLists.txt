@@ -11,14 +11,8 @@ cwork_read_version_from_file("${CMAKE_CURRENT_SOURCE_DIR}/../build_version.txt" 
 project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 # ┌──────────────────────────────────────────────────────────────────┐
-# │  System APIs                                                     │
-# └──────────────────────────────────────────────────────────────────┘
-if(ANDROID AND CWORK_DUMMY_SOURCES)
-    cwork_set_external_libs("private" android_libs) # "dummy sources" option -> system API headers will be included
-endif()
-
-# ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
+set(CWORK_IGNORE_DUMMY_SOURCES)
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")

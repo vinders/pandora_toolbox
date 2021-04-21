@@ -459,7 +459,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
             unset(CWORK_AUTODETECTED_FILES)
             
             # generate dummy source file, to force compilation of interface libraries
-            if(CWORK_DUMMY_SOURCES AND NOT ${CWORK_PROJECT_NAME}_SOURCE_FILES)
+            if(CWORK_DUMMY_SOURCES AND NOT CWORK_IGNORE_DUMMY_SOURCES AND NOT ${CWORK_PROJECT_NAME}_SOURCE_FILES)
                 message("> no source files: dummy source file generated...")
                 file(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/_build/dummy_src.cpp")
                 set(PROJECT_GENERATED_INCLUDES "/* library headers */")
