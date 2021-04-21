@@ -13,6 +13,6 @@ project("${CWORK_SOLUTION_NAME}.system" VERSION ${CWORK_BUILD_VERSION} LANGUAGES
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
-set(CWORK_IGNORE_DUMMY_SOURCES)
+set(CWORK_IGNORE_DUMMY_SOURCES ON)
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")

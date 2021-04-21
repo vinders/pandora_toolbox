@@ -172,16 +172,19 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     #        - ARGN: list of custom files
     macro(cwork_set_source_language lang)
         if(lang STREQUAL c)
-            set(lang C)
+            set(_LANG C)
         elseif(lang STREQUAL cxx OR lang STREQUAL cpp OR lang STREQUAL CPP OR lang STREQUAL "C++")
-            set(lang CXX)
+            set(_LANG CXX)
+        else()
+            set(_LANG ${lang})
         endif()
     
         set(_file_list "${ARGN}")
         if (_file_list)
-            set(${PROJECT_NAME}_LANG_${lang}_FILES "${_file_list}")
+            set(${PROJECT_NAME}_LANG_${_LANG}_FILES "${_file_list}")
         endif()
         unset(_file_list)
+        unset(_LANG)
     endmacro()
     
     
