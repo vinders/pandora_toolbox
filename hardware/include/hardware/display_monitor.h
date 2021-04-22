@@ -99,7 +99,7 @@ namespace pandora {
       inline const Attributes& attributes() const noexcept { return this->_attributes; }
       /// @brief Read associated adapter name/brand
       /// @warning - May be empty if virtual monitor (or running in a VM with no GPU support)
-      ///          - Not supported on Apple systems (Mac, iOS) and Wayland (display server on some Linux environments)
+      ///          - Only supported on Windows and Linux/X.org
       String adapterName() const;
 
       // -- display mode --
@@ -138,7 +138,7 @@ namespace pandora {
 
       // -- metrics --
 
-      /// @brief Measure, depending on monitor config and DPI, expected window size, based on client area.
+      /// @brief Measure (depending on monitor config and DPI) the expected window size, based on client area.
       /// @remarks Native style flags are optional. They'll only be used if the style can't be read from the window handle.
       DisplayArea convertClientAreaToWindowArea(const DisplayArea& clientArea, WindowHandle windowHandle, bool hasMenu = false, 
                                                 uint32_t nativeStyleFlags = 0, uint32_t nativeSecondaryFlags = 0) const noexcept;
@@ -161,7 +161,16 @@ namespace pandora {
         uint32_t _unitNumber = 0;
 #     elif defined(_P_ENABLE_LINUX_WAYLAND)
         uint32_t _id = 0;
-#     elif !defined(__ANDROID__) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
+#     elif defined(__ANDROID__)
+        public:
+        struct Density {
+          uint32_t dpiX = 160;
+          uint32_t dpiY = 160;
+          double scale = 1.0;
+        };
+        private:
+        Density _density;
+#     elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
         Handle _controller = (Handle)0;
 #     endif
     };
