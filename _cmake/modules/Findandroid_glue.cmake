@@ -16,7 +16,7 @@ if(ANDROID)
 
     cwork_unknown_path_to_absolute(${_PATH_PREFIX} "/sources/android/native_app_glue/android_native_app_glue.c")
     set(android_glue__INCLUDE ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue)
-    set(android_glue__LINKED android)
+    set(android_glue__LINKED android log)
     set(android_glue__SOURCE ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue/android_native_app_glue.c)
     unset(CWORK_VALID_ABSOLUTE_PATH)
     unset(_PATH_PREFIX)

@@ -16,7 +16,7 @@ if(ANDROID)
 
     cwork_find_arch_label()
     cwork_unknown_path_to_absolute(${_PATH_PREFIX} "/sources/android/native_app_glue/android_native_app_glue.c")
-    set(display_io_libs__LINKED jnigraphics android)
+    set(display_io_libs__LINKED jnigraphics android log)
     set(display_io_libs__INCLUDE 
         ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue 
         ${CWORK_VALID_ABSOLUTE_PATH}/sources
