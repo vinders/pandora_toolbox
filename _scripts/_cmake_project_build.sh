@@ -26,6 +26,22 @@ for arg in "$@"; do
     cd ..
 
     case $arg in
+        android)
+            cmake -G Ninja -S . -B "./_build/${arg}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF \
+                  -DANDROID_ABI=$3 \
+                  -DANDROID_ARM_NEON=$4 \
+                  -DANDROID_PLATFORM="android-${2}" \
+                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+                  -DANDROID_TOOLCHAIN=clang \
+                  -DCMAKE_SYSTEM_NAME=Android \
+                  -DCMAKE_ANDROID_STANDALONE_TOOLCHAIN=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+                  -DCMAKE_ANDROID_API=$2 \
+                  -DCMAKE_ANDROID_ARCH_ABI=$3 \
+                  -DCMAKE_EXE_LINKER_FLAGS="-pie" \
+                  -DCMAKE_ANDROID_ARM_NEON=$4 \
+                  || exit 1
+            ;;
         codeblocks)
             cmake -G "CodeBlocks - Unix Makefiles" -S . -B "./_build/${arg}" || exit 1
             ;;
