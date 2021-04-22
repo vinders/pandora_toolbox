@@ -74,6 +74,8 @@ macro(cwork_unknown_path_to_absolute prefix suffix)
                 endif()
                 unset(_STRIP_PATH_PREFIX)
             endif()
+        else()
+            set(_VALID_PATH_PREFIX ${prefix})
         endif()
         
         get_filename_component(CWORK_VALID_ABSOLUTE_PATH "${_VALID_PATH_PREFIX}" ABSOLUTE)
