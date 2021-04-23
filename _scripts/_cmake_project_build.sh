@@ -41,6 +41,7 @@ for arg in "$@"; do
                   -DCMAKE_EXE_LINKER_FLAGS="-pie" \
                   -DCMAKE_ANDROID_ARM_NEON=$4 \
                   || exit 1
+            break
             ;;
         codeblocks)
             cmake -G "CodeBlocks - Unix Makefiles" -S . -B "./_build/${arg}" || exit 1

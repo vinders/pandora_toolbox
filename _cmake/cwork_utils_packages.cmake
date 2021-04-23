@@ -85,14 +85,14 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     #        - project_version: full project version (#.#.#.REV)
     #        - output_dir: output directory
     function(cwork_android_create_manifest cwork_path project_name project_version output_dir)
-        if(ANDROID AND ${CWORK_BUILD_TYPE} STREQUAL "executable")
+        if(ANDROID)
             string(REPLACE "." ";" __NAME_PARTS ${project_name})
             list(GET __NAME_PARTS -1 __SUBPROJECT_NAME)
             string(REPLACE "_" " " __PROJECT_LABEL ${__SUBPROJECT_NAME}) # __PROJECT_LABEL (ex: "hardware an@lyzer")
       
             # valid format: A-Za-z0-9_. (with a letter after each dot)
             string(REGEX REPLACE "[ +=*%{}:!?,;'°^\(\)&@#€$£µ\t\r\n/\\-]+" "_" __STRIPPED_NAME "${project_name}")
-            string(REGEX REPLACE "[.][0-9]*" "\.N" __PROJECT_PACKAGE ${__STRIPPED_NAME}) # __PROJECT_PACKAGE (ex: "pandora.hardware_an_lyzer")
+            string(REGEX REPLACE "[.][0-9]" "\.N" __PROJECT_PACKAGE ${__STRIPPED_NAME}) # __PROJECT_PACKAGE (ex: "pandora.hardware_an_lyzer")
             
             # valid revision: 0-9
             string(REPLACE "." ";" __VERSION_PARTS ${project_version})
@@ -108,7 +108,6 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
             
             file(REMOVE "${output_dir}/AndroidManifest.xml")
             configure_file("${cwork_path}/templates/AndroidManifest.xml.in" "${output_dir}/AndroidManifest.xml")
-            message("-- AndroidManifest.xml created in ${output_dir}")
         endif()
     endfunction()
 
