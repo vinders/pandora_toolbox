@@ -368,8 +368,9 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         elseif(${CWORK_BUILD_TYPE} STREQUAL "app")
             set(CWORK_BUILD_TYPE "executable")
         endif()
-        if(ANDROID AND ${CWORK_BUILD_TYPE} STREQUAL "executable") # android apps use shared libs
-            set(CWORK_BUILD_TYPE "dynamic")
+        if(ANDROID AND ${CWORK_BUILD_TYPE} STREQUAL "executable")
+            set(CWORK_BUILD_TYPE "dynamic") # android apps use shared libs
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate") # force linking of "glue" module
             cwork_android_create_manifest(${cwork_path} ${CWORK_PROJECT_NAME} ${PROJECT_VERSION} ${PROJECT_BINARY_DIR})
         endif()
         

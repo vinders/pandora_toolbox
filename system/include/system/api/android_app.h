@@ -22,10 +22,7 @@ License :     MIT
         /// @warning - Should be called (with a non-null value) in the application entry point
         ///          - Any call to 'state()' without a previous initialization will result in an exception
         ///          - The required value is available in "void android_main(struct android_app* state) {...}"
-        inline void init(struct android_app* state) noexcept { 
-          app_dummy(); // prevent "glue" sources from being stripped
-          this->_state = state; 
-        }
+        inline void init(struct android_app* state) noexcept { this->_state = state; }
         
         /// @brief Verify if state has been initialized
         inline bool isInitialized() const noexcept { return (this->_state != nullptr); }
