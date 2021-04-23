@@ -370,6 +370,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         endif()
         if(ANDROID AND ${CWORK_BUILD_TYPE} STREQUAL "executable") # android apps use shared libs
             set(CWORK_BUILD_TYPE "dynamic")
+            cwork_android_create_manifest(${cwork_path} ${CWORK_PROJECT_NAME} ${PROJECT_VERSION} ${PROJECT_BINARY_DIR})
         endif()
         
         include(${cwork_path}/cwork_options.cmake)
