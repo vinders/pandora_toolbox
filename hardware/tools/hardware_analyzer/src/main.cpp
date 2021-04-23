@@ -7,8 +7,15 @@ Local hardware specifications analyzer (CPU, monitors, display adapters)
 #include <cstdio>
 #include <hardware/cpu_specs.h>
 #include <hardware/display_monitor.h>
+
 #if defined(__ANDROID__)
+# include <stdexcept>
+# include <android/log.h>
 # include <system/api/android_app.h>
+# define printf(...) __android_log_print(ANDROID_LOG_INFO, "-", __VA_ARGS__)
+# ifndef LOGE
+#   define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , ">", __VA_ARGS__)
+# endif
 #endif
 
 using namespace pandora::hardware;
@@ -79,9 +86,12 @@ void displaySpecs(const CpuSpecs& specs) {
 #if defined(__ANDROID__)
   // CPU analysis - entry point for Android
   void android_main(struct android_app* state) {
-    pandora::system::AndroidApp::instance().init(state);
-    CpuSpecs cpuAnalyzer(CpuSpecs::SpecMode::all);
-    displaySpecs(cpuAnalyzer);
+    try {
+      pandora::system::AndroidApp::instance().init(state);
+      CpuSpecs cpuAnalyzer(CpuSpecs::SpecMode::all);
+      displaySpecs(cpuAnalyzer);
+    }
+    catch (const std::exception& exc) { LOGE("%s", exc.what()); }
   }
   
 #else

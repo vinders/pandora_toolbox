@@ -6,8 +6,15 @@ List common system-specific directories
 *******************************************************************************/
 #include <cstdio>
 #include <io/file_system_locations.h>
+
 #if defined(__ANDROID__)
+# include <stdexcept>
+# include <android/log.h>
 # include <system/api/android_app.h>
+# define printf(...) __android_log_print(ANDROID_LOG_INFO, "-", __VA_ARGS__)
+# ifndef LOGE
+#   define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , ">", __VA_ARGS__)
+# endif
 #endif
 
 using namespace pandora::io;
@@ -92,8 +99,11 @@ void listSystemDirectories() {
 
 #if defined(__ANDROID__)
   void android_main(struct android_app* state) {
-    pandora::system::AndroidApp::instance().init(state);
-    listSystemDirectories();
+    try {
+      pandora::system::AndroidApp::instance().init(state);
+      listSystemDirectories();
+    }
+    catch (const std::exception& exc) { LOGE("%s", exc.what()); }
   }
 
 #else
