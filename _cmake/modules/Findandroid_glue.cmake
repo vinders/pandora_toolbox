@@ -14,8 +14,13 @@ if(ANDROID)
     
     include(${CMAKE_CURRENT_LIST_DIR}/path_utils.cmake)
 
+    cwork_find_arch_label()
     cwork_unknown_path_to_absolute(${_PATH_PREFIX} "/sources/android/native_app_glue/android_native_app_glue.c")
-    set(android_glue__INCLUDE ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue)
+    set(android_glue__INCLUDE 
+        ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue
+        ${CWORK_VALID_ABSOLUTE_PATH}/sources
+        ${CWORK_VALID_ABSOLUTE_PATH}/platforms/${ANDROID_PLATFORM}/arch-${CWORK_ARCH_LABEL}/usr/include
+    )
     set(android_glue__LINKED android log)
     set(android_glue__SOURCE ${CWORK_VALID_ABSOLUTE_PATH}/sources/android/native_app_glue/android_native_app_glue.c)
     unset(CWORK_VALID_ABSOLUTE_PATH)
