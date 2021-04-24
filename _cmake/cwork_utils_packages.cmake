@@ -106,8 +106,28 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
             # valid file name
             string(REGEX REPLACE "[:\*?<>/\\]+" "" __LIB_NAME "${project_name}")
             
-            file(REMOVE "${output_dir}/AndroidManifest.xml")
-            configure_file("${cwork_path}/templates/AndroidManifest.xml.in" "${output_dir}/AndroidManifest.xml")
+            # SDK min/target versions
+            set(__MIN_SDK_VERSION 24)
+            if(ANDROID_PLATFORM)
+                string(REGEX MATCH "([0-9]+)" __ANDROID_PLATFORM ${ANDROID_PLATFORM})
+                if(NOT CMAKE_MATCH_1)
+                    set(__SDK_VERSION 30)
+                else()
+                    set(__SDK_VERSION ${CMAKE_MATCH_1})
+                    if(CMAKE_MATCH_1 LESS ${__MIN_SDK_VERSION})
+                        set(__MIN_SDK_VERSION ${__SDK_VERSION})
+                    endif()
+                endif()
+            else()
+                set(__SDK_VERSION 30)
+            endif()
+            
+            # cleanup
+            file(REMOVE "${output_dir}/app/build.gradle")
+            file(REMOVE "${output_dir}/app/src/main/AndroidManifest.xml")
+            # generate
+            configure_file("${cwork_path}/templates/build.gradle.in" "${output_dir}/app/build.gradle")
+            configure_file("${cwork_path}/templates/AndroidManifest.xml.in" "${output_dir}/app/src/main/AndroidManifest.xml")
         endif()
     endfunction()
 

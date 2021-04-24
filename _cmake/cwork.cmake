@@ -9,6 +9,9 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     include(${CMAKE_CURRENT_LIST_DIR}/cwork_utils_sources.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/cwork_utils_symbols.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/cwork_utils_packages.cmake)
+    if(ANDROID)
+        include(${CMAKE_CURRENT_LIST_DIR}/modules/path_utils.cmake)
+    endif()
     
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Solutions                                                       │
@@ -710,6 +713,18 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 else()
                     set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
                 endif()
+            endif()
+            
+            # android app: copy to JNI lib directory
+            if(ANDROID AND ${CWORK_BUILD_TYPE} STREQUAL "dynamic" AND EXISTS "${PROJECT_BINARY_DIR}/app")
+                cwork_find_arch_label()
+                if(CWORK_ARCH_LABEL STREQUAL arm)
+                    set(CWORK_ARCH_LABEL armeabi)
+                endif()
+                add_custom_command(TARGET ${CWORK_PROJECT_NAME} POST_BUILD 
+                                   COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_FILE:${CWORK_PROJECT_NAME}>
+                                           "${PROJECT_BINARY_DIR}/app/src/main/jniLibs/${CWORK_ARCH_LABEL}/$<TARGET_FILE_NAME:${CWORK_PROJECT_NAME}>")
+                unset(CWORK_ARCH_LABEL)
             endif()
         else() # header-only library
             set(${CWORK_PROJECT_NAME}_INTERFACE ON CACHE STRING "${CWORK_PROJECT_NAME}_INTERFACE")
