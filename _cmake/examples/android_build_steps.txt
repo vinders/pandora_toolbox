@@ -1,0 +1,22 @@
+# -- Generate cmake project + manifests for executables:
+#      * adapt "28" with the target SDK version;
+#      * adapt "arm64-v8a" with the target platform (x86, x86_64, armeabi-v7a, arm64-v8a, ...).
+
+./_scripts/cmake_android_ndk.sh 28 arm64-v8a
+
+# -- Build project:
+#      * adapt "android-arm64-v8a" with "android-<target-platform>";
+#      * adapt "-j4" with your number of cores.
+
+cd ./_build/android-arm64-v8a
+ninja -j4
+
+# -- Create Android Studio project:
+#      * open Android Studio and create an empty project (no activity);
+#      * close Android Studio;
+#      * copy the "app" directory from ./_build/android-arm64-v8a executable sub-project;
+#      * paste the "app" directory in your Android Studio project directory (merge and replace existing files).
+
+# -- Open Android Studio project and build for target platform.
+
+# -- Test with emulator for target platform.
