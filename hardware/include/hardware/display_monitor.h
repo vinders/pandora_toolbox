@@ -159,8 +159,6 @@ namespace pandora {
 #     if defined(__APPLE__)
         DisplayMonitor(uint32_t displayId);
         uint32_t _unitNumber = 0;
-#     elif defined(_P_ENABLE_LINUX_WAYLAND)
-        uint32_t _id = 0;
 #     elif defined(__ANDROID__)
         public:
         struct Density {
@@ -170,6 +168,8 @@ namespace pandora {
         };
         private:
         Density _density;
+#     elif defined(_P_ENABLE_LINUX_WAYLAND)
+        uint32_t _id = 0;
 #     elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
         Handle _controller = (Handle)0;
 #     endif
