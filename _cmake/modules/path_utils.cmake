@@ -1,6 +1,7 @@
 # Path finding utilities
 
 #brief: Find architecture label for linux/unix/android libraries
+#returns: CWORK_ARCH_LABEL
 macro(cwork_find_arch_label)
     if(CWORK_ARCH_LABEL)
         unset(CWORK_ARCH_LABEL)
@@ -54,6 +55,7 @@ endmacro()
 #brief: Convert relative path with unknown reference to absolute path
 #params: - prefix: relative or absolute path to directory (unknown reference)
 #        - suffix: expected path to a valid file that should be appendable after prefix
+#returns: CWORK_VALID_ABSOLUTE_PATH
 macro(cwork_unknown_path_to_absolute prefix suffix)
     if(NOT IS_ABSOLUTE ${prefix})
         if(NOT EXISTS ${prefix}${suffix})

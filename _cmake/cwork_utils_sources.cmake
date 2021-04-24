@@ -22,6 +22,24 @@ if(NOT DEFINED CWORK_UTILS_SOURCES_FOUND)
             set(CWORK_AUTODETECTED_FILES ${_files} PARENT_SCOPE)
         endif()
     endfunction()
+    
+    #brief: Automatically detect files in one directory (no recursion in subdirectories)
+    #params: - lib_path: library path containing directory
+    #        - source_dir: path to directory containing files
+    #        - ARGN: optional filter for source dir (ex: "*.c*" or "*.h*" or "*.[hc]*")
+    #returns: CWORK_AUTODETECTED_FILES
+    function(autodetect_source_files_no_recurse source_dir)
+        if(EXISTS ${source_dir})
+            if(${ARGC} GREATER 1 AND NOT ${ARGV1} STREQUAL "")
+                set(_filter ${ARGV1})
+            else()
+                set(_filter "*.[hc]*")
+            endif()
+            
+            file(GLOB _files "${source_dir}/${_filter}")
+            set(CWORK_AUTODETECTED_FILES ${_files} PARENT_SCOPE)
+        endif()
+    endfunction()
 
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  IDE file group properties                                       │
