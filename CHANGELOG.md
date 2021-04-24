@@ -1,6 +1,32 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.62.1.352
+2021-04-24 - 40c1a8290e3244e1c58415bf3653303422657d17
+### features
+vinders (14):
+* hardware: display monitor manager (adapter info, DPI, area, get/set display mode)
+* hardware: add display monitors to hardware analyzer
+* hardware: display monitor manager (Win32 impl for windows)
+* hardware: display monitor manager (X11 impl for linux/bsd/unix)
+* hardware: display monitor manager (Cocoa impl for macOS)
+* hardware: display monitor manager (UIKit impl for iOS)
+* cwork: custom cmake framework: add options: C++20, X11/Wayland
+* cwork: custom cmake framework: add linux-wayland protocol file generator
+* cwork: custom cmake framework: add possibility for modules to add source files to project
+* hardware: display monitor manager (Wayland impl for Linux)
+* system: android API: global container for application state
+* hardware: display monitor manager (JNI impl for android)
+* cwork: custom cmake framework: generate manifest for android apps
+* cwork: custom cmake framework: generate gradle builder for android apps
+### fixes
+vinders (3):
+* io: file time reader: fix GCC/clang time conversion
+* hardware: display monitor: don't list duplicate display modes + use milliHertz for rate
+* cwork: custom cmake framework: build android apps in shared libs (for JVM)
+
+---
+
 ## 0.48.1.207
 2020-11-19 - 0e2640d7f296932c306ffee2d1a5c3a3a1b728ec
 ### features
