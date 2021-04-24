@@ -21,13 +21,18 @@ fi
 # Generate per platform
 for arg in "$@"; do
     cd ./_build
-    [ -d "./${arg}" ] && rm -rf "./${arg}"
-    mkdir "${arg}"
+    if [ "${arg}" = "android" ]; then
+        [ -d "./${arg}-${3}" ] && rm -rf "./${arg}-${3}"
+        mkdir "${arg}-${3}"
+    else
+        [ -d "./${arg}" ] && rm -rf "./${arg}"
+        mkdir "${arg}"
+    fi
     cd ..
 
     case $arg in
         android)
-            cmake -G Ninja -S . -B "./_build/${arg}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF \
+            cmake -G Ninja -S . -B "./_build/${arg}-${3}" -DCMAKE_BUILD_TYPE=Release -DCWORK_TESTS=OFF \
                   -DANDROID_ABI=$3 \
                   -DANDROID_ARM_NEON=$4 \
                   -DANDROID_PLATFORM="android-${2}" \

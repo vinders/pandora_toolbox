@@ -19,6 +19,9 @@ else
   fi
 fi
 
+if ! [ -e "./_cmake_project_build.sh" ]; then
+    cd ./_scripts
+fi
 sh ./_cmake_project_build.sh "android" $1 $ABI_TYPE $USE_NEON
 if [ $? -eq 0 ]; then
     exit 0
