@@ -24,6 +24,13 @@ for arg in "$@"; do
     if [ "${arg}" = "android" ]; then
         [ -d "./${arg}-${3}" ] && rm -rf "./${arg}-${3}"
         mkdir "${arg}-${3}"
+        if [ -z "$ANDROID_NDK_ROOT" ]; then
+            if [ -z "$ANDROID_NDK_HOME" ]; then
+                echo "Missing environment variable: ANDROID_NDK_ROOT"
+                exit 1
+            fi
+            ANDROID_NDK_ROOT=$ANDROID_NDK_HOME
+        fi
     else
         [ -d "./${arg}" ] && rm -rf "./${arg}"
         mkdir "${arg}"
@@ -36,11 +43,11 @@ for arg in "$@"; do
                   -DANDROID_ABI=$3 \
                   -DANDROID_ARM_NEON=$4 \
                   -DANDROID_PLATFORM="android-${2}" \
-                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
                   -DANDROID_TOOLCHAIN=clang \
                   -DCMAKE_SYSTEM_NAME=Android \
-                  -DCMAKE_ANDROID_STANDALONE_TOOLCHAIN=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
-                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+                  -DCMAKE_ANDROID_STANDALONE_TOOLCHAIN=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+                  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
                   -DCMAKE_ANDROID_API=$2 \
                   -DCMAKE_ANDROID_ARCH_ABI=$3 \
                   -DCMAKE_EXE_LINKER_FLAGS="-pie" \
