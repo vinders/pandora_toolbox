@@ -83,17 +83,17 @@ endmacro()
 # │  File detection - common files                                   │
 # └──────────────────────────────────────────────────────────────────┘
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32 (windows)
-    set(_VIDEO_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m" "_andr.cpp")
+    set(_VIDEO_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
 elseif(IOS) # uikit (iOS)
     set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_andr.cpp")
 elseif(ANDROID) # jni (android)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m")
+    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m")
 elseif(APPLE) # cocoa (macOS)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_ios.cpp" "_ios.m" "_andr.cpp")
+    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_uikit.cpp" "_uikit.m" "_andr.cpp")
 elseif(CWORK_LINUX_WAYLAND) # wayland (linux)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m" "_andr.cpp")
+    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
 else() # x11 (linux/unix)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m" "_andr.cpp")
+    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
 endif()
 
 autodetect_source_files_no_recurse(${_INCLUDE_DIR} "*.h*") # include

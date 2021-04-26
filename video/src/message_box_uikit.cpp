@@ -10,6 +10,7 @@ Description : Message box - UIKit implementation (iOS)
 #if !defined(_WINDOWS) && defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 # include <cassert>
 # include <cstdint>
+# include "video/_private/_message_box_impl_uikit.h"
 # include "video/message_box.h"
 
   using namespace pandora::video;

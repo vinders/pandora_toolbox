@@ -11,7 +11,7 @@ Description : Message box - Cocoa implementation (Mac OS)
 # include <cassert>
 # include <cstdint>
 # include <mutex>
-# import "video/_private/_message_box_impl_cocoa.h"
+# include "video/_private/_message_box_impl_cocoa.h"
 # include "video/message_box.h"
 
   using namespace pandora::video;

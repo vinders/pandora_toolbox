@@ -5,8 +5,8 @@ License :     MIT
 #ifndef __OBJC__
 # pragma once
 #endif
-#ifndef _MESSAGE_BOX_IOS_IMPL_H
-# define _MESSAGE_BOX_IOS_IMPL_H 1
+#ifndef _MESSAGE_BOX_UIKIT_IMPL_H
+# define _MESSAGE_BOX_UIKIT_IMPL_H 1
 
 # if !defined(_WINDOWS) && defined(__APPLE__)
 #   include <TargetConditionals.h>

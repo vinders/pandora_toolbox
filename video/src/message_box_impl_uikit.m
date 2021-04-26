@@ -15,17 +15,6 @@ Description : Message box - iOS implementation
 # import <UIKit/UIScreen.h>
 # import <UIKit/UIScreenMode.h>
 # import <UIKit/UIView.h>
-# import "video/_private/_message_box_impl_ios.h"
-
-/*
-UIAlertView *alertView = [[UIAlertView alloc]initWithTitle:@"Eezy" message:@"UIAlertView example on eezytutorials.com" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Ok", nil];
-[alertView show];
-
-
-#define UIKitLocalizedString(key) [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:@"" table:nil]
-UIKitLocalizedString(@"Search");
-UIKitLocalizedString(@"Done");
-UIKitLocalizedString(@"Cancel");
-*/
+# import "video/_private/_message_box_impl_uikit.h"
 
 #endif
