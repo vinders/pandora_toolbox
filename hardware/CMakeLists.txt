@@ -24,9 +24,9 @@ endif()
 # └──────────────────────────────────────────────────────────────────┘
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32 (windows)
     set(_HARDWARE_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m" "_andr.cpp")
-elseif(IOS) # ios (iOS)
+elseif(IOS) # uikit (iOS)
     set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_andr.cpp")
-elseif(ANDROID) # android
+elseif(ANDROID) # jni (android)
     set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_ios.cpp" "_ios.m")
 elseif(APPLE) # cocoa (macOS)
     set(_HARDWARE_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_ios.cpp" "_ios.m" "_andr.cpp")
@@ -37,7 +37,7 @@ else() # x11 (linux/unix)
 endif()
 
 autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/src" "*.[hcm]*")
-if(CWORK_AUTODETECTED_FILES)
+if(CWORK_AUTODETECTED_FILES) # filter: remove unwanted system-specific files
     set(_SOURCE_FILES)
     set(_OBJC_SOURCE_FILES "")
     foreach(_file ${CWORK_AUTODETECTED_FILES})
@@ -59,7 +59,7 @@ if(CWORK_AUTODETECTED_FILES)
     unset(CWORK_AUTODETECTED_FILES)
     
     cwork_set_source_files(${_SOURCE_FILES})
-    if((IOS OR APPLE) AND NOT _OBJC_SOURCE_FILES STREQUAL "")
+    if((IOS OR APPLE) AND NOT _OBJC_SOURCE_FILES STREQUAL "") # tag objective-C files
         cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
     endif()
 endif()
