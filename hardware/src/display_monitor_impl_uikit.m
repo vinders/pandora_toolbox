@@ -15,7 +15,7 @@ Description : Display monitor - iOS implementation
 # import <UIKit/UIScreen.h>
 # import <UIKit/UIScreenMode.h>
 # import <UIKit/UIView.h>
-# import "hardware/_private/_display_monitor_impl_ios.h"
+# import "hardware/_private/_display_monitor_impl_uikit.h"
 
 # define __P_DEFAULT_STATUS_BAR_SIZE 20.0
 
@@ -23,7 +23,7 @@ Description : Display monitor - iOS implementation
 // -- monitor attributes - id/area/description/primary -- ----------------------
 
   // read all attributes of a monitor handle
-  void __readAttributes_ios(IosScreenHandle handle, uint32_t index, struct MonitorAttributes_ios* outAttr) {
+  void __readAttributes_uikit(IosScreenHandle handle, uint32_t index, struct MonitorAttributes_uikit* outAttr) {
     UIScreen* screen = (UIScreen*)handle;
     
     outAttr->index = index;
@@ -75,7 +75,7 @@ Description : Display monitor - iOS implementation
   }
   
   // get scaling factor
-  double __getScaling_ios(IosScreenHandle screen) {
+  double __getScaling_uikit(IosScreenHandle screen) {
     return (screen) ? [(UIScreen*)screen scale] : 1.0;
   }
   
@@ -83,7 +83,7 @@ Description : Display monitor - iOS implementation
 // -- get display monitors (handle + attributes) -- ----------------------------
   
   // get screen handle based on unit number (fix handle in case of automatic graphics switching)
-  IosScreenHandle __getMonitorHandle_ios(uint32_t index) {
+  IosScreenHandle __getMonitorHandle_uikit(uint32_t index) {
     @try {
       if ([[UIScreen screens] count] > index)
         return (IosScreenHandle)[[UIScreen screens] objectAtIndex:index];
@@ -93,20 +93,20 @@ Description : Display monitor - iOS implementation
   }
   
   // read handle/attributes of primary/default monitor
-  IosScreenHandle __getPrimaryMonitor_ios(struct MonitorAttributes_ios* outAttr) {
+  IosScreenHandle __getPrimaryMonitor_uikit(struct MonitorAttributes_uikit* outAttr) {
     UIScreen* handle = [UIScreen mainScreen];
     if (handle)
-      __readAttributes_ios((IosScreenHandle)handle, 0, outAttr);
+      __readAttributes_uikit((IosScreenHandle)handle, 0, outAttr);
     return (IosScreenHandle)handle;
   }
   
   // get attributes of a monitor handle
-  Bool __getMonitor_ios(IosScreenHandle screen, struct MonitorAttributes_ios* outAttr) {
+  Bool __getMonitor_uikit(IosScreenHandle screen, struct MonitorAttributes_uikit* outAttr) {
     if (screen) {
       uint32_t index = 0;
       for (UIScreen* existingScreen in [UIScreen screens]) {
         if ((UIScreen*)screen == existingScreen) {
-          __readAttributes_ios(screen, index, outAttr);
+          __readAttributes_uikit(screen, index, outAttr);
           return Bool_TRUE;
         }
         ++index;
@@ -116,10 +116,10 @@ Description : Display monitor - iOS implementation
   }
   
   // get handle/attributes of any monitor by index
-  IosScreenHandle __getMonitorByIndex_ios(uint32_t index, struct MonitorAttributes_ios* outAttr) {
+  IosScreenHandle __getMonitorByIndex_uikit(uint32_t index, struct MonitorAttributes_uikit* outAttr) {
     if ([[UIScreen screens] count] > index) {
       UIScreen* screen = [[UIScreen screens] objectAtIndex:index];
-      __readAttributes_ios((IosScreenHandle)screen, index, outAttr);
+      __readAttributes_uikit((IosScreenHandle)screen, index, outAttr);
       return (IosScreenHandle)screen;
     }
     return (IosScreenHandle)NULL;
@@ -128,7 +128,7 @@ Description : Display monitor - iOS implementation
   // ---
   
   // count all active monitors
-  uint32_t __countMonitorHandles_ios() {
+  uint32_t __countMonitorHandles_uikit() {
     @try {
       uint32_t displayCount = (uint32_t) [[UIScreen screens] count];
       return displayCount;
@@ -140,9 +140,9 @@ Description : Display monitor - iOS implementation
 // -- display modes -- ---------------------------------------------------------
 
   // get current display resolution/depth/rate of a monitor
-  Bool __getDisplayMode_ios(uint32_t index, struct DisplayMode_ios* out) {
+  Bool __getDisplayMode_uikit(uint32_t index, struct DisplayMode_uikit* out) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*) __getMonitorHandle_ios(index);
+      UIScreen* screen = (UIScreen*) __getMonitorHandle_uikit(index);
       if (screen != NULL && [screen currentMode]) {
         UIScreenMode* modeInfo = [screen currentMode];
         out->width = modeInfo.size.width;
@@ -156,9 +156,9 @@ Description : Display monitor - iOS implementation
   }
   
   // set display resolution/depth/rate of a monitor
-  Bool __setDisplayMode_ios(uint32_t index, const struct DisplayMode_ios* mode) {
+  Bool __setDisplayMode_uikit(uint32_t index, const struct DisplayMode_uikit* mode) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
+      UIScreen* screen = (UIScreen*)__getMonitorHandle_uikit(index);
       if (screen != NULL && [[screen availableModes] count] > 0) {
         
         for (UIScreenMode* modeInfo in [screen availableModes]) {
@@ -173,9 +173,9 @@ Description : Display monitor - iOS implementation
   }
   
   // reset display resolution/depth/rate of a monitor to default values
-  Bool __setDefaultDisplayMode_ios(uint32_t index) {
+  Bool __setDefaultDisplayMode_uikit(uint32_t index) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*)__getMonitorHandle_ios(index);
+      UIScreen* screen = (UIScreen*)__getMonitorHandle_uikit(index);
       if (screen != NULL) {
         
         UIScreenMode* modeInfo = [screen preferredMode];
@@ -191,12 +191,12 @@ Description : Display monitor - iOS implementation
   // ---
   
   // list all display modes of a monitor
-  Bool __listDisplayModes_ios(uint32_t index, struct DisplayMode_ios** outModes, uint32_t* outLength) {
+  Bool __listDisplayModes_uikit(uint32_t index, struct DisplayMode_uikit** outModes, uint32_t* outLength) {
     @autoreleasepool {
-      UIScreen* screen = (UIScreen*) __getMonitorHandle_ios(index);
+      UIScreen* screen = (UIScreen*) __getMonitorHandle_uikit(index);
       if (screen != NULL && [[screen availableModes] count] > 0) {
         *outLength = (uint32_t)[[screen availableModes] count];
-        *outModes = (struct DisplayMode_ios*)calloc(*outLength, sizeof(struct DisplayMode_ios));
+        *outModes = (struct DisplayMode_uikit*)calloc(*outLength, sizeof(struct DisplayMode_uikit));
         if (*outModes == NULL) {
           *outLength = 0;
           return Bool_FALSE;
@@ -221,8 +221,8 @@ Description : Display monitor - iOS implementation
 // -- metrics -- ---------------------------------------------------------------
   
   // client area to window area (DPI adjusted)
-  void __clientAreaToWindowArea_ios(const struct DisplayArea_ios* clientArea, IosAppHandle windowHandle, 
-                                    struct DisplayArea_ios* outWindowArea) {
+  void __clientAreaToWindowArea_uikit(const struct DisplayArea_uikit* clientArea, IosAppHandle windowHandle, 
+                                    struct DisplayArea_uikit* outWindowArea) {
     Bool isWindowAreaValid = Bool_FALSE;
     @try {
       UIApplication* app = (UIApplication*)windowHandle;
