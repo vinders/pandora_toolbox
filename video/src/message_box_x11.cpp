@@ -22,6 +22,6 @@ Description : Message box - Xorg implementation (Linux/Unix/BSD)
   // ---
   
   // get last error message (in case of DialogResult::failure)
-  std::string LastError() { return "" }
+  std::string LastError() { return ""; }
 
 #endif

@@ -15,15 +15,25 @@ Description : Message box - Cocoa implementation (Mac OS)
 # import <ApplicationServices/ApplicationServices.h>
 # import "video/_private/_message_box_impl_cocoa.h"
 
-
   // set icon style of message box
-  static NSButton* __setMessageBoxIcon(NSAlert* alert, enum CocoaBoxIconId icon) {
-    switch (icon) {
-      case COCOA_BOX_ICON_INFO:
-      case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSInformationalAlertStyle]; break;
-      case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSWarningAlertStyle]; break;
-      case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSCriticalAlertStyle]; break;
-      default: [alert setProperty:[NSImage new] forKey:@"image"]; break;
+  static void __setMessageBoxIcon(NSAlert* alert, enum CocoaBoxIconId icon) {
+    if (@available(macOS 10.12, *)) {
+      switch (icon) {
+        case COCOA_BOX_ICON_INFO:
+        case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSAlertStyleInformational]; break;
+        case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSAlertStyleWarning]; break;
+        case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSAlertStyleCritical]; break;
+        default: alert.image = [NSImage new]; break;
+      }
+    }
+    else {
+      switch (icon) {
+        case COCOA_BOX_ICON_INFO:
+        case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSInformationalAlertStyle]; break;
+        case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSWarningAlertStyle]; break;
+        case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSCriticalAlertStyle]; break;
+        default: alert.image = [NSImage new]; break;
+      }
     }
   }
   // add action button to message box
@@ -41,7 +51,7 @@ Description : Message box - Cocoa implementation (Mac OS)
   }
   // error message allocation and copy
   static void __setErrorMessage(const char* message, char** outError) {
-    uint32_t length = (uint32_t)strlen(message, 512);
+    uint32_t length = (uint32_t)strnlen(message, 512);
     *outError = calloc(length, sizeof(char));
     if (*outError)
       memcpy((void*)*outError, (void*)message, length*sizeof(char));
@@ -57,7 +67,7 @@ Description : Message box - Cocoa implementation (Mac OS)
         NSAlert* alert = [[[NSAlert alloc] init] autorelease];
         
         // content
-        __setMessageBoxIcon(icon);
+        __setMessageBoxIcon(alert, icon);
         if (caption)
           [alert setMessageText:[NSString stringWithUTF8String:caption]];
         else
@@ -84,7 +94,7 @@ Description : Message box - Cocoa implementation (Mac OS)
         if (isTopMost)
           [[NSRunningApplication currentApplication] activateWithOptions:NSApplicationActivateIgnoringOtherApps]; // top-most
         else
-          [[NSRunningApplication currentApplication] activateWithOptions:0];// top current app
+          [[NSRunningApplication currentApplication] activateWithOptions:0]; // top current app
 
         // show modal + wait for user action
         NSModalResponse result = [alert runModal];

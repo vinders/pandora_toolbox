@@ -22,6 +22,6 @@ Description : Message box - Wayland implementation (Linux)
   // ---
   
   // get last error message (in case of DialogResult::failure)
-  std::string LastError() { return "" }
+  std::string LastError() { return ""; }
 
 #endif

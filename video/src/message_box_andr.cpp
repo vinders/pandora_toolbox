@@ -22,6 +22,6 @@ Description : Message box - JNI implementation (Android)
   // ---
   
   // get last error message (in case of DialogResult::failure)
-  std::string LastError() { return "" }
+  std::string LastError() { return ""; }
 
 #endif

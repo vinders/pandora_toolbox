@@ -11,6 +11,7 @@ Description : Message box - Cocoa implementation (Mac OS)
 # include <cassert>
 # include <cstdint>
 # include <mutex>
+# import "video/_private/_message_box_impl_cocoa.h"
 # include "video/message_box.h"
 
   using namespace pandora::video;
@@ -20,8 +21,7 @@ Description : Message box - Cocoa implementation (Mac OS)
   
   
   // convert portable action to list of native actions
-  static inline void __toNativeActions(CocoaBoxButtonId actions[3], uint32_t outLength) noexcept {
-    
+  static inline void __toNativeActions(enum CocoaBoxButtonId actions[3], uint32_t outLength) noexcept {
     switch (actions) {
       case MessageBox::ActionType::ok:
         outLength = 1; actions[0] = COCOA_BOX_BUTTON_OK; break;
@@ -41,7 +41,7 @@ Description : Message box - Cocoa implementation (Mac OS)
   }
   
   // convert portable icon to native icon flag
-  static inline CocoaBoxIconId __toNativeIcon(MessageBox::IconType icon) noexcept {
+  static inline enum CocoaBoxIconId __toNativeIcon(MessageBox::IconType icon) noexcept {
     switch (icon) {
       case MessageBox::IconType::info:     return COCOA_BOX_ICON_INFO;
       case MessageBox::IconType::question: return COCOA_BOX_ICON_QUESTION;
@@ -52,7 +52,7 @@ Description : Message box - Cocoa implementation (Mac OS)
   }
   
   // convert native result to portable DialogResult
-  static inline MessageBox::DialogResult __toDialogResult(CocoaBoxButtonId result) noexcept {
+  static inline MessageBox::DialogResult __toDialogResult(enum CocoaBoxButtonId result) noexcept {
     switch (result) {
       case COCOA_BOX_BUTTON_OK:     return MessageBox::DialogResult::ok;
       case COCOA_BOX_BUTTON_CANCEL: return MessageBox::DialogResult::cancel;
@@ -70,13 +70,13 @@ Description : Message box - Cocoa implementation (Mac OS)
   // show modal message box
   MessageBox::DialogResult MessageBox::show(const char* caption, const char* message, MessageBox::ActionType actions, 
                                             MessageBox::IconType icon, bool isTopMost, WindowHandle) noexcept {
-    CocoaBoxButtonId actions[3];
+    enum CocoaBoxButtonId actions[3];
     uint32_t actionsLength = 0;
     __toNativeActions(actions, length);
     
     char* error = nullptr;
-    CocoaBoxButtonId result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), 
-                                                     actions, length, (isTopMost) ? Bool_TRUE : Bool_FALSE);
+    enum CocoaBoxButtonId result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), 
+                                                          actions, length, (isTopMost) ? Bool_TRUE : Bool_FALSE);
     if (error) {
       std::lock_guard<std::mutex> guard(__lastErrorLock);
       try { __lastError = error; } catch (...) {} // avoid leak of 'error' instance

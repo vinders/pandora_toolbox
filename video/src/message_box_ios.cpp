@@ -25,6 +25,6 @@ Description : Message box - UIKit implementation (iOS)
   // ---
   
   // get last error message (in case of DialogResult::failure)
-  std::string LastError() { return "" }
+  std::string LastError() { return ""; }
 
 #endif
