@@ -75,8 +75,8 @@ Description : Message box - Cocoa implementation (Mac OS)
     __toNativeActions(actions, buttons, length);
     
     char* error = nullptr;
-    enum CocoaBoxButtonId result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), 
-                                                          buttons, length, (isTopMost) ? Bool_TRUE : Bool_FALSE);
+    enum CocoaBoxButtonId result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), buttons, length, 
+                                                          (isTopMost) ? Bool_TRUE : Bool_FALSE, &error);
     if (error) {
       std::lock_guard<std::mutex> guard(__lastErrorLock);
       try { __lastError = error; } catch (...) {} // avoid leak of 'error' instance
