@@ -8,7 +8,7 @@ License :     MIT
 #include <string>
 #include "video/window_handle.h"
 #ifdef MessageBox
-# undef MessageBox // fix conflicts with win32 API
+# undef MessageBox // fix win32 API conflicts
 #endif
 
 namespace pandora {
@@ -28,7 +28,7 @@ namespace pandora {
         yesNoCancel,
         abortRetryIgnore
       };
-      /// @brief Symbol displayed in a message box
+      /// @brief Symbol displayed in message box
       enum class IconType : uint32_t {
         none = 0,
         info,
@@ -36,7 +36,7 @@ namespace pandora {
         warning,
         error
       };
-      /// @brief User action chosen after closing dialog (or failure if an error occurred)
+      /// @brief User action chosen to close dialog (or failure if an error occurred)
       enum class DialogResult : uint32_t {
         failure = 0,
         ok,
@@ -64,14 +64,8 @@ namespace pandora {
 #     endif
 
       /// @brief Get last error message (in case of DialogResult::failure)
+      /// @returns Last error (if available) or empty string
       static std::string LastError();
-      
-      //https://github.com/letoram/SDL2/blob/master/src/video/x11/SDL_x11messagebox.c
-      //https://stackoverflow.com/questions/11128724/how-to-display-textbox-in-message-box-objective-c
-      //https://github.com/letoram/SDL2/blob/master/src/video/uikit/SDL_uikitmessagebox.m
-      //http://www.euroinformatica.ro/android-alert-dialog/
-      //https://github.com/letoram/SDL2/blob/master/src/video/android/SDL_androidmessagebox.c
-      //https://github.com/letoram/SDL2/blob/master/src/video/wayland/SDL_waylandwindow.c
     };
   }
 }
