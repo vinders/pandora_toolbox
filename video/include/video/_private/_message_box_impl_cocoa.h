@@ -20,8 +20,8 @@ License :     MIT
       // -- bindings --
 
       typedef int Bool;
-#     define Bool_TRUE  1;
-#     define Bool_FALSE 0;
+#     define Bool_TRUE  1
+#     define Bool_FALSE 0
 
       enum CocoaBoxButtonId { 
         COCOA_BOX_BUTTON_FAILURE = -1, 
