@@ -21,22 +21,22 @@ Description : Message box - Cocoa implementation (Mac OS)
   
   
   // convert portable action to list of native actions
-  static inline void __toNativeActions(enum CocoaBoxButtonId actions[3], uint32_t outLength) noexcept {
+  static inline void __toNativeActions(MessageBox::ActionType actions, enum CocoaBoxButtonId outBtns[3], uint32_t outLength) noexcept {
     switch (actions) {
       case MessageBox::ActionType::ok:
-        outLength = 1; actions[0] = COCOA_BOX_BUTTON_OK; break;
+        outLength = 1; outBtns[0] = COCOA_BOX_BUTTON_OK; break;
       case MessageBox::ActionType::okCancel:
-        outLength = 2; actions[0] = COCOA_BOX_BUTTON_CANCEL; actions[1] = COCOA_BOX_BUTTON_OK; break;
+        outLength = 2; outBtns[0] = COCOA_BOX_BUTTON_CANCEL; outBtns[1] = COCOA_BOX_BUTTON_OK; break;
       case MessageBox::ActionType::retryCancel:
-        outLength = 2; actions[0] = COCOA_BOX_BUTTON_CANCEL; actions[1] = COCOA_BOX_BUTTON_RETRY; break;
+        outLength = 2; outBtns[0] = COCOA_BOX_BUTTON_CANCEL; outBtns[1] = COCOA_BOX_BUTTON_RETRY; break;
       case MessageBox::ActionType::yesNo:
-        outLength = 2; actions[0] = COCOA_BOX_BUTTON_NO; actions[1] = COCOA_BOX_BUTTON_YES; break;
+        outLength = 2; outBtns[0] = COCOA_BOX_BUTTON_NO; outBtns[1] = COCOA_BOX_BUTTON_YES; break;
       case MessageBox::ActionType::yesNoCancel:
-        outLength = 3; actions[0] = COCOA_BOX_BUTTON_CANCEL; actions[1] = COCOA_BOX_BUTTON_NO; actions[2] = COCOA_BOX_BUTTON_YES; break;
+        outLength = 3; outBtns[0] = COCOA_BOX_BUTTON_CANCEL; outBtns[1] = COCOA_BOX_BUTTON_NO; outBtns[2] = COCOA_BOX_BUTTON_YES; break;
       case MessageBox::ActionType::abortRetryIgnore:
-        outLength = 3; actions[0] = COCOA_BOX_BUTTON_ABORT; actions[1] = COCOA_BOX_BUTTON_IGNORE; actions[2] = COCOA_BOX_BUTTON_RETRY; break;
+        outLength = 3; outBtns[0] = COCOA_BOX_BUTTON_ABORT; outBtns[1] = COCOA_BOX_BUTTON_IGNORE; outBtns[2] = COCOA_BOX_BUTTON_RETRY; break;
       default: 
-        outLength = 1; actions[0] = COCOA_BOX_BUTTON_OK; break;
+        outLength = 1; outBtns[0] = COCOA_BOX_BUTTON_OK; break;
     }
   }
   
@@ -70,13 +70,13 @@ Description : Message box - Cocoa implementation (Mac OS)
   // show modal message box
   MessageBox::DialogResult MessageBox::show(const char* caption, const char* message, MessageBox::ActionType actions, 
                                             MessageBox::IconType icon, bool isTopMost, WindowHandle) noexcept {
-    enum CocoaBoxButtonId actions[3];
-    uint32_t actionsLength = 0;
-    __toNativeActions(actions, length);
+    enum CocoaBoxButtonId buttons[3];
+    uint32_t length = 0;
+    __toNativeActions(actions, buttons, length);
     
     char* error = nullptr;
     enum CocoaBoxButtonId result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), 
-                                                          actions, length, (isTopMost) ? Bool_TRUE : Bool_FALSE);
+                                                          buttons, length, (isTopMost) ? Bool_TRUE : Bool_FALSE);
     if (error) {
       std::lock_guard<std::mutex> guard(__lastErrorLock);
       try { __lastError = error; } catch (...) {} // avoid leak of 'error' instance

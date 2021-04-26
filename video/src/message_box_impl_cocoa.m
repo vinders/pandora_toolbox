@@ -23,18 +23,20 @@ Description : Message box - Cocoa implementation (Mac OS)
         case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSAlertStyleInformational]; break;
         case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSAlertStyleWarning]; break;
         case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSAlertStyleCritical]; break;
-        default: alert.image = [NSImage new]; break;
+        default: [alert setIcon:[NSImage new]]; break;
       }
     }
-    else {
-      switch (icon) {
-        case COCOA_BOX_ICON_INFO:
-        case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSInformationalAlertStyle]; break;
-        case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSWarningAlertStyle]; break;
-        case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSCriticalAlertStyle]; break;
-        default: alert.image = [NSImage new]; break;
+#   if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED <= 101100
+      else {
+        switch (icon) {
+          case COCOA_BOX_ICON_INFO:
+          case COCOA_BOX_ICON_QUESTION: [alert setAlertStyle:NSInformationalAlertStyle]; break;
+          case COCOA_BOX_ICON_WARNING: [alert setAlertStyle:NSWarningAlertStyle]; break;
+          case COCOA_BOX_ICON_ERROR: [alert setAlertStyle:NSCriticalAlertStyle]; break;
+          default: [alert setIcon:[NSImage new]]; break;
+        }
       }
-    }
+#   endif
   }
   // add action button to message box
   static NSButton* __addMessageBoxAction(NSAlert* alert, enum CocoaBoxButtonId action) {
