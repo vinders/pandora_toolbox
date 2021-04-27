@@ -95,10 +95,10 @@ Description : Message box - Cocoa implementation (Mac OS)
                                       MessageBox::IconType icon, bool isTopMost, WindowHandle) noexcept {
     char _stringAlloc[3*__P_MAX_LABEL_LENGTH] = { 0 };
     char* buttons[3] = { &_stringAlloc[0], &_stringAlloc[__P_MAX_LABEL_LENGTH], &_stringAlloc[2*__P_MAX_LABEL_LENGTH] };
-    uint32_t length = __toNativeActions(actions, buttons);
+    uint32_t length = __toNativeActions(actions, &buttons[0]);
     
     char* error = nullptr;
-    uint32_t result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), buttons, length, 
+    uint32_t result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), const_cast<const char**>(&buttons[0]), length, 
                                              isTopMost ? Bool_TRUE : Bool_FALSE, &error);
     if (error) {
       try { 
@@ -151,12 +151,12 @@ Description : Message box - Cocoa implementation (Mac OS)
   MessageBox::Result MessageBox::show(const char* caption, const char* message, 
                                       const char* button1, const char* button2, const char* button3,
                                       MessageBox::IconType icon, bool isTopMost, WindowHandle) noexcept {
-    char* placeholders[2] = { "OK", "No" }; // used if missing labels before last button (ok / okCancel / yesNoCancel)
+    const char* placeholders[2] = { "OK", "No" }; // used if missing labels before last button (ok / okCancel / yesNoCancel)
     const char* buttons[3] = { nullptr };
-    uint32_t length = __toNativeActions(button1, button2, button3, placeholders, buttons);
+    uint32_t length = __toNativeActions(button1, button2, button3, placeholders, &buttons[0]);
       
     char* error = nullptr;
-    uint32_t result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), buttons, length, 
+    uint32_t result = __showMessageBox_cocoa(caption, message, __toNativeIcon(icon), &buttons[0], length, 
                                              isTopMost ? Bool_TRUE : Bool_FALSE, &error);
     if (error) {
       try { 
