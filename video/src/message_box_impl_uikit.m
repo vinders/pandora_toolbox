@@ -19,10 +19,8 @@ Description : Message box - iOS implementation
 #   import <UIKit/UIScreen.h>
 #   import <UIKit/UIViewController.h>
 #   import <UIKit/UIAlertController.h>
-#   import <UIKit/UIAlertAction.h>
 # elif __IPHONE_OS_VERSION_MIN_REQUIRED < 80000
 #   import <UIKit/UIAlertView.h>
-#   import <UIKit/UIAlertViewDelegate.h>
 # endif
 # import "video/_private/_message_box_impl_uikit.h"
 
