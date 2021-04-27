@@ -15,6 +15,9 @@ Description : Message box - UIKit implementation (iOS)
 # include "video/_private/_message_box_impl_uikit.h"
 # include "video/message_box.h"
 
+# define __P_MAX_LABEL_LENGTH 8
+# define __P_ASSERT_LENGTH(n) static_assert((n) < __P_MAX_LABEL_LENGTH, "MessageBox (uikit): action value too long");
+
   using namespace pandora::video;
   
   static pandora::thread::SpinLock __lastErrorLock;

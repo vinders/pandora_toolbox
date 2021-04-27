@@ -13,9 +13,17 @@ Description : Message box - iOS implementation
 # include <stddef.h>
 # include <string.h>
 # import <UIKit/UIApplication.h>
-# import <UIKit/UIScreen.h>
-# import <UIKit/UIScreenMode.h>
-# import <UIKit/UIView.h>
+
+# ifdef __IPHONE_8_0
+#   import <UIKit/UIWindow.h>
+#   import <UIKit/UIScreen.h>
+#   import <UIKit/UIViewController.h>
+#   import <UIKit/UIAlertController.h>
+#   import <UIKit/UIAlertAction.h>
+# elif __IPHONE_OS_VERSION_MIN_REQUIRED < 80000
+#   import <UIKit/UIAlertView.h>
+#   import <UIKit/UIAlertViewDelegate.h>
+# endif
 # import "video/_private/_message_box_impl_uikit.h"
 
 # define UIKitLocalizedString(key) [[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:key value:@"" table:nil]
@@ -42,7 +50,7 @@ Description : Message box - iOS implementation
       
       // create dialog + add buttons
       uint32_t __block userAction = 0;
-      UIAlertController* alert = [UIAlertController alertControllerWithTitle:captionStr message:messageStr
+      UIAlertController* alert = [UIAlertController alertControllerWithTitle:caption message:message
                                                     preferredStyle:UIAlertControllerStyleAlert];
       for (uint32_t i = 0; i < length; ++i) {
         UIAlertActionStyle buttonStyle = (i == 0 && length > 1) ? UIAlertActionStyleCancel : UIAlertActionStyleDefault;
@@ -102,13 +110,13 @@ Description : Message box - iOS implementation
       // create dialog + add buttons
       UIAlertView* alert = NULL;
       switch (length) {
-        case 1: alert = [[UIAlertView alloc] initWithTitle:captionStr message:messageStr delegate:handler 
+        case 1: alert = [[UIAlertView alloc] initWithTitle:message message:message delegate:handler 
                                              cancelButtonTitle:nil otherButtonTitles:buttons[0], nil];
                 break;
-        case 2: alert = [[UIAlertView alloc] initWithTitle:captionStr message:messageStr delegate:handler 
+        case 2: alert = [[UIAlertView alloc] initWithTitle:message message:message delegate:handler 
                                              cancelButtonTitle:buttons[0] otherButtonTitles:buttons[1], nil];
                 break;
-        case 3: alert = [[UIAlertView alloc] initWithTitle:captionStr message:messageStr delegate:handler 
+        case 3: alert = [[UIAlertView alloc] initWithTitle:message message:message delegate:handler 
                                              cancelButtonTitle:buttons[0] otherButtonTitles:buttons[1], buttons[2], nil];
                 break;
       }
@@ -140,10 +148,10 @@ Description : Message box - iOS implementation
         // add icon before caption
         NSMutableString* captionStr = [[NSMutableString alloc]init];
         switch (icon) {
-          case COCOA_BOX_ICON_INFO:     [captionStr appendString:@"\u1F5CA "]; break;
-          case COCOA_BOX_ICON_QUESTION: [captionStr appendString:@"\uFFFD "]; break;
-          case COCOA_BOX_ICON_WARNING:  [captionStr appendString:@"\u26A0 "]; break;
-          case COCOA_BOX_ICON_ERROR:    [captionStr appendString:@"\u26A0 "]; break;
+          case UIKIT_BOX_ICON_INFO:     [captionStr appendString:@"\u1F5CA "]; break;
+          case UIKIT_BOX_ICON_QUESTION: [captionStr appendString:@"\uFFFD "]; break;
+          case UIKIT_BOX_ICON_WARNING:  [captionStr appendString:@"\u26A0 "]; break;
+          case UIKIT_BOX_ICON_ERROR:    [captionStr appendString:@"\u26A0 "]; break;
         }
         
         // content
