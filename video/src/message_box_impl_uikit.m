@@ -150,6 +150,7 @@ Description : Message box - iOS implementation
           case UIKIT_BOX_ICON_QUESTION: [captionStr appendString:@"\uFFFD "]; break;
           case UIKIT_BOX_ICON_WARNING:  [captionStr appendString:@"\u26A0 "]; break;
           case UIKIT_BOX_ICON_ERROR:    [captionStr appendString:@"\u26A0 "]; break;
+          default: break;
         }
         
         // content
