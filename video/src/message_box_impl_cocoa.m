@@ -38,19 +38,7 @@ Description : Message box - Cocoa implementation (Mac OS)
       }
 #   endif
   }
-  // add action button to message box
-  static NSButton* __addMessageBoxAction(NSAlert* alert, enum CocoaBoxButtonId action) {
-    switch (action) {
-      case COCOA_BOX_BUTTON_OK:     return [alert addButtonWithTitle:NSLocalizedString(@"OK", comment: "OK")];
-      case COCOA_BOX_BUTTON_CANCEL: return [alert addButtonWithTitle:NSLocalizedString(@"Cancel", comment: "Cancel")];
-      case COCOA_BOX_BUTTON_YES:    return [alert addButtonWithTitle:NSLocalizedString(@"Yes", comment: "Yes")];
-      case COCOA_BOX_BUTTON_NO:     return [alert addButtonWithTitle:NSLocalizedString(@"No", comment: "No")];
-      case COCOA_BOX_BUTTON_ABORT:  return [alert addButtonWithTitle:NSLocalizedString(@"Abort", comment: "Abort")];
-      case COCOA_BOX_BUTTON_RETRY:  return [alert addButtonWithTitle:NSLocalizedString(@"Retry", comment: "Retry")];
-      case COCOA_BOX_BUTTON_IGNORE: return [alert addButtonWithTitle:NSLocalizedString(@"Ignore", comment: "Ignore")];
-      default: return [alert addButtonWithTitle:NSLocalizedString(@"OK", comment: "OK")];
-    }
-  }
+
   // error message allocation and copy
   static void __setErrorMessage(const char* message, char** outError) {
     uint32_t length = (uint32_t)strnlen(message, 512);
@@ -62,8 +50,8 @@ Description : Message box - Cocoa implementation (Mac OS)
   // ---
 
   // show modal message box
-  enum CocoaBoxButtonId __showMessageBox_cocoa(const char* caption, const char* message, enum CocoaBoxIconId icon, 
-                                               enum CocoaBoxButtonId* actions, uint32_t actionsLength, Bool isTopMost, char** outError) {
+  uint32_t __showMessageBox_cocoa(const char* caption, const char* message, enum CocoaBoxIconId icon, 
+                                  const char* actions[3], uint32_t length, Bool isTopMost, char** outError) {
     @autoreleasepool {
       @try {
         NSAlert* alert = [[[NSAlert alloc] init] autorelease];
@@ -78,15 +66,15 @@ Description : Message box - Cocoa implementation (Mac OS)
           [alert setInformativeText:[NSString stringWithUTF8String:message]];
 
         // actions
-        assert(actionsLength > 0);
-        NSButton* lastButton = __addMessageBoxAction(alert, actions[0]);
-        if (actionsLength > 1) {
+        assert(length > 0);
+        NSButton* lastButton = [alert addButtonWithTitle:NSLocalizedString(actions[0], comment: actions[0])];
+        if (length > 1) {
           [lastButton setKeyEquivalent: @"\033"]; // Escape
           [lastButton setKeyEquivalentModifierMask:0];
           
-          for (uint32_t i = 1; i < actionsLength; ++i) {
-            lastButton = __addMessageBoxAction(alert, actions[i]);
-            if (i + 1 < actionsLength)
+          for (uint32_t i = 1; i < length; ++i) {
+            lastButton = [alert addButtonWithTitle:NSLocalizedString(actions[i], comment: actions[i])];
+            if (i + 1 < length)
               [lastButton setKeyEquivalent:@""];
           }
         }
@@ -101,16 +89,16 @@ Description : Message box - Cocoa implementation (Mac OS)
         // show modal + wait for user action
         NSModalResponse result = [alert runModal];
         switch(result) {
-          case NSAlertFirstButtonReturn:      return actions[0];
-          case NSAlertSecondButtonReturn:     return (actionsLength > 1) ? actions[1] : actions[0];
-          case NSAlertThirdButtonReturn:      return (actionsLength > 2) ? actions[2] : actions[actionsLength-1];
-          case (NSAlertThirdButtonReturn +1): return (actionsLength > 3) ? actions[3] : actions[actionsLength-1];
-          default: __setErrorMessage("NSModalResponse: unidentified user action", outError); return COCOA_BOX_BUTTON_FAILURE;
+          case NSAlertFirstButtonReturn:  return 1;
+          case NSAlertSecondButtonReturn: if (length >= 2) { return 2; } break;
+          case NSAlertThirdButtonReturn:  if (length >= 3) { return 3; } break;
         }
+        __setErrorMessage("NSModalResponse: unidentified user action", outError); 
+        return 0;
       }
       @catch (NSException* exc) { 
         __setErrorMessage([[exc reason] UTF8String], outError); 
-        return COCOA_BOX_BUTTON_FAILURE; 
+        return 0; 
       }
     }
   }

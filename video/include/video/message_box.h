@@ -37,16 +37,14 @@ namespace pandora {
         error
       };
       /// @brief User action chosen to close dialog (or failure if an error occurred)
-      enum class DialogResult : uint32_t {
-        failure = 0,
-        ok,
-        cancel,
-        yes,
-        no,
-        abort,
-        retry,
-        ignore
+      enum class Result : uint32_t {
+        failure = 0, ///< error during message box creation
+        action1 = 1, ///< user action #1 (example: "yes" for ActionType "yesNoCancel"    / "button1" for custom actions)
+        action2 = 2, ///< user action #2 (example: "no" for ActionType "yesNoCancel"     / "button2" for custom actions)
+        action3 = 3, ///< user action #3 (example: "cancel" for ActionType "yesNoCancel" / "button3" for custom actions)
       };
+      
+      // ---
 
       /// @brief Show modal message box (wait for user action)
       /// @param caption    Title of the message box
@@ -55,15 +53,32 @@ namespace pandora {
       /// @param icon       Optional symbol to display in message box
       /// @param isTopMost  Make modal dialog appear on top of all windows
       /// @param parent     Parent window blocked by dialog (optional)
-      /// @returns Action chosen by user (or DialogResult::failure if the dialog could not be created)
-      static DialogResult show(const char* caption, const char* message, ActionType actions = ActionType::ok, 
-                               IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
+      /// @returns Action chosen by user (or Result::failure if the dialog could not be created)
+      static Result show(const char* caption, const char* message, ActionType actions = ActionType::ok, 
+                         IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
 #     if defined(_WINDOWS)
-        static DialogResult show(const wchar_t* caption, const wchar_t* message, ActionType actions = ActionType::ok, 
-                                 IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
+        static Result show(const wchar_t* caption, const wchar_t* message, ActionType actions = ActionType::ok, 
+                           IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
 #     endif
 
-      /// @brief Get last error message (in case of DialogResult::failure)
+      /// @brief Show modal message box with custom button labels (wait for user action)
+      /// @param caption    Title of the message box
+      /// @param message    Text content of the message box
+      /// @param button1    Label of button 1
+      /// @param button2    Label of button 2 (optional -> do not set if you only need 1 button)
+      /// @param button3    Label of button 3 (optional -> do not set if you only need 2 buttons)
+      /// @param icon       Optional symbol to display in message box
+      /// @param isTopMost  Make modal dialog appear on top of all windows
+      /// @param parent     Parent window blocked by dialog (optional)
+      /// @returns Action chosen by user (or Result::failure if the dialog could not be created)
+      static Result show(const char* caption, const char* message, const char* button1, const char* button2, const char* button3,
+                         IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
+#     if defined(_WINDOWS)
+        static Result show(const wchar_t* caption, const wchar_t* message, const wchar_t* button1, const wchar_t* button2, const wchar_t* button3,
+                           IconType icon = IconType::none, bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
+#     endif
+
+      /// @brief Get last error message (in case of Result::failure)
       /// @returns Last error (if available) or empty string
       static std::string LastError();
     };
