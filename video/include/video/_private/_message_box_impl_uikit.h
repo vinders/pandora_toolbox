@@ -17,7 +17,26 @@ License :     MIT
 #     include <stdint.h>
 
 
+      // -- bindings --
 
+      typedef int Bool;
+#     define Bool_TRUE  1
+#     define Bool_FALSE 0
+
+      enum UikitBoxIconId { 
+        UIKIT_BOX_ICON_NONE = 0,
+        UIKIT_BOX_ICON_INFO = 1,
+        UIKIT_BOX_ICON_QUESTION = 2,
+        UIKIT_BOX_ICON_WARNING = 3,
+        UIKIT_BOX_ICON_ERROR = 4
+      };
+     
+      
+      // -- methods --
+      
+      // show modal message box (reverse order expected: cancellation first, confirmation last)
+      uint32_t __showMessageBox_uikit(const char* caption, const char* message, enum UikitBoxIconId icon, 
+                                      const char** actions, uint32_t length, void* parentWindow, char** outError);
 
 #     ifndef __OBJC__
         } // extern "C"
