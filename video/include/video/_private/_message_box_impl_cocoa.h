@@ -34,9 +34,9 @@ License :     MIT
       
       // -- methods --
       
-      // show modal message box
+      // show modal message box (reverse order expected: cancellation first, confirmation last)
       uint32_t __showMessageBox_cocoa(const char* caption, const char* message, enum CocoaBoxIconId icon, 
-                                      const char* actions[3], uint32_t length, Bool isTopMost, char** outError);
+                                      const char** actions, uint32_t length, Bool isTopMost, char** outError);
 
 #     ifndef __OBJC__
         } // extern "C"

@@ -9,6 +9,7 @@ Description : Message box - Cocoa implementation (Mac OS)
 #endif
 #if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
 
+# include <assert.h>
 # include <stddef.h>
 # include <string.h>
 # import <Cocoa/Cocoa.h>
@@ -49,9 +50,9 @@ Description : Message box - Cocoa implementation (Mac OS)
 
   // ---
 
-  // show modal message box
+  // show modal message box (reverse order expected: cancellation first, confirmation last)
   uint32_t __showMessageBox_cocoa(const char* caption, const char* message, enum CocoaBoxIconId icon, 
-                                  const char* actions[3], uint32_t length, Bool isTopMost, char** outError) {
+                                  const char** actions, uint32_t length, Bool isTopMost, char** outError) {
     @autoreleasepool {
       @try {
         NSAlert* alert = [[[NSAlert alloc] init] autorelease];
@@ -67,13 +68,15 @@ Description : Message box - Cocoa implementation (Mac OS)
 
         // actions
         assert(length > 0);
-        NSButton* lastButton = [alert addButtonWithTitle:NSLocalizedString(actions[0], comment: actions[0])];
+        NSString* label = [NSString stringWithUTF8String:actions[0]];
+        NSButton* lastButton = [alert addButtonWithTitle:NSLocalizedString(label, comment: label)];
         if (length > 1) {
           [lastButton setKeyEquivalent: @"\033"]; // Escape
           [lastButton setKeyEquivalentModifierMask:0];
           
           for (uint32_t i = 1; i < length; ++i) {
-            lastButton = [alert addButtonWithTitle:NSLocalizedString(actions[i], comment: actions[i])];
+            label = [NSString stringWithUTF8String:actions[i]];
+            lastButton = [alert addButtonWithTitle:NSLocalizedString(label, comment: label)];
             if (i + 1 < length)
               [lastButton setKeyEquivalent:@""];
           }
