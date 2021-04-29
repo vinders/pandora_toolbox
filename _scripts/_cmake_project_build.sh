@@ -51,7 +51,6 @@ for arg in "$@"; do
                   -DCMAKE_ANDROID_API=$2 \
                   -DCMAKE_ANDROID_ARCH_ABI=$3 \
                   -DCMAKE_EXE_LINKER_FLAGS="-pie" \
-                  -DCMAKE_ANDROID_ARM_NEON=$4 \
                   || exit 1
             break
             ;;
