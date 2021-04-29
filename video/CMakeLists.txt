@@ -132,6 +132,13 @@ if(CWORK_AUTODETECTED_FILES) # filter: remove unwanted system-specific files
         cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
     endif()
 endif()
+if(ANDROID)
+    autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.java*")
+    if(CWORK_AUTODETECTED_FILES)
+        cwork_set_source_language(JAVA ${CWORK_AUTODETECTED_FILES}) # tag java files
+        unset(CWORK_AUTODETECTED_FILES)
+    endif()
+endif()
 
 
 # ┌──────────────────────────────────────────────────────────────────┐
@@ -161,9 +168,10 @@ cwork_set_custom_files(${_SHADER_FILES})
 cwork_set_test_files(${_TEST_FILES})
 
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
-                     "include" "src" "test")
+                     "include" "src" "test" "tools/window_viewer")
 
 # rendering api config - feedback messages
+message(" ") # new line
 if(CWORK_VIDEO_OPENGL4)
     if(_VIDEO_OPENGL_ES3_VERSION_STRING)
         message("-- OpenGL ES${_VIDEO_OPENGL_ES3_VERSION_STRING} features level --")
