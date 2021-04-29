@@ -53,7 +53,7 @@ Description : Message box - Win32 implementation (Windows)
         break;
       case MessageBox::ActionType::abortRetryIgnore:
         flags = (flags | MB_ABORTRETRYIGNORE); 
-        outActionFlags[0] = IDABORT; outActionFlags[1] = IDRETRY; outActionFlags[2] = IDOK; 
+        outActionFlags[0] = IDABORT; outActionFlags[1] = IDRETRY; outActionFlags[2] = IDIGNORE; 
         break;
       default: 
         flags = MB_OK; outActionFlags[0] = IDOK; break;
@@ -213,9 +213,9 @@ Description : Message box - Win32 implementation (Windows)
   // ---
   
   // show modal message box with custom button labels - narrow characters
-  MessageBox::Result MessageBox::show(const char* caption, const char* message, 
+  MessageBox::Result MessageBox::show(const char* caption, const char* message, MessageBox::IconType icon,
                                       const char* button1, const char* button2, const char* button3,
-                                      MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
+                                      bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
     
     std::lock_guard<std::mutex> guard(__modalDialogLock);
@@ -227,9 +227,9 @@ Description : Message box - Win32 implementation (Windows)
   }
   
   // show modal message box with custom button labels - wide characters
-  MessageBox::Result MessageBox::show(const wchar_t* caption, const wchar_t* message, 
+  MessageBox::Result MessageBox::show(const wchar_t* caption, const wchar_t* message, MessageBox::IconType icon,
                                       const wchar_t* button1, const wchar_t* button2, const wchar_t* button3,
-                                      MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
+                                      bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
     
     std::lock_guard<std::mutex> guard(__modalDialogLock);

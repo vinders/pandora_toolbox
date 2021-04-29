@@ -27,9 +27,9 @@ Description : Message box - Wayland implementation (Linux)
   // ---
 
   // show modal message box
-  MessageBox::Result MessageBox::show(const char* caption, const char* message, 
+  MessageBox::Result MessageBox::show(const char* caption, const char* message, MessageBox::IconType icon,
                                       const char* button1, const char* button2, const char* button3,
-                                      MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
+                                      bool isTopMost, WindowHandle parent) noexcept {
     return MessageBox::Result::action1;
   }
 

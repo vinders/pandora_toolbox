@@ -148,9 +148,9 @@ Description : Message box - Cocoa implementation (Mac OS)
   // ---
   
   // show modal message box with custom button labels
-  MessageBox::Result MessageBox::show(const char* caption, const char* message, 
+  MessageBox::Result MessageBox::show(const char* caption, const char* message, MessageBox::IconType icon,
                                       const char* button1, const char* button2, const char* button3,
-                                      MessageBox::IconType icon, bool isTopMost, WindowHandle) noexcept {
+                                      bool isTopMost, WindowHandle) noexcept {
     const char* placeholders[2] = { "OK", "No" }; // used if missing labels before last button (ok / okCancel / yesNoCancel)
     const char* buttons[3] = { nullptr };
     uint32_t length = __toNativeActions(button1, button2, button3, placeholders, &buttons[0]);
