@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.${__PROJECT_PACKAGE}" android:versionCode="${__VERSION_REV}" android:versionName="${__VERSION_NAME}" >
+  <uses-sdk android:minSdkVersion="${__MIN_SDK_VERSION}" android:targetSdkVersion="${__SDK_VERSION}" />
+  <application android:hasCode="${__HAS_CODE}" />
+</manifest>

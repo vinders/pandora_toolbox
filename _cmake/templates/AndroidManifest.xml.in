@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.${__PROJECT_PACKAGE}" android:versionCode="${__VERSION_REV}" android:versionName="${__VERSION_NAME}" >
   <uses-sdk android:minSdkVersion="${__MIN_SDK_VERSION}" android:targetSdkVersion="${__SDK_VERSION}" />
-  <application android:icon="@mipmap/ic_launcher" android:label="${__PROJECT_LABEL}" android:hasCode="false" >
+  <application android:icon="@mipmap/ic_launcher" android:label="${__PROJECT_LABEL}" android:hasCode="${__HAS_CODE}" >
     <activity android:name="android.app.NativeActivity" 
               android:label="${__PROJECT_LABEL}" 
               android:theme="@android:style/Theme.NoTitleBar" 

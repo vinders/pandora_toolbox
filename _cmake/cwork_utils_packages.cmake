@@ -39,8 +39,44 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     endfunction() 
     
     # ┌──────────────────────────────────────────────────────────────────┐
-    # │  Wayland packages                                                │
+    # │  File generators                                                 │
     # └──────────────────────────────────────────────────────────────────┘
+    
+    #brief:  Generate include file with project version
+    #params: - cwork_path: path of the directory containing cwork utilities 
+    #        - include_dir: path of the directory with include files
+    #        - mode: type of version namespaces ("solution" / "project")
+    macro(cwork_create_version_header_file cwork_path include_dir project_name mode)
+        string(REPLACE "." ";" __PROJECT_NAME_PARTS ${project_name})
+        list(GET __PROJECT_NAME_PARTS -1 _LIB_NAME)
+        set(__OUTPUT_VERSION_FILE "${include_dir}/${_LIB_NAME}/version.h")
+        unset(__PROJECT_NAME_PARTS)
+        
+        file(REMOVE ${__OUTPUT_VERSION_FILE})
+        if(CWORK_SOLUTION_NAME AND ${mode} STREQUAL "solution")
+            configure_file("${cwork_path}/templates/version_solution_lib.h.in" ${__OUTPUT_VERSION_FILE})
+        else()
+            configure_file("${cwork_path}/templates/version_lib.h.in" ${__OUTPUT_VERSION_FILE})
+        endif()
+        unset(__OUTPUT_VERSION_FILE)
+        unset(_LIB_NAME)
+    endmacro()
+    
+    #brief:  Generate dummy source files, to force compilation of header-only library
+    #params: - cwork_path: path of the directory containing cwork utilities 
+    #        - project_name: name of current project
+    #        - use_solution_name: use solution as namespace in generated file (ON/OFF)
+    macro(cwork_generate_dummy_sources cwork_path project_name)
+        file(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/_build/dummy_src.cpp")
+        
+        set(PROJECT_GENERATED_INCLUDES "/* library headers */")
+        foreach(_hpp_file IN ITEMS ${${project_name}_INCLUDE_FILES})
+            set(PROJECT_GENERATED_INCLUDES "${PROJECT_GENERATED_INCLUDES}\n#include <${_hpp_file}>")
+        endforeach()
+        
+        configure_file("${cwork_path}/templates/dummy_src.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/_build/dummy_src.cpp")
+        set(${project_name}_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/_build/dummy_src.cpp")
+    endmacro()
     
     #brief:  Generate protocol files for Wayland display server
     #params: - target_name: name of the project
@@ -76,7 +112,7 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     endfunction()
     
     # ┌──────────────────────────────────────────────────────────────────┐
-    # │  Android packages                                                │
+    # │  Resource packages                                               │
     # └──────────────────────────────────────────────────────────────────┘
     
     #brief:  Generate manifest file for Android app
@@ -84,7 +120,10 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     #        - project_name: full project name (solution.project_name)
     #        - project_version: full project version (#.#.#.REV)
     #        - output_dir: output directory
-    function(cwork_android_create_manifest cwork_path project_name project_version output_dir)
+    #        - build_type: executable / dynamic
+    #        - has_java: project contains java modules: "true" / "false"
+    #        - has_resources: project contains drawable resources: "true" / "false"
+    function(cwork_android_create_manifest cwork_path project_name project_version output_dir build_type has_java has_resources)
         if(ANDROID)
             string(REPLACE "." ";" __NAME_PARTS ${project_name})
             list(GET __NAME_PARTS -1 __SUBPROJECT_NAME)
@@ -122,13 +161,110 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
                 set(__SDK_VERSION 30)
             endif()
             
+            set(__HAS_CODE ${has_java})
+            if(${has_resources} STREQUAL "true")
+                set(__APPV7_VERSION ${__SDK_VERSION})
+                if(${__APPV7_VERSION} LESS 23)
+                    set(__APPV7_VERSION 23)
+                elseif(${__APPV7_VERSION} GREATER 28)
+                    set(__APPV7_VERSION 28)
+                endif()
+            endif()
+            
             # cleanup
             file(REMOVE "${output_dir}/app/build.gradle")
             file(REMOVE "${output_dir}/app/src/main/AndroidManifest.xml")
             # generate
-            configure_file("${cwork_path}/templates/build.gradle.in" "${output_dir}/app/build.gradle")
-            configure_file("${cwork_path}/templates/AndroidManifest.xml.in" "${output_dir}/app/src/main/AndroidManifest.xml")
+            if(${has_resources} STREQUAL "true")
+                configure_file("${cwork_path}/templates/build.gradle.resources.in" "${output_dir}/app/build.gradle")
+            else()
+                configure_file("${cwork_path}/templates/build.gradle.in" "${output_dir}/app/build.gradle")
+            endif()
+            if(${build_type} STREQUAL executable)
+                configure_file("${cwork_path}/templates/AndroidManifest.xml.in" "${output_dir}/app/src/main/AndroidManifest.xml")
+            else()
+                configure_file("${cwork_path}/templates/AndroidManifest.library.xml.in" "${output_dir}/app/src/main/AndroidManifest.xml")
+            endif()
         endif()
+    endfunction()
+    
+    #brief:  Copy java modules to Android app directory
+    #params: - cwork_path: path to cwork tools
+    #        - ARGN: list of java modules by quads: source_file1 output_dir1 source_name1 output_name1 ...
+    function(cwork_android_copy_java_files output_dir)
+        foreach(_file ${ARGN})
+            if(NOT _SOURCE_PATH)
+                set(_SOURCE_PATH "${_file}")
+            elseif(NOT _OUTPUT_PATH)
+                set(_OUTPUT_PATH "${output_dir}/app/src/main/java/${_file}")
+            elseif(NOT _SOURCE_NAME)
+                set(_SOURCE_NAME "${_file}")
+            else()
+                set(_OUTPUT_NAME "${_file}")
+                file(COPY "${_SOURCE_PATH}" DESTINATION "${_OUTPUT_PATH}")
+                if(NOT ${_SOURCE_NAME} STREQUAL ${_OUTPUT_NAME})
+                    file(RENAME "${_OUTPUT_PATH}/${_SOURCE_NAME}" "${_OUTPUT_PATH}/${_OUTPUT_NAME}")
+                endif()
+                unset(_SOURCE_PATH)
+                unset(_OUTPUT_PATH)
+                unset(_SOURCE_NAME)
+                unset(_OUTPUT_NAME)
+            endif()
+        endforeach()
+    endfunction()
+    
+    #brief:  Set list of java modules by quads (source_file1 output_dir1 source_name1 output_name1 ...)
+    #params: - ARGN: list of java source files
+    macro(cwork_set_java_source_quads)
+        set(_file_list "${ARGN}")
+        if(_file_list)
+            string(REGEX REPLACE "[ +=*%{}:!?,;'°^\(\)&@#€$£µ\t\r\n/\\-]+" "_" __STRIPPED_NAME "${PROJECT_NAME}")
+            string(REPLACE "." "/" __OUTPUT_PATH ${__STRIPPED_NAME})
+            unset(__STRIPPED_NAME)
+        
+            foreach(_file IN ITEMS ${_file_list})
+                string(REGEX REPLACE "[/\\]+" ";" __FILE_PARTS ${_file})
+                list(GET __FILE_PARTS -1 __FILE_NAME)
+                unset(__FILE_PARTS)
+                string(REGEX REPLACE "_impl_andr" "" __OUTPUT_FILE_NAME0 ${__FILE_NAME})
+                string(REGEX REPLACE "_impl" "" __OUTPUT_FILE_NAME ${__OUTPUT_FILE_NAME0})
+                unset(__OUTPUT_FILE_NAME0)
+
+                set(${PROJECT_NAME}_LANG_${_LANG}_FILES ${${PROJECT_NAME}_LANG_${_LANG}_FILES} "${_file}" "${__OUTPUT_PATH}" "${__FILE_NAME}" "${__OUTPUT_FILE_NAME}")
+                unset(__OUTPUT_FILE_NAME)
+                unset(__FILE_NAME)
+            endforeach()
+            unset(__OUTPUT_PATH)
+        endif()
+    endmacro()
+    
+    #brief:  Copy resources to build directory (and keep internal directory tree)
+    #params: - output_dir: build directory
+    #        - ARGN: list of source directories
+    function(cwork_copy_resource_files output_dir)
+        if(ANDROID)
+            set(_RES_OUTPUT_DIR ${output_dir}/app/src/main/res)
+        else()
+            set(_RES_OUTPUT_DIR ${output_dir})
+        endif()
+    
+        foreach(_dir IN ITEMS ${ARGN})
+            autodetect_source_files(${_dir} "*")
+            if(CWORK_AUTODETECTED_FILES)
+                foreach(_file IN ITEMS ${CWORK_AUTODETECTED_FILES})
+                    file(RELATIVE_PATH __RELATIVE_RES_PATH ${_dir} ${_file})
+                    string(REPLACE "/" ";" __RELATIVE_RES_PATH_LIST ${__RELATIVE_RES_PATH})
+                    list(REMOVE_AT __RELATIVE_RES_PATH_LIST -1)
+                    string(REPLACE ";" "/" __RELATIVE_RES_DIR ${__RELATIVE_RES_PATH_LIST})
+                    
+                    file(COPY ${_file} DESTINATION ${_RES_OUTPUT_DIR}/${__RELATIVE_RES_DIR})
+                    unset(__RELATIVE_RES_DIR)
+                    unset(__RELATIVE_RES_PATH)
+                    unset(__RELATIVE_RES_PATH_LIST)
+                endforeach()
+                unset(CWORK_AUTODETECTED_FILES)
+            endif()
+        endforeach()
     endfunction()
 
 endif()
