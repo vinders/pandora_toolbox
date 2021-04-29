@@ -247,16 +247,6 @@ if(NOT DEFINED CWORK_SUBPROJECTS_FOUND)
                 endif()
             endforeach()
         endif()
-        
-        # linux-wayland: generate protocol files
-        if(CWORK_LINUX_WAYLAND AND _LINUX_WAYLAND_LINKED) 
-            cwork_wayland_set_protocol_files(${CWORK_PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
-            if(NOT DEFINED CWORK_INCLUDED_LIBRARIES OR NOT CWORK_INCLUDED_LIBRARIES)
-                set(CWORK_INCLUDED_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
-            else()
-                set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
-            endif()
-        endif()
     endmacro()
     
     #brief: Add extern libraries (linked), only for unit tests

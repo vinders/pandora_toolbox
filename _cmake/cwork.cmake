@@ -521,6 +521,16 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                 unset(CWORK_ARCH_LABEL)
             endif()
             
+            # linux-wayland: generate protocol files
+            if(CWORK_LINUX_WAYLAND AND _LINUX_WAYLAND_LINKED) 
+                cwork_wayland_set_protocol_files(${CWORK_PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                if(NOT DEFINED CWORK_INCLUDED_LIBRARIES OR NOT CWORK_INCLUDED_LIBRARIES)
+                    set(CWORK_INCLUDED_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                else()
+                    set(CWORK_INCLUDED_LIBRARIES ${CWORK_INCLUDED_LIBRARIES} "${CMAKE_CURRENT_SOURCE_DIR}/_generated")
+                endif()
+            endif()
+            
         # - header-only library -
         else() 
             set(${CWORK_PROJECT_NAME}_INTERFACE ON CACHE STRING "${CWORK_PROJECT_NAME}_INTERFACE")

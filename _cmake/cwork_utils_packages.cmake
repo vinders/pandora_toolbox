@@ -79,7 +79,7 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     endmacro()
     
     #brief:  Generate protocol files for Wayland display server
-    #params: - target_name: name of the project
+    #params: - target_name: name of the project (add_library/executable must already have been called)
     #        - include_dir: project include directory
     function(cwork_wayland_set_protocol_files target_name include_dir)
         find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
