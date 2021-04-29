@@ -189,7 +189,7 @@ if(NOT DEFINED CWORK_UTILS_PACKAGES_FOUND)
     endfunction()
     
     #brief:  Copy java modules to Android app directory
-    #params: - cwork_path: path to cwork tools
+    #params: - output_dir: output directory
     #        - ARGN: list of java modules by quads: source_file1 output_dir1 source_name1 output_name1 ...
     function(cwork_android_copy_java_files output_dir)
         foreach(_file ${ARGN})
