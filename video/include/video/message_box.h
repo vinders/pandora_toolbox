@@ -15,6 +15,7 @@ namespace pandora {
   namespace video {
     /// @class MessageBox
     /// @brief Modal message box (message, warning, confirmation, question...)
+    /// @remarks Not supported on Wayland display (on some Linux environments)
     class MessageBox final {
     public:
       MessageBox() = delete;

@@ -8,9 +8,6 @@ Description : Message box - Wayland implementation (Linux)
 # include <cassert>
 # include <cstdint>
 # include <cstdio>
-# include <unistd.h>
-# include <sys/types.h>
-# include <sys/wait.h>
 # include "video/_private/_message_box_common.h"
 # include "video/message_box.h"
 
@@ -18,8 +15,8 @@ Description : Message box - Wayland implementation (Linux)
   
   // show message box
   uint32_t __showWaylandDialog(const char* caption, const char* message, const char** actions, uint32_t actionsLength) {
-    
-    return 0;
+    __MessageBox::setLastError("MessageBox: not supported on Wayland display server. Use X11 instead for MessageBox support on linux.");
+    return 0; // currently not supported (wayland API is very poorly documented, and examples are really hard to find)
   }
 
   // ---
@@ -29,7 +26,7 @@ Description : Message box - Wayland implementation (Linux)
                                       MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
     const char* buttons[3] = { nullptr };
     uint32_t length = __MessageBox::toActionLabels(actions, &buttons[0]);
-    uint32_t result = __showWaylandDialog(caption, message, buttons, length);
+    uint32_t result = __showWaylandDialog(caption, message, &buttons[0], length);
     return __MessageBox::toDialogResult(result, length);
   }
   
@@ -48,7 +45,7 @@ Description : Message box - Wayland implementation (Linux)
                                       bool isTopMost, WindowHandle parent) noexcept {
     const char* buttons[3] = { nullptr };
     uint32_t length = __MessageBox::toActionLabels(button1, button2, button3, &buttons[0]);
-    uint32_t result = __showWaylandDialog(caption, message, buttons, length);
+    uint32_t result = __showWaylandDialog(caption, message, &buttons[0], length);
     return __MessageBox::toDialogResult(result, length);
   }
 
