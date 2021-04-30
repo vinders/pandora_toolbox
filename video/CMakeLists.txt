@@ -83,7 +83,7 @@ endmacro()
 # │  File detection - common files                                   │
 # └──────────────────────────────────────────────────────────────────┘
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32 (windows)
-    set(_VIDEO_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
+    set(_VIDEO_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp" "message_box_common.cpp")
 elseif(IOS) # uikit (iOS)
     set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_andr.cpp")
 elseif(ANDROID) # jni (android)

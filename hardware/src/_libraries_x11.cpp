@@ -214,6 +214,7 @@ License :     MIT
   
   void LibrariesX11::_bindXlib() noexcept {
     this->xlib.AllocClassHint_ = _getSymbolAddress<__x11_XAllocClassHint>(this->xlib.instance, "XAllocClassHint");
+    this->xlib.AllocColor_ = _getSymbolAddress<__x11_XAllocColor>(this->xlib.instance, "XAllocColor");
     this->xlib.AllocSizeHints_ = _getSymbolAddress<__x11_XAllocSizeHints>(this->xlib.instance, "XAllocSizeHints");
     this->xlib.AllocWMHints_ = _getSymbolAddress<__x11_XAllocWMHints>(this->xlib.instance, "XAllocWMHints");
     this->xlib.ChangeProperty_ = _getSymbolAddress<__x11_XChangeProperty>(this->xlib.instance, "XChangeProperty");
@@ -225,8 +226,11 @@ License :     MIT
     this->xlib.ConvertSelection_ = _getSymbolAddress<__x11_XConvertSelection>(this->xlib.instance, "XConvertSelection");
     this->xlib.CreateColormap_ = _getSymbolAddress<__x11_XCreateColormap>(this->xlib.instance, "XCreateColormap");
     this->xlib.CreateFontCursor_ = _getSymbolAddress<__x11_XCreateFontCursor>(this->xlib.instance, "XCreateFontCursor");
+    this->xlib.CreateFontSet_ = _getSymbolAddress<__x11_XCreateFontSet>(this->xlib.instance, "XCreateFontSet");
+    this->xlib.CreateGC_ = _getSymbolAddress<__x11_XCreateGC>(this->xlib.instance, "XCreateGC");
     this->xlib.CreateIC_ = _getSymbolAddress<__x11_XCreateIC>(this->xlib.instance, "XCreateIC");
     this->xlib.CreateRegion_ = _getSymbolAddress<__x11_XCreateRegion>(this->xlib.instance, "XCreateRegion");
+    this->xlib.CreateSimpleWindow_ = _getSymbolAddress<__x11_XCreateSimpleWindow>(this->xlib.instance, "XCreateSimpleWindow");
     this->xlib.CreateWindow_ = _getSymbolAddress<__x11_XCreateWindow>(this->xlib.instance, "XCreateWindow");
     this->xlib.DefineCursor_ = _getSymbolAddress<__x11_XDefineCursor>(this->xlib.instance, "XDefineCursor");
     this->xlib.DeleteContext_ = _getSymbolAddress<__x11_XDeleteContext>(this->xlib.instance, "XDeleteContext");
@@ -236,6 +240,7 @@ License :     MIT
     this->xlib.DestroyWindow_ = _getSymbolAddress<__x11_XDestroyWindow>(this->xlib.instance, "XDestroyWindow");
     this->xlib.DisplayKeycodes_ = _getSymbolAddress<__x11_XDisplayKeycodes>(this->xlib.instance, "XDisplayKeycodes");
     this->xlib.EventsQueued_ = _getSymbolAddress<__x11_XEventsQueued>(this->xlib.instance, "XEventsQueued");
+    this->xlib.FillRectangle_ = _getSymbolAddress<__x11_XFillRectangle>(this->xlib.instance, "XFillRectangle");
     this->xlib.FilterEvent_ = _getSymbolAddress<__x11_XFilterEvent>(this->xlib.instance, "XFilterEvent");
     this->xlib.FindContext_ = _getSymbolAddress<__x11_XFindContext>(this->xlib.instance, "XFindContext");
     this->xlib.Flush_ = _getSymbolAddress<__x11_XFlush>(this->xlib.instance, "XFlush");
@@ -243,6 +248,9 @@ License :     MIT
     this->xlib.FreeColormap_ = _getSymbolAddress<__x11_XFreeColormap>(this->xlib.instance, "XFreeColormap");
     this->xlib.FreeCursor_ = _getSymbolAddress<__x11_XFreeCursor>(this->xlib.instance, "XFreeCursor");
     this->xlib.FreeEventData_ = _getSymbolAddress<__x11_XFreeEventData>(this->xlib.instance, "XFreeEventData");
+    this->xlib.FreeFontSet_ = _getSymbolAddress<__x11_XFreeFontSet>(this->xlib.instance, "XFreeFontSet");
+    this->xlib.FreeGC_ = _getSymbolAddress<__x11_XFreeGC>(this->xlib.instance, "XFreeGC");
+    this->xlib.FreeStringList_ = _getSymbolAddress<__x11_XFreeStringList>(this->xlib.instance, "XFreeStringList");
     this->xlib.GetErrorText_ = _getSymbolAddress<__x11_XGetErrorText>(this->xlib.instance, "XGetErrorText");
     this->xlib.GetEventData_ = _getSymbolAddress<__x11_XGetEventData>(this->xlib.instance, "XGetEventData");
     this->xlib.GetICValues_ = _getSymbolAddress<__x11_XGetICValues>(this->xlib.instance, "XGetICValues");
@@ -312,9 +320,12 @@ License :     MIT
     this->xlib.rmGetStringDatabase_ = _getSymbolAddress<__x11_XrmGetStringDatabase>(this->xlib.instance, "XrmGetStringDatabase");
     this->xlib.rmInitialize_ = _getSymbolAddress<__x11_XrmInitialize>(this->xlib.instance, "XrmInitialize");
     this->xlib.rmUniqueQuark_ = _getSymbolAddress<__x11_XrmUniqueQuark>(this->xlib.instance, "XrmUniqueQuark");
+    this->xlib.SetForeground_ = _getSymbolAddress<__x11_XSetForeground>(this->xlib.instance, "XSetForeground");
     this->xlib.UnregisterIMInstantiateCallback_ = _getSymbolAddress<__x11_XUnregisterIMInstantiateCallback>(this->xlib.instance, "XUnregisterIMInstantiateCallback");
+    this->xlib.utf8DrawString_ = _getSymbolAddress<__x11_Xutf8DrawString>(this->xlib.instance, "Xutf8DrawString");
     this->xlib.utf8LookupString_ = _getSymbolAddress<__x11_Xutf8LookupString>(this->xlib.instance, "Xutf8LookupString");
     this->xlib.utf8SetWMProperties_ = _getSymbolAddress<__x11_Xutf8SetWMProperties>(this->xlib.instance, "Xutf8SetWMProperties");
+    this->xlib.utf8TextExtents_ = _getSymbolAddress<__x11_Xutf8TextExtents>(this->xlib.instance, "Xutf8TextExtents");
 
     // Xlib UTF-8 support
     this->xlib.isUtf8 = (this->xlib.utf8LookupString_ != nullptr && this->xlib.utf8SetWMProperties_ != nullptr);
@@ -447,6 +458,7 @@ License :     MIT
         this->atoms.NET_WM_STATE_MAXIMIZED_VERT = _findAtom(supportedAtoms, atomCount, "_NET_WM_STATE_MAXIMIZED_VERT");
         this->atoms.NET_WM_STATE_MAXIMIZED_HORZ = _findAtom(supportedAtoms, atomCount, "_NET_WM_STATE_MAXIMIZED_HORZ");
         this->atoms.NET_WM_WINDOW_TYPE = _findAtom(supportedAtoms, atomCount, "_NET_WM_WINDOW_TYPE");
+        this->atoms.NET_WM_WINDOW_TYPE_DIALOG = _findAtom(supportedAtoms, atomCount, "_NET_WM_WINDOW_TYPE_DIALOG");
         this->atoms.NET_WM_WINDOW_TYPE_NORMAL = _findAtom(supportedAtoms, atomCount, "_NET_WM_WINDOW_TYPE_NORMAL");
         this->atoms.NET_WORKAREA = _findAtom(supportedAtoms, atomCount, "_NET_WORKAREA");
         

@@ -11,6 +11,7 @@ License :     MIT
 # include <unordered_map>
 # include <X11/Xlib.h>
 # include <X11/Xatom.h>
+# include <X11/Xutil.h>
 # include <X11/Xresource.h>
 # include <X11/XKBlib.h>
 # include <X11/extensions/Xrandr.h> // display mode
@@ -24,6 +25,7 @@ License :     MIT
       
       // xlib functions
       typedef XClassHint* (* __x11_XAllocClassHint)(void);
+      typedef Status      (* __x11_XAllocColor)(Display*,Colormap,XColor*);
       typedef XSizeHints* (* __x11_XAllocSizeHints)(void);
       typedef XWMHints*   (* __x11_XAllocWMHints)(void);
       typedef int         (* __x11_XChangeProperty)(Display*,Window,Atom,Atom,int,int,const unsigned char*,int);
@@ -35,8 +37,11 @@ License :     MIT
       typedef int         (* __x11_XConvertSelection)(Display*,Atom,Atom,Atom,Window,Time);
       typedef Colormap    (* __x11_XCreateColormap)(Display*,Window,Visual*,int);
       typedef Cursor      (* __x11_XCreateFontCursor)(Display*,unsigned int);
+      typedef XFontSet    (* __x11_XCreateFontSet)(Display*,char*,char***,int*,char**);
+      typedef GC          (* __x11_XCreateGC)(Display*,Drawable,unsigned long,XGCValues*);
       typedef XIC         (* __x11_XCreateIC)(XIM,...);
       typedef Region      (* __x11_XCreateRegion)(void);
+      typedef Window      (* __x11_XCreateSimpleWindow)(Display*,Window,int,int,unsigned int,unsigned int,unsigned int,unsigned long,unsigned long);
       typedef Window      (* __x11_XCreateWindow)(Display*,Window,int,int,unsigned int,unsigned int,unsigned int,int,unsigned int,Visual*,unsigned long,XSetWindowAttributes*);
       typedef int         (* __x11_XDefineCursor)(Display*,Window,Cursor);
       typedef int         (* __x11_XDeleteContext)(Display*,XID,XContext);
@@ -46,6 +51,7 @@ License :     MIT
       typedef int         (* __x11_XDestroyWindow)(Display*,Window);
       typedef int         (* __x11_XDisplayKeycodes)(Display*,int*,int*);
       typedef int         (* __x11_XEventsQueued)(Display*,int);
+      typedef int         (* __x11_XFillRectangle)(Display*,Drawable,GC,int,int,unsigned int,unsigned int);
       typedef Bool        (* __x11_XFilterEvent)(XEvent*,Window);
       typedef int         (* __x11_XFindContext)(Display*,XID,XContext,XPointer*);
       typedef int         (* __x11_XFlush)(Display*);
@@ -53,6 +59,9 @@ License :     MIT
       typedef int         (* __x11_XFreeColormap)(Display*,Colormap);
       typedef int         (* __x11_XFreeCursor)(Display*,Cursor);
       typedef void        (* __x11_XFreeEventData)(Display*,XGenericEventCookie*);
+      typedef void        (* __x11_XFreeFontSet)(Display*,XFontSet);
+      typedef int         (* __x11_XFreeGC)(Display*,GC);
+      typedef void        (* __x11_XFreeStringList)(char**);
       typedef int         (* __x11_XGetErrorText)(Display*,int,char*,int);
       typedef Bool        (* __x11_XGetEventData)(Display*,XGenericEventCookie*);
       typedef char*       (* __x11_XGetICValues)(XIC,...);
@@ -122,9 +131,12 @@ License :     MIT
       typedef XrmDatabase (* __x11_XrmGetStringDatabase)(const char*);
       typedef void        (* __x11_XrmInitialize)(void);
       typedef XrmQuark    (* __x11_XrmUniqueQuark)(void);
+      typedef int         (* __x11_XSetForeground)(Display*,GC,unsigned long); 
       typedef Bool        (* __x11_XUnregisterIMInstantiateCallback)(Display*,void*,char*,char*,XIDProc,XPointer);
+      typedef void        (* __x11_Xutf8DrawString)(Display*,Drawable,XFontSet,GC,int,int,char*,int);
       typedef int         (* __x11_Xutf8LookupString)(XIC,XKeyPressedEvent*,char*,int,KeySym*,Status*);
       typedef void        (* __x11_Xutf8SetWMProperties)(Display*,Window,const char*,const char*,char**,int,XSizeHints*,XWMHints*,XClassHint*);
+      typedef int         (* __x11_Xutf8TextExtents)(XFontSet,char*,int,XRectangle*,XRectangle*);
       
       // randr functions
       typedef XRRCrtcInfo*   (* __x11_XRRGetCrtcInfo)(Display*,XRRScreenResources*,RRCrtc);
@@ -170,6 +182,7 @@ License :     MIT
           LibHandle instance = nullptr;
           bool      isUtf8   = true;
           __x11_XAllocClassHint      AllocClassHint_ = nullptr;
+          __x11_XAllocColor          AllocColor_ = nullptr;
           __x11_XAllocSizeHints      AllocSizeHints_ = nullptr;
           __x11_XAllocWMHints        AllocWMHints_ = nullptr;
           __x11_XChangeProperty      ChangeProperty_ = nullptr;
@@ -181,8 +194,11 @@ License :     MIT
           __x11_XConvertSelection    ConvertSelection_ = nullptr;
           __x11_XCreateColormap      CreateColormap_ = nullptr;
           __x11_XCreateFontCursor    CreateFontCursor_ = nullptr;
+          __x11_XCreateFontSet       CreateFontSet_ = nullptr;
+          __x11_XCreateGC            CreateGC_ = nullptr;
           __x11_XCreateIC            CreateIC_ = nullptr;
           __x11_XCreateRegion        CreateRegion_ = nullptr;
+          __x11_XCreateSimpleWindow  CreateSimpleWindow_ = nullptr;
           __x11_XCreateWindow        CreateWindow_ = nullptr;
           __x11_XDefineCursor        DefineCursor_ = nullptr;
           __x11_XDeleteContext       DeleteContext_ = nullptr;
@@ -192,6 +208,7 @@ License :     MIT
           __x11_XDestroyWindow       DestroyWindow_ = nullptr;
           __x11_XDisplayKeycodes     DisplayKeycodes_ = nullptr;
           __x11_XEventsQueued        EventsQueued_ = nullptr;
+          __x11_XFillRectangle       FillRectangle_ = nullptr;
           __x11_XFilterEvent         FilterEvent_ = nullptr;
           __x11_XFindContext         FindContext_ = nullptr;
           __x11_XFlush               Flush_ = nullptr;
@@ -199,6 +216,9 @@ License :     MIT
           __x11_XFreeColormap        FreeColormap_ = nullptr;
           __x11_XFreeCursor          FreeCursor_ = nullptr;
           __x11_XFreeEventData       FreeEventData_ = nullptr;
+          __x11_XFreeFontSet         FreeFontSet_ = nullptr;
+          __x11_XFreeGC              FreeGC_ = nullptr;
+          __x11_XFreeStringList      FreeStringList_ = nullptr;
           __x11_XGetErrorText        GetErrorText_ = nullptr;
           __x11_XGetEventData        GetEventData_ = nullptr;
           __x11_XGetICValues         GetICValues_ = nullptr;
@@ -268,9 +288,12 @@ License :     MIT
           __x11_XrmGetStringDatabase rmGetStringDatabase_ = nullptr;
           __x11_XrmInitialize        rmInitialize_ = nullptr;
           __x11_XrmUniqueQuark       rmUniqueQuark_ = nullptr;
+          __x11_XSetForeground       SetForeground_ = nullptr;
           __x11_XUnregisterIMInstantiateCallback UnregisterIMInstantiateCallback_ = nullptr;
+          __x11_Xutf8DrawString      utf8DrawString_ = nullptr;
           __x11_Xutf8LookupString    utf8LookupString_ = nullptr;
           __x11_Xutf8SetWMProperties utf8SetWMProperties_ = nullptr;
+          __x11_Xutf8TextExtents     utf8TextExtents_ = nullptr;
         } xlib;
         struct {
           bool      isAvailable  = false;
@@ -335,6 +358,7 @@ License :     MIT
           Atom NET_WM_STATE_MAXIMIZED_VERT;
           Atom NET_WM_WINDOW_OPACITY;
           Atom NET_WM_WINDOW_TYPE;
+          Atom NET_WM_WINDOW_TYPE_DIALOG;
           Atom NET_WM_WINDOW_TYPE_NORMAL;
           Atom WM_PROTOCOLS;
           Atom WM_STATE;
