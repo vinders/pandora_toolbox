@@ -110,7 +110,7 @@ Description : Message box - Win32 implementation (Windows)
   // ---
   
   // get last error message (in case of Result::failure)
-  std::string LastError() {
+  std::string MessageBox::getLastError() {
     DWORD errorNb = ::GetLastError();
     if (errorNb == 0)
       return ""; // no error found

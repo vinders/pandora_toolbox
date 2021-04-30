@@ -50,7 +50,7 @@ namespace pandora {
       /// @param caption    Title of the message box
       /// @param message    Text content of the message box
       /// @param actions    Available user actions (buttons)
-      /// @param icon       Optional symbol to display in message box
+      /// @param icon       Optional symbol to display in message box (not used on linux systems)
       /// @param isTopMost  Make modal dialog appear on top of all windows
       /// @param parent     Parent window blocked by dialog (optional)
       /// @returns Action chosen by user (or Result::failure if the dialog could not be created)
@@ -64,7 +64,7 @@ namespace pandora {
       /// @brief Show modal message box with custom button labels (wait for user action)
       /// @param caption    Title of the message box
       /// @param message    Text content of the message box
-      /// @param icon       Optional symbol to display in message box
+      /// @param icon       Optional symbol to display in message box (not used on linux systems)
       /// @param button1    Label of button 1
       /// @param button2    Label of button 2 (optional -> do not set if you only need 1 button)
       /// @param button3    Label of button 3 (optional -> do not set if you only need 2 buttons)
@@ -82,7 +82,7 @@ namespace pandora {
 
       /// @brief Get last error message (in case of Result::failure)
       /// @returns Last error (if available) or empty string
-      static std::string LastError();
+      static std::string getLastError();
     };
   }
 }

@@ -78,7 +78,7 @@ uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
                                                 MessageBox::IconType::none, "Apply");
       case 2: return (uint32_t)MessageBox::show("Choice box", "Custom message-box with 2 buttons.", 
                                                 MessageBox::IconType::info, "Accept", "Deny");
-      case 3: return (uint32_t)MessageBox::show("Error box", "Custom message-box with 3 buttons!", 
+      case 3: return (uint32_t)MessageBox::show("Error box", "Custom message-box with 3 buttons!\nPlease select a button.", 
                                                 MessageBox::IconType::warning, "Save", "Ignore", "Cancel");
     }
   }
