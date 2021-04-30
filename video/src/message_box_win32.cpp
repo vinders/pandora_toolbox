@@ -7,7 +7,6 @@ Description : Message box - Win32 implementation (Windows)
 #ifdef _WINDOWS
 # include <cassert>
 # include <cstdint>
-# include <mutex>
 # include <system/api/windows_api.h>
 # include "video/message_box.h"
 
@@ -21,9 +20,7 @@ Description : Message box - Win32 implementation (Windows)
 #endif
 
   using namespace pandora::video;
-  
-  static std::mutex __modalDialogLock; // prevent new dialogs from using hooks defined for previous ones
-  
+
 
 // -- simple message box -- ----------------------------------------------------
 
@@ -89,8 +86,6 @@ Description : Message box - Win32 implementation (Windows)
   MessageBox::Result MessageBox::show(const char* caption, const char* message, MessageBox::ActionType actions, 
                                             MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
-    
-    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxA((HWND)parent, message, caption, 
                                (_toNativeAction(actions, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
     return _toDialogResult(resultId, actionFlags);
@@ -100,8 +95,6 @@ Description : Message box - Win32 implementation (Windows)
   MessageBox::Result MessageBox::show(const wchar_t* caption, const wchar_t* message, MessageBox::ActionType actions, 
                                             MessageBox::IconType icon, bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
-    
-    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxW((HWND)parent, message, caption, 
                                (_toNativeAction(actions, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
     return _toDialogResult(resultId, actionFlags);
@@ -199,6 +192,7 @@ Description : Message box - Win32 implementation (Windows)
     __hookButtons[0] = (void*)button1;
     __hookButtons[1] = (void*)button2;
     __hookButtons[2] = (void*)button3;
+    // hook only set for current thread -> no need for a mutex
     __if_constexpr (std::is_same<_CharType, wchar_t>::value) {
       __useWideChar = true;
       __hookHandle = SetWindowsHookExW(WH_CBT, &__messageBoxProcessor, 0, GetCurrentThreadId());
@@ -217,8 +211,6 @@ Description : Message box - Win32 implementation (Windows)
                                       const char* button1, const char* button2, const char* button3,
                                       bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
-    
-    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxA((HWND)parent, message, caption, 
                                (_toNativeAction(button1, button2, button3, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
     if (__hookHandle)
@@ -231,8 +223,6 @@ Description : Message box - Win32 implementation (Windows)
                                       const wchar_t* button1, const wchar_t* button2, const wchar_t* button3,
                                       bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
-    
-    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxW((HWND)parent, message, caption, 
                                (_toNativeAction(button1, button2, button3, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
     if (__hookHandle)
