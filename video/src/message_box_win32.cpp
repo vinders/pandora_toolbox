@@ -7,6 +7,7 @@ Description : Message box - Win32 implementation (Windows)
 #ifdef _WINDOWS
 # include <cassert>
 # include <cstdint>
+# include <mutex>
 # include <system/api/windows_api.h>
 # include "video/message_box.h"
 
@@ -125,6 +126,7 @@ Description : Message box - Win32 implementation (Windows)
   
 // -- custom message box -- ----------------------------------------------------
   
+  static std::mutex __modalDialogLock; // prevent new dialogs from overwriting hooks still in use
   static const void* __hookButtons[3] = { nullptr };
   static HHOOK __hookHandle = nullptr;
   static bool __useWideChar = false;
@@ -211,10 +213,14 @@ Description : Message box - Win32 implementation (Windows)
                                       const char* button1, const char* button2, const char* button3,
                                       bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
+    
+    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxA((HWND)parent, message, caption, 
                                (_toNativeAction(button1, button2, button3, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
-    if (__hookHandle)
+    if (__hookHandle) {
       UnhookWindowsHookEx(__hookHandle);
+      __hookHandle = nullptr;
+    }
     return _toDialogResult(resultId, actionFlags);
   }
   
@@ -223,10 +229,14 @@ Description : Message box - Win32 implementation (Windows)
                                       const wchar_t* button1, const wchar_t* button2, const wchar_t* button3,
                                       bool isTopMost, WindowHandle parent) noexcept {
     int actionFlags[3] = { 0 };
+    
+    std::lock_guard<std::mutex> guard(__modalDialogLock);
     int resultId = MessageBoxW((HWND)parent, message, caption, 
                                (_toNativeAction(button1, button2, button3, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
-    if (__hookHandle)
+    if (__hookHandle) {
       UnhookWindowsHookEx(__hookHandle);
+      __hookHandle = nullptr;
+    }
     return _toDialogResult(resultId, actionFlags);
   }
 
