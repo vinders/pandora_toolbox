@@ -4,11 +4,11 @@ License :     MIT
 *******************************************************************************/
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include "video/message_box.h"
-
 #if !defined(_WINDOWS)
+# include <cstdint>
+# include <string>
+# include "video/message_box.h"
+
   namespace pandora {
     namespace video {
       namespace __MessageBox {

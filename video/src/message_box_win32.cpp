@@ -67,6 +67,7 @@ Description : Message box - Win32 implementation (Windows)
       case MessageBox::IconType::question: flags = (flags | MB_ICONQUESTION); break;
       case MessageBox::IconType::warning:  flags = (flags | MB_ICONWARNING); break;
       case MessageBox::IconType::error:    flags = (flags | MB_ICONERROR); break;
+      default: break;
     }
     if (isTopMost)
       flags = (flags | MB_SETFOREGROUND | MB_TOPMOST);
