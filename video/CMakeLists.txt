@@ -166,6 +166,11 @@ if(_SOURCE_FILES)
 endif()
 cwork_set_custom_files(${_SHADER_FILES})
 cwork_set_test_files(${_TEST_FILES})
+if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
+    cwork_set_test_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_win32")
+else()
+    cwork_set_test_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_common")
+endif()
 
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test" "tools/window_viewer")
