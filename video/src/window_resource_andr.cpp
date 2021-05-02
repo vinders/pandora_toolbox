@@ -53,17 +53,9 @@ Description : WindowResource - JNI implementation (Android)
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
   }
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const wchar_t* uri, uint32_t width, uint32_t height) noexcept {
-    void* handle = malloc(sizeof(uint32_t));
-    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
-  }
 
   // embedded resource icon file
   std::shared_ptr<WindowResource> WindowResource::buildIconFromPackage(const char* id) const {
-    void* handle = malloc(sizeof(uint32_t));
-    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
-  }
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromPackage(const wchar_t* id) const {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
   }
@@ -99,17 +91,9 @@ Description : WindowResource - JNI implementation (Android)
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const wchar_t* uri) noexcept {
-    void* handle = malloc(sizeof(uint32_t));
-    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
-  }
-  
+
   // embedded resource cursor file
   std::shared_ptr<WindowResource> WindowResource::buildCursorFromPackage(const char* id) const {
-    void* handle = malloc(sizeof(uint32_t));
-    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
-  }
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromPackage(const wchar_t* id) const {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
