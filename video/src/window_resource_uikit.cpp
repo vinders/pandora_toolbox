@@ -60,7 +60,7 @@ Description : WindowResource - UIKit implementation (iOS)
   }
 
   // embedded resource icon file
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromPackage(const char* id) const {
+  std::shared_ptr<WindowResource> WindowResource::buildIconFromPackage(const char* id) {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
   }
@@ -98,7 +98,7 @@ Description : WindowResource - UIKit implementation (iOS)
   }
 
   // embedded resource cursor file
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromPackage(const char* id) const {
+  std::shared_ptr<WindowResource> WindowResource::buildCursorFromPackage(const char* id) {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
