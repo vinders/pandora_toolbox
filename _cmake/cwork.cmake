@@ -177,6 +177,13 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         set(${PROJECT_NAME}_RESOURCE_DIRS "${dir_path}")
     endmacro()
     
+    #brief:   Specify directory containg resource files required for the tests
+    #warning: Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
+    #params: - dir_path: main resource directory path
+    macro(cwork_set_test_resource_dir dir_path)
+        set(${PROJECT_NAME}_TEST_RESOURCE_DIR "${dir_path}")
+    endmacro()
+    
     #brief:   Specify compilation language for special files (Obj-C/Obj-C++/...)
     #warning: - Must be called BEFORE cwork_create_project and AFTER cwork_set_default_solution
     #         - C derivatives (obj-C, obj-C++) must ALSO be listed in the project source files.
@@ -628,6 +635,18 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
             if(${CWORK_PROJECT_NAME}_TEST_FILES)
                 if(NOT TARGET gtest)
                     find_package(gtest REQUIRED)
+                endif()
+                
+                # resources
+                if (${PROJECT_NAME}_TEST_RESOURCE_DIR)
+                    if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
+                        autodetect_source_files(${${CWORK_PROJECT_NAME}_TEST_RESOURCE_DIR} "*")
+                        set(${CWORK_PROJECT_NAME}_TEST_FILES ${${CWORK_PROJECT_NAME}_TEST_FILES} ${CWORK_AUTODETECTED_FILES})
+                        unset(CWORK_AUTODETECTED_FILES)
+                    else()
+                        cwork_copy_resource_files(${PROJECT_BINARY_DIR} ${${CWORK_PROJECT_NAME}_TEST_RESOURCE_DIR})
+                    endif()
+                    add_definitions(-D_P_TEST_RESOURCE_DIR="${${CWORK_PROJECT_NAME}_TEST_RESOURCE_DIR}")
                 endif()
 
                 # test project
