@@ -43,7 +43,7 @@ Description : Window - Win32 implementation (Windows)
         static __forceinline bool processKeyboardEvent(Window* window, UINT message, WPARAM wParam, LPARAM lParam);
         static __forceinline bool processMouseEvent(Window* window, UINT message, WPARAM wParam, LPARAM lParam);
         
-        static void __WindowImpl::readCurrentWindowSize(Window& window, uint32_t& outWidth, uint32_t& outHeight) noexcept;
+        static void readCurrentWindowSize(Window& window, uint32_t& outWidth, uint32_t& outHeight) noexcept;
 
         struct StyleBackup {
           // original window resources
