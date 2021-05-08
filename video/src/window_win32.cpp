@@ -699,18 +699,13 @@ Description : Window - Win32 implementation (Windows)
       // button "value" aligned with MouseButton enum values
       case WM_LBUTTONDOWN:   eventType = MouseEvent::buttonDown;   value = 0; activeKeys = (uint8_t)wParam; break;
       case WM_LBUTTONUP:     eventType = MouseEvent::buttonUp;     value = 0; activeKeys = (uint8_t)wParam; break;
-      case WM_LBUTTONDBLCLK: eventType = MouseEvent::buttonDouble; value = 0; activeKeys = (uint8_t)wParam; break;
       case WM_MBUTTONDOWN:   eventType = MouseEvent::buttonDown;   value = 1; activeKeys = (uint8_t)wParam; break;
       case WM_MBUTTONUP:     eventType = MouseEvent::buttonUp;     value = 1; activeKeys = (uint8_t)wParam; break;
-      case WM_MBUTTONDBLCLK: eventType = MouseEvent::buttonDouble; value = 1; activeKeys = (uint8_t)wParam; break;
       case WM_RBUTTONDOWN:   eventType = MouseEvent::buttonDown;   value = 2; activeKeys = (uint8_t)wParam; break;
       case WM_RBUTTONUP:     eventType = MouseEvent::buttonUp;     value = 2; activeKeys = (uint8_t)wParam; break;
-      case WM_RBUTTONDBLCLK: eventType = MouseEvent::buttonDouble; value = 2; activeKeys = (uint8_t)wParam; break;
       case WM_XBUTTONDOWN:   eventType = MouseEvent::buttonDown;   value = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4;
                              activeKeys = (uint8_t)GET_KEYSTATE_WPARAM(wParam); break;
       case WM_XBUTTONUP:     eventType = MouseEvent::buttonUp;     value = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4;
-                             activeKeys = (uint8_t)GET_KEYSTATE_WPARAM(wParam); break;
-      case WM_XBUTTONDBLCLK: eventType = MouseEvent::buttonDouble; value = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4;
                              activeKeys = (uint8_t)GET_KEYSTATE_WPARAM(wParam); break;
       case WM_MOUSEWHEEL:    eventType = MouseEvent::mouseWheelV; value = (int32_t)GET_WHEEL_DELTA_WPARAM(wParam);
                              activeKeys = (uint8_t)GET_KEYSTATE_WPARAM(wParam); break;
