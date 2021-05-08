@@ -2,6 +2,8 @@
 Description : Example - window creation + main loop
 *******************************************************************************/
 #include <cstdint>
+#include <thread>
+#include <chrono>
 #include <memory>
 #include <stdexcept>
 #include <video/message_box.h>
@@ -32,7 +34,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
     auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
 # else
-    auto mainIcon = WindowResource::buildIconFromFile("logo_big.png");
+    auto mainIcon = WindowResource::buildIconFromPackage("logo_big.png");
 # endif
   
   Window::Builder builder;
@@ -104,6 +106,7 @@ void mainAppLoop() {
       // display
       if (isRefreshed)
         window->clearClientArea(); // repaint background
+      std::this_thread::sleep_for(std::chrono::microseconds(16666LL)); // 60Hz
     }
   }
   catch (const std::exception& exc) {
