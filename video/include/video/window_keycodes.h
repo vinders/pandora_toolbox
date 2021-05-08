@@ -170,7 +170,7 @@ warning : this file includes system libraries
 # define _P_VK_PUNCT_MISC5   __P_VK_UNK(10)
 # define _P_VK_PUNCT_MISC6   __P_VK_UNK(11)
 # define _P_VK_GRAVE_EXP     VK_OEM_3 // us: `~  azerty: ²³   others: variable
-# define _P_VK_BACKSLASH     VK_OEM_5 // us: \|  azerty: <>\
+# define _P_VK_BACKSLASH     VK_OEM_5 // us: backslash|  azerty: <>backslash
 
 // -- virtual key codes - multi-media keys --
 
@@ -190,7 +190,7 @@ warning : this file includes system libraries
 # include <TargetConditionals.h>
 # if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
 #   include <Carbon/Carbon.h>
-#   include <HIToolbox/Events.h>
+//#   include <HIToolbox/Events.h>
 
 // -- virtual key codes - system --
 
@@ -689,8 +689,9 @@ warning : this file includes system libraries
 // _____________________________________________________________________________
 
 // -- Linux/Unix/BSD -- --------------------------------------------------------
-#elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
-// ...includes...
+#else
+# include <cstddef>
+# include <cstdint>
 
 // X11 keycodes: TODO (XKeycodeToKeysym)
 // Wayland keycodes: TODO (???)
