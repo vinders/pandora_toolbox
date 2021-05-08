@@ -25,7 +25,7 @@ Description : Example - window creation + main loop
 
 using namespace pandora::video;
 
-bool g_hasDoubleClicked = false;
+bool g_hasClicked = false;
 bool g_isBlackBackground = true;
 
 
@@ -75,8 +75,8 @@ bool onWindowEvent(WindowEvent event, uint32_t flag, int32_t posX, int32_t posY,
 // mouse event handler
 bool onMouseEvent(MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys) {
   switch (event) {
-    case MouseEvent::buttonDouble: // double-click -> report it to main loop
-      g_hasDoubleClicked = true; 
+    case MouseEvent::buttonDown: // click -> report it to main loop
+      g_hasClicked = true; 
       break;
   }
   return false;
@@ -97,8 +97,8 @@ void mainAppLoop() {
       bool isRefreshed = false;
 
       // input + logic management
-      if (g_hasDoubleClicked) {
-        g_hasDoubleClicked = false; // unset flag
+      if (g_hasClicked) {
+        g_hasClicked = false; // unset flag
         toggleBackgroundColor(*window);
         isRefreshed = true;
       }
