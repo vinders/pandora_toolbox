@@ -22,5 +22,5 @@ endif()
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_subproject_type("tools")
-cwork_create_project("executable" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
+cwork_create_project("console" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")
