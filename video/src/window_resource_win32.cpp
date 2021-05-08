@@ -36,7 +36,7 @@ Description : WindowResource - Win32 implementation (Windows)
 // -- Icon builder -- ----------------------------------------------------------
 
   // system icon
-  std::shared_ptr<WindowResource> WindowResource::buildIcon(SystemIcon id) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildIcon(SystemIcon id) {
     HICON handle = nullptr;
     switch (id) {
       case SystemIcon::app:      handle = LoadIcon(nullptr, IDI_APPLICATION); break;
@@ -52,13 +52,13 @@ Description : WindowResource - Win32 implementation (Windows)
   }
 
   // extern icon file
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const char* uri, uint32_t width, uint32_t height) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const char* uri, uint32_t width, uint32_t height) {
     UINT flags = (width == 0u || height == 0u) ? (LR_LOADFROMFILE | LR_DEFAULTSIZE) : LR_LOADFROMFILE;
     
     HANDLE handle = LoadImageA(nullptr, uri, IMAGE_ICON, width, height, flags);
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
   }
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const wchar_t* uri, uint32_t width, uint32_t height) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const wchar_t* uri, uint32_t width, uint32_t height) {
     UINT flags = (width == 0u || height == 0u) ? (LR_LOADFROMFILE | LR_DEFAULTSIZE) : LR_LOADFROMFILE;
     
     HANDLE handle = LoadImageW(nullptr, uri, IMAGE_ICON, width, height, flags);
@@ -79,7 +79,7 @@ Description : WindowResource - Win32 implementation (Windows)
 // -- Cursor builder -- --------------------------------------------------------
 
   // system cursor
-  std::shared_ptr<WindowResource> WindowResource::buildCursor(SystemCursor id) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildCursor(SystemCursor id) {
     HCURSOR handle = nullptr;
     switch (id) {
       case SystemCursor::pointer:     handle = LoadCursor(nullptr, IDC_ARROW); break;
@@ -102,11 +102,11 @@ Description : WindowResource - Win32 implementation (Windows)
   }
   
   // extern cursor file
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const char* uri) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const char* uri) {
     HANDLE handle = LoadImageA(nullptr, uri, IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE);
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const wchar_t* uri) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const wchar_t* uri) {
     HANDLE handle = LoadImageW(nullptr, uri, IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE);
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
@@ -185,7 +185,7 @@ Description : WindowResource - Win32 implementation (Windows)
 // -- Color brush builder -- ---------------------------------------------------
 
   // system color brush
-  std::shared_ptr<WindowResource> WindowResource::buildColorBrush(WindowResource::Color color) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildColorBrush(WindowResource::Color color) {
     HBRUSH handle = nullptr;
     switch (color) {
       case WindowResource::systemWindowColor(): handle = GetSysColorBrush(COLOR_WINDOW+1); break;

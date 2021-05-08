@@ -82,14 +82,14 @@ namespace pandora {
       
       /// @brief Create standard system icon
       /// @returns On success: valid icon resource. On failure: nullptr.
-      static std::shared_ptr<WindowResource> buildIcon(SystemIcon id) noexcept;
+      static std::shared_ptr<WindowResource> buildIcon(SystemIcon id);
       
       /// @brief Create custom icon from external file
       /// @remarks To use default system icon size, set width or height to 0.
       /// @returns On success: valid icon resource. On failure: nullptr.
-      static std::shared_ptr<WindowResource> buildIconFromFile(const char* uri, uint32_t width = 0, uint32_t height = 0) noexcept;
+      static std::shared_ptr<WindowResource> buildIconFromFile(const char* uri, uint32_t width = 0, uint32_t height = 0);
 #     ifdef _WINDOWS
-        static std::shared_ptr<WindowResource> buildIconFromFile(const wchar_t* uri, uint32_t width = 0, uint32_t height = 0) noexcept;
+        static std::shared_ptr<WindowResource> buildIconFromFile(const wchar_t* uri, uint32_t width = 0, uint32_t height = 0);
 #     endif
 
       /// @brief Create custom icon from app package
@@ -112,13 +112,13 @@ namespace pandora {
       
       /// @brief Create standard system mouse pointer
       /// @returns On success: valid cursor resource. On failure: nullptr.
-      static std::shared_ptr<WindowResource> buildCursor(SystemCursor id) noexcept;
+      static std::shared_ptr<WindowResource> buildCursor(SystemCursor id);
       
       /// @brief Create custom mouse pointer from external file
       /// @returns On success: valid cursor resource. On failure: nullptr.
-      static std::shared_ptr<WindowResource> buildCursorFromFile(const char* uri) noexcept;
+      static std::shared_ptr<WindowResource> buildCursorFromFile(const char* uri);
 #     ifdef _WINDOWS
-        static std::shared_ptr<WindowResource> buildCursorFromFile(const wchar_t* uri) noexcept;
+        static std::shared_ptr<WindowResource> buildCursorFromFile(const wchar_t* uri);
 #     endif
 
       /// @brief Create custom mouse pointer from app package
@@ -154,7 +154,7 @@ namespace pandora {
       
       /// @brief Create color style resource
       /// @returns On success: valid color resource. On failure: nullptr.
-      static std::shared_ptr<WindowResource> buildColorBrush(Color color) noexcept;
+      static std::shared_ptr<WindowResource> buildColorBrush(Color color);
       
       
     private:

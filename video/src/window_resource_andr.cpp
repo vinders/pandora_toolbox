@@ -33,7 +33,7 @@ Description : WindowResource - JNI implementation (Android)
 // -- Icon builder -- ----------------------------------------------------------
 
   // system icon
-  std::shared_ptr<WindowResource> WindowResource::buildIcon(SystemIcon id) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildIcon(SystemIcon id) {
     void* handle = nullptr;
     switch (id) {
       case SystemIcon::app:      handle = malloc(sizeof(uint32_t)); break;//TODO
@@ -49,7 +49,7 @@ Description : WindowResource - JNI implementation (Android)
   }
 
   // extern icon file
-  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const char* uri, uint32_t width, uint32_t height) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildIconFromFile(const char* uri, uint32_t width, uint32_t height) {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::icon) : nullptr;
   }
@@ -64,7 +64,7 @@ Description : WindowResource - JNI implementation (Android)
 // -- Cursor builder -- --------------------------------------------------------
 
   // system cursor
-  std::shared_ptr<WindowResource> WindowResource::buildCursor(SystemCursor id) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildCursor(SystemCursor id) {
     void* handle = nullptr;
     switch (id) {
       case SystemCursor::pointer:     handle = malloc(sizeof(uint32_t)); break;
@@ -87,7 +87,7 @@ Description : WindowResource - JNI implementation (Android)
   }
   
   // extern cursor file
-  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const char* uri) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildCursorFromFile(const char* uri) {
     void* handle = malloc(sizeof(uint32_t));
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::cursor) : nullptr;
   }
@@ -102,7 +102,7 @@ Description : WindowResource - JNI implementation (Android)
 // -- Color brush builder -- ---------------------------------------------------
 
   // system color brush
-  std::shared_ptr<WindowResource> WindowResource::buildColorBrush(WindowResource::Color color) noexcept {
+  std::shared_ptr<WindowResource> WindowResource::buildColorBrush(WindowResource::Color color) {
     void* handle = nullptr;
     switch (color) {
       case WindowResource::systemWindowColor(): handle = malloc(sizeof(uint32_t)); break;
