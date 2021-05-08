@@ -15,6 +15,7 @@ cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_custom_libs("${CWORK_SOLUTION_PATH}/_libs" SUBSOLUTION_NAME 
     OFF #use ON when calling cwork_set_custom_libs() in solution projects
+    ON  #use ON if sub-solution is in a child directory
     subsolution_project_name1
     subsolution_project_name2
     subsolution_project_name3_that_depends_on_projects_higher_in_list
