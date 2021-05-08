@@ -81,7 +81,7 @@ TEST_F(WindowResourceTest, buildFileCursorRes) {
 # ifdef _WINDOWS
     _validateResource(WindowResource::buildCursorFromFile(_P_TEST_RESOURCE_DIR "/base.cur"), WindowResource::Category::cursor);
 # else
-    _validateResource(WindowResource::buildCursorFromFile(_P_TEST_RESOURCE_DIR "/logo.png"), WindowResource::Category::cursor);
+    _validateResource(WindowResource::buildCursorFromFile(_P_TEST_RESOURCE_DIR "/base_cur.png"), WindowResource::Category::cursor);
 # endif
 }
 
@@ -90,7 +90,7 @@ TEST_F(WindowResourceTest, buildPackageCursorRes) {
     pandora::system::WindowsApp::instance().init((pandora::system::AppInstanceHandle)GetModuleHandle(nullptr));
     _validateResource(WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR)), WindowResource::Category::cursor);
 # else
-    _validateResource(WindowResource::buildCursorFromPackage("logo.png"), WindowResource::Category::cursor);
+    _validateResource(WindowResource::buildCursorFromPackage("base_cur.png"), WindowResource::Category::cursor);
 # endif
 }
 
