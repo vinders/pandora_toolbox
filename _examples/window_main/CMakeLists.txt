@@ -30,9 +30,9 @@ cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF
 )
 
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
-    cwork_set_test_resource_dir("${PANDORA_TOOLBOX_DIR}/_img/test_win32")
+    cwork_set_embedded_resource_dir("${PANDORA_TOOLBOX_DIR}/_img/test_win32")
 else()
-    cwork_set_test_resource_dir("${PANDORA_TOOLBOX_DIR}/_img/test_common")
+    cwork_set_resource_dir("${PANDORA_TOOLBOX_DIR}/_img/test_common")
 endif()
 
 cwork_create_project("executable" "${PANDORA_TOOLBOX_DIR}/_cmake" 

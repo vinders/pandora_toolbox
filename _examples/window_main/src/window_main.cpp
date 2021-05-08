@@ -30,9 +30,9 @@ bool g_isBlackBackground = true;
 // create main window
 std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
-    auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_ICON));
+    auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
 # else
-    auto mainIcon = WindowResource::buildIconFromFile("logo.png");
+    auto mainIcon = WindowResource::buildIconFromFile("logo_big.png");
 # endif
   
   Window::Builder builder;
@@ -92,14 +92,18 @@ void mainAppLoop() {
     window->show();
     
     while (Window::pollEvents()) {
+      bool isRefreshed = false;
+
       // input + logic management
       if (g_hasDoubleClicked) {
         g_hasDoubleClicked = false; // unset flag
         toggleBackgroundColor(*window);
+        isRefreshed = true;
       }
       
       // display
-      window->clearClientArea(); // repaint background
+      if (isRefreshed)
+        window->clearClientArea(); // repaint background
     }
   }
   catch (const std::exception& exc) {
