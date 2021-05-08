@@ -7,6 +7,7 @@ Description : Example - window creation + main loop
 #include <memory>
 #include <stdexcept>
 #include <video/message_box.h>
+#include <video/window_keycodes.h>
 #include <video/window.h>
 
 #if defined(_WINDOWS)
@@ -26,6 +27,7 @@ Description : Example - window creation + main loop
 using namespace pandora::video;
 
 bool g_hasClicked = false;
+bool g_hasEscaped = false;
 bool g_isBlackBackground = true;
 
 
@@ -40,6 +42,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
   Window::Builder builder;
   return builder.setDisplayMode(WindowType::window, WindowBehavior::globalContext, ResizeMode::resizable|ResizeMode::homothety)
          .setSize(800, 600)
+         .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
          .setIcon(mainIcon)
          .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
          .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
@@ -61,13 +64,28 @@ void toggleBackgroundColor(Window& window) {
 // window event handler
 bool onWindowEvent(WindowEvent event, uint32_t flag, int32_t posX, int32_t posY, uint32_t size, uint64_ptr data) {
   switch (event) {
-    case WindowEvent::windowClosed: {
+    case WindowEvent::windowClosed: { // close button -> confirmation
       auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
-                                    MessageBox::ActionType::yesNo, MessageBox::IconType::question);
+                                    MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
       if (reply == MessageBox::Result::action2) // "no" button
         return true; // cancel close event
       break;
     }
+  }
+  return false;
+}
+
+// keyboard event handler
+bool onKeyboardEvent(KeyboardEvent event, uint32_t keyCode, uint32_t flag) {
+  switch (event) {
+    case KeyboardEvent::keyDown: // ESC pressed -> close confirmation
+      if (keyCode == _P_VK_ESC) {
+        auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
+                                      MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
+        if (reply == MessageBox::Result::action1) // "yes" button
+          g_hasEscaped = true; // close app
+      }
+      break;
   }
   return false;
 }
@@ -90,10 +108,11 @@ void mainAppLoop() {
     auto window = createWindow();
     window->setMinClientAreaSize(400, 300);
     window->setWindowHandler(&onWindowEvent);
+    window->setKeyboardHandler(&onKeyboardEvent);
     window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible);
     window->show();
     
-    while (Window::pollEvents()) {
+    while (Window::pollEvents() && !g_hasEscaped) {
       bool isRefreshed = false;
 
       // input + logic management
@@ -110,7 +129,7 @@ void mainAppLoop() {
     }
   }
   catch (const std::exception& exc) {
-    MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok, MessageBox::IconType::error);
+    MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok, MessageBox::IconType::error, true);
     exit(-1);
   }
 }
