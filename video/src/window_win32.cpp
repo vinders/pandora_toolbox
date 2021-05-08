@@ -195,7 +195,7 @@ Description : Window - Win32 implementation (Windows)
           outWindowStyle |= WS_POPUP;
           break;
         case WindowType::bordered: 
-          outWindowStyle |= (WS_POPUP | WS_DLGFRAME | WS_BORDER); 
+          outWindowStyle |= (WS_POPUP | WS_BORDER); 
           if ((resizeMode & ResizeMode::resizable) == true) // resizableX and/or resizableY
             outWindowStyle |= WS_SIZEBOX;
           break;
@@ -253,7 +253,7 @@ Description : Window - Win32 implementation (Windows)
       outSizes.left = dummyClientArea.x - dummyWindowArea.x;
       outSizes.top = dummyClientArea.y - dummyWindowArea.y;
       outSizes.right = (int32_t)dummyWindowArea.width - (int32_t)dummyClientArea.width - outSizes.left;
-      outSizes.left = (int32_t)dummyWindowArea.height - (int32_t)dummyClientArea.height - outSizes.top;
+      outSizes.bottom = (int32_t)dummyWindowArea.height - (int32_t)dummyClientArea.height - outSizes.top;
     }
   }
   // convert user-defined client area coord to native coord
@@ -892,16 +892,34 @@ Description : Window - Win32 implementation (Windows)
               // homothety: force size constraints
               BOOL isUpdated = FALSE;
               if ((window->_resizeMode & ResizeMode::homothety) == true) {
+                WindowDecorationSize decorationSizes;
+                __toNativeWindowDecoration(*(window->_monitor), window->_mode, window->_impl->windowStyle, 
+                                           window->_impl->windowStyleExt, (window->_menuHandle != nullptr), decorationSizes);
                 isUpdated = TRUE;
                 switch ((int)wParam) {
                   case WMSZ_TOPLEFT:
-                  case WMSZ_TOPRIGHT: area->top = area->bottom - static_cast<int>((double)width / window->_impl->initialRatio + 0.50001); break;
+                  case WMSZ_TOPRIGHT: {
+                    uint32_t clientWidth = width - decorationSizes.left - decorationSizes.right;
+                    area->top = area->bottom - static_cast<int>((double)clientWidth / window->_impl->initialRatio + 0.50001) 
+                              - decorationSizes.top - decorationSizes.bottom; 
+                    break;
+                  }
                   case WMSZ_LEFT:
                   case WMSZ_RIGHT:
                   case WMSZ_BOTTOMLEFT:
-                  case WMSZ_BOTTOMRIGHT: area->bottom = area->top + static_cast<int>((double)width / window->_impl->initialRatio + 0.50001); break;
+                  case WMSZ_BOTTOMRIGHT: {
+                    uint32_t clientWidth = width - decorationSizes.left - decorationSizes.right;
+                    area->bottom = area->top + static_cast<int>((double)clientWidth / window->_impl->initialRatio + 0.50001)
+                                 + decorationSizes.top + decorationSizes.bottom; 
+                    break;
+                  }
                   case WMSZ_TOP:
-                  case WMSZ_BOTTOM: area->right = area->left + static_cast<int>(window->_impl->initialRatio * (double)height + 0.50001); break;
+                  case WMSZ_BOTTOM: {
+                    uint32_t clientHeight = height - decorationSizes.top - decorationSizes.bottom;
+                    area->right = area->left + static_cast<int>(window->_impl->initialRatio * (double)clientHeight + 0.50001)
+                                + decorationSizes.left - decorationSizes.right; 
+                    break;
+                  }
                 }
               }
 
