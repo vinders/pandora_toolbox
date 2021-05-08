@@ -23,10 +23,12 @@ namespace pandora {
     /// @brief Keyboard event types
     enum class KeyboardEvent : uint32_t {
       none         = 0u, ///< no event
-      keyChange    = 1u, ///< any key is pressed/released (returning true will prevent associated charInput event)
-      altKeyChange = 2u, ///< any key is pressed/released with ALT key active (returning true will prevent associated charInput event)
-      activateMenu = 3u, ///< system key pressed to activate menu bar (F10 on Windows)
-      charInput    = 4u  ///< after keyDown/altKeyDown (if handler did not return true), the associated textual character is generated,
+      keyDown      = 1u, ///< any key is pressed (returning true will prevent associated charInput event)
+      keyUp        = 2u, ///< any key is released
+      altKeyDown   = 3u, ///< any key is pressed with ALT key active (returning true will prevent associated charInput event)
+      altKeyUp     = 4u, ///< any key is released with ALT key active
+      activateMenu = 5u, ///< system key pressed to activate menu bar (F10 on Windows)
+      charInput    = 6u  ///< after keyDown/altKeyDown (if handler did not return true), the associated textual character is generated,
                          ///  using shift/alt-gr/accent (only if the key is pressed and corresponds to an actual character).
     };
     /// @brief Key transition types

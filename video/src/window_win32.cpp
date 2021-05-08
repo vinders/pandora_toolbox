@@ -610,11 +610,14 @@ Description : Window - Win32 implementation (Windows)
       case WM_KEYUP:
       case WM_SYSKEYDOWN:
       case WM_SYSKEYUP: {
-        eventType = (message <= WM_KEYUP) ? KeyboardEvent::keyChange : KeyboardEvent::altKeyChange;
-        if ((lParam & __P_VK_KEY_UP_FLAG) == 0) // down
+        if ((lParam & __P_VK_KEY_UP_FLAG) == 0) { // down
+          eventType = (message == WM_KEYDOWN) ? KeyboardEvent::keyDown : KeyboardEvent::altKeyDown;
           value = (lParam & __P_VK_KEY_PREV_DOWN_FLAG) ? (uint32_t)KeyTransition::same : (uint32_t)KeyTransition::down;
-        else // up
+        }
+        else { // up
+          eventType = (message == WM_KEYUP) ? KeyboardEvent::keyUp : KeyboardEvent::altKeyUp;
           value = (uint32_t)KeyTransition::up;
+        }
         
         switch ((int)wParam) {
           case VK_F10: { // F10 key -> might be activation of menu
