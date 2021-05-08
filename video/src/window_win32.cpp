@@ -726,7 +726,7 @@ Description : Window - Win32 implementation (Windows)
   LRESULT CALLBACK __WindowImpl::windowEventProcessor(HWND handle, UINT message, WPARAM wParam, LPARAM lParam) {
     Window* window = reinterpret_cast<Window*>(GetPropW(handle, __P_WINDOW_ID));
     if (window == nullptr)
-      return DefWindowProc(handle, message, wParam, lParam); // system window processor
+      return DefWindowProcW(handle, message, wParam, lParam); // system window processor
 
     // > mouse events (note: missing WM_MOUSELEAVE and WM_INPUT: see "else" section) --
     if (message >= WM_MOUSEFIRST && message <= WM_MOUSELAST) {
@@ -1261,7 +1261,7 @@ Description : Window - Win32 implementation (Windows)
     // if original window processor existed, use it
     if (window->_nativeFlag & __P_FLAG_USE_ORIG_EVENT_PROC)
       return window->_impl->originalStyle.eventProcessor(handle, message, wParam, lParam);
-    return DefWindowProc(handle, message, wParam, lParam); // system window processor
+    return DefWindowProcW(handle, message, wParam, lParam); // system window processor
   }
 
 

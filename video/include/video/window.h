@@ -48,8 +48,7 @@ namespace pandora {
       resizableX  = 0x1u, ///< resizable width 
       resizableY  = 0x2u, ///< resizable height
       resizable   = 0x3u, ///< resizable width/height (== resizableX|resizableY)
-      maximizable = 0x4u, ///< allow maximization
-      homothety   = 0x8u  ///< homothety (ratio kept when resized)
+      homothety   = 0x4u  ///< homothety (ratio kept when resized)
     };
     /// @brief Pixel position (screen coordinates or window coordinates)
     struct PixelPosition {
@@ -132,7 +131,7 @@ namespace pandora {
       
       // -- display changes --
       
-      bool show(VisibilityCommand state) noexcept;   ///< Show/hide/maximize/minimize/restore window
+      bool show(VisibilityCommand state = VisibilityCommand::show) noexcept; ///< Show/hide/maximize/minimize/restore window
       bool move(int32_t x, int32_t y) noexcept; ///< Move window to position (size not changed)
       bool resize(uint32_t width, uint32_t height) noexcept; ///< Change window size (or resolution in fullscreen)
       bool resize(uint32_t width, uint32_t height, uint32_t rate) noexcept; ///< Change window size (or resolution/rate in fullscreen)

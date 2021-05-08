@@ -19,4 +19,8 @@ Description : Microsoft Windows general API includes
 # include "./windows_version.h"
 # include <Windows.h>
 
+# ifdef MessageBox
+#   undef MessageBox
+# endif
+
 #endif
