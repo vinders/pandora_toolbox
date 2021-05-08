@@ -214,7 +214,7 @@ warning : this file includes system libraries
 
 // -- virtual key codes - command keys --
 
-#   define _P_VK_APP_MENU   kVK_PC_ContextMenu
+#   define _P_VK_APP_MENU   __P_VK_UNK(14)
 #   define _P_VK_BACKSPACE  kVK_Delete
 #   define _P_VK_CLEAR      kVK_ANSI_KeypadClear
 #   define _P_VK_ENTER      kVK_Return
