@@ -2,8 +2,8 @@
 #include <cstring>
 #include <video/window_resource.h>
 #ifdef _WINDOWS
-#include <system/api/windows_api.h>
-#include <system/api/windows_app.h>
+# include <system/api/windows_api.h>
+# include <system/api/windows_app.h>
 # include "../../_img/test_win32/resources.h"
 #endif
 

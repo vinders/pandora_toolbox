@@ -57,7 +57,7 @@ elseif(APPLE)
 
 # Windows
 elseif(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(window_libs__LINKED kernel32 user32 comdlg32 ole32 oleaut32 gdi32)
+    set(window_libs__LINKED kernel32 user32 comdlg32 ole32 oleaut32 gdi32 shell32)
     if(_DRAG_DROP_SUPPORT)
         set(window_libs__LINKED ${window_libs__LINKED} shell32)
     endif()
