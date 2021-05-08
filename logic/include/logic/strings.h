@@ -62,7 +62,7 @@ namespace pandora {
 
     // -- string initialization --
 
-    /// @brief Fill a string with a 
+    /// @brief Fill a string with a character (repeated)
     template <typename _CharType, bool _AddNullEnding = true>
     inline void stringAssign(_CharType* out, size_t count, _CharType val) noexcept {
       assert(out != nullptr);
