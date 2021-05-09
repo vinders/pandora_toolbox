@@ -13,7 +13,7 @@ Description : Example - window creation + main loop
 #if defined(_WINDOWS)
 # include <system/api/windows_api.h>
 # include <system/api/windows_app.h>
-# include "../../../_img/test_win32/resources.h"
+# include "../../../_img/test_win32/resources.h" // --> replace with your own resource file
 # define _SYSTEM_STR(str) L"" str
 
 #else
@@ -26,9 +26,8 @@ Description : Example - window creation + main loop
 
 using namespace pandora::video;
 
-bool g_hasClicked = false;
-bool g_hasEscaped = false;
-bool g_isBlackBackground = true;
+bool g_hasClicked = false; // --> only for example
+bool g_isBlackBackground = true; // --> only for example
 
 
 // create main window
@@ -51,6 +50,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
 // ---
 
 // change background color
+// --> only for example
 void toggleBackgroundColor(Window& window) {
   g_isBlackBackground ^= true;
   window.setBackgroundColorBrush((g_isBlackBackground)
@@ -61,10 +61,10 @@ void toggleBackgroundColor(Window& window) {
 
 // -- handlers -- --------------------------------------------------------------
 
-// window event handler
-bool onWindowEvent(WindowEvent event, uint32_t flag, int32_t posX, int32_t posY, uint32_t size, uint64_ptr data) {
+// window/hardware event handler --> should never throw!
+bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t posX, int32_t posY, void* data) {
   switch (event) {
-    case WindowEvent::windowClosed: { // close button -> confirmation
+    case WindowEvent::windowClosed: { // close -> confirmation
       auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
                                     MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
       if (reply == MessageBox::Result::action2) // "no" button
@@ -75,26 +75,33 @@ bool onWindowEvent(WindowEvent event, uint32_t flag, int32_t posX, int32_t posY,
   return false;
 }
 
-// keyboard event handler
-bool onKeyboardEvent(KeyboardEvent event, uint32_t keyCode, uint32_t flag) {
+// size/position event handler --> should never throw!
+bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t posY, uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
-    case KeyboardEvent::keyDown: // ESC pressed -> close confirmation
-      if (keyCode == _P_VK_ESC) {
-        auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
-                                      MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
-        if (reply == MessageBox::Result::action1) // "yes" button
-          g_hasEscaped = true; // close app
-      }
+    case PositionEvent::sizePositionChanged:
+      // --> adapt your renderer to sizeX/sizeY...
       break;
   }
   return false;
 }
 
-// mouse event handler
-bool onMouseEvent(MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys) {
+// keyboard event handler --> should never throw!
+bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t change) {
   switch (event) {
-    case MouseEvent::buttonDown: // click -> report it to main loop
-      g_hasClicked = true; 
+    case KeyboardEvent::keyDown:
+      if (keyCode == _P_VK_ESC) // ESC pressed -> close
+        Window::sendCloseEvent(sender->handle());
+      break;
+  }
+  return false;
+}
+
+// mouse event handler --> should never throw!
+bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys) {
+  switch (event) {
+    case MouseEvent::buttonDown: // click -> report user action
+      if ((MouseButton)index == MouseButton::left)
+        g_hasClicked = true; // --> only for example
       break;
   }
   return false;
@@ -103,20 +110,22 @@ bool onMouseEvent(MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t
 
 // -- main loop -- -------------------------------------------------------------
 
-void mainAppLoop() {
+inline void mainAppLoop() {
   try {
     auto window = createWindow();
     window->setMinClientAreaSize(400, 300);
+    
     window->setWindowHandler(&onWindowEvent);
+    window->setPositionHandler(&onPositionEvent);
     window->setKeyboardHandler(&onKeyboardEvent);
     window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible);
     window->show();
     
-    while (Window::pollEvents() && !g_hasEscaped) {
+    while (Window::pollEvents()) {
       bool isRefreshed = false;
 
       // input + logic management
-      if (g_hasClicked) {
+      if (g_hasClicked) { // --> only for example
         g_hasClicked = false; // unset flag
         toggleBackgroundColor(*window);
         isRefreshed = true;
@@ -124,7 +133,7 @@ void mainAppLoop() {
       
       // display
       if (isRefreshed)
-        window->clearClientArea(); // repaint background
+        window->clearClientArea(); // repaint background --> only for example
       std::this_thread::sleep_for(std::chrono::microseconds(16666LL)); // 60Hz
     }
   }

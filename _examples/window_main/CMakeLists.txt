@@ -1,11 +1,12 @@
 #*******************************************************************************
-# Author  :     Romain Vinders
-# License :     MIT
+# Example - window creation + main loop (solution + project)
 #*******************************************************************************
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Solution settings                                               │
 # └──────────────────────────────────────────────────────────────────┘
 cmake_minimum_required(VERSION 3.14)
+
+# --> replace with your path to toolbox (usually in subdirectory or same parent directory)
 set(PANDORA_TOOLBOX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
@@ -17,6 +18,7 @@ cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${PANDORA_TOOLBOX_DIR}/_cma
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
+# --> uncomment if project is placed in separate CMakeLists file
 #cmake_minimum_required(VERSION 3.14)
 #include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
 #cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" OFF)
