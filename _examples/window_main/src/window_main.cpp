@@ -71,6 +71,7 @@ bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t p
         return true; // cancel close event
       break;
     }
+    default: break;
   }
   return false;
 }
@@ -78,9 +79,11 @@ bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t p
 // size/position event handler --> should never throw!
 bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t posY, uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
-    case PositionEvent::sizePositionChanged:
+    case PositionEvent::sizePositionChanged: {
       // --> adapt your renderer to sizeX/sizeY...
       break;
+    }
+    default: break;
   }
   return false;
 }
@@ -88,10 +91,12 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t 
 // keyboard event handler --> should never throw!
 bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t change) {
   switch (event) {
-    case KeyboardEvent::keyDown:
+    case KeyboardEvent::keyDown: {
       if (keyCode == _P_VK_ESC) // ESC pressed -> close
         Window::sendCloseEvent(sender->handle());
       break;
+    }
+    default: break;
   }
   return false;
 }
@@ -99,10 +104,12 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 // mouse event handler --> should never throw!
 bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys) {
   switch (event) {
-    case MouseEvent::buttonDown: // click -> report user action
+    case MouseEvent::buttonDown: { // click -> report user action
       if ((MouseButton)index == MouseButton::left)
         g_hasClicked = true; // --> only for example
       break;
+    }
+    default: break;
   }
   return false;
 }
