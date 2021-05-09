@@ -927,7 +927,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
                   case WMSZ_BOTTOM: {
                     uint32_t clientHeight = height - decorationSizes.top - decorationSizes.bottom;
                     area->right = area->left + static_cast<int>(window->_impl->initialRatio * (double)clientHeight + 0.50001)
-                                + decorationSizes.left - decorationSizes.right; 
+                                + decorationSizes.left + decorationSizes.right; 
                     break;
                   }
                 }
@@ -963,6 +963,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
               window->_nativeFlag = ((window->_nativeFlag | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_WINDOW_VISIBLE) 
                                   & ~((uint32_t)(__P_FLAG_WINDOW_MINIMIZED | __P_FLAG_RESIZED_MOVED)));
               __readCurrentClientArea(window->_handle, newClientArea);
+              newClientArea.width = (uint32_t)LOWORD(lParam);
+              newClientArea.height = (uint32_t)HIWORD(lParam);
+              
               if (window->_onWindowEvent && wasMinimized) {
                 if (wasMinimized)
                   window->_onWindowEvent(window, WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
@@ -989,6 +992,27 @@ Description : Window manager + builder - Win32 implementation (Windows)
           }
 
           if (hasSizeChanged) {
+            // force homothety when maximized/restored
+            if ((window->_resizeMode & ResizeMode::homothety) == true) {
+              WindowDecorationSize decorationSizes;
+              __toNativeWindowDecoration(*(window->_monitor), window->_mode, window->_impl->windowStyle, 
+                                         window->_impl->windowStyleExt, (window->_menuHandle != nullptr), decorationSizes);
+              
+              double fixedClientHeight = (double)newClientArea.width / window->_impl->initialRatio + 0.50001;
+              if ((uint32_t)fixedClientHeight > newClientArea.height) {
+                double fixedClientWidth = (double)newClientArea.height * window->_impl->initialRatio + 0.50001;
+                
+                newClientArea.width = (uint32_t)fixedClientWidth;
+                SetWindowPos((HWND)window->_handle, nullptr, 0, 0, (int)newClientArea.width + decorationSizes.left + decorationSizes.right,
+                             (int)newClientArea.height + decorationSizes.top + decorationSizes.bottom, SWP_NOMOVE | SWP_NOZORDER);
+              }
+              else if ((uint32_t)fixedClientHeight < newClientArea.height) {
+                newClientArea.height = (uint32_t)fixedClientHeight;
+                SetWindowPos((HWND)window->_handle, nullptr, 0, 0, (int)newClientArea.width + decorationSizes.left + decorationSizes.right, 
+                             (int)newClientArea.height + decorationSizes.top + decorationSizes.bottom, SWP_NOMOVE | SWP_NOZORDER);
+              }
+            }
+            
             if (window->_impl->windowStyle & (WS_VSCROLL | WS_HSCROLL))
               __adjustScrollbarPageSize(handle, *(window->_impl), newClientArea);
             
