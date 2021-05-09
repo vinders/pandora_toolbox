@@ -2,9 +2,12 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Description : Window manager + builder - JNI implementation (Android)
+Description : Window manager + builder - UIKit implementation (iOS)
 *******************************************************************************/
-#if !defined(_WINDOWS) && defined(__ANDROID__)
+#if !defined(_WINDOWS) && defined(__APPLE__)
+# include <TargetConditionals.h>
+#endif
+#if !defined(_WINDOWS) && defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 # include <stdexcept>
 # include "video/window_keycodes.h"
 # include "video/window.h"
@@ -17,7 +20,7 @@ Description : Window manager + builder - JNI implementation (Android)
 // -- accessors -- -------------------------------------------------------------
 
   // Get current window visibility state
-  Window::VisibleState Window::visibleState() const noexcept { return Window::VisibleState::hidden; }
+  Window::VisibleState Window::visibleState() const noexcept { return Window::VisibleState::none; }
   // Get copy of current position/size of the client area
   DisplayArea Window::getClientArea() const noexcept { return DisplayArea{ 0 }; }
   // Get current size of the client area
@@ -102,7 +105,7 @@ Description : Window manager + builder - JNI implementation (Android)
 
   // configure window class context + create new window
   std::unique_ptr<Window> Window::Builder::create(const window_char* contextName, const window_char* caption, WindowHandle parentWindow) { // throws
-    return std::unique_ptr<Window>(new Window(contextName, caption, this->_params, parentWindow);
+    return std::unique_ptr<Window>(new Window(contextName, caption, this->_params, parentWindow));
   }
   
   // new window construction
@@ -114,7 +117,7 @@ Description : Window manager + builder - JNI implementation (Android)
 
   // build instance from existing window
   std::unique_ptr<Window> Window::Builder::update(WindowHandle existingHandle, bool callOrigEventProc) { // throws
-    return std::unique_ptr<Window>(new Window(this->_params, existingHandle, callOrigEventProc);
+    return std::unique_ptr<Window>(new Window(this->_params, existingHandle, callOrigEventProc));
   }
 
   // exiting window re-styling

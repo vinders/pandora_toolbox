@@ -83,17 +83,19 @@ endmacro()
 # │  File detection - common files                                   │
 # └──────────────────────────────────────────────────────────────────┘
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows") # win32 (windows)
-    set(_VIDEO_IGNORED_EXT "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp" "message_box_common.cpp")
-elseif(IOS) # uikit (iOS)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_andr.cpp")
-elseif(ANDROID) # jni (android)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m")
-elseif(APPLE) # cocoa (macOS)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_wln.cpp" "_uikit.cpp" "_uikit.m" "_andr.cpp")
-elseif(CWORK_LINUX_WAYLAND) # wayland (linux)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_x11.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
-else() # x11 (linux/unix)
-    set(_VIDEO_IGNORED_EXT "_win32.cpp" "_wln.cpp" "_cocoa.cpp" "_cocoa.m" "_uikit.cpp" "_uikit.m" "_andr.cpp")
+    set(_SYSTEM_SOURCE_SUFFIX "win32")
+else()
+    if(IOS) # uikit (iOS)
+        set(_SYSTEM_SOURCE_SUFFIX "uikit")
+    elseif(ANDROID) # jni (android)
+        set(_SYSTEM_SOURCE_SUFFIX "andr")
+    elseif(APPLE) # cocoa (macOS)
+        set(_SYSTEM_SOURCE_SUFFIX "cocoa")
+    elseif(CWORK_LINUX_WAYLAND) # wayland (linux)
+        set(_SYSTEM_SOURCE_SUFFIX "wln")
+    else() # x11 (linux/unix)
+        set(_SYSTEM_SOURCE_SUFFIX "x11")
+    endif()
 endif()
 
 autodetect_source_files_no_recurse(${_INCLUDE_DIR} "*.h*") # include
@@ -106,34 +108,36 @@ unset(CWORK_AUTODETECTED_FILES)
 
 set(_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py) # shaders
 
-autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.[hcm]*") # src
-if(CWORK_AUTODETECTED_FILES) # filter: remove unwanted system-specific files
-    set(_SOURCE_FILES)
-    set(_OBJC_SOURCE_FILES "")
-    foreach(_file ${CWORK_AUTODETECTED_FILES})
-        foreach(_ignored ${_VIDEO_IGNORED_EXT})
-            if(_file MATCHES ".*${_ignored}$")
-                set(_IGNORED_FILE ON)
-                break()
-            endif()
-        endforeach()
-        if(NOT _IGNORED_FILE)
-            set(_SOURCE_FILES ${_SOURCE_FILES} ${_file})
-            if((IOS OR APPLE) AND _file MATCHES ".*\\.m$")
-                set(_OBJC_SOURCE_FILES ${_OBJC_SOURCE_FILES} ${_file})
-            endif()
-        else()
-            unset(_IGNORED_FILE)
-        endif()
-    endforeach()
+# common source files
+autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.[hc]*") # src
+if(CWORK_AUTODETECTED_FILES)
+    set(_SOURCE_FILES ${CWORK_AUTODETECTED_FILES})
     unset(CWORK_AUTODETECTED_FILES)
-    
-    if((IOS OR APPLE) AND NOT _OBJC_SOURCE_FILES STREQUAL "") # tag objective-C files
-        cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
+endif()
+
+# system-specific source files
+autodetect_source_files("${_SOURCE_DIR}/window/${_SYSTEM_SOURCE_SUFFIX}" "*.[hcm]*") # src/window
+if(CWORK_AUTODETECTED_FILES)
+    if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
+        set(_SOURCE_FILES ${_SOURCE_FILES} ${CWORK_AUTODETECTED_FILES})
+    else()
+        set(_SOURCE_FILES ${_SOURCE_FILES} ${CWORK_AUTODETECTED_FILES} "${_SOURCE_DIR}/window/message_box_common.cpp")
+        if(IOS OR APPLE)
+            set(_OBJC_SOURCE_FILES "")
+            foreach(_file ${CWORK_AUTODETECTED_FILES})
+                if(_file MATCHES ".*\\.m$")
+                    set(_OBJC_SOURCE_FILES ${_OBJC_SOURCE_FILES} ${_file})
+                endif()
+            endforeach()
+            if(NOT _OBJC_SOURCE_FILES STREQUAL "") # tag objective-C files
+                cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
+            endif()
+        endif()
     endif()
+    unset(CWORK_AUTODETECTED_FILES)
 endif()
 if(ANDROID)
-    autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.java*")
+    autodetect_source_files("${_SOURCE_DIR}/window${_SYSTEM_SOURCE_SUFFIX}" "*.java*")
     if(CWORK_AUTODETECTED_FILES)
         cwork_set_source_language(JAVA ${CWORK_AUTODETECTED_FILES}) # tag java files
         unset(CWORK_AUTODETECTED_FILES)
@@ -161,9 +165,7 @@ endif()
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_include_files(${_INCLUDE_FILES})
-if(_SOURCE_FILES)
-    cwork_set_source_files(${_SOURCE_FILES})
-endif()
+cwork_set_source_files(${_SOURCE_FILES})
 cwork_set_custom_files(${_SHADER_FILES})
 cwork_set_test_files(${_TEST_FILES})
 if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)

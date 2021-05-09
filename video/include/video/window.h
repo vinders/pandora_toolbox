@@ -254,7 +254,7 @@ namespace pandora {
         ///          - It is recommended to enable DPI awareness (manifest or via DisplayMonitor) before creating window or monitor instance.
         /// @throws invalid_argument/runtime_error/logic_error/bad_alloc on window creation failure
         /// @returns Valid window instance (hidden)
-        std::unique_ptr<Window> create(const window_char* contextName, const window_char* caption, WindowHandle parentWindow = nullptr); // throws
+        std::unique_ptr<Window> create(const window_char* contextName, const window_char* caption, WindowHandle parentWindow = (WindowHandle)0); // throws
 
         /// @brief Build Window instance with current params from an existing window handle.
         /// @remarks Useful to turn a splash/GUI window into the app window, then restore original window on exit.
@@ -274,7 +274,7 @@ namespace pandora {
           std::shared_ptr<WindowResource> captionIcon = nullptr;
           std::shared_ptr<WindowResource> cursor = nullptr;
           std::shared_ptr<WindowResource> backgroundColor = nullptr;
-          MenuHandle menu = nullptr;
+          MenuHandle menu = (MenuHandle)0;
 #         ifdef _WINDOWS
             void* moduleInstance = nullptr;
 #         endif
@@ -307,7 +307,7 @@ namespace pandora {
       std::shared_ptr<WindowResource> _captionIcon = nullptr;
       std::shared_ptr<WindowResource> _cursor = nullptr;
       std::shared_ptr<WindowResource> _backgroundColor = nullptr;
-      MenuHandle _menuHandle = nullptr;
+      MenuHandle _menuHandle = (MenuHandle)0;
       void* _moduleInstance = nullptr;
 
       // display params
