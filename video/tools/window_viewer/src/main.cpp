@@ -29,6 +29,7 @@ Window viewer - utility to display window, dialog, or modal message-box
 # define _SYSTEM_STR(str) L"" str
 # define _SYSTEM_sprintf(...) _snwprintf(__VA_ARGS__)
 #else
+# define _SYSTEM_STR(str) str
 # define _SYSTEM_sprintf(...) snprintf(__VA_ARGS__)
 #endif
 

@@ -1596,7 +1596,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     
     this->_mode = type;
     this->_behavior = behavior;
-    this->_resizeMode = resizeMode;
+    this->_resizeMode = (type != WindowType::fullscreen) ? resizeMode : ResizeMode::fixed;
     this->_refreshRate = rate;
     _impl->windowStyle = windowStyle;
     _impl->windowStyleExt = windowStyleExt;
@@ -1872,7 +1872,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     __toNativeWindowStyle(params.displayMode, params.behavior, params.resizeMode, windowStyle, windowStyleExt);
     this->_mode = params.displayMode;
     this->_behavior = params.behavior;
-    this->_resizeMode = params.resizeMode;
+    this->_resizeMode = (params.displayMode != WindowType::fullscreen) ? params.resizeMode : ResizeMode::fixed;
     this->_refreshRate = params.refreshRate;
     _impl->windowStyle = windowStyle;
     _impl->windowStyleExt = windowStyleExt;
