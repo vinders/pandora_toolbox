@@ -156,14 +156,15 @@ namespace pandora {
       
       /// @brief Change vertical/horizontal scrollbar ranges (only values for existing scrollbars will be used)
       /// @remarks Scroll units don't need to be pixels, but the same unit should be used by the event handler for updating display.
-      bool setScrollbarRange(uint16_t posV, uint16_t posH, uint16_t verticalMax, uint16_t horizontalMax, uint32_t pixelsPerUnit = 1) noexcept;
+      bool setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit = 1) noexcept;
       bool setScrollPositionV(uint16_t pos) noexcept; ///< Change position of slider in vertical scrollbar
       bool setScrollPositionH(uint16_t pos) noexcept; ///< Change position of slider in horizontal scrollbar
       
       
       // -- input events --
       
-      inline void setWindowHandler(WindowEventHandler handler) noexcept { _onWindowEvent = handler; }      ///< Set/replace window event handler (NULL to unregister)
+      inline void setWindowHandler(WindowEventHandler handler) noexcept { _onWindowEvent = handler; }      ///< Set/replace window/hardware event handler (NULL to unregister)
+      inline void setPositionHandler(PositionEventHandler handler) noexcept { _onPositionEvent = handler; }///< Set/replace size/position event handler (NULL to unregister)
       inline void setKeyboardHandler(KeyboardEventHandler handler) noexcept { _onKeyboardEvent = handler; }///< Set/replace keyboard event handler (NULL to unregister)
       void setMouseHandler(MouseEventHandler handler, CursorMode cursor = CursorMode::visible) noexcept;   ///< Set/replace mouse event handler (NULL to unregister)
       inline void setTouchHandler(TouchEventHandler handler) noexcept { _onTouchEvent = handler; }         ///< Set/replace touch event handler (NULL to unregister)
@@ -185,6 +186,8 @@ namespace pandora {
       ///            Also useful to update to only one a specific modal window (and blocking other windows while it exists).
       /// @returns Current window status: alive (true) or destroyed (false)
       bool pollCurrentWindowEvents() noexcept;
+      
+      static void sendCloseEvent(WindowHandle target) noexcept; ///< Send 'windowClose' event to any window instance
       
 
       // -- window builder -- --------------------------------------------------
@@ -318,6 +321,7 @@ namespace pandora {
       
       // input events
       WindowEventHandler _onWindowEvent = nullptr;
+      PositionEventHandler _onPositionEvent = nullptr;
       KeyboardEventHandler _onKeyboardEvent = nullptr;
       MouseEventHandler _onMouseEvent = nullptr;
       TouchEventHandler _onTouchEvent = nullptr;

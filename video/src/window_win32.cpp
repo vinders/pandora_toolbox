@@ -66,6 +66,10 @@ Description : Window - Win32 implementation (Windows)
         DWORD windowStyle = 0;
         DWORD windowStyleExt = 0;
         uint32_t pixelsPerScrollUnit = 1;
+        uint32_t lastScrollPosH = 0;
+        uint32_t lastScrollPosV = 0;
+        uint32_t maxScrollPosH = 0;
+        uint32_t maxScrollPosV = 0;
         uint32_t minWidth = __P_DEFAULT_MIN_WINDOW_WIDTH;
         uint32_t minHeight = __P_DEFAULT_MIN_WINDOW_HEIGHT;
         
@@ -543,6 +547,12 @@ Description : Window - Win32 implementation (Windows)
     return _isAlive;
   }
   
+  // Send 'windowClose' event to any window instance
+  void Window::sendCloseEvent(WindowHandle target) noexcept {
+    if (target != nullptr)
+      SendMessage((HWND)target, WM_CLOSE, 0, 0);
+  }
+  
   // ---
   
   // cursor in client area: hide cursor / enable raw mouse events
@@ -629,7 +639,7 @@ Description : Window - Win32 implementation (Windows)
           case VK_SNAPSHOT: { // VK_SNAPSHOT doesn't send WM_KEYDOWN events -> create them
             keyCode = (uint32_t)wParam;
             if (value == (uint32_t)KeyTransition::up) 
-              window->_onKeyboardEvent(eventType, keyCode, (uint32_t)KeyTransition::down);
+              window->_onKeyboardEvent(window, eventType, keyCode, (uint32_t)KeyTransition::down);
             break;
           }
           // Alt/Enter/Shift/Ctrl -> identify left/right
@@ -667,7 +677,7 @@ Description : Window - Win32 implementation (Windows)
         break;
       }
     }
-    return (eventType != KeyboardEvent::none && window->_onKeyboardEvent(eventType, keyCode, value));
+    return (eventType != KeyboardEvent::none && window->_onKeyboardEvent(window, eventType, keyCode, value));
   }
   
   // ---
@@ -715,7 +725,7 @@ Description : Window - Win32 implementation (Windows)
       case WM_MOUSEHWHEEL:   eventType = MouseEvent::mouseWheelH; value = (int32_t)GET_WHEEL_DELTA_WPARAM(wParam);
                              activeKeys = (uint8_t)GET_KEYSTATE_WPARAM(wParam); break;
     }
-    return (eventType != MouseEvent::none && window->_onMouseEvent(eventType, x, y, value, activeKeys));
+    return (eventType != MouseEvent::none && window->_onMouseEvent(window, eventType, x, y, value, activeKeys));
   }
   
   // ---
@@ -752,7 +762,7 @@ Description : Window - Win32 implementation (Windows)
             __disableCursorMode(window->_nativeFlag);
         
           window->_nativeFlag = (window->_nativeFlag & ~((uint32_t)__P_FLAG_CURSOR_EVENT_REG | __P_FLAG_CURSOR_HOVER) );
-          if (window->_onMouseEvent && window->_onMouseEvent(MouseEvent::mouseLeave, 0, 0, 0, 0))
+          if (window->_onMouseEvent && window->_onMouseEvent(window, MouseEvent::mouseLeave, 0, 0, 0, 0))
             return 0;
           break;
         }
@@ -816,7 +826,7 @@ Description : Window - Win32 implementation (Windows)
                   window->_impl->lastCursorPosY += deltaY;
                 }
                 
-                window->_onMouseEvent(MouseEvent::rawMotion, deltaX, deltaY, 0, 0);
+                window->_onMouseEvent(window, MouseEvent::rawMotion, deltaX, deltaY, 0, 0);
               }
               else
                 fprintf(stderr, "Window: failed to obtain raw input data");
@@ -856,28 +866,28 @@ Description : Window - Win32 implementation (Windows)
               if (window->_impl->windowStyle & (WS_VSCROLL | WS_HSCROLL))
                 __adjustScrollbarPageSize(handle, *(window->_impl), newClientArea);
               
-              if (window->_onWindowEvent)
-                window->_onWindowEvent(WindowEvent::sizePositionChanged, 0, newClientArea.x, newClientArea.y, 
-                                       newClientArea.width, (uint64_ptr)newClientArea.height);
+              if (window->_onPositionEvent)
+                window->_onPositionEvent(window, PositionEvent::sizePositionChanged, 
+                                         newClientArea.x, newClientArea.y, newClientArea.width, newClientArea.height);
             }
           }
           break;
         }
         // window is moving
         case WM_MOVE: {
-          if (window->_onWindowEvent) {
+          if (window->_onPositionEvent) {
             uint32_t width = 0, height = 0;
             { std::lock_guard<pandora::thread::SpinLock> guard(window->_clientAreaLock);
               width = window->_clientArea.width;
               height = window->_clientArea.height;
             } // unlock before calling handler
             
+            int16_t x = LOWORD(lParam); // force 16bit ints to keep value sign
+            int16_t y = HIWORD(lParam);
             if (window->_nativeFlag & __P_FLAG_RESIZED_MOVED) // user move tracking
-              window->_onWindowEvent(WindowEvent::sizePositionTrack, 0, static_cast<int32_t>((int16_t)LOWORD(lParam)), 
-                                     static_cast<int32_t>((int16_t)HIWORD(lParam)), width, (uint64_ptr)height);
+              window->_onPositionEvent(window, PositionEvent::sizePositionTrack, (int32_t)x, (int32_t)y, width, height);
             else // system move done
-              window->_onWindowEvent(WindowEvent::sizePositionChanged, 0, static_cast<int32_t>((int16_t)LOWORD(lParam)), 
-                                     static_cast<int32_t>((int16_t)HIWORD(lParam)), width, (uint64_ptr)height);
+              window->_onPositionEvent(window, PositionEvent::sizePositionChanged, (int32_t)x, (int32_t)y, width, height);
           }
           break;
         }
@@ -924,9 +934,9 @@ Description : Window - Win32 implementation (Windows)
               }
 
               // all modes: handler size tracking
-              if (window->_nativeFlag & __P_FLAG_RESIZED_MOVED)
-                window->_onWindowEvent(WindowEvent::sizePositionTrack, 0, (int32_t)area->left, (int32_t)area->top, 
-                                       width, (uint64_ptr)height);
+              if (window->_onPositionEvent && (window->_nativeFlag & __P_FLAG_RESIZED_MOVED))
+                window->_onPositionEvent(window, PositionEvent::sizePositionTrack, 
+                                         (int32_t)area->left, (int32_t)area->top, width, height);
               if (isUpdated)
                 return TRUE;
             }
@@ -944,7 +954,7 @@ Description : Window - Win32 implementation (Windows)
 
               SendMessage(handle, WM_MOUSELEAVE, 0, 0);
               if (window->_onWindowEvent)
-                window->_onWindowEvent(WindowEvent::stateChanged, (uint32_t)WindowVisibleActive::hidden, 0,0,0,0);
+                window->_onWindowEvent(window, WindowEvent::stateChanged, (uint32_t)WindowActivity::hidden, 0,0,nullptr);
               break;
             }
             case SIZE_MAXIMIZED: {
@@ -955,22 +965,24 @@ Description : Window - Win32 implementation (Windows)
               __readCurrentClientArea(window->_handle, newClientArea);
               if (window->_onWindowEvent && wasMinimized) {
                 if (wasMinimized)
-                  window->_onWindowEvent(WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
-                                                                   ? (uint32_t)WindowVisibleActive::active 
-                                                                   : (uint32_t)WindowVisibleActive::inactive, 0,0,0,0);
+                  window->_onWindowEvent(window, WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
+                                                                            ? (uint32_t)WindowActivity::active 
+                                                                            : (uint32_t)WindowActivity::inactive, 0,0,nullptr);
               }
               break;
             }
             case SIZE_RESTORED: {
               hasSizeChanged = true;
               bool wasMinimized = (window->_nativeFlag & __P_FLAG_WINDOW_MINIMIZED);
-              window->_nativeFlag = ((window->_nativeFlag | __P_FLAG_WINDOW_VISIBLE) & ~((uint32_t)(__P_FLAG_WINDOW_MINIMIZED | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_RESIZED_MOVED)));
+              window->_nativeFlag = ( (window->_nativeFlag | __P_FLAG_WINDOW_VISIBLE) 
+                                      & ~((uint32_t)(__P_FLAG_WINDOW_MINIMIZED | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_RESIZED_MOVED)) );
+              
               __readCurrentClientArea(window->_handle, newClientArea);
               if (window->_onWindowEvent && wasMinimized) {
                 if (wasMinimized)
-                  window->_onWindowEvent(WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
-                                                                   ? (uint32_t)WindowVisibleActive::active 
-                                                                   : (uint32_t)WindowVisibleActive::inactive, 0,0,0,0);
+                  window->_onWindowEvent(window, WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
+                                                                            ? (uint32_t)WindowActivity::active 
+                                                                            : (uint32_t)WindowActivity::inactive, 0,0,nullptr);
               }
               break;
             }
@@ -983,8 +995,9 @@ Description : Window - Win32 implementation (Windows)
             { std::lock_guard<pandora::thread::SpinLock> guard(window->_clientAreaLock);
               window->_clientArea = newClientArea; } // unlock before calling handler
             
-            if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::sizePositionChanged, 0, newClientArea.x, newClientArea.y, (uint32_t)LOWORD(lParam), (uint64_ptr)HIWORD(lParam));
+            if (window->_onPositionEvent)
+              window->_onPositionEvent(window, PositionEvent::sizePositionChanged, 
+                                       newClientArea.x, newClientArea.y, (uint32_t)LOWORD(lParam), (uint32_t)HIWORD(lParam));
           }
           break;
         }
@@ -1024,17 +1037,26 @@ Description : Window - Win32 implementation (Windows)
         // scrollbar slider change
         case WM_VSCROLL:
         case WM_HSCROLL: { 
-          if (window->_onWindowEvent) {
-            if (LOWORD(wParam) == SB_THUMBTRACK) {
-              uint32_t pos = (uint32_t)HIWORD(wParam);
-              if (window->_onWindowEvent((message == WM_VSCROLL) ? WindowEvent::scrollPositionVTrack 
-                                                                 : WindowEvent::scrollPositionHTrack, 0, pos, pos, 0, 0))
+          if (window->_onPositionEvent) {
+            uint32_t type = (uint32_t)LOWORD(wParam);
+            if (type == SB_THUMBTRACK) {
+              if (message == WM_HSCROLL)
+                window->_impl->lastScrollPosH = (int32_t)HIWORD(wParam);
+              else
+                window->_impl->lastScrollPosV = (int32_t)HIWORD(wParam);
+              
+              if (window->_onPositionEvent(window, PositionEvent::scrollPositionTrack, window->_impl->lastScrollPosH, window->_impl->lastScrollPosV, 
+                                           window->_impl->maxScrollPosH, window->_impl->maxScrollPosV) )
                 return 0;
             }
-            else if (LOWORD(wParam) == SB_THUMBPOSITION) {
-              uint32_t pos = (uint32_t)HIWORD(wParam);
-              if (window->_onWindowEvent((message == WM_VSCROLL) ? WindowEvent::scrollPositionVChanged 
-                                                                 : WindowEvent::scrollPositionHChanged, 0, pos, pos, 0, 0))
+            else if (type == SB_THUMBPOSITION) {
+              if (message == WM_HSCROLL)
+                window->_impl->lastScrollPosH = (int32_t)HIWORD(wParam);
+              else
+                window->_impl->lastScrollPosV = (int32_t)HIWORD(wParam);
+              
+              if (window->_onPositionEvent(window, PositionEvent::scrollPositionChanged, window->_impl->lastScrollPosH, window->_impl->lastScrollPosV, 
+                                           window->_impl->maxScrollPosH, window->_impl->maxScrollPosV) )
                 return 0;
             }
           }
@@ -1047,15 +1069,15 @@ Description : Window - Win32 implementation (Windows)
         case WM_SHOWWINDOW: {
           if (wParam == TRUE) { // visible
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
-                                                               ? (uint32_t)WindowVisibleActive::active 
-                                                               : (uint32_t)WindowVisibleActive::inactive, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_ACTIVE) 
+                                                                        ? (uint32_t)WindowActivity::active 
+                                                                        : (uint32_t)WindowActivity::inactive, 0,0,nullptr);
             window->_nativeFlag |= __P_FLAG_WINDOW_VISIBLE;
           }
           else {
             window->_nativeFlag = (window->_nativeFlag & ~((uint32_t)__P_FLAG_WINDOW_VISIBLE));
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::stateChanged, (uint32_t)WindowVisibleActive::hidden, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::stateChanged, (uint32_t)WindowActivity::hidden, 0,0,nullptr);
           }
           break;
         }
@@ -1064,7 +1086,7 @@ Description : Window - Win32 implementation (Windows)
         case WM_ACTIVATEAPP: {
           if (wParam) { // active
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::stateChanged, (uint32_t)WindowVisibleActive::active, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::stateChanged, (uint32_t)WindowActivity::active, 0,0,nullptr);
             window->_nativeFlag |= __P_FLAG_WINDOW_ACTIVE;
             
             std::lock_guard<pandora::thread::SpinLock> guard(window->_clientAreaLock);
@@ -1073,9 +1095,9 @@ Description : Window - Win32 implementation (Windows)
           else { // inactive
             window->_nativeFlag = (window->_nativeFlag & ~((uint32_t)__P_FLAG_WINDOW_ACTIVE));
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_VISIBLE) 
-                                                               ? (uint32_t)WindowVisibleActive::inactive 
-                                                               : (uint32_t)WindowVisibleActive::hidden, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::stateChanged, (window->_nativeFlag & __P_FLAG_WINDOW_VISIBLE) 
+                                                                        ? (uint32_t)WindowActivity::inactive 
+                                                                        : (uint32_t)WindowActivity::hidden, 0,0,nullptr);
             
             if (window->_mode == WindowType::fullscreen && (window->_nativeFlag & __P_FLAG_MODE_CHANGED)) // if fullscreen, minimize
               SendMessage(handle, WM_SYSCOMMAND, SC_MINIMIZE, 0);
@@ -1098,14 +1120,18 @@ Description : Window - Win32 implementation (Windows)
         }
         // menu selection
         case WM_MENUSELECT: {
-          if (window->_menuHandle == nullptr)
-            window->_onWindowEvent(WindowEvent::menuSelected, (HIWORD(wParam) == MF_SYSMENU) ? 1 : 0, 0,0, (uint32_t)LOWORD(wParam), (uint64_ptr)lParam);
+          if (window->_onWindowEvent && window->_menuHandle != nullptr) {
+            if (HIWORD(wParam) == MF_SYSMENU) // submenu selected
+              window->_onWindowEvent(window, WindowEvent::menuSelected, 1, (int32_t)LOWORD(wParam), -1, (void*)lParam);
+            else // menu command item
+              window->_onWindowEvent(window, WindowEvent::menuSelected, 0, -1, (int32_t)LOWORD(wParam), nullptr);
+          }
           break;
         }
 
         // window close attempt -> notify handler
         case WM_CLOSE: {
-          if (!window->_onWindowEvent || !window->_onWindowEvent(WindowEvent::windowClosed, 0, 0,0,0,0))
+          if (!window->_onWindowEvent || !window->_onWindowEvent(window, WindowEvent::windowClosed, 0,0,0,nullptr))
             window->_destroyWindow();
           return 0;
         }
@@ -1135,7 +1161,7 @@ Description : Window - Win32 implementation (Windows)
             }
             
             // notify handler
-            window->_onWindowEvent(WindowEvent::dropFiles, 0, (uint32_t)dropPos.x, (uint32_t)dropPos.y, count, (uint64_ptr)paths);
+            window->_onWindowEvent(window, WindowEvent::dropFiles, count, (int32_t)dropPos.x, (int32_t)dropPos.y, (void*)paths);
             DragFinish((HDROP)wParam);
             
             for (uint32_t i = 0; i < count; ++i)
@@ -1174,8 +1200,9 @@ Description : Window - Win32 implementation (Windows)
         }
         // display DPI change
         case WM_DPICHANGED: {
-          RECT* suggestedArea = (RECT*)lParam;
-          if (suggestedArea != nullptr) {
+          if (window->_mode != WindowType::fullscreen && lParam) {
+            RECT* suggestedArea = (RECT*)lParam;
+
             // find appropriate window monitor
             bool isSameMonitor = true;
             int32_t centerX = suggestedArea->left + (suggestedArea->right - suggestedArea->left)/2;
@@ -1212,11 +1239,11 @@ Description : Window - Win32 implementation (Windows)
             
             // notify handler, to let parent app decide if client size should be adjusted
             if (window->_onWindowEvent) {
-              uint32_t adjustedClientWidth = static_cast<uint32_t>(suggestedArea->right - suggestedArea->left - decorationSizes.left - decorationSizes.right);
-              uint32_t adjustedClientHeight = static_cast<uint32_t>(suggestedArea->bottom - suggestedArea->top - decorationSizes.top - decorationSizes.bottom);
+              int32_t adjustedClientWidth = static_cast<int32_t>(suggestedArea->right - suggestedArea->left - decorationSizes.left - decorationSizes.right);
+              int32_t adjustedClientHeight = static_cast<int32_t>(suggestedArea->bottom - suggestedArea->top - decorationSizes.top - decorationSizes.bottom);
               
-              window->_onWindowEvent(WindowEvent::dpiChanged, isSameMonitor ? 0 : 1, adjustedClientWidth, adjustedClientHeight,
-                                     static_cast<uint32_t>(window->contentScale()*100.0f), (uint64_ptr)LOWORD(wParam));
+              window->_onWindowEvent(window, WindowEvent::dpiChanged, static_cast<uint32_t>(window->contentScale()*100.0f),
+                                     adjustedClientWidth, adjustedClientHeight, isSameMonitor ? nullptr : (void*)window->_monitor->handle());
             }
             return 0;
           }
@@ -1227,11 +1254,11 @@ Description : Window - Win32 implementation (Windows)
           if (window->_onWindowEvent && (void*)lParam != nullptr) {
             if (wParam == DBT_DEVICEARRIVAL) {
               if (((DEV_BROADCAST_HDR*)lParam)->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-                window->_onWindowEvent(WindowEvent::deviceInterfaceChange, 1, 0,0,0,0); // never block this message
+                window->_onWindowEvent(window, WindowEvent::deviceInterfaceChange, 1, 0,0,nullptr); // never block this message
             }
             else if (wParam == DBT_DEVICEREMOVECOMPLETE) {
               if (((DEV_BROADCAST_HDR*)lParam)->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-                window->_onWindowEvent(WindowEvent::deviceInterfaceChange, 0, 0,0,0,0); // never block this message
+                window->_onWindowEvent(window, WindowEvent::deviceInterfaceChange, 0, 0,0,nullptr); // never block this message
             }
           }
           break;
@@ -1255,20 +1282,20 @@ Description : Window - Win32 implementation (Windows)
           if (wParam == PBT_APMQUERYSUSPEND) {
             window->_nativeFlag |= __P_FLAG_POWER_SUSPENDED;
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::suspendResume, 1, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::suspendResume, 1, 0,0,nullptr);
           }
           else if (wParam == PBT_APMRESUMEAUTOMATIC) {
             window->_nativeFlag = (window->_nativeFlag & ~((uint32_t)__P_FLAG_POWER_SUSPENDED));
             if (window->_onWindowEvent)
-              window->_onWindowEvent(WindowEvent::suspendResume, 0, 0,0,0,0);
+              window->_onWindowEvent(window, WindowEvent::suspendResume, 0, 0,0,nullptr);
           }
           break;
         }
         // input language change
         case WM_INPUTLANGCHANGE: {
           if (window->_onWindowEvent)
-            window->_onWindowEvent(WindowEvent::inputLangChanged, (uint32_t)wParam, ((uint32_t)lParam & 0xFF), 
-                                   (((uint32_t)lParam & 0xFF00) >> 8), 0, (uint64_ptr)lParam);
+            window->_onWindowEvent(window, WindowEvent::inputLangChanged, (uint32_t)wParam, 
+                                   ((int32_t)lParam & 0xFF), (((int32_t)lParam & 0xFF00) >> 8), (void*)lParam);
           break; 
         }
       }
@@ -1307,6 +1334,16 @@ Description : Window - Win32 implementation (Windows)
     assert(this->_monitor != nullptr);
     float scaleX, scaleY;
     this->_monitor->getMonitorScaling(scaleX, scaleY, this->_handle);
+    
+    // fullscreen: adjust according to resolution (compared to desktop resolution)
+    if (this->_mode == WindowType::fullscreen) {
+      std::lock_guard<pandora::thread::SpinLock> guard(_clientAreaLock);
+      if (this->_clientArea.height < this->_monitor->attributes().screenArea.height) {
+        double estimatedScaleQuarters = (double)scaleY*4.0 * (double)this->_clientArea.height / (double)this->_monitor->attributes().screenArea.height;
+        uint32_t roundQuarters = static_cast<uint32_t>(estimatedScaleQuarters + 0.5);
+        scaleY = (float)roundQuarters * 0.25f;
+      }
+    }
     return scaleY;
   }
   
@@ -1669,7 +1706,7 @@ Description : Window - Win32 implementation (Windows)
   }
   
   // change vertical/horizontal scrollbar ranges
-  bool Window::setScrollbarRange(uint16_t posV, uint16_t posH, uint16_t verticalMax, uint16_t horizontalMax, uint32_t pixelsPerUnit) noexcept {
+  bool Window::setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit) noexcept {
     if (posV > verticalMax || posH > horizontalMax || pixelsPerUnit == 0)
       return false;
     
@@ -1679,8 +1716,11 @@ Description : Window - Win32 implementation (Windows)
     
     BOOL repaint = (this->_nativeFlag & __P_FLAG_WINDOW_VISIBLE) ? TRUE : FALSE;
     this->_impl->pixelsPerScrollUnit = pixelsPerUnit;
-    
+
     if (this->_impl->windowStyle & WS_VSCROLL) {
+      this->_impl->lastScrollPosV = (uint32_t)posV;
+      this->_impl->maxScrollPosV = (uint32_t)verticalMax;
+      
       scrollInfo.fMask = (SIF_POS | SIF_RANGE | SIF_PAGE);
       scrollInfo.nPos = posV;
       scrollInfo.nMin = 0;
@@ -1689,6 +1729,9 @@ Description : Window - Win32 implementation (Windows)
       SetScrollInfo((HWND)this->_handle, SB_VERT, &scrollInfo, repaint);
     }
     if (this->_impl->windowStyle & WS_HSCROLL) {
+      this->_impl->lastScrollPosH = (uint32_t)posH;
+      this->_impl->maxScrollPosH = (uint32_t)horizontalMax;
+      
       scrollInfo.fMask = (SIF_POS | SIF_RANGE | SIF_PAGE);
       scrollInfo.nPos = posH;
       scrollInfo.nMin = 0;
@@ -1701,6 +1744,8 @@ Description : Window - Win32 implementation (Windows)
   // change position of slider in vertical scrollbar
   bool Window::setScrollPositionV(uint16_t pos) noexcept {
     if (this->_impl->windowStyle & WS_VSCROLL) {
+      this->_impl->lastScrollPosV = (uint32_t)pos;
+      
       SCROLLINFO scrollInfo;
       ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
       scrollInfo.cbSize = sizeof(SCROLLINFO);
@@ -1714,6 +1759,8 @@ Description : Window - Win32 implementation (Windows)
   // change position of slider in horizontal scrollbar
   bool Window::setScrollPositionH(uint16_t pos) noexcept {
     if (this->_impl->windowStyle & WS_HSCROLL) {
+      this->_impl->lastScrollPosH = (uint32_t)pos;
+      
       SCROLLINFO scrollInfo;
       ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
       scrollInfo.cbSize = sizeof(SCROLLINFO);

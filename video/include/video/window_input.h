@@ -11,13 +11,14 @@ keycodes: see <video/window_keycodes.h>
 #pragma once
 
 #include <cstdint>
-#include <type_traits>
 #ifdef _WINDOWS
 # include <wchar.h>
 #endif
 
 namespace pandora {
   namespace video {
+    class Window;
+    
     // -- keyboard events --
     
     /// @brief Keyboard event types
@@ -47,15 +48,16 @@ namespace pandora {
 #   endif
 
     /// @brief Keyboard event handling function pointer (press/release):
-    ///        * event:      keyboard event type
-    ///        * keyCode:    - virtual key code (keyChange/altKeyChange/activateMenu);
-    ///                        NB: use <video/window_keycodes.h> definitions to identify key codes.
-    ///                      - character value (charInput).
-    ///        * value:      - type of transition (keyChange/altKeyChange/activateMenu) -> cast to 'KeyTransition'.
-    ///                      - number of repeats (charInput).
+    ///        * sender:  event origin
+    ///        * event:   keyboard event type
+    ///        * keyCode: - virtual key code (keyChange/altKeyChange/activateMenu);
+    ///                     NB: use <video/window_keycodes.h> definitions to identify key codes.
+    ///                   - character value (charInput).
+    ///        * change:  - type of transition (keyChange/altKeyChange/activateMenu) -> cast to 'KeyTransition'.
+    ///                   - number of repeats (charInput).
     ///        * return:  true to prevent default system processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
-    using KeyboardEventHandler = bool (*)(KeyboardEvent event, uint32_t keyCode, uint32_t value);
+    using KeyboardEventHandler = bool (*)(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t change);
     
     
     // -- mouse events --
@@ -85,6 +87,7 @@ namespace pandora {
     bool isMouseButtonPressed(uint8_t activeKeys, MouseButton button) noexcept; ///< Verify button status from event bit-map
     
     /// @brief Mouse event handling function pointer (click/move/wheel/...):
+    ///        * sender: event origin
     ///        * event:  mouse event type
     ///        * x:      X-coord of the mouse pointer (relative to client area top-left corner)
     ///        * y:      Y-coord of the mouse pointer (relative to client area top-left corner)
@@ -92,7 +95,7 @@ namespace pandora {
     ///        * activeKeys: bit-map with mouse keys that are currently pressed -> call 'isMouseButtonPressed(activeKeys, <MouseButton>)'
     ///        * return:  true to prevent default system processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
-    using MouseEventHandler = bool (*)(MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys);
+    using MouseEventHandler = bool (*)(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys);
 
 
     // -- touch-screen events --
@@ -106,83 +109,89 @@ namespace pandora {
     };
     
     /// @brief Touch event handling function pointer (touch/move/...):
+    ///        * sender: event origin
     ///        * x:      X-coord (relative to client area top-left corner)
     ///        * y:      Y-coord (relative to client area top-left corner)
     ///        * index:  value specific to event type (see TouchEvent enum)
     ///        * return:  true to prevent default system processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
-    using TouchEventHandler = bool (*)(TouchEvent event, uint32_t x, uint32_t y, uint32_t index);
+    using TouchEventHandler = bool (*)(Window* sender, TouchEvent event, uint32_t x, uint32_t y, uint32_t index);
     
     
-    // -- general window events --
+    // -- general window/hardware events --
     
     /// @brief Window/hardware event types
     enum class WindowEvent : uint32_t {
       none                   = 0u, ///< no event
       windowClosed           = 1u, ///< request for closing window (return true to prevent it, or false to allow it).
       stateChanged           = 2u, ///< window state has changed (visibility/activity):
-                                   ///  - flag = cast to 'WindowVisibleActive'.
+                                   ///  - status = cast to 'WindowActivity'.
       suspendResume          = 3u, ///< system suspend/resume operation:
-                                   ///  - flag = boolean: 1 (suspend) or 0 (resume).
+                                   ///  - status = boolean: 1 (suspend) or 0 (resume).
       deviceInterfaceChange  = 4u, ///< device interface added/removed (gamepad/joystick/...):
-                                   ///  - flag = boolean: 1 (added) or 0 (removed).
-      sizePositionTrack      = 5u, ///< window size/position is being changed (resizing/moving):
-                                   ///  - posX = tracked client position X (absolute);
-                                   ///  - posY = tracked client position Y (absolute);
-                                   ///  - size = tracked client width;
-                                   ///  - data = tracked client height;
-      sizePositionChanged    = 6u, ///< window size/position changed (resized/maximized/restored/moved):
-                                   ///  - posX = new client position X (absolute);
-                                   ///  - posY = new client position Y (absolute);
-                                   ///  - size = new client width;
-                                   ///  - data = new client height;
-      scrollPositionVTrack   = 7u, ///< the vertical scrollbar slider is being moved:
-                                   ///  - posY (or posX) = current scroll position.
-      scrollPositionHTrack   = 8u, ///< the horizontal scrollbar slider is being moved:
-                                   ///  - posX (or posY) = current scroll position.
-      scrollPositionVChanged = 9u, ///< the vertical scrollbar slider has been moved and released:
-                                   ///  - posY (or posX) = new scroll position.
-      scrollPositionHChanged = 10u,///< the horizontal scrollbar slider has been moved and released:
-                                   ///  - posX (or posY) = new scroll position.
-      menuSelected           = 11u,///< menu item selected: 
-                                   ///  - flag = boolean: 1 (submenu) or 0 (command);
-                                   ///  - size = index of item if submenu / command ID if menu command;
+                                   ///  - status = boolean: 1 (added) or 0 (removed).
+      menuSelected           = 5u, ///< menu item selected: 
+                                   ///  - status = boolean: 1 (submenu selected) or 0 (command item);
+                                   ///  - posX = index of item (if submenu) or -1 (command);
+                                   ///  - posY = command ID (if command) or -1 (submenu);
                                    ///  - data = only if submenu: handle to native menu/submenu (cast to 'MenuHandle').
-      dpiChanged             = 12u,///< window DPI has changed: 
-                                   ///  - flag = boolean: 1 (monitor changed) or 0 (same monitor);
-                                   ///  - posX = suggested adjusted client area width;
-                                   ///  - posY = suggested adjusted client area height;
-                                   ///  - size = content scaling factor multiplied by 100 (percentage);
-                                   ///  - data = monitor DPI value.
-      inputLangChanged       = 13u,///< keyboard input language has changed for current window:
-                                   ///  - flag = locale code page
-                                   ///  - posX = locale primary ID
-                                   ///  - posY = locale sub-lang ID
-                                   ///  - data = native language handle/ID
-      dropFiles              = 14u ///< end of a drag & drop operation:
-                                   ///  - posX = drop position X, relative to client area;
-                                   ///  - posY = drop position Y, relative to client area;
-                                   ///  - size = number of file paths in 'data'
-                                   ///  - data = array of file paths (cast to 'wchar_t**' on Windows, cast to 'char**' on other systems) - do NOT free buffer !
+      dpiChanged             = 6u, ///< window DPI has changed: 
+                                   ///  - status = content X scaling factor multiplied by 100 (percentage);
+                                   ///  - posX/posY = suggested adjusted client area width/height;
+                                   ///  - data = native monitor handle (if monitor has changed) or NULL (if same monitor).
+      inputLangChanged       = 7u, ///< keyboard input language has changed for current window:
+                                   ///  - status = locale code page;
+                                   ///  - posX/poxY = locale primary/sublang ID;
+                                   ///  - data = native language handle/ID.
+      dropFiles              = 8u  ///< end of a drag & drop operation:
+                                   ///  - status = length of 'data' (number of file paths);
+                                   ///  - posX/posY = drop position X/Y, relative to client area;
+                                   ///  - data = array of file paths (cast to 'wchar_t**' on Windows, cast to 'char**' on other systems) - do NOT free buffer!
     };
     /// @brief Window visibility/activity
-    enum class WindowVisibleActive : uint32_t {
+    enum class WindowActivity : uint32_t {
       hidden       = 0u, ///< hidden or minimized/inactive
       inactive     = 1u, ///< visible/inactive
       active       = 2u, ///< visible/active
     };
-    
-    typedef std::conditional<sizeof(uint64_t)>=sizeof(uintptr_t), uint64_t, uintptr_t>::type uint64_ptr;
-    
-    /// @brief Window event handling function pointer (close/maximize/scroll/...):
-    ///        * event: window/hardware event type
-    ///        * flag: event info, specific to event type (see WindowEvent enum)
-    ///        * posX: horizontal position, specific to event type (see WindowEvent enum)
-    ///        * posY: vertical position, specific to event type (see WindowEvent enum)
-    ///        * size: count/size, specific to event type (see WindowEvent enum)
-    ///        * data: handle/pointer/sizeY, specific to event type (see WindowEvent enum)
+
+    /// @brief Window/hardware event handling function pointer (close/activate/suspend/drop/...):
+    ///        * sender:    event origin
+    ///        * event:     window/hardware event type
+    ///        * status:    event status -or- info about other params (see WindowEvent enum)
+    ///        * posX/posY: horizontal/vertical position -or- primary/secondary ID, specific to event type (see WindowEvent enum)
+    ///        * data:      handle/pointer, specific to event type (see WindowEvent enum)
     ///        * bool return:  true to prevent default system processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
-    using WindowEventHandler = bool (*)(WindowEvent event, uint32_t flag, int32_t posX, int32_t posY, uint32_t size, uint64_ptr data);
+    using WindowEventHandler = bool (*)(Window* sender, WindowEvent event, uint32_t status, int32_t posX, int32_t posY, void* data);
+    
+    
+    // -- window position/size events --
+    
+    /// @brief Window position/size event types
+    enum class PositionEvent : uint32_t {
+      none                   = 0u, ///< no event
+      sizePositionTrack      = 1u, ///< window size/position is being changed (resizing/moving):
+                                   ///  - posX/posY = tracked client-area position X/Y (absolute);
+                                   ///  - sizeX/sizeY = tracked client-area width/height.
+      sizePositionChanged    = 2u, ///< window size/position changed (resized/maximized/restored/moved):
+                                   ///  - posX/posY = new client-area position X/Y (absolute);
+                                   ///  - sizeX/sizeY = new client-area width/height.
+      scrollPositionTrack    = 3u, ///< the vertical scrollbar slider is being moved:
+                                   ///  - posX/posY = current horizontal/vertical scroll position;
+                                   ///  - sizeX/sizeY = max horizontal/vertical position.
+      scrollPositionChanged  = 4u  ///< the vertical scrollbar slider has been moved and released:
+                                   ///  - posX/posY = new horizontal/vertical scroll position;
+                                   ///  - sizeX/sizeY = max horizontal/vertical position.
+    };
+
+    /// @brief Window size/position event handling function pointer (move/resize/maximize/scroll/...):
+    ///        * sender:      event origin
+    ///        * event:       window size/position event type
+    ///        * posX/posY:   horizontal/vertical positions (see PositionEvent enum)
+    ///        * sizeX/sizeY: horizontal/vertical sizes or limits (see PositionEvent enum)
+    ///        * bool return:  true to prevent default size processing / to confirm scroll event, false to allow normal processing
+    /// @warning Handler should NOT throw exceptions -> use try/catch in it
+    using PositionEventHandler = bool (*)(Window* sender, PositionEvent event, int32_t posX, int32_t posY, uint32_t sizeX, uint32_t sizeY);
   }
 }
