@@ -2,7 +2,7 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Description : Window - Win32 implementation (Windows)
+Description : Window manager + builder - Win32 implementation (Windows)
 *******************************************************************************/
 #ifdef _WINDOWS
 # include <cassert>
