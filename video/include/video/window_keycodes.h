@@ -357,6 +357,7 @@ warning : this file includes system libraries
 
 // -- iOS -- -------------------------------------------------------------------
 # else // TARGET_OS_IPHONE
+#   include <Foundation/Foundation.h>
 #   include <UIKit/UIKit.h>
 
 // -- virtual key codes - system --
