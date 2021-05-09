@@ -19,6 +19,12 @@ endif()
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Project settings                                                │
 # └──────────────────────────────────────────────────────────────────┘
+if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
+    cwork_set_embedded_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_win32")
+else()
+    cwork_set_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_common")
+endif()
+
 cwork_set_subproject_type("tools")
 cwork_create_project("console" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
                      "include" "src" "test")
