@@ -6,6 +6,7 @@ constants : mappings to virtual keycodes of all systems
 warning : this file includes system libraries
           -> only include it in the source file that manages input keys!
           -> do not include it in header files
+          -> on iOS, include it in .m or .mm files
 *******************************************************************************/
 #pragma once
 #define __P_VK_UNK(index) (0xFF00 + index)

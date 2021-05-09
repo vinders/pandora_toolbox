@@ -9,7 +9,6 @@ Description : Window manager + builder - UIKit implementation (iOS)
 #endif
 #if !defined(_WINDOWS) && defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 # include <stdexcept>
-# include "video/window_keycodes.h"
 # include "video/window.h"
 
   using namespace pandora::video;
