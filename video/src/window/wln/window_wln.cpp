@@ -123,6 +123,10 @@ Description : Window manager + builder - Wayland implementation (Linux)
   }
   
   // ---
+  
+  Window::~Window() noexcept {}
+  
+  // ---
 
   bool Window::_validateFirstDisplay() noexcept {
     return false;

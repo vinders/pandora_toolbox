@@ -123,6 +123,10 @@ Description : Window manager + builder - JNI implementation (Android)
   }
   
   // ---
+  
+  Window::~Window() noexcept {}
+  
+  // ---
 
   bool Window::_validateFirstDisplay() noexcept {
     return false;

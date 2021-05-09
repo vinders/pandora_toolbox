@@ -126,6 +126,10 @@ Description : Window manager + builder - Cocoa implementation (Mac OS)
   }
   
   // ---
+  
+  Window::~Window() noexcept {}
+  
+  // ---
 
   bool Window::_validateFirstDisplay() noexcept {
     return false;

@@ -126,6 +126,10 @@ Description : Window manager + builder - UIKit implementation (iOS)
   }
   
   // ---
+  
+  Window::~Window() noexcept {}
+  
+  // ---
 
   bool Window::_validateFirstDisplay() noexcept {
     return false;

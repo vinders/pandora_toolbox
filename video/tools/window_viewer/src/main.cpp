@@ -128,6 +128,7 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t, int32_t, int32_t, void*
         return true; // cancel close event
       break;
     }
+    default: break;
   }
   return false;
 }
@@ -142,6 +143,7 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
                                   (uint16_t)sizeX*2, (uint16_t)sizeY*2);
       g_isRefreshed = true;
       break;
+    default: break;
   }
   return false;
 }
@@ -156,6 +158,7 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
       g_lastCharInput = keyCode;
       g_isRefreshed = true; 
       break;
+    default: break;
   }
   return false;
 }
@@ -173,6 +176,7 @@ bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t index
         g_isRefreshed = true;
       }
       break;
+    default: break;
   }
   return false;
 }
@@ -190,6 +194,7 @@ uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
                                                 MessageBox::ActionType::okCancel, MessageBox::IconType::question);
       case 3: return (uint32_t)MessageBox::show("Error box", "Simple message-box with 3 buttons!", 
                                                 MessageBox::ActionType::abortRetryIgnore, MessageBox::IconType::error);
+      default: break;
     }
   }
   else {
@@ -200,6 +205,7 @@ uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
                                                 MessageBox::IconType::info, "Accept", "Deny");
       case 3: return (uint32_t)MessageBox::show("Error box", "Custom message-box with 3 buttons!\nPlease select a button.", 
                                                 MessageBox::IconType::warning, "Save", "Ignore", "Cancel");
+      default: break;
     }
   }
   return 0;
@@ -241,8 +247,10 @@ void viewWindow(WindowType mode, ResizeMode resize, WindowBehavior behavior = Wi
         // fullscreen mode: toggle window/fullscreen on click
         if (mode == WindowType::fullscreen && g_hasClicked) {
           pandora::hardware::DisplayArea clientArea{ 0, 0, _DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT };
-          if (!isFullscreen)
-            clientArea.x = Window::Builder::centeredPosition(); clientArea.y = Window::Builder::centeredPosition();
+          if (!isFullscreen) {
+            clientArea.x = Window::Builder::centeredPosition(); 
+            clientArea.y = Window::Builder::centeredPosition();
+          }
           window->setDisplayMode(isFullscreen ? WindowType::window : WindowType::fullscreen, behavior, clientArea, resize);
 
           isFullscreen ^= true;

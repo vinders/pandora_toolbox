@@ -123,6 +123,10 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   }
   
   // ---
+  
+  Window::~Window() noexcept {}
+  
+  // ---
 
   bool Window::_validateFirstDisplay() noexcept {
     return false;
