@@ -111,7 +111,7 @@ TEST_F(WindowResourceTest, menuRes) {
 # ifdef _WINDOWS
     _validateResource(WindowResource::buildMenu(CreateMenu()), WindowResource::Category::menu);
 # else
-    auto menu = WindowResource::buildMenu((void*)12345)
+    auto menu = WindowResource::buildMenu((void*)12345);
     _validateResource(menu, WindowResource::Category::menu);
     if (menu != nullptr)
       memset((void*)&(*menu), 0, sizeof(WindowResource)); // set handle to 0 to avoid destruction of fake handle
