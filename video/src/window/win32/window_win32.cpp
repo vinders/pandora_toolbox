@@ -1885,7 +1885,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     // create new window
     this->_handle = CreateWindowExW(windowStyleExt, contextName, caption, windowStyle, 
                                     (int)windowArea.x,(int)windowArea.y,(int)windowArea.width,(int)windowArea.height, 
-                                    (HWND)parentWindow, (HMENU)params.menu, (HINSTANCE)this->_moduleInstance, nullptr);
+                                    (HWND)parentWindow, params.menu ? (HMENU)params.menu->handle() : nullptr, (HINSTANCE)this->_moduleInstance, nullptr);
     if (this->_handle == nullptr)
       throw std::runtime_error(__formatLastError("Window creation failure: "));
     ++(g_windowCount); // increase instance counter (for exit handler) -> decreased in destructor if a handle exists
@@ -1969,10 +1969,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
       SetClassLongPtr((HWND)existingHandle, GCLP_HBRBACKGROUND, (LONG_PTR)params.backgroundColor->handle());
     }
     this->_menu = params.menu;
-    SetMenu((HWND)existingHandle, (HMENU)params.menu);
+    SetMenu((HWND)existingHandle, params.menu ? (HMENU)params.menu->handle() : nullptr);
     
     // redefine window style + size/position
-    if (!setDisplayMode(params.displayMode, params.behavior, params.clientArea, params.resizeMode, params.refreshRate))
+    if (!setDisplayMode(params.displayMode, params.behavior, params.resizeMode, params.clientArea, params.refreshRate))
       throw std::runtime_error(__formatLastError("Window: position/size application failure: "));
     
     this->_nativeFlag |= __P_FLAG_FIRST_DISPLAY_DONE;

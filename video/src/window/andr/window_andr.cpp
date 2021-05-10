@@ -50,8 +50,8 @@ Description : Window manager + builder - JNI implementation (Android)
   bool Window::resize(const DisplayArea& clientArea) noexcept { return false; }
   
   // Change window type and behavior + position and size/resolution
-  bool Window::setDisplayMode(WindowType type, WindowBehavior components, const DisplayArea& clientArea, 
-                              ResizeMode resizeMode, uint32_t rate) { return false; }
+  bool Window::setDisplayMode(WindowType type, WindowBehavior components, ResizeMode resizeMode,
+                              const DisplayArea& clientArea, uint32_t rate) { return false; }
   // Define minimum size limits for the user (ignored if not resizable)
   bool Window::setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept { return false; }
   
