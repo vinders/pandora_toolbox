@@ -1,19 +1,19 @@
 # Feature list
 
-<sub>**win** = *Windows* / 
-**mac** = *MacOS* / 
-**ios** = *iOS* / 
-**and** = *Android* / 
-**x11** = *Linux/Unix/BSD (X11)* / 
-**wln** = *Linux (Wayland)*</sub>
+<sub>![win](_img/badges/system_win.png) = *Windows* / 
+![mac](_img/badges/system_mac.png) = *MacOS* / 
+![ios](_img/badges/system_ios.png) = *iOS* / 
+![and](_img/badges/system_and.png) = *Android* / 
+![x11](_img/badges/system_x11.png) = *Linux/Unix/BSD (X11)* / 
+![wln](_img/badges/system_wln.png) = *Linux (Wayland)*</sub>
 
 <sub>![OK](_img/badges/feat_done.png) : done<br>
 ![BUG](_img/badges/feat_issues.png) : minor issue(s)<br>
 ![TEST](_img/badges/feat_not_tested.png) : not fully tested<br>
-![NOT](_img/badges/feat_not_impl.png) : not implemented yet</sub>
+![NOT](_img/badges/feat_not_impl.png) : not implemented yet<br>
 ![NA](_img/badges/feat_not_appl.png) : not applicable</sub>
 
-|         hardware includes        |                 description                 | win | mac | ios | and | x11 | wln |
+|             hardware             |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *hardware/cpu_instruction_set.h* | CPU instuction set ID/family ('cpu_specs.h')| ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *hardware/cpu_specs.h*           | CPU info/specs/features reader              | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
@@ -23,14 +23,14 @@
 | *hardware/display_monitor.h*     | Monitor info/size/DPI + display modes       | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *hardware/process_affinity.h*    | Process/thread affinity with CPU core(s)    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 
-|            io includes           |                 description                 | win | mac | ios | and | x11 | wln |
+|                io                |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *io/csv_log_formatter.h*         | Log formatter: CSV table format             | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *io/file_handle.h*               | Managed C file handle (RAII)                | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *io/file_system_io.h*            | File-system operations + metadata reader    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *io/file_system_locations.h*     | Standard OS-specific location finder        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 
-|          logic includes          |                 description                 | win | mac | ios | and | x11 | wln |
+|              logic               |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *logic/math.h*                   | Math algorithms: GCD/pow2/near-equal/...    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *logic/search.h*                 | Search algorithms: binary/jump/exp/interp.  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
@@ -38,15 +38,15 @@
 | *logic/sort_order.h*             | Data order enum (for 'search.h'/'sort.h')   | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *logic/strings.h*                | String utils: trim/pad/find/assign/...      | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 
-|          memory includes         |                 description                 | win | mac | ios | and | x11 | wln |
+|              memory              |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | list TODO                        |                                             |     |     |     |     |     |     |
 
-|         pattern includes         |                 description                 | win | mac | ios | and | x11 | wln |
+|             pattern              |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | list TODO                        |                                             |     |     |     |     |     |     |
 
-|          system includes         |                 description                 | win | mac | ios | and | x11 | wln |
+|              system              |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *system/cpu_arch.h*              | CPU arch. detection functions/constants     | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *system/date_time.h*             | Date/time string formatting                 | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
@@ -64,7 +64,7 @@
 | *system/api/windows_common_co...*| Windows common controls: API + manifest     | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png)
 | *system/api/windows_version.h*   | Windows minimum system version defs         | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png)
 
-|          thread includes         |                 description                 | win | mac | ios | and | x11 | wln |
+|              thread              |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *thread/ordered_lock.h*          | Concurrency sync primitive with FIFO order  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *thread/semaphore.h*             | Sync primitive with counter (wait/notify)   | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
@@ -73,7 +73,7 @@
 | *thread/thread_pool.h*           | Fixed-size pool of threads (async tasks)    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *thread/thread_priority.h*       | Set thread scheduler priority/policy        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 
-|           time includes          |                 description                 | win | mac | ios | and | x11 | wln |
+|               time               |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *time/rate.h*                    | Rational frequency container + utils        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *time/rate_factory.h*            | Standard rate creator (video SMPTE/audio)   | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
@@ -81,7 +81,7 @@
 | *time/system_clocks.h*           | High-res. OS-specific clocks/timers         | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *time/timer.h*                   | High-precision dual timer (clock sync)      | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 
-|          video includes          |                 description                 | win | mac | ios | and | x11 | wln |
+|              video               |                 description                 | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
 | *video/message_box.h*            | Alert message-box: standard/custom buttons  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | *video/window.h*                 | System window manager + builder             | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
@@ -90,6 +90,6 @@
 | *video/window_keycodes.h*        | OS-specific virtual-keycode bindings        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | *video/window_resource.h*        | Resource builders: icon/cursor/brush/...    | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | *video/api/opengl.h*             | OpenGL API includes with bindings           | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
-| *video/api/vulkan.h*             | Vulkan API includes                         | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
+| *video/api/vulkan.h*             | Vulkan API includes                         | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/d3d11/...*                | Direct3D11 renderer (Windows)               | ![NOT](_img/badges/feat_not_impl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) | ![NA](_img/badges/feat_not_appl.png) |
 | *video/openGL4/...*              | OpenGL4 renderer (portable)                 | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
