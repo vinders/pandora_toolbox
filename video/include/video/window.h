@@ -4,6 +4,7 @@ License :     MIT
 *******************************************************************************/
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <cstddef>
 #include <string>
@@ -138,7 +139,8 @@ namespace pandora {
       bool resize(const pandora::hardware::DisplayArea& clientArea) noexcept; ///< Change window size and position
       
       /// @brief Change window type and behavior + position and size/resolution
-      bool setDisplayMode(WindowType type, WindowBehavior components, const pandora::hardware::DisplayArea& clientArea, ResizeMode resizeMode, uint32_t rate = 0);
+      bool setDisplayMode(WindowType type, WindowBehavior components, ResizeMode resizeMode, 
+                          const pandora::hardware::DisplayArea& clientArea, uint32_t rate = 0);
       bool setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept; ///< Define minimum size limits for the user (ignored if not resizable)
       
       bool clearClientArea() noexcept; ///< Clear entire client area (with background color)
@@ -151,7 +153,7 @@ namespace pandora {
       bool setCursorPosition(int32_t x, int32_t y, CursorPositionType mode) noexcept; ///< Change mouse pointer position (won't change cursor visibility -> see 'setMouseHandler')
       
       bool setCaption(const window_char* caption) noexcept; ///< Change title in window caption
-      bool setMenu(MenuHandle menu) noexcept; ///< Add/replace native menu bar (use NULL to remove current menu)
+      bool setMenu(std::shared_ptr<WindowResource> menu) noexcept; ///< Add/replace native menu bar (use NULL to remove current menu)
       bool setBackgroundColorBrush(std::shared_ptr<WindowResource> colorBrush) noexcept;///< Change background color brush (will not affect display -> call clearClientArea())
       
       /// @brief Change vertical/horizontal scrollbar ranges (only values for existing scrollbars will be used)
@@ -236,8 +238,7 @@ namespace pandora {
         /// @brief Set background color brush for window client area
         inline Builder& setBackgroundColor(std::shared_ptr<WindowResource> colorBrush) noexcept;
         /// @brief Set native menu bar (if not set or NULL, no menu bar will appear).
-        /// @warning The native menu must not be destroyed while the Window instance uses it.
-        inline Builder& setMenu(MenuHandle handle) noexcept;
+        inline Builder& setMenu(std::shared_ptr<WindowResource> menu) noexcept;
 #       ifdef _WINDOWS
           /// @brief Set handle of current module instance (library or executable linked to this class)
           inline Builder& setModuleInstance(void* handle) noexcept { this->_params.moduleInstance = handle; return *this; }
@@ -274,7 +275,7 @@ namespace pandora {
           std::shared_ptr<WindowResource> captionIcon = nullptr;
           std::shared_ptr<WindowResource> cursor = nullptr;
           std::shared_ptr<WindowResource> backgroundColor = nullptr;
-          MenuHandle menu = (MenuHandle)0;
+          std::shared_ptr<WindowResource> menu = nullptr;
 #         ifdef _WINDOWS
             void* moduleInstance = nullptr;
 #         endif
@@ -307,7 +308,7 @@ namespace pandora {
       std::shared_ptr<WindowResource> _captionIcon = nullptr;
       std::shared_ptr<WindowResource> _cursor = nullptr;
       std::shared_ptr<WindowResource> _backgroundColor = nullptr;
-      MenuHandle _menuHandle = (MenuHandle)0;
+      std::shared_ptr<WindowResource> _menu = nullptr;
       void* _moduleInstance = nullptr;
 
       // display params
@@ -372,20 +373,25 @@ inline pandora::video::Window::Builder& pandora::video::Window::Builder::setSize
 // -- window builder - resources --
 
 pandora::video::Window::Builder& 
-pandora::video::Window::Builder::setIcon(std::shared_ptr<WindowResource> appIcon, std::shared_ptr<WindowResource> captionIcon) noexcept { 
+pandora::video::Window::Builder::setIcon(std::shared_ptr<WindowResource> appIcon, std::shared_ptr<WindowResource> captionIcon) noexcept {
+  assert(appIcon == nullptr || appIcon->type() == WindowResource::Category::icon);
+  assert(captionIcon == nullptr || captionIcon->type() == WindowResource::Category::icon);
   _params.appIcon = appIcon; 
   _params.captionIcon = captionIcon; 
   return *this;
 }
 pandora::video::Window::Builder& pandora::video::Window::Builder::setCursor(std::shared_ptr<WindowResource> cursor) noexcept { 
+  assert(cursor == nullptr || cursor->type() == WindowResource::Category::cursor);
   _params.cursor = cursor; 
   return *this;
 }
 pandora::video::Window::Builder& pandora::video::Window::Builder::setBackgroundColor(std::shared_ptr<WindowResource> colorBrush) noexcept { 
+  assert(colorBrush == nullptr || colorBrush->type() == WindowResource::Category::colorBrush);
   _params.backgroundColor = colorBrush; 
   return *this;
 }
-pandora::video::Window::Builder& pandora::video::Window::Builder::setMenu(MenuHandle handle) noexcept { 
-  _params.menu = handle; 
+pandora::video::Window::Builder& pandora::video::Window::Builder::setMenu(std::shared_ptr<WindowResource> menu) noexcept { 
+  assert(menu == nullptr || menu->type() == WindowResource::Category::menu);
+  _params.menu = menu; 
   return *this;
 }

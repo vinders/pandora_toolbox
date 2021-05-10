@@ -27,6 +27,7 @@ Description : WindowResource - Win32 implementation (Windows)
         case WindowResource::Category::icon:       DestroyIcon((HICON)this->_handle); break;
         case WindowResource::Category::cursor:     DestroyCursor((HCURSOR)this->_handle); break;
         case WindowResource::Category::colorBrush: DeleteObject((HBRUSH)this->_handle); break;
+        case WindowResource::Category::menu:       DestroyMenu((HMENU)this->_handle); break;
         default: break;
       }
     }
@@ -196,6 +197,14 @@ Description : WindowResource - Win32 implementation (Windows)
       default:         handle = CreateSolidBrush((COLORREF)(color & 0x00FFFFFFu)); break;
     }
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::colorBrush) : nullptr;
+  }
+
+
+// -- Menu container builder -- ------------------------------------------------
+
+  // native menu container
+  std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
+    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;
   }
 
 #endif

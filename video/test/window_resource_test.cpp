@@ -104,3 +104,17 @@ TEST_F(WindowResourceTest, buildColorBrushRes) {
   _validateResource(WindowResource::buildColorBrush(WindowResource::rgbColor(255,255,255)), WindowResource::Category::colorBrush);
   _validateResource(WindowResource::buildColorBrush(WindowResource::rgbColor(64,128,96)), WindowResource::Category::colorBrush);
 }
+
+// -- Menu resources --
+
+TEST_F(WindowResourceTest, menuRes) {
+# ifdef _WINDOWS
+    _validateResource(WindowResource::buildMenu(CreateMenu()), WindowResource::Category::menu);
+# else
+    auto menu = WindowResource::buildMenu((void*)12345)
+    _validateResource(menu, WindowResource::Category::menu);
+    if (menu != nullptr)
+      memset((void*)&(*menu), 0, sizeof(WindowResource)); // set handle to 0 to avoid destruction of fake handle
+# endif
+}
+

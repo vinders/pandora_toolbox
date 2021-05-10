@@ -251,7 +251,7 @@ void viewWindow(WindowType mode, ResizeMode resize, WindowBehavior behavior = Wi
             clientArea.x = Window::Builder::centeredPosition(); 
             clientArea.y = Window::Builder::centeredPosition();
           }
-          window->setDisplayMode(isFullscreen ? WindowType::window : WindowType::fullscreen, behavior, clientArea, resize);
+          window->setDisplayMode(isFullscreen ? WindowType::window : WindowType::fullscreen, behavior, resize, clientArea);
 
           isFullscreen ^= true;
           g_hasClicked = false;

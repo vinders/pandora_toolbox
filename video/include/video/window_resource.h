@@ -52,7 +52,8 @@ namespace pandora {
       enum class Category : uint32_t {
         icon       = 0u, ///< Image displayed in caption / taskbar
         cursor     = 1u, ///< Custom mouse pointer
-        colorBrush = 2u  ///< Painting color brush (background / text)
+        colorBrush = 2u, ///< Painting color brush (background / text)
+        menu       = 3u  ///< Window menu handle
       };
       
       /// @brief Initialize window resource container
@@ -155,6 +156,13 @@ namespace pandora {
       /// @brief Create color style resource
       /// @returns On success: valid color resource. On failure: nullptr.
       static std::shared_ptr<WindowResource> buildColorBrush(Color color);
+      
+      
+      // -- menu container builder --
+      
+      /// @brief Create native menu container (to guarantee destruction)
+      /// @returns On success: valid menu resource. On failure: nullptr.
+      static std::shared_ptr<WindowResource> buildMenu(MenuHandle handle);
       
       
     private:

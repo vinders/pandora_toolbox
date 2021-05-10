@@ -108,7 +108,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 # define __P_FLAG_MODE_CHANGE_PENDING 0x0200  // window display change has just occurred
 # define __P_FLAG_RESIZED_MOVED       0x0400  // window is currently being resized or moved
 # define __P_FLAG_CURSOR_RAW_INPUT    0x0800  // use raw move events for mouse
-# define __P_FLAG_CURSOR_HIDDEN     0x1000  // cursor should be hidden when the window is active
+# define __P_FLAG_CURSOR_HIDDEN       0x1000  // cursor should be hidden when the window is active
 # define __P_FLAG_CURSOR_HOVER        0x2000  // cursor is currently in client area
 # define __P_FLAG_CURSOR_MENULOOP     0x4000  // menu loop is currently active
 # define __P_FLAG_CURSOR_EVENT_REG    0x8000  // registration to native cursor events for current window
@@ -278,8 +278,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
       
       POINT pos{ 0, 0 };
       if (ClientToScreen((HWND)handle, &pos) != FALSE) { // get position
-        outClientArea.x = (uint32_t)pos.x;
-        outClientArea.y = (uint32_t)pos.y;
+        outClientArea.x = (int32_t)pos.x;
+        outClientArea.y = (int32_t)pos.y;
         return true;
       }
     }
@@ -304,7 +304,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (outWidth <= 0 || outHeight <= 0) {
         WindowDecorationSize decorationSizes;
         __toNativeWindowDecoration(*(window._monitor), window._mode, window._impl->windowStyle, window._impl->windowStyleExt, 
-                                   (window._menuHandle != nullptr), decorationSizes);
+                                   (window._menu != nullptr), decorationSizes);
                                    
         std::lock_guard<pandora::thread::SpinLock> guard(window._clientAreaLock);
         outWidth = window._clientArea.width + decorationSizes.left + decorationSizes.right;
@@ -513,22 +513,17 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
 // -- event management -- ------------------------------------------------------
 
-  static bool _isAppAlive = true;
-
   // Process/forward pending events for all existing windows (user input, size changes, shutdown...).
   bool Window::pollEvents() noexcept {
     MSG msg;
-    if (_isAppAlive) {
-      while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
-        if (msg.message == WM_QUIT && g_windowCount <= 0) {
-          _isAppAlive = false;
-          break;
-        }
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-      }
+    while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+      if (msg.message == WM_QUIT)
+        break;
+      
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
     }
-    return _isAppAlive;
+    return (g_windowCount > 0);
   }
   // Process/forward pending events for current window only (user input, size changes, shutdown...).
   bool Window::pollCurrentWindowEvents() noexcept {
@@ -631,7 +626,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         
         switch ((int)wParam) {
           case VK_F10: { // F10 key -> might be activation of menu
-            if (message == WM_SYSKEYDOWN && window->_menuHandle)
+            if (message == WM_SYSKEYDOWN && window->_menu)
               eventType = KeyboardEvent::activateMenu;
             keyCode = (uint32_t)wParam;
             break;
@@ -904,7 +899,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
               if ((window->_resizeMode & ResizeMode::homothety) == true) {
                 WindowDecorationSize decorationSizes;
                 __toNativeWindowDecoration(*(window->_monitor), window->_mode, window->_impl->windowStyle, 
-                                           window->_impl->windowStyleExt, (window->_menuHandle != nullptr), decorationSizes);
+                                           window->_impl->windowStyleExt, (window->_menu != nullptr), decorationSizes);
                 isUpdated = TRUE;
                 switch ((int)wParam) {
                   case WMSZ_TOPLEFT:
@@ -960,7 +955,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             case SIZE_MAXIMIZED: {
               hasSizeChanged = true;
               bool wasMinimized = (window->_nativeFlag & __P_FLAG_WINDOW_MINIMIZED);
-              window->_nativeFlag = ((window->_nativeFlag | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_WINDOW_VISIBLE) 
+              window->_nativeFlag = ((window->_nativeFlag | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE) 
                                   & ~((uint32_t)(__P_FLAG_WINDOW_MINIMIZED | __P_FLAG_RESIZED_MOVED)));
               __readCurrentClientArea(window->_handle, newClientArea);
               newClientArea.width = (uint32_t)LOWORD(lParam);
@@ -977,7 +972,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             case SIZE_RESTORED: {
               hasSizeChanged = true;
               bool wasMinimized = (window->_nativeFlag & __P_FLAG_WINDOW_MINIMIZED);
-              window->_nativeFlag = ( (window->_nativeFlag | __P_FLAG_WINDOW_VISIBLE) 
+              window->_nativeFlag = ( (window->_nativeFlag | __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE) 
                                       & ~((uint32_t)(__P_FLAG_WINDOW_MINIMIZED | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_RESIZED_MOVED)) );
               
               __readCurrentClientArea(window->_handle, newClientArea);
@@ -996,7 +991,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             if ((window->_resizeMode & ResizeMode::homothety) == true) {
               WindowDecorationSize decorationSizes;
               __toNativeWindowDecoration(*(window->_monitor), window->_mode, window->_impl->windowStyle, 
-                                         window->_impl->windowStyleExt, (window->_menuHandle != nullptr), decorationSizes);
+                                         window->_impl->windowStyleExt, (window->_menu != nullptr), decorationSizes);
               
               double fixedClientHeight = (double)newClientArea.width / window->_impl->initialRatio + 0.50001;
               if ((uint32_t)fixedClientHeight > newClientArea.height) {
@@ -1138,13 +1133,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
         
         // menu shortcut
         case WM_MENUCHAR: {
-          if (window->_menuHandle == nullptr) // if no menu handler -> invalid mnemonic or accelerator key -> avoid beep
+          if (window->_menu == nullptr) // if no menu handler -> invalid mnemonic or accelerator key -> avoid beep
             return MAKELRESULT(0, MNC_CLOSE);
           break;
         }
         // menu selection
         case WM_MENUSELECT: {
-          if (window->_onWindowEvent && window->_menuHandle != nullptr) {
+          if (window->_onWindowEvent && window->_menu != nullptr) {
             if (HIWORD(wParam) == MF_SYSMENU) // submenu selected
               window->_onWindowEvent(window, WindowEvent::menuSelected, 1, (int32_t)LOWORD(wParam), -1, (void*)lParam);
             else // menu command item
@@ -1250,7 +1245,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             
             WindowDecorationSize decorationSizes;
             __toNativeWindowDecoration(*(window->_monitor), window->_mode, window->_impl->windowStyle, window->_impl->windowStyleExt, 
-                                       (window->_menuHandle != nullptr), decorationSizes);
+                                       (window->_menu != nullptr), decorationSizes);
             
             // try to keep same client area on new monitor
             uint32_t clientWidth, clientHeight;
@@ -1296,7 +1291,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 return 0;
               break;
             case SC_KEYMENU: // menu access with ALT
-              if (window->_menuHandle == nullptr) // no menu -> ignore
+              if (window->_menu == nullptr) // no menu -> ignore
                 return 0;
           }
           break;
@@ -1492,7 +1487,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     auto clientArea = getClientArea();
     clientArea.x = x;
     clientArea.y = y;
-    auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menuHandle != nullptr), 
+    auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menu != nullptr), 
                                                                     _impl->windowStyle, _impl->windowStyleExt);
     if (SetWindowPos((HWND)this->_handle, nullptr, (int)windowArea.x, (int)windowArea.y, 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW)) != FALSE) {
       { std::lock_guard<pandora::thread::SpinLock> guard(_clientAreaLock);
@@ -1515,7 +1510,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         return false;
     }
     else { // window/dialog
-      auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menuHandle != nullptr), 
+      auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menu != nullptr), 
                                                                       _impl->windowStyle, _impl->windowStyleExt);
       if (SetWindowPos((HWND)this->_handle, nullptr, 0, 0, (int)windowArea.width, (int)windowArea.height, (SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW)) == FALSE)
         return false;
@@ -1549,7 +1544,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         return false;
     }
     else { // window/dialog
-      auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menuHandle != nullptr), 
+      auto windowArea = this->_monitor->convertClientAreaToWindowArea(clientArea, this->_handle, (this->_menu != nullptr), 
                                                                       _impl->windowStyle, _impl->windowStyleExt);
       if (SetWindowPos((HWND)this->_handle, nullptr, 0, 0, (int)windowArea.width, (int)windowArea.height, (SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW)) == FALSE)
         return false;
@@ -1566,8 +1561,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // ---
   
   // change window style and position/size/resolution
-  bool Window::setDisplayMode(WindowType type, WindowBehavior behavior, const DisplayArea& clientArea, 
-                              ResizeMode resizeMode, uint32_t rate) {
+  bool Window::setDisplayMode(WindowType type, WindowBehavior behavior, ResizeMode resizeMode,
+                              const DisplayArea& clientArea, uint32_t rate) {
     // set window style
     DWORD windowStyle, windowStyleExt;
     __toNativeWindowStyle(type, behavior, resizeMode, windowStyle, windowStyleExt);
@@ -1578,10 +1573,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
     DisplayArea windowArea;
     DisplayArea newClientArea;
     if (this->_parent == nullptr)
-      __toNativeAbsoluteArea(type, (this->_menuHandle != nullptr), clientArea, *(this->_monitor), 
+      __toNativeAbsoluteArea(type, (this->_menu != nullptr), clientArea, *(this->_monitor), 
                              windowStyle, windowStyleExt, newClientArea, windowArea);
     else
-      __toNativeChildArea(this->_parent, type, (this->_menuHandle != nullptr), clientArea, *(this->_monitor), 
+      __toNativeChildArea(this->_parent, type, (this->_menu != nullptr), clientArea, *(this->_monitor), 
                           windowStyle, windowStyleExt, newClientArea, windowArea);
     
     if (type == WindowType::fullscreen) {
@@ -1698,9 +1693,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return (SetWindowTextW((HWND)this->_handle, (caption != nullptr) ? caption : L"") != FALSE);
   }
   // replace window menu (or remove if null)
-  bool Window::setMenu(MenuHandle menu) noexcept {
-    if (SetMenu((HWND)this->_handle, (HMENU)menu) != FALSE || menu == nullptr) {
-      this->_menuHandle = menu;
+  bool Window::setMenu(std::shared_ptr<WindowResource> menu) noexcept {
+    if (SetMenu((HWND)this->_handle, (menu) ? (HMENU)menu->handle() : nullptr) != FALSE || menu == nullptr) {
+      this->_menu = menu;
       return true;
     }
     return false;
@@ -1859,7 +1854,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     this->_captionIcon = params.captionIcon;
     this->_cursor = params.cursor;
     this->_backgroundColor = params.backgroundColor;
-    this->_menuHandle = params.menu;
+    this->_menu = params.menu;
     this->_parent = parentWindow;
 
     if (params.monitor != nullptr)
@@ -1880,10 +1875,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
     // convert area size/position
     DisplayArea windowArea;
     if (parentWindow == nullptr)
-      __toNativeAbsoluteArea(this->_mode, (this->_menuHandle != nullptr), params.clientArea, *(this->_monitor), 
+      __toNativeAbsoluteArea(this->_mode, (this->_menu != nullptr), params.clientArea, *(this->_monitor), 
                              windowStyle, windowStyleExt, this->_clientArea, windowArea);
     else
-      __toNativeChildArea(parentWindow, this->_mode, (this->_menuHandle != nullptr), params.clientArea, *(this->_monitor), 
+      __toNativeChildArea(parentWindow, this->_mode, (this->_menu != nullptr), params.clientArea, *(this->_monitor), 
                           windowStyle, windowStyleExt, this->_clientArea, windowArea);
     _impl->initialRatio = (double)this->_clientArea.width / (double)this->_clientArea.height;
 
@@ -1898,7 +1893,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     // reference instance as user data for event handler
     if (SetPropW((HWND)this->_handle, __P_WINDOW_ID, (HANDLE)this) == FALSE)
       throw std::runtime_error(__formatLastError("Window: user data (for message handling) failure: "));
-    _isAppAlive = true;
   }
 
 
@@ -1931,7 +1925,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // existing window re-styling
   Window::Window(const Window::Builder::Params& params, WindowHandle existingHandle, bool callOrigEventProc) { // throws
     if (existingHandle == (WindowHandle)0)
-      throw std::invalid_argument("Window: existingHandle not be NULL");
+      throw std::invalid_argument("Window: existingHandle must not be NULL");
     this->_moduleInstance = (params.moduleInstance) 
                           ? (void*)params.moduleInstance 
                           : (void*)pandora::system::WindowsApp::instance().handle(); // throws
@@ -1974,7 +1968,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       this->_backgroundColor = params.backgroundColor;
       SetClassLongPtr((HWND)existingHandle, GCLP_HBRBACKGROUND, (LONG_PTR)params.backgroundColor->handle());
     }
-    this->_menuHandle = params.menu;
+    this->_menu = params.menu;
     SetMenu((HWND)existingHandle, (HMENU)params.menu);
     
     // redefine window style + size/position
@@ -1982,7 +1976,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       throw std::runtime_error(__formatLastError("Window: position/size application failure: "));
     
     this->_nativeFlag |= __P_FLAG_FIRST_DISPLAY_DONE;
-    _isAppAlive = true;
   }
 
 

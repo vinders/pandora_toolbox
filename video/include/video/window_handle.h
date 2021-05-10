@@ -17,7 +17,7 @@ namespace pandora {
 #   else
       using WindowHandle = uint32_t;      ///< Handle to native system window
       using WindowResourceHandle = void*; ///< Handle to native window resource (icon, cursor, color brush, ...)
-      using MenuHandle = uint32_t;        ///< Handle to native menu instance
+      using MenuHandle = void*;           ///< Handle to native menu instance
 #   endif
   }
 }

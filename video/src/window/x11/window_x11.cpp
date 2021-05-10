@@ -71,7 +71,7 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   // Change title in window caption
   bool Window::setCaption(const window_char* caption) noexcept { return false; }
   // Add/replace native menu bar (use NULL to remove current menu)
-  bool Window::setMenu(MenuHandle menu) noexcept { return false; }
+  bool Window::setMenu(std::shared_ptr<WindowResource> menu) noexcept { return false; }
   // Change background color brush (will not affect display -> call clearClientArea())
   bool Window::setBackgroundColorBrush(std::shared_ptr<WindowResource> colorBrush) noexcept { return false; }
   

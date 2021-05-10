@@ -117,4 +117,12 @@ Description : WindowResource - Wayland implementation (Linux)
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::colorBrush) : nullptr;
   }
 
+
+// -- Menu container builder -- ------------------------------------------------
+
+  // native menu container
+  std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
+    return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;
+  }
+
 #endif
