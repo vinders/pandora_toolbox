@@ -9,7 +9,7 @@
 Pandora Toolbox is a collection of portable C++ libraries: general purpose utilities, data containers, common patterns, video filters, timers, concurrency tools... 
 The code is meant to be highly efficient and easy to use in real-time and video projects : AI, video processing, video games, emulators or embedded systems. Written in C++ 17, it supports backwards compatibility with C++ 14.
 
-See [Libraries](#libraries) section below for more information. Check changelog [here](./CHANGELOG.md).<br>
+See [Libraries](#libraries) section below for more information, or full list of [features](./FEATURES.md). Check changelog [here](./CHANGELOG.md).<br>
 Contributors should take a look at the [issue reporting and contribution](./CONTRIBUTING.md) guidelines.
 
 ## Build status
