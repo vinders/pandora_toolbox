@@ -270,7 +270,8 @@ struct BackgroundColor {
 void viewWindow(WindowType mode, ResizeMode resize, FeatureMode feat = FeatureMode::none, 
                 bool isCentered = true, bool isScrollable = false, CursorMode cursorMode = CursorMode::normal) {
   try {
-    BackgroundColor back{ (feat == FeatureMode::rainbowBackground || mode == WindowType::fullscreen) ? 255 : 0,0,0 };
+    BackgroundColor back{ (feat == FeatureMode::rainbowBackground || mode == WindowType::fullscreen) 
+                          ? (uint8_t)255 : (uint8_t)0, (uint8_t)0, (uint8_t)0 };
     auto window = createWindow(mode, resize, WindowResource::rgbColor(back.r,back.g,back.b), 
                                isCentered, isScrollable, (cursorMode == CursorMode::custom));
     window->setMinClientAreaSize(400, 300);
@@ -333,7 +334,7 @@ void viewWindow(WindowType mode, ResizeMode resize, FeatureMode feat = FeatureMo
               break;
             }
             case FeatureMode::colorChangeOnClick: {
-              back.r = (back.r) ? 0 : 255;
+              back.r = (back.r) ? (uint8_t)0 : (uint8_t)255;
               window->setBackgroundColorBrush(WindowResource::buildColorBrush(WindowResource::rgbColor(back.r,back.g,back.b)));
               window->clearClientArea();
               break;

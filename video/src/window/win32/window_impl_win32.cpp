@@ -1429,7 +1429,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
           ZeroMemory(&tme, sizeof(tme));
           tme.cbSize = sizeof(tme);
           tme.dwFlags = TME_LEAVE | TME_HOVER;
-          tme.dwHoverTime = HOVER_DEFAULT;
+          tme.dwHoverTime = 20u;
           tme.hwndTrack = window._handle;
           TrackMouseEvent(&tme);
 
@@ -1632,7 +1632,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
               if (window->_statusFlags & __P_FLAG_SCROLLRANGE_HANDLER_CHANGE)
                 break;
 
-              bool wasActive = (window->_statusFlags & __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE) == (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE);
+              bool wasActive = (window->_statusFlags & (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE)) == (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE);
               if (wParam == SIZE_RESTORED)
                 __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE, 
                                      __P_FLAG_WINDOW_MINIMIZED | __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_RESIZED_MOVED);
