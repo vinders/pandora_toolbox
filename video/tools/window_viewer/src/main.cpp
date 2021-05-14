@@ -39,6 +39,18 @@ Window viewer - utility to display window, dialog, or modal message-box
 using namespace pandora::video;
 
 
+// -- test data -- -------------------------------------------------------------
+
+bool g_isRefreshed = false;
+bool g_hasScrollbars = false;
+uint32_t g_lastSizeX = _DEFAULT_WINDOW_WIDTH;
+uint32_t g_lastSizeY = _DEFAULT_WINDOW_HEIGHT;
+uint32_t g_lastCursorPosX = 0;
+uint32_t g_lastCursorPosY = 0;
+uint32_t g_lastCharInput = (uint32_t)'-';
+bool g_hasClicked = false;
+
+
 // -- console helpers -- -------------------------------------------------------
 
 // Clear all traces in console
@@ -66,10 +78,11 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
   printf("Enter a value (%d-%d, or 0) :\n> ", minValue, maxValue);
 
   do {
-    fflush(stdin);
     isValid = (scanf("%d", &val) > 0 && (val == 0 || (val >= minValue && val <= maxValue)) );
-    if (!isValid)
+    if (!isValid) {
+      while(getchar() != '\n');
       printf("Invalid value. Please try again (%d-%d or 0) :\n> ", minValue, maxValue);
+    }
   } while (!isValid);
 
   while (getchar() != '\n'); // clear buffer
@@ -79,28 +92,48 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
 
 // -- window helpers -- --------------------------------------------------------
 
-// create main window
-std::unique_ptr<Window> createWindow(WindowType mode, WindowBehavior behavior, 
-                                     ResizeMode resize, WindowResource::Color background,
-                                     bool hasCustomCursor, bool isCentered) { // throws on failure
-# ifdef _WINDOWS
-    auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
-# else
-    auto mainIcon = WindowResource::buildIconFromPackage("logo_big.png");
-# endif
-
-  std::shared_ptr<WindowResource> cursor = nullptr;
-  if (hasCustomCursor) {
+// build icon
+std::shared_ptr<WindowResource> buildWindowIcon(bool usePackage) {
+  if (usePackage) {
 #   ifdef _WINDOWS
-      cursor = WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR));
+      return WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
 #   else
-      cursor = WindowResource::buildCursorFromPackage("base_cur.png");
+      return WindowResource::buildIconFromPackage("logo_big.png");
 #   endif
   }
+  else
+    return WindowResource::buildIcon(SystemIcon::app);
+}
+
+// build cursor
+std::shared_ptr<WindowResource> buildWindowCursor(bool usePackage) {
+  if (usePackage) {
+#   ifdef _WINDOWS
+      return WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR));
+#   else
+    return WindowResource::buildCursorFromPackage("base_cur.png");
+#   endif
+  }
+  else
+    return WindowResource::buildCursor(SystemCursor::pointer);
+}
+
+// get display behavior
+WindowBehavior getBehavior(bool isScrollable) {
+  return isScrollable ? (WindowBehavior::scrollV | WindowBehavior::scrollH) : WindowBehavior::none;
+}
+
+// create main window
+std::unique_ptr<Window> createWindow(WindowType mode, ResizeMode resize, WindowResource::Color background,
+                                     bool isCentered, bool isScrollable, bool hasCustomCursor) { // throws on failure
+  std::shared_ptr<WindowResource> mainIcon = buildWindowIcon(true);
+  std::shared_ptr<WindowResource> cursor = nullptr;
+  if (hasCustomCursor)
+      cursor = buildWindowCursor(true);
+  int32_t position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
   
   Window::Builder builder;
-  auto position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
-  return builder.setDisplayMode(mode, behavior, resize)
+  return builder.setDisplayMode(mode, getBehavior(isScrollable), resize)
          .setRefreshRate(60)
          .setSize(_DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT)
          .setPosition(position, position)
@@ -110,15 +143,7 @@ std::unique_ptr<Window> createWindow(WindowType mode, WindowBehavior behavior,
          .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
 }
 
-// test data
-bool g_isRefreshed = false;
-bool g_hasScrollbars = false;
-uint32_t g_lastSizeX = _DEFAULT_WINDOW_WIDTH;
-uint32_t g_lastSizeY = _DEFAULT_WINDOW_HEIGHT;
-uint32_t g_lastCursorPosX = 0;
-uint32_t g_lastCursorPosY = 0;
-uint32_t g_lastCharInput = (uint32_t)'-';
-bool g_hasClicked = false;
+// ---
 
 // window/hardware event handler
 bool onWindowEvent(Window*, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
@@ -181,13 +206,17 @@ bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t index
         g_isRefreshed = true;
       }
       break;
+    case MouseEvent::rawMotion:
+      g_lastCursorPosX += x;
+      g_lastCursorPosY += y;
+      break;
     default: break;
   }
   return false;
 }
 
 
-// -- viewers -- ---------------------------------------------------------------
+// -- message box viewer -- ----------------------------------------------------
 
 // Display message box
 uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
@@ -216,65 +245,121 @@ uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
   return 0;
 }
 
+
+// -- window viewer -- ---------------------------------------------------------
+
+enum class FeatureMode : uint32_t {
+  none = 0,
+  inputKeyInCaption,
+  fullscreenToggle,
+  cursorChangeOnClick,
+  colorChangeOnClick,
+  rainbowBackground
+};
+enum class CursorMode : uint32_t {
+  normal = 0,
+  custom,
+  hidden,
+  rawMotion
+};
+struct BackgroundColor {
+  uint8_t r, g, b;
+};
+
 // Display window
-void viewWindow(WindowType mode, ResizeMode resize, WindowBehavior behavior = WindowBehavior::none, bool isCentered = true,
-                bool isCaptionFromInput = false, bool rainbowBackground = false, bool hasCustomCursor = false) {
+void viewWindow(WindowType mode, ResizeMode resize, FeatureMode feat = FeatureMode::none, 
+                bool isCentered = true, bool isScrollable = false, CursorMode cursorMode = CursorMode::normal) {
   try {
-    uint8_t r = 255, g = 0, b = 0;
-    auto window = createWindow(mode, behavior, resize, (rainbowBackground  || mode == WindowType::fullscreen)
-                                                       ? WindowResource::rgbColor(r,g,b) 
-                                                       : WindowResource::rgbColor(0,0,0), hasCustomCursor, isCentered);
+    BackgroundColor back{ (feat == FeatureMode::rainbowBackground || mode == WindowType::fullscreen) ? 255 : 0,0,0 };
+    auto window = createWindow(mode, resize, WindowResource::rgbColor(back.r,back.g,back.b), 
+                               isCentered, isScrollable, (cursorMode == CursorMode::custom));
     window->setMinClientAreaSize(400, 300);
-    if ((behavior & WindowBehavior::scrollV) == true) {
-      g_hasScrollbars = true;
+    g_lastCursorPosX = g_lastCursorPosY = 0;
+    g_hasScrollbars = isScrollable;
+    if (isScrollable)
       window->setScrollbarRange(0, 0, (uint16_t)_DEFAULT_WINDOW_WIDTH*2, (uint16_t)_DEFAULT_WINDOW_HEIGHT*2);
-    }
-    
+
     window->setWindowHandler(&onWindowEvent);
     window->setPositionHandler(&onPositionEvent);
     window->setKeyboardHandler(&onKeyboardEvent);
-    window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible);
+    switch (cursorMode) {
+      case CursorMode::hidden: window->setMouseHandler(&onMouseEvent, Window::CursorMode::hidden); break;
+      case CursorMode::rawMotion: window->setMouseHandler(&onMouseEvent, Window::CursorMode::hiddenRaw); break;
+      default: window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible); break;
+    }
     window->show();
-    
+
+    bool hasCursorChanged = false;
     while (Window::pollEvents()) {
       if (g_isRefreshed) {
         // update caption: input char, window size, cursor position
-        window_char buffer[64]{ 0 };
-        if (isCaptionFromInput)
-          _SYSTEM_sprintf(buffer, sizeof(buffer)/sizeof(window_char), _SYSTEM_STR("Example Window - input:%c - %ux%u [%u-%u]"), 
-                          (window_char)g_lastCharInput, g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
-        else
-          _SYSTEM_sprintf(buffer, sizeof(buffer)/sizeof(window_char), _SYSTEM_STR("Example Window - %ux%u [%u-%u]"),
-                           g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
-        window->setCaption((const window_char*)buffer);
-
-        // fullscreen mode: toggle window/fullscreen on click
-        if (mode == WindowType::fullscreen && g_hasClicked) {
-          auto position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
-          pandora::hardware::DisplayArea clientArea{ position, position, _DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT };
-          if (window->displayMode() == WindowType::fullscreen)
-            window->setDisplayMode(WindowType::window, behavior, resize, clientArea);
+        if (window->displayMode() != WindowType::fullscreen) {
+          window_char buffer[64]{ 0 };
+          if (feat == FeatureMode::inputKeyInCaption)
+            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), _SYSTEM_STR("Example Window - input:%c - %ux%u [%u-%u]"),
+              (window_char)g_lastCharInput, g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
           else
-            window->setDisplayMode(WindowType::fullscreen, behavior, resize, clientArea, 60);
+            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), _SYSTEM_STR("Example Window - %ux%u [%u-%u]"),
+              g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
+          window->setCaption((const window_char*)buffer);
+        }
 
+        // click event
+        if (g_hasClicked) {
+          switch (feat) {
+            case FeatureMode::fullscreenToggle: {
+              auto position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
+              pandora::hardware::DisplayArea clientArea{ position, position, _DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT };
+              if (window->displayMode() == WindowType::fullscreen)
+                window->setDisplayMode((mode != WindowType::fullscreen) ? mode : WindowType::window, getBehavior(isScrollable), resize, clientArea);
+              else
+                window->setDisplayMode(WindowType::fullscreen, getBehavior(isScrollable), resize, clientArea, 60);
+              break;
+            }
+            case FeatureMode::cursorChangeOnClick: {
+              hasCursorChanged ^= true;
+              switch (cursorMode) {
+                case CursorMode::normal: window->setCursor(buildWindowCursor(hasCursorChanged)); break;
+                case CursorMode::custom: window->setCursor(buildWindowCursor(!hasCursorChanged)); break;
+                case CursorMode::hidden: 
+                  window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hidden); 
+                  break;
+                case CursorMode::rawMotion:
+                  g_lastCursorPosX = g_lastCursorPosY = 0;
+                  window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hiddenRaw); 
+                  break;
+                default: break;
+              }
+              break;
+            }
+            case FeatureMode::colorChangeOnClick: {
+              back.r = (back.r) ? 0 : 255;
+              window->setBackgroundColorBrush(WindowResource::buildColorBrush(WindowResource::rgbColor(back.r,back.g,back.b)));
+              window->clearClientArea();
+              break;
+            }
+            default: break;
+          }
           g_hasClicked = false;
         }
         g_isRefreshed = false;
       }
-      // update background (rainbow animation)
-      if (rainbowBackground) {
-        if (r > 0 && b == 0) {
-          --r; ++g;
+
+      // rainbow background update
+      if (feat == FeatureMode::rainbowBackground) {
+        if (back.r > 0 && back.b == 0) { 
+          --back.r; ++back.g; 
         }
-        else if (g > 0) {
-          --g; ++b;
+        else if (back.g > 0) { 
+          --back.g; ++back.b; 
         }
-        else {
-          --b; ++r;
+        else { 
+          --back.b; ++back.r; 
         }
-        window->setBackgroundColorBrush(WindowResource::buildColorBrush(WindowResource::rgbColor(r,g,b)));
+        window->setBackgroundColorBrush(WindowResource::buildColorBrush(WindowResource::rgbColor(back.r,back.g,back.b)));
         window->clearClientArea(); // repaint
       }
+
       std::this_thread::sleep_for(std::chrono::microseconds(16666LL)); // 60Hz
     }
   }
@@ -313,50 +398,66 @@ void menuMessageBox() {
   }
 }
 
-// dialog menu
-void menuDialog() {
+// window/dialog menu
+void menuWindow(WindowType mode, const char* typeName) {
+  ResizeMode resizeMode = ResizeMode::fixed;
+  bool isScrollable = false;
+  bool isCentered = false;
+  CursorMode cursor = CursorMode::normal;
+  FeatureMode feat = FeatureMode::none;
+
   bool isRunning = true;
   while (isRunning) {
     clearScreen();
-    printf("Window viewer: dialog\n_________________________________________________\n");
+    printf("Window viewer: %s\n_________________________________________________\n", typeName);
+    printf("> to exit: ESC or close button\n");
 
-    printf("\nDialog (exit: ESC or close button) :\n");
-    printMenu<6>({ "Back to main menu...", "Fixed", "Resizable", "Homothety", "No caption", "Rainbow" });
-    int option = readNumericInput(1, 5);
-    switch (option) {
-      case 1: viewWindow(WindowType::dialog, ResizeMode::fixed); break;
-      case 2: viewWindow(WindowType::dialog, ResizeMode::resizable); break;
-      case 3: viewWindow(WindowType::dialog, ResizeMode::resizable|ResizeMode::homothety); break;
-      case 4: viewWindow(WindowType::bordered, ResizeMode::resizable); break;
-      case 5: viewWindow(WindowType::dialog, ResizeMode::resizable|ResizeMode::homothety, 
-                         WindowBehavior::none, true, false, true); break;
-      case 0:
-      default: isRunning = false; break;
+    printf("\nSize mode:\n");
+    printMenu<9>({ "Back to main menu...", "Fixed", "ResizableX", "ResizableY", "Resizable", "Homothety", 
+                                           "Fixed / scrollbars", "Resizable / scrollbars", "Homothety / scrollbars" });
+    int size = readNumericInput(1, 8);
+    if (size == 0) { isRunning = false; continue; }
+    switch (size) {
+      case 1: resizeMode = ResizeMode::fixed; isScrollable = false; break;
+      case 2: resizeMode = ResizeMode::resizableX; isScrollable = false; break;
+      case 3: resizeMode = ResizeMode::resizableY; isScrollable = false; break;
+      case 4: resizeMode = ResizeMode::resizable; isScrollable = false; break;
+      case 5: resizeMode = ResizeMode::resizable|ResizeMode::homothety; isScrollable = false; break;
+      case 6: resizeMode = ResizeMode::fixed; isScrollable = true; break;
+      case 7: resizeMode = ResizeMode::resizable; isScrollable = true; break;
+      case 8: resizeMode = ResizeMode::resizable|ResizeMode::homothety; isScrollable = true; break;
+      default: break;
     }
-  }
-}
 
-// window menu
-void menuWindow() {
-  bool isRunning = true;
-  while (isRunning) {
-    clearScreen();
-    printf("Window viewer: window\n_________________________________________________\n");
-
-    printf("\nWindow (exit: ESC or close button) :\n");
-    printMenu<6>({ "Back to main menu...", "Fixed, default pos, caption input", "Resizable, scrollable", "Homothety custom cursor", "Borderless", 
-                                           "Fullscreen/window (click to toggle)" });
-    int option = readNumericInput(1, 5);
-    switch (option) {
-      case 1: viewWindow(WindowType::window, ResizeMode::fixed, WindowBehavior::none, false, true); break;
-      case 2: viewWindow(WindowType::window, ResizeMode::resizable, WindowBehavior::scrollV|WindowBehavior::scrollH); break;
-      case 3: viewWindow(WindowType::window, ResizeMode::resizable|ResizeMode::homothety, 
-                         WindowBehavior::none, true, false, false, true); break;
-      case 4: viewWindow(WindowType::borderless, ResizeMode::fixed); break;
-      case 5: viewWindow(WindowType::fullscreen, ResizeMode::resizable|ResizeMode::homothety); break;
-      case 0:
-      default: isRunning = false; break;
+    printf("\nStyle:\n");
+    printMenu<6>({ "Back to main menu...", "Default pos", "Centered", "Centered / custom cursor", "Centered / hidden cursor", "Centered / mouse capture" });
+    int style = readNumericInput(1, 5);
+    if (style == 0) { isRunning = false; continue; }
+    switch (style) {
+      case 1: isCentered = false; cursor = CursorMode::normal; break;
+      case 2: isCentered = true; cursor = CursorMode::normal; break;
+      case 3: isCentered = true; cursor = CursorMode::custom; break;
+      case 4: isCentered = true; cursor = CursorMode::hidden; break;
+      case 5: isCentered = true; cursor = CursorMode::rawMotion; break;
+      default: break;
     }
+
+    printf("\nFeature:\n");
+    printMenu<7>({ "Back to main menu...", "Standard", "Last input key in caption", "Toggle window/fullscreen on click", 
+                                           "Change cursor on click", "Change color on click", "Rainbow background" });
+    int option = readNumericInput(1, 6);
+    if (option == 0) { isRunning = false; continue; }
+    switch (option) {
+      case 1: feat = FeatureMode::none; break;
+      case 2: feat = FeatureMode::inputKeyInCaption; break;
+      case 3: feat = FeatureMode::fullscreenToggle; break;
+      case 4: feat = FeatureMode::cursorChangeOnClick; break;
+      case 5: feat = FeatureMode::colorChangeOnClick; break;
+      case 6: feat = FeatureMode::rainbowBackground; break;
+      default: break;
+    }
+
+    viewWindow(mode, resizeMode, feat, isCentered, isScrollable, cursor);
   }
 }
 
@@ -368,11 +469,10 @@ void menuWindow() {
     try {
       pandora::system::AndroidApp::instance().init(state);
       printf("-- user choice: %u", viewMessageBox(1, false));
-      printf("-- user choice: %u", viewMessageBox(2, false));
-      printf("-- user choice: %u", viewMessageBox(3, false));
-      printf("-- user choice: %u", viewMessageBox(1, true));
       printf("-- user choice: %u", viewMessageBox(2, true));
-      printf("-- user choice: %u", viewMessageBox(3, true));
+      printf("-- user choice: %u", viewMessageBox(3, false));
+      viewWindow(WindowType::window, ResizeMode::fixed, WindowBehavior::none);
+      viewWindow(WindowType::fullscreen, ResizeMode::fixed, WindowBehavior::none);
     }
     catch (const std::exception& exc) { LOGE("%s", exc.what()); }
   }
@@ -390,12 +490,15 @@ void menuWindow() {
       printf("Window viewer: main menu\n_________________________________________________\n");
 
       printf("\nWindow type :\n");
-      printMenu<4>({ "Exit...", "MessageBox", "Dialog", "Window" });
-      int option = readNumericInput(1, 3);
+      printMenu<7>({ "Exit...", "MessageBox", "Bordered", "Dialog", "Window", "Borderless", "Fullscreen" });
+      int option = readNumericInput(1, 6);
       switch (option) {
         case 1: menuMessageBox(); break;
-        case 2: menuDialog(); break;
-        case 3: menuWindow(); break;
+        case 2: menuWindow(WindowType::bordered, "bordered"); break;
+        case 3: menuWindow(WindowType::dialog, "dialog"); break;
+        case 4: menuWindow(WindowType::window, "window"); break;
+        case 5: menuWindow(WindowType::borderless, "borderless"); break;
+        case 6: menuWindow(WindowType::fullscreen, "fullscreen"); break;
         case 0:
         default: isRunning = false; break;
       }
