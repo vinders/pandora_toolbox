@@ -92,8 +92,11 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t 
 bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t change) {
   switch (event) {
     case KeyboardEvent::keyDown: {
-      if (keyCode == _P_VK_ESC) // ESC pressed -> close
+      if (keyCode == _P_VK_ESC) { // ESC pressed -> close
+        if (sender->displayMode() == WindowType::fullscreen)
+          sender->show(Window::VisibilityCommand::minimize); // do not show message-box in fullscreen
         Window::sendCloseEvent(sender->handle());
+      }
       break;
     }
     default: break;
