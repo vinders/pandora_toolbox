@@ -18,7 +18,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
 // -- Window Builder - new window -- -------------------------------------------
 
-  // configure window class context + create new window
+  // Configure window class context + create new window
   std::unique_ptr<Window> Window::Builder::create(const window_char* contextName, const window_char* caption, 
                                                   WindowHandle parentWindow) { // throws
     if (contextName == nullptr || *contextName == 0)
@@ -65,7 +65,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
   // ---
   
-  // new window construction
+  // New window construction
   Window::Window(const window_char* contextName, const window_char* caption, 
                  const Window::Builder::Params& params, WindowHandle parentWindow) { // throws
     // resources
@@ -82,7 +82,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
 // -- Window Builder - existing window -- --------------------------------------
 
-  // build instance from existing window
+  // Build instance from existing window
   std::unique_ptr<Window> Window::Builder::update(WindowHandle existingHandle, bool callExistingEventProc) { // throws
     if (this->_params.backgroundColor == nullptr)
       this->_params.backgroundColor = WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0));
@@ -90,7 +90,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return std::unique_ptr<Window>(new Window(this->_params, existingHandle, callExistingEventProc));
   }
   
-  // existing window re-styling
+  // Existing window re-styling
   Window::Window(const Window::Builder::Params& params, WindowHandle existingHandle, bool callExistingEventProc) { // throws
     // resources
     this->_appIcon = params.appIcon;
@@ -127,21 +127,21 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Verify if current window has a parent window
   bool Window::hasParent() const noexcept { return this->_impl->hasParent(); }
   
-  // get current window visibility state
+  // Get current window visibility state
   Window::VisibleState Window::visibleState() const noexcept { return this->_impl->getVisibleState(); }
   
-  // get current window area (position / size)
+  // Get current window area (position / size)
   DisplayArea Window::getWindowArea() const noexcept { return this->_impl->lastWindowArea(); }
-  // get current window client area (position / size)
+  // Get current window client area (position / size)
   DisplayArea Window::getClientArea() const noexcept { return this->_impl->lastClientArea(); }
-  // get current window client area size
+  // Get current window client area size
   PixelSize Window::getClientSize() const noexcept { return this->_impl->lastClientSize(); }
-  // get current monitor scaling (based on DPI)
+  // Get current monitor scaling (based on DPI)
   float Window::contentScale() const noexcept { return this->_impl->contentScale(); }
   
   // ---
   
-  // get current mouse pointer position
+  // Get current mouse pointer position
   PixelPosition Window::cursorPosition(Window::CursorPositionType mode) noexcept {
     POINT pos;
     if (GetCursorPos(&pos) != FALSE) {
@@ -159,16 +159,16 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return { -1, -1 };
   }
   
-  // read horizontal/vertical scroll box position
+  // Read horizontal/vertical scroll box position
   PixelPosition Window::getScrollPosition() const noexcept { return this->_impl->lastScrollPosition(); }
-  // read vertical scroll box position
+  // Read vertical scroll box position
   int32_t Window::getScrollPositionV() const noexcept { return this->_impl->lastScrollPositionV(); }
-  // read horizontal scroll box position
+  // Read horizontal scroll box position
   int32_t Window::getScrollPositionH() const noexcept { return this->_impl->lastScrollPositionH(); }
   
   // ---
   
-  // get last error message (on change failure)
+  // Get last error message (on change failure)
   std::string Window::getLastError() {
     return __WindowImpl::formatLastError(nullptr);
   }
@@ -176,54 +176,54 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
 // -- display changes -- -------------------------------------------------------
   
-  // change window visibility state
+  // Change window visibility state
   bool Window::show(Window::VisibilityCommand state) noexcept {
     return this->_impl->show((this->_impl->displayMode() != WindowType::fullscreen) 
                             ? __WindowImpl::toWindowVisibilityFlag(state) 
                             : __WindowImpl::toFullscreenVisibilityFlag(state) );
   }
-  // change position
+  // Change position
   bool Window::move(int32_t x, int32_t y) noexcept { return this->_impl->move(x, y); }
-  // change size
+  // Change size
   bool Window::resize(uint32_t width, uint32_t height) noexcept { return this->_impl->resize(width, height); }
-  // change size + position
+  // Change size + position
   bool Window::resize(const DisplayArea& clientArea) noexcept { return this->_impl->resize(clientArea); }
   
   // ---
   
-  // change window style and position/size/resolution
+  // Change window style and position/size/resolution
   bool Window::setDisplayMode(WindowType type, WindowBehavior behavior, ResizeMode resizeMode,
                               const DisplayArea& clientArea, uint32_t rate) {
     return this->_impl->setDisplayMode(type, behavior, resizeMode, clientArea, rate);
   }
-  // define minimum size limits for the user (ignored if not resizable)
+  // Define minimum size limits for the user (ignored if not resizable)
   bool Window::setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept {
     return this->_impl->setMinClientAreaSize(minWidth, minHeight);
   }
   
   // ---
   
-  // change vertical/horizontal scrollbar ranges
+  // Change vertical/horizontal scrollbar ranges
   bool Window::setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit) noexcept {
     return this->_impl->setScrollbarRange((uint32_t)posH, (uint32_t)posV, (uint32_t)horizontalMax, (uint32_t)verticalMax, pixelsPerUnit);
   }
-  // change position of slider in both scrollbars
+  // Change position of slider in both scrollbars
   bool Window::setScrollPosition(const PixelPosition& pos) noexcept {
     return (this->_impl->setScrollPositionV((uint32_t)pos.y)
          || this->_impl->setScrollPositionH((uint32_t)pos.x));
   }
-  // change position of slider in vertical scrollbar
+  // Change position of slider in vertical scrollbar
   bool Window::setScrollPositionV(uint16_t pos) noexcept {
     return this->_impl->setScrollPositionV((uint32_t)pos);
   }
-  // change position of slider in horizontal scrollbar
+  // Change position of slider in horizontal scrollbar
   bool Window::setScrollPositionH(uint16_t pos) noexcept {
     return this->_impl->setScrollPositionH((uint32_t)pos);
   }
 
   // ---
   
-  // clear entire client area (with background color)
+  // Clear entire client area (with background color)
   bool Window::clearClientArea() noexcept {
     HWND handle = this->_impl->handle();
     RECT clientArea;
@@ -237,7 +237,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     return false;
   }
-  // clear rectangle relative to client area (with background color)
+  // Clear rectangle relative to client area (with background color)
   bool Window::clear(const DisplayArea& area) noexcept {
     HWND handle = this->_impl->handle();
     RECT drawArea{};
@@ -258,16 +258,16 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
 // -- resource changes -- ------------------------------------------------------
   
-  // change mouse pointer X/Y position
+  // Change mouse pointer X/Y position
   bool Window::setCursorPosition(int32_t x, int32_t y, Window::CursorPositionType mode) noexcept {
     return this->_impl->setCursorPosition(x, y, mode);
   }
   
-  // change window title
+  // Change window title
   bool Window::setCaption(const window_char* caption) noexcept {
     return (SetWindowTextW(this->_impl->handle(), (caption != nullptr) ? caption : L"") != FALSE);
   }
-  // replace window menu (or remove if null)
+  // Replace window menu (or remove if null)
   bool Window::setMenu(std::shared_ptr<WindowResource> menu) noexcept {
     if (this->_impl->setMenu((menu != nullptr) ? (HMENU)menu->handle() : nullptr)) {
       this->_menu = menu;
@@ -276,7 +276,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return false;
   }
   
-  // change cursor resource
+  // Change cursor resource
   bool Window::setCursor(std::shared_ptr<WindowResource> cursor) noexcept {
     if (cursor != nullptr && cursor->handle()) {
       SetLastError(0);
@@ -287,7 +287,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     return false;
   }
-  // change background color resource
+  // Change background color resource
   bool Window::setBackgroundColorBrush(std::shared_ptr<WindowResource> colorBrush) noexcept {
     if (colorBrush != nullptr && colorBrush->handle()) {
       SetLastError(0);
