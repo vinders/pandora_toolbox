@@ -889,6 +889,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
   // Go to fullscreen mode
   void __WindowImpl::enterFullscreenMode(DisplayArea windowArea, uint32_t rate) noexcept {
+    __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FULLSCREEN_ON);
+
     DisplayMode currentMode = this->_monitor->getDisplayMode();
     if (windowArea.width != currentMode.width || windowArea.height != currentMode.height 
     || (rate != pandora::hardware::undefinedRefreshRate() && rate != currentMode.refreshRate) ) {
@@ -901,7 +903,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       this->_monitor->setDisplayMode(videoMode);
       __P_ADD_FLAG(this->_statusFlags, __P_FLAG_MODE_CHANGE_PENDING | __P_FLAG_FULLSCREEN_RES);
     }
-    __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FULLSCREEN_ON);
     
     SetWindowLongPtr(this->_handle, GWL_STYLE, this->_currentStyleFlag | WS_VISIBLE);
     SetWindowLongPtr(this->_handle, GWL_EXSTYLE, this->_currentStyleExtFlag);
@@ -1816,7 +1817,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
           if (window->_statusFlags & __P_FLAG_MODE_CHANGE_PENDING) { // change made by the window -> just reset flag
             __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_MODE_CHANGE_PENDING);
           }
-          else if (window->_mode != WindowType::fullscreen) { // external change -> verify if not just another fullscreen window
+          // external change -> verify if not just another fullscreen window
+          else if (window->_mode != WindowType::fullscreen && (window->_statusFlags &__P_FLAG_FULLSCREEN_ON) == 0) {
             RECT fgArea;
             MONITORINFO monitorInfo = { 0 };
             monitorInfo.cbSize = sizeof(MONITORINFO);
