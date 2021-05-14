@@ -376,7 +376,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     adjustVisibleClientSize();
     if (isScrollable())
-      adjustScrollbarPageSize(clientArea);
+      adjustScrollbarPageSize(clientArea, true);
     
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
     SetForegroundWindow(this->_handle);
@@ -626,21 +626,23 @@ Description : Window manager + builder - Win32 implementation (Windows)
   }
   
   // Set scrollbar page size, based on client-area size
-  void __WindowImpl::adjustScrollbarPageSize(const DisplayArea& clientArea) noexcept {
+  void __WindowImpl::adjustScrollbarPageSize(const DisplayArea& clientArea, bool repaint) noexcept {
     SCROLLINFO scrollInfo;
     ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
     scrollInfo.cbSize = sizeof(SCROLLINFO);
-    
+    __P_ADD_FLAG(this->_statusFlags, __P_FLAG_SCROLLRANGE_HANDLER_CHANGE);
+
     if (isScrollableH()) {
       scrollInfo.fMask = SIF_PAGE;
       scrollInfo.nPage = clientArea.width / this->_scrollUnit;
-      SetScrollInfo(this->_handle, SB_HORZ, &scrollInfo, TRUE);
+      SetScrollInfo(this->_handle, SB_HORZ, &scrollInfo, (repaint && !isScrollableV()) ? TRUE : FALSE);
     }
     if (isScrollableV()) {
       scrollInfo.fMask = SIF_PAGE;
       scrollInfo.nPage = clientArea.height / this->_scrollUnit;
-      SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, TRUE);
+      SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, repaint ? TRUE : FALSE);
     }
+    __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_SCROLLRANGE_HANDLER_CHANGE);
   }
   
   // Set lider position in horizontal scrollbar
@@ -949,7 +951,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       this->_lastClientArea.height = clientSize.height;
       this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
       if (isScrollable())
-        adjustScrollbarPageSize(this->_lastClientArea);
+        adjustScrollbarPageSize(this->_lastClientArea, false);
     
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
@@ -971,7 +973,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       this->_lastClientArea = clientArea;
       this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
       if (isScrollable())
-        adjustScrollbarPageSize(this->_lastClientArea);
+        adjustScrollbarPageSize(this->_lastClientArea, false);
       
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
@@ -1009,7 +1011,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       class __WindowImplEventProc final {
       public:
         static __forceinline int refreshClientArea(__WindowImpl& window, DisplayArea& outArea) noexcept;
-        static void refreshOnMaximizeRestore(__WindowImpl& window, LPARAM lParam, DisplayArea& outArea) noexcept;
+        static void refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept;
         static __forceinline void resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept;
         
         static __forceinline void readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept;
@@ -1042,7 +1044,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
         window._lastClientArea = outArea;
         if (window.isScrollable())
-          window.adjustScrollbarPageSize(outArea);
+          window.adjustScrollbarPageSize(outArea, false);
         return 2;
       }
       return 1;
@@ -1051,7 +1053,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   }
 
   // On maximize/restore event, refresh client-area + decorations + force homothety
-  void __WindowImplEventProc::refreshOnMaximizeRestore(__WindowImpl& window, LPARAM lParam, DisplayArea& outArea) noexcept {
+  void __WindowImplEventProc::refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept {
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     if (__WindowImplEventProc::refreshClientArea(window, outArea) > 0) {
       window.readVisibleWindowDecorations(outArea, window._decorationSizes);
@@ -1063,10 +1065,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
                                       window.hasMenu(), window._decorationSizes);
     }
     if (window.isScrollable())
-      window.adjustScrollbarPageSize(outArea);
+      window.adjustScrollbarPageSize(outArea, false);
 
-    // force homothety when maximized/restored
-    if ((window._resizeMode & ResizeMode::homothety) == true) {
+    // force homothety when maximized
+    if (isMaximized && (window._resizeMode & ResizeMode::homothety) == true) {
       uint32_t adjustedClientHeight = static_cast<uint32_t>((double)outArea.width / window._clientAreaRatio + 0.50001);
       if (adjustedClientHeight != outArea.height) {
         if (adjustedClientHeight > outArea.height)
@@ -1627,6 +1629,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
             }
             case SIZE_RESTORED:
             case SIZE_MAXIMIZED: {
+              if (window->_statusFlags & __P_FLAG_SCROLLRANGE_HANDLER_CHANGE)
+                break;
+
               bool wasActive = (window->_statusFlags & __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE) == (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE);
               if (wParam == SIZE_RESTORED)
                 __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE, 
@@ -1644,7 +1649,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
               if (window->_mode != WindowType::fullscreen && (window->_statusFlags & __P_FLAG_FULLSCREEN_ON) == 0) {
                 DisplayArea clientArea;
-                __WindowImplEventProc::refreshOnMaximizeRestore(*window, lParam, clientArea);
+                __WindowImplEventProc::refreshOnMaximizeRestore(*window, (wParam == SIZE_MAXIMIZED), lParam, clientArea);
                 if (window->_onPositionEvent)
                   window->_onPositionEvent(&window->_container, PositionEvent::sizePositionChanged, 
                     clientArea.x, clientArea.y, clientArea.width, clientArea.height);
@@ -1672,7 +1677,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
             MINMAXINFO* limits = (MINMAXINFO*)lParam;
             limits->ptMinTrackSize.x = (int)window->_minClientSize.width + (int)windowArea.width - (int)clientArea.width;
             limits->ptMinTrackSize.y = (int)window->_minClientSize.height + (int)windowArea.height - (int)clientArea.height;
-              
             
             // resize limits
             if ((window->_resizeMode & ResizeMode::resizable) != ResizeMode::resizable) { // x and/or y not resizable
