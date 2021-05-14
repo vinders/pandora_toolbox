@@ -35,8 +35,8 @@ namespace pandora {
     /// @brief Window behavior settings (bit-mask flags)
     enum class WindowBehavior : uint32_t {
       none          = 0u,     ///< no widgets
-      scrollH       = 0x001u, ///< horizontal scroll bar
-      scrollV       = 0x002u, ///< vertical scroll bar
+      scrollH       = 0x001u, ///< horizontal scroll bar ('setScrollbarRange' must be called after window creation)
+      scrollV       = 0x002u, ///< vertical scroll bar ('setScrollbarRange' must be called after window creation)
       dropShadow    = 0x010u, ///< Additional drop shadow to emphasize Z-order (useful for popup dialogs)
       topMost       = 0x100u, ///< window displayed above all non-topmost windows
       aboveTaskbar  = 0x200u, ///< window displayed above taskbar / status bar (useful for borderless windows)
@@ -111,17 +111,20 @@ namespace pandora {
       
       // -- accessors --
       
-      inline WindowHandle handle() const noexcept { return this->_handle; }       ///< Get native window handle
-      inline WindowType displayMode() const noexcept { return this->_mode; }      ///< Get window type (fullscreen/borderless/window/...)
-      inline ResizeMode resizeMode() const noexcept { return this->_resizeMode; } ///< Get current resizing mode (resizable X/Y, homothety)
-      inline bool isOrphan() const noexcept { return (this->_parent == (WindowHandle)0); }///< Verify if window has a parent (false) or not (true)
+      WindowHandle handle() const noexcept;     ///< Get native window handle
+      WindowType displayMode() const noexcept;  ///< Get window type (fullscreen/borderless/window/...)
+      WindowBehavior behavior() const noexcept; ///< Get window type (fullscreen/borderless/window/...)
+      ResizeMode resizeMode() const noexcept;   ///< Get current resizing mode (resizable X/Y, homothety)
+      bool hasParent() const noexcept;          ///< Verify if current window has a parent window
 
       VisibleState visibleState() const noexcept; ///< Get current window visibility state
+      pandora::hardware::DisplayArea getWindowArea() const noexcept; ///< Get copy of current position/size of the whole window
       pandora::hardware::DisplayArea getClientArea() const noexcept; ///< Get copy of current position/size of the client area
       PixelSize getClientSize() const noexcept; ///< Get current size of the client area
       float contentScale() const noexcept;      ///< Read scale factor to use for content (based on DPI)
       
       PixelPosition cursorPosition(CursorPositionType mode) noexcept;///< Get current mouse pointer position (-1 on error)
+      PixelPosition getScrollPosition() const noexcept; ///< Read horizontal/vertical scroll box position (-1 on error)
       int32_t getScrollPositionV() const noexcept; ///< Read vertical scroll box position (-1 on error)
       int32_t getScrollPositionH() const noexcept; ///< Read horizontal scroll box position (-1 on error)
       
@@ -133,15 +136,22 @@ namespace pandora {
       // -- display changes --
       
       bool show(VisibilityCommand state = VisibilityCommand::show) noexcept; ///< Show/hide/maximize/minimize/restore window
-      bool move(int32_t x, int32_t y) noexcept; ///< Move window to position (size not changed)
-      bool resize(uint32_t width, uint32_t height) noexcept; ///< Change window size (or resolution in fullscreen)
-      bool resize(uint32_t width, uint32_t height, uint32_t rate) noexcept; ///< Change window size (or resolution/rate in fullscreen)
-      bool resize(const pandora::hardware::DisplayArea& clientArea) noexcept; ///< Change window size and position
+      bool move(int32_t x, int32_t y) noexcept; ///< Move window to position (not allowed in fullscreen)
+      bool resize(uint32_t width, uint32_t height) noexcept; ///< Change window size (not allowed in fullscreen: use setDisplayMode)
+      bool resize(const pandora::hardware::DisplayArea& clientArea) noexcept; ///< Change window size and position (not allowed in fullscreen: use setDisplayMode)
       
       /// @brief Change window type and behavior + position and size/resolution
+      /// @warning If the instance has a parent window, only WindowType::dialog is allowed
       bool setDisplayMode(WindowType type, WindowBehavior components, ResizeMode resizeMode, 
                           const pandora::hardware::DisplayArea& clientArea, uint32_t rate = 0);
       bool setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept; ///< Define minimum size limits for the user (ignored if not resizable)
+      
+      /// @brief Change vertical/horizontal scrollbar ranges (only values for existing scrollbars will be used)
+      /// @remarks Scroll units don't need to be pixels, but the same unit should be used by the event handler for updating display.
+      bool setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit = 1) noexcept;
+      bool setScrollPosition(const PixelPosition& pos) noexcept; ///< Change position of slider in both scrollbars
+      bool setScrollPositionV(uint16_t pos) noexcept; ///< Change position of slider in vertical scrollbar
+      bool setScrollPositionH(uint16_t pos) noexcept; ///< Change position of slider in horizontal scrollbar
       
       bool clearClientArea() noexcept; ///< Clear entire client area (with background color)
       bool clear(const pandora::hardware::DisplayArea& area) noexcept; ///< Clear rectangle relative to client area (with background color)
@@ -156,20 +166,13 @@ namespace pandora {
       bool setMenu(std::shared_ptr<WindowResource> menu) noexcept; ///< Add/replace native menu bar (use NULL to remove current menu)
       bool setBackgroundColorBrush(std::shared_ptr<WindowResource> colorBrush) noexcept;///< Change background color brush (will not affect display -> call clearClientArea())
       
-      /// @brief Change vertical/horizontal scrollbar ranges (only values for existing scrollbars will be used)
-      /// @remarks Scroll units don't need to be pixels, but the same unit should be used by the event handler for updating display.
-      bool setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit = 1) noexcept;
-      bool setScrollPositionV(uint16_t pos) noexcept; ///< Change position of slider in vertical scrollbar
-      bool setScrollPositionH(uint16_t pos) noexcept; ///< Change position of slider in horizontal scrollbar
-      
       
       // -- input events --
       
-      inline void setWindowHandler(WindowEventHandler handler) noexcept { _onWindowEvent = handler; }      ///< Set/replace window/hardware event handler (NULL to unregister)
-      inline void setPositionHandler(PositionEventHandler handler) noexcept { _onPositionEvent = handler; }///< Set/replace size/position event handler (NULL to unregister)
-      inline void setKeyboardHandler(KeyboardEventHandler handler) noexcept { _onKeyboardEvent = handler; }///< Set/replace keyboard event handler (NULL to unregister)
-      void setMouseHandler(MouseEventHandler handler, CursorMode cursor = CursorMode::visible) noexcept;   ///< Set/replace mouse event handler (NULL to unregister)
-      inline void setTouchHandler(TouchEventHandler handler) noexcept { _onTouchEvent = handler; }         ///< Set/replace touch event handler (NULL to unregister)
+      void setWindowHandler(WindowEventHandler handler) noexcept;     ///< Set/replace window/hardware event handler (NULL to unregister)
+      void setPositionHandler(PositionEventHandler handler) noexcept; ///< Set/replace size/position event handler (NULL to unregister)
+      void setKeyboardHandler(KeyboardEventHandler handler) noexcept; ///< Set/replace keyboard event handler (NULL to unregister)
+      void setMouseHandler(MouseEventHandler handler, CursorMode cursor = CursorMode::visible) noexcept; ///< Set/replace mouse event handler (NULL to unregister)
       
       /// @brief Process/forward pending events for all existing windows (user input, size changes, shutdown...).
       ///        - Should be called regularly, to dispatch window events.
@@ -223,7 +226,7 @@ namespace pandora {
         /// @brief Set X/Y coordinates of the client area of the window (ignored if fullscreen)
         /// @remarks - Values can also be defaultPosition(), centeredPosition().
         ///          - If no parent window: relative to screen defined by parent monitor (or default monitor, if not specified).
-        ///          - If parent window provided: relative to parent window position.
+        ///          - If parent window provided (and dialog mode): relative to parent window position.
         inline Builder& setPosition(int32_t x, int32_t y) noexcept;
         /// @brief Set width/height of the client area of the window (or resolution if fullscreen)
         /// @remarks Values can also be defaultSize().
@@ -249,7 +252,7 @@ namespace pandora {
         /// @brief Create a new Window with current builder params.
         /// @param[in] contextName   Unique identifier for window context (not empty, no special characters, no spaces, max 256 characters).
         /// @param[in] caption       Title text in window caption
-        /// @param[in] parentWindow  Handle of parent window (optional, only for sub-windows and dialogs)
+        /// @param[in] parentWindow  Handle of parent window (optional, only used with WindowType::dialog)
         /// @warning - On Windows, * <system/windows_app.h> must have been initialized with the module handle (of current executable/library module).
         ///                        * or 'setModuleInstance' must be called.
         ///          - It is recommended to enable DPI awareness (manifest or via DisplayMonitor) before creating window or monitor instance.
@@ -258,13 +261,14 @@ namespace pandora {
         std::unique_ptr<Window> create(const window_char* contextName, const window_char* caption, WindowHandle parentWindow = (WindowHandle)0); // throws
 
         /// @brief Build Window instance with current params from an existing window handle.
-        /// @remarks Useful to turn a splash/GUI window into the app window, then restore original window on exit.
-        /// @param[in] existingHandle     Handle of existing window to update (required)
-        /// @param[in] callOrigEventProc  Use event processor of original window as default fallback
-        /// @warning It is recommended to enable DPI awareness before creating window or monitor instance.
+        /// @remarks Useful to turn a splash/GUI window (from another lib) into the app window, then restore original window on exit.
+        /// @param[in] existingHandle         Handle of existing window to update (required)
+        /// @param[in] callExistingEventProc  Use event processor of original window as default fallback
+        /// @warning - It is recommended to enable DPI awareness before creating window or monitor instance.
+        ///          - The existing window must be a root window (no parent window) or the new mode can only be a dialog.
         /// @returns Valid window instance (visible)
         /// @throws runtime_error/logic_error/bad_alloc on window update failure
-        std::unique_ptr<Window> update(WindowHandle existingHandle, bool callOrigEventProc = false); // throws
+        std::unique_ptr<Window> update(WindowHandle existingHandle, bool callExistingEventProc = false); // throws
 
         // ---
 
@@ -292,45 +296,21 @@ namespace pandora {
 
     private:
       Window(const window_char* contextName, const window_char* caption, const Builder::Params& params, WindowHandle parentWindow); // throws
-      Window(const Builder::Params& params, WindowHandle existingHandle, bool callOrigEventProc); // throws
-
-      bool _validateFirstDisplay() noexcept;
-      void _destroyWindow() noexcept;
+      Window(const Builder::Params& params, WindowHandle existingHandle, bool callExistingEventProc); // throws
       
       friend class pandora::video::Window::Builder;
       friend class pandora::video::__WindowImpl;
       
     private:
       // resources
-      std::basic_string<window_char> _contextName;
-      std::shared_ptr<pandora::hardware::DisplayMonitor> _monitor = nullptr;
       std::shared_ptr<WindowResource> _appIcon = nullptr;
       std::shared_ptr<WindowResource> _captionIcon = nullptr;
       std::shared_ptr<WindowResource> _cursor = nullptr;
       std::shared_ptr<WindowResource> _backgroundColor = nullptr;
       std::shared_ptr<WindowResource> _menu = nullptr;
-      void* _moduleInstance = nullptr;
-
-      // display params
-      WindowHandle _handle = (WindowHandle)0;
-      WindowType _mode = WindowType::window;
-      ResizeMode _resizeMode = ResizeMode::fixed;
-      WindowBehavior _behavior = WindowBehavior::none;
-      uint32_t _refreshRate = 0; // mHz
-      mutable pandora::thread::SpinLock _clientAreaLock;
-      pandora::hardware::DisplayArea _clientArea { 0,0,0,0 };
-      
-      // input events
-      WindowEventHandler _onWindowEvent = nullptr;
-      PositionEventHandler _onPositionEvent = nullptr;
-      KeyboardEventHandler _onKeyboardEvent = nullptr;
-      MouseEventHandler _onMouseEvent = nullptr;
-      TouchEventHandler _onTouchEvent = nullptr;
       
       // window manager
-      __WindowImpl* _impl = nullptr; // implementation-specific
-      WindowHandle _parent = (WindowHandle)0;
-      uint32_t _nativeFlag = 0;
+      __WindowImpl* _impl = nullptr; // system-specific implementation
     };
   }
 }

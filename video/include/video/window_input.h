@@ -86,36 +86,16 @@ namespace pandora {
     };
     bool isMouseButtonPressed(uint8_t activeKeys, MouseButton button) noexcept; ///< Verify button status from event bit-map
     
-    /// @brief Mouse event handling function pointer (click/move/wheel/...):
+    /// @brief Mouse or touch-screen event handling function pointer (click/move/wheel/...):
     ///        * sender: event origin
     ///        * event:  mouse event type
-    ///        * x:      X-coord of the mouse pointer (relative to client area top-left corner)
-    ///        * y:      Y-coord of the mouse pointer (relative to client area top-left corner)
+    ///        * x:      X-coord of the mouse pointer (relative to client area top-left corner) / delta-X (rawMotion)
+    ///        * y:      Y-coord of the mouse pointer (relative to client area top-left corner) / delta-Y (rawMotion)
     ///        * index:  value specific to event type (see MouseEvent enum)
     ///        * activeKeys: bit-map with mouse keys that are currently pressed -> call 'isMouseButtonPressed(activeKeys, <MouseButton>)'
     ///        * return:  true to prevent default system processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
     using MouseEventHandler = bool (*)(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys);
-
-
-    // -- touch-screen events --
-    
-    /// @brief Touch-screen event types
-    enum class TouchEvent : uint32_t {
-      none         = 0u, ///< no event
-      touch        = 1u, ///< screen is touched:  index = number of contact points
-      release      = 2u, ///< screen is released: index = remaining number of contact points
-      move         = 3u  ///< touch position changed: index = contact point index
-    };
-    
-    /// @brief Touch event handling function pointer (touch/move/...):
-    ///        * sender: event origin
-    ///        * x:      X-coord (relative to client area top-left corner)
-    ///        * y:      Y-coord (relative to client area top-left corner)
-    ///        * index:  value specific to event type (see TouchEvent enum)
-    ///        * return:  true to prevent default system processing, false to allow normal processing
-    /// @warning Handler should NOT throw exceptions -> use try/catch in it
-    using TouchEventHandler = bool (*)(Window* sender, TouchEvent event, uint32_t x, uint32_t y, uint32_t index);
     
     
     // -- general window/hardware events --

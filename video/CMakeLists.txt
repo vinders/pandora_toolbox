@@ -101,6 +101,9 @@ endif()
 autodetect_source_files_no_recurse(${_INCLUDE_DIR} "*.h*") # include
 set(_INCLUDE_FILES ${CWORK_AUTODETECTED_FILES})
 unset(CWORK_AUTODETECTED_FILES)
+autodetect_source_files("${_INCLUDE_DIR}/_private" "*.h*") # include/_private
+set(_INCLUDE_FILES ${_INCLUDE_FILES} ${CWORK_AUTODETECTED_FILES})
+unset(CWORK_AUTODETECTED_FILES)
 
 autodetect_source_files_no_recurse(${_TEST_DIR} "*.[hc]*") # test
 set(_TEST_FILES ${CWORK_AUTODETECTED_FILES})
