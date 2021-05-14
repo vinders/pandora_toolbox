@@ -283,10 +283,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
         return false; // display failure
     }
     
-    // process display events
-    if (this->_container.pollCurrentWindowEvents() == false)
-      return false; // WM_QUIT received -> stop here
-      
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     adjustVisibleClientSize(); // adjust size, based on actual window
     
@@ -376,10 +372,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       this->_lastClientArea = clientArea;
       this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
     }
-    // process display events
-    if (this->_container.pollCurrentWindowEvents() == false)
-      return false; // WM_QUIT received -> stop here
-    
     // adjust size, based on actual window
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     adjustVisibleClientSize();
@@ -906,7 +898,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
     
     SetWindowLongPtr(this->_handle, GWL_STYLE, this->_currentStyleFlag | WS_VISIBLE);
     SetWindowLongPtr(this->_handle, GWL_EXSTYLE, this->_currentStyleExtFlag);
+    __P_ADD_FLAG(this->_statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
     SetWindowPos(this->_handle, HWND_TOP, (int)windowArea.x,(int)windowArea.y, (int)windowArea.width, (int)windowArea.height, SWP_FRAMECHANGED);
+    __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
   }
   
   // Exit fullscreen mode
@@ -1067,24 +1061,23 @@ Description : Window manager + builder - Win32 implementation (Windows)
       window._lastClientArea.height = outArea.height = (uint32_t)HIWORD(lParam);
       window.computeWindowDecorations(window._currentStyleFlag, window._currentStyleExtFlag,
                                       window.hasMenu(), window._decorationSizes);
-      if (window.isScrollable())
-        window.adjustScrollbarPageSize(outArea);
     }
+    if (window.isScrollable())
+      window.adjustScrollbarPageSize(outArea);
 
     // force homothety when maximized/restored
     if ((window._resizeMode & ResizeMode::homothety) == true) {
       uint32_t adjustedClientHeight = static_cast<uint32_t>((double)outArea.width / window._clientAreaRatio + 0.50001);
-      if (adjustedClientHeight > outArea.height) {
-        uint32_t adjustedClientWidth =  static_cast<uint32_t>((double)outArea.height * window._clientAreaRatio + 0.50001);
+      if (adjustedClientHeight != outArea.height) {
+        if (adjustedClientHeight > outArea.height)
+          window._lastClientArea.width = outArea.width = static_cast<uint32_t>((double)outArea.height * window._clientAreaRatio + 0.50001);
+        else
+          window._lastClientArea.height = outArea.height = adjustedClientHeight;
 
-        window._lastClientArea.width = outArea.width = adjustedClientWidth;
+        __P_ADD_FLAG(window._statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
         SetWindowPos(window._handle, HWND_TOP, 0, 0, (int)outArea.width + (int)window._decorationSizes.left + (int)window._decorationSizes.right,
                      (int)outArea.height + (int)window._decorationSizes.top + (int)window._decorationSizes.bottom, SWP_NOMOVE | SWP_NOZORDER);
-      }
-      else if (adjustedClientHeight < outArea.height) {
-        window._lastClientArea.height = outArea.height = (uint32_t)adjustedClientHeight;
-        SetWindowPos(window._handle, HWND_TOP, 0, 0, (int)outArea.width + (int)window._decorationSizes.left + (int)window._decorationSizes.right, 
-                     (int)outArea.height + (int)window._decorationSizes.top + (int)window._decorationSizes.bottom, SWP_NOMOVE | SWP_NOZORDER);
+        __P_REMOVE_FLAG(window._statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
       }
     }
   }
@@ -1265,11 +1258,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
     // new decoration sizes -> update client-area
     if (outDecorationSizes.top != window._decorationSizes.top || outDecorationSizes.right != window._decorationSizes.right) {
       window._decorationSizes = outDecorationSizes;
+      __P_ADD_FLAG(window._statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
       if (SetWindowPos(window._handle, HWND_TOP, suggestedArea.left, suggestedArea.top,
                        (int)window._lastClientArea.width + outDecorationSizes.left + outDecorationSizes.right,
                         (int)window._lastClientArea.height + outDecorationSizes.top + outDecorationSizes.bottom, SWP_NOZORDER | SWP_NOACTIVATE) == FALSE) {
         window._lastClientArea = newClientArea; // on failure, update client-area
       }
+      __P_REMOVE_FLAG(window._statusFlags, __P_FLAG_SIZE_HANDLER_CHANGE);
     }
   }
   
@@ -1639,12 +1634,15 @@ Description : Window manager + builder - Win32 implementation (Windows)
               else
                 __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_WINDOW_MAXIMIZED | __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE, 
                                      __P_FLAG_WINDOW_MINIMIZED | __P_FLAG_RESIZED_MOVED);
+              if (window->_statusFlags & __P_FLAG_SIZE_HANDLER_CHANGE)
+                break;
+
               if (!wasActive) {
                 if (window->_onWindowEvent)
                   window->_onWindowEvent(&window->_container, WindowEvent::stateChanged, (uint32_t)WindowActivity::active, 0,0,nullptr);
               }
 
-              if (window->_mode != WindowType::fullscreen) {
+              if (window->_mode != WindowType::fullscreen && (window->_statusFlags & __P_FLAG_FULLSCREEN_ON) == 0) {
                 DisplayArea clientArea;
                 __WindowImplEventProc::refreshOnMaximizeRestore(*window, lParam, clientArea);
                 if (window->_onPositionEvent)
@@ -1663,7 +1661,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         }
         // size limits
         case WM_GETMINMAXINFO: {
-          if (window->_mode != WindowType::fullscreen && (MINMAXINFO*)lParam != nullptr) {
+          if (window->_mode != WindowType::fullscreen && (window->_statusFlags & __P_FLAG_FULLSCREEN_ON) == 0 && (MINMAXINFO*)lParam != nullptr) {
             DisplayArea clientArea, windowArea;
             if (!window->readVisibleClientArea(clientArea))
               clientArea = window->lastClientArea();
@@ -1674,6 +1672,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             MINMAXINFO* limits = (MINMAXINFO*)lParam;
             limits->ptMinTrackSize.x = (int)window->_minClientSize.width + (int)windowArea.width - (int)clientArea.width;
             limits->ptMinTrackSize.y = (int)window->_minClientSize.height + (int)windowArea.height - (int)clientArea.height;
+              
             
             // resize limits
             if ((window->_resizeMode & ResizeMode::resizable) != ResizeMode::resizable) { // x and/or y not resizable
@@ -1683,10 +1682,18 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 limits->ptMaxSize.y = limits->ptMinTrackSize.y = limits->ptMaxTrackSize.y = (int)windowArea.height;
               }
               else {
-                if ((window->_resizeMode & ResizeMode::resizableX) == 0)
+                if ((window->_behavior & WindowBehavior::aboveTaskbar) == 0) {
+                  limits->ptMaxPosition.x = (int)window->_monitor->attributes().workArea.x;
+                  limits->ptMaxPosition.y = (int)window->_monitor->attributes().workArea.y;
+                }
+                if ((window->_resizeMode & ResizeMode::resizableX) == 0) {
                   limits->ptMaxSize.x = limits->ptMinTrackSize.x = limits->ptMaxTrackSize.x = (int)windowArea.width;
-                if ((window->_resizeMode & ResizeMode::resizableY) == 0)
+                  limits->ptMaxSize.y = (int)window->_monitor->attributes().workArea.height;
+                }
+                if ((window->_resizeMode & ResizeMode::resizableY) == 0) {
+                  limits->ptMaxSize.x = (int)window->_monitor->attributes().workArea.width;
                   limits->ptMaxSize.y = limits->ptMinTrackSize.y = limits->ptMaxTrackSize.y = (int)windowArea.height;
+                }
               }
             }
             return 0;

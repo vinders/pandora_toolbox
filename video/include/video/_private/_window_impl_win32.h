@@ -48,6 +48,7 @@ License :     MIT
 # define __P_FLAG_CURSOR_HOVER        0x2000  // cursor is currently in client area
 # define __P_FLAG_CURSOR_MENULOOP     0x4000  // menu loop is currently active
 # define __P_FLAG_CURSOR_EVENT_REG    0x8000  // registration to native cursor events for current window
+# define __P_FLAG_SIZE_HANDLER_CHANGE 0x10000 // a size change has been triggered by the size handler (and should not be re-processed)
 
 namespace pandora {
   namespace video {
