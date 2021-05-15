@@ -252,7 +252,7 @@ namespace pandora {
         /// @brief Create a new Window with current builder params.
         /// @param[in] contextName   Unique identifier for window context (not empty, no special characters, no spaces, max 256 characters).
         /// @param[in] caption       Title text in window caption
-        /// @param[in] parentWindow  Handle of parent window (optional, only used with WindowType::dialog)
+        /// @param[in] parentWindow  Handle of parent window (optional)
         /// @warning - On Windows, * <system/windows_app.h> must have been initialized with the module handle (of current executable/library module).
         ///                        * or 'setModuleInstance' must be called.
         ///          - It is recommended to enable DPI awareness (manifest or via DisplayMonitor) before creating window or monitor instance.
@@ -264,8 +264,7 @@ namespace pandora {
         /// @remarks Useful to turn a splash/GUI window (from another lib) into the app window, then restore original window on exit.
         /// @param[in] existingHandle         Handle of existing window to update (required)
         /// @param[in] callExistingEventProc  Use event processor of original window as default fallback
-        /// @warning - It is recommended to enable DPI awareness before creating window or monitor instance.
-        ///          - The existing window must be a root window (no parent window) or the new mode can only be a dialog.
+        /// @warning It is recommended to enable DPI awareness before creating window or monitor instance.
         /// @returns Valid window instance (visible)
         /// @throws runtime_error/logic_error/bad_alloc on window update failure
         std::unique_ptr<Window> update(WindowHandle existingHandle, bool callExistingEventProc = false); // throws

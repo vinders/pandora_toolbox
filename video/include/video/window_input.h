@@ -110,11 +110,10 @@ namespace pandora {
                                    ///  - status = boolean: 1 (suspend) or 0 (resume).
       deviceInterfaceChange  = 4u, ///< device interface added/removed (gamepad/joystick/...):
                                    ///  - status = boolean: 1 (added) or 0 (removed).
-      menuSelected           = 5u, ///< menu item selected: 
-                                   ///  - status = boolean: 1 (submenu selected) or 0 (command item);
-                                   ///  - posX = index of item (if submenu) or -1 (command);
-                                   ///  - posY = command ID (if command) or -1 (submenu);
-                                   ///  - data = only if submenu: handle to native menu/submenu (cast to 'MenuHandle').
+      menuCommand            = 5u, ///< menu item selected: 
+                                   ///  - status = boolean: 1 (accelerator key) or 0 (menu command item);
+                                   ///  - posX = if menu command item: menu identifier;
+                                   ///  - posY = if accelerator key: character code.
       dpiChanged             = 6u, ///< window DPI has changed: 
                                    ///  - status = content X scaling factor multiplied by 100 (percentage);
                                    ///  - posX/posY = suggested adjusted client area width/height;

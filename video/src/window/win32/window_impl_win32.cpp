@@ -107,13 +107,14 @@ Description : Window manager + builder - Win32 implementation (Windows)
     SetMenu(handle, _menu);
     
     // restore style
-    SetWindowLong(handle, GWL_STYLE, _windowStyle);
+    SetWindowLong(handle, GWL_STYLE, _windowStyle | WS_VISIBLE);
     SetWindowLong(handle, GWL_EXSTYLE, _windowStyleExt);
     SetWindowLongPtr(handle, GWLP_WNDPROC, (LONG_PTR)_eventProcessor);
-    if (_windowArea.left != -1 || _windowArea.right != -1) {
-      SetWindowPos(handle, HWND_TOP, (int)_windowArea.left, (int)_windowArea.top,
-                   (int)_windowArea.right - _windowArea.left, (int)_windowArea.bottom - _windowArea.top, SWP_SHOWWINDOW);
-    }
+    SetWindowPos(handle, HWND_TOP, (int)_windowArea.left, (int)_windowArea.top,
+                 (int)_windowArea.right - _windowArea.left, (int)_windowArea.bottom - _windowArea.top, 
+                 SWP_SHOWWINDOW | SWP_NOZORDER | SWP_FRAMECHANGED);
+    if (_menu)
+      DrawMenuBar(handle);
   }
 
 
@@ -142,8 +143,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     this->_resizeMode = (params.displayMode != WindowType::fullscreen && params.displayMode != WindowType::borderless) 
                       ? params.resizeMode : ResizeMode::fixed;
     this->_refreshRate = params.refreshRate;
-    if (this->_parent != nullptr && params.displayMode != WindowType::dialog)
-      this->_parent = nullptr; // only dialogs can have a parent window
     
     // display area: compute window decorations + replace user values (centered/default/...)
     DisplayArea windowArea;
@@ -207,6 +206,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
     // change window mode/style/position
     if (!setDisplayMode(params.displayMode, params.behavior, params.resizeMode, params.clientArea, params.refreshRate))
       throw std::runtime_error(formatLastError("Window: position/size application failure: "));
+    if (this->_menuHandle)
+      DrawMenuBar(this->_handle);
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
   }
   
@@ -224,7 +225,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       // existing window: restore original style
       if (this->_originalStyle != nullptr) {
         _originalStyle->applyStyle(this->_handle);
-        ShowWindow(this->_handle, SW_SHOW);
       }
       // new window: destroy
       else {
@@ -282,6 +282,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (ShowWindow(this->_handle, isVisibilityCommandSet ? visibilityFlag : SW_SHOW) == FALSE)
         return false; // display failure
     }
+    if (this->_menuHandle)
+      DrawMenuBar(this->_handle);
     
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     adjustVisibleClientSize(); // adjust size, based on actual window
@@ -322,10 +324,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Change window style and position/size/resolution
   bool __WindowImpl::setDisplayMode(WindowType type, WindowBehavior behavior, ResizeMode resizeMode,
                                     const DisplayArea& userArea, uint32_t rate) {
-    if (this->_parent != nullptr && type != WindowType::dialog) { // child window must be a dialog
-      SetLastError(ERROR_DS_ROOT_MUST_BE_NC);
-      return false;
-    }
     if ((this->_statusFlags & __P_FLAG_FULLSCREEN_ON) && type != WindowType::fullscreen)
       exitFullscreenMode();
     
@@ -391,6 +389,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (SetMenu(this->_handle, menuHandle) != FALSE || menuHandle == nullptr) {
       bool hasSizeChanged = ((menuHandle && !this->_menuHandle) || (this->_menuHandle && !menuHandle));
       this->_menuHandle = menuHandle;
+      if (menuHandle && this->_statusFlags & __P_FLAG_WINDOW_VISIBLE)
+        DrawMenuBar(this->_handle);
       
       if (hasSizeChanged) {
         std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
@@ -726,7 +726,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   }
   
   // Computer client-position (absolute) and window-position (absolute/relative) of window (based on user-defined values)
-  template <bool _IsFullscreen, bool _IsRelative>
+  template <bool _IsFullscreen>
   static inline void __computeUserPosition(int32_t userX, int32_t userY, uint32_t clientWidth, uint32_t clientHeight, 
                                            const DisplayArea& parentArea, const WindowDecorationSize& decorationSizes,
                                            DisplayArea& outClientArea, DisplayArea& outWindowArea) noexcept {
@@ -735,14 +735,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       outWindowArea.y = parentArea.y;
       outClientArea.x = outWindowArea.x + decorationSizes.left;
       outClientArea.y = outWindowArea.y + decorationSizes.top;
-    }
-    else __if_constexpr (_IsRelative) {
-      outClientArea.x = __toClientAreaCoord(userX, decorationSizes.left, (int32_t)parentArea.width - decorationSizes.right, clientWidth);
-      outClientArea.y = __toClientAreaCoord(userY, decorationSizes.top, (int32_t)parentArea.height - decorationSizes.bottom, clientHeight);
-      outWindowArea.x = outClientArea.x - decorationSizes.left;
-      outWindowArea.y = outClientArea.y - decorationSizes.top;
-      outClientArea.x += parentArea.x; // to absolute client position
-      outClientArea.y += parentArea.y;
     }
     else {
       int32_t maxCoordX = parentArea.x + (int32_t)parentArea.width - decorationSizes.right;
@@ -763,7 +755,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (this->_parent != nullptr) {
       DisplayArea parentArea;
       __getParentArea(this->_parent, *(this->_monitor), parentArea);
-      __computeUserPosition<false,true>(x, y, inOutClientArea.width, inOutClientArea.height,
+      __computeUserPosition<false>(x, y, inOutClientArea.width, inOutClientArea.height,
                                         parentArea, decorationSizes, inOutClientArea, outWindowPos);
     }
     // root window -> absolute window-area
@@ -772,12 +764,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
                                                  inOutClientArea.width + decorationSizes.left + decorationSizes.right, 
                                                  inOutClientArea.height + decorationSizes.top + decorationSizes.bottom);
       if (this->_mode == WindowType::fullscreen || isBorderlessFull) { // full screen -> decorations must fit inside -> reduce client area
-        __computeUserPosition<true,false>(x, y, inOutClientArea.width, inOutClientArea.height,
+        __computeUserPosition<true>(x, y, inOutClientArea.width, inOutClientArea.height,
                                           this->_monitor->attributes().screenArea, decorationSizes, 
                                           inOutClientArea, outWindowPos);
       }
       else { // window/dialog -> decorations outside of client area
-        __computeUserPosition<false,false>(x, y, inOutClientArea.width, inOutClientArea.height,
+        __computeUserPosition<false>(x, y, inOutClientArea.width, inOutClientArea.height,
                                            this->_monitor->attributes().workArea, decorationSizes, 
                                            inOutClientArea, outWindowPos);
       }
@@ -815,7 +807,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       __getParentArea(this->_parent, *(this->_monitor), parentArea);
       
       __computeUserSize<false>(userArea.width, userArea.height, parentArea, decorationSizes, outClientArea, outWindowArea);
-      __computeUserPosition<false,true>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
+      __computeUserPosition<false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
                                         parentArea, decorationSizes, outClientArea, outWindowArea);
     }
     // root window -> absolute window-area
@@ -824,14 +816,14 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (mode == WindowType::fullscreen || isBorderlessFull) { // full screen -> decorations must fit inside -> reduce client area
         __computeUserSize<true>(userArea.width, userArea.height, this->_monitor->attributes().screenArea, 
                                 decorationSizes, outClientArea, outWindowArea);
-        __computeUserPosition<true,false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
+        __computeUserPosition<true>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
                                           this->_monitor->attributes().screenArea, decorationSizes, 
                                           outClientArea, outWindowArea);
       }
       else { // window/dialog -> decorations outside of client area
         __computeUserSize<false>(userArea.width, userArea.height, this->_monitor->attributes().workArea, 
                                  decorationSizes, outClientArea, outWindowArea);
-        __computeUserPosition<false,false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
+        __computeUserPosition<false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
                                            this->_monitor->attributes().workArea, decorationSizes, 
                                            outClientArea, outWindowArea);
       }
@@ -1788,7 +1780,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         
         // window close attempt -> notify handler
         case WM_CLOSE: {
-          if (!window->_onWindowEvent || !window->_onWindowEvent(&window->_container, WindowEvent::windowClosed, 0,0,0,nullptr))
+          if (window->_onWindowEvent == nullptr || !window->_onWindowEvent(&window->_container, WindowEvent::windowClosed, 0,0,0,nullptr))
             window->_destroy();
           return 0;
         }
@@ -1803,13 +1795,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
           break;
         }
         // menu selection
-        case WM_MENUSELECT: {
-          if (window->_onWindowEvent && window->hasMenu()) {
-            if (HIWORD(wParam) == MF_SYSMENU) // submenu selected
-              window->_onWindowEvent(&window->_container, WindowEvent::menuSelected, 1, (int32_t)LOWORD(wParam), -1, (void*)lParam);
-            else // menu command item
-              window->_onWindowEvent(&window->_container, WindowEvent::menuSelected, 0, -1, (int32_t)LOWORD(wParam), nullptr);
-          }
+        case WM_COMMAND: {
+          if (window->_onWindowEvent && window->hasMenu() && HIWORD(wParam) == 0)
+            window->_onWindowEvent(&window->_container, WindowEvent::menuCommand, 0, (int32_t)wParam,0, nullptr);
           break;
         }
         // drag and drop
@@ -1893,6 +1881,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
             case SC_KEYMENU: // menu access with ALT
               if (!window->hasMenu()) // no menu -> ignore
                 return 0;
+              else if (window->_onWindowEvent)
+                window->_onWindowEvent(&window->_container, WindowEvent::menuCommand, 1, 0,(int32_t)lParam, nullptr);
               break;
             default: break;
           }

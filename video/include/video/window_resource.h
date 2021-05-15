@@ -142,9 +142,9 @@ namespace pandora {
       
       using Color = uint32_t; ///< RGB color representation
       
-      /// @brief Get RGB color reference
-      static constexpr inline Color rgbColor(uint8_t red, uint8_t green, uint8_t blue) noexcept {
-        return static_cast<Color>((uint32_t)red | (((uint32_t)green) << 8) | (((uint32_t)blue) << 16));
+      /// @brief Get RGB color reference (red/green/blue: 0-255)
+      static constexpr inline Color rgbColor(uint32_t red, uint32_t green, uint32_t blue) noexcept {
+        return static_cast<Color>(red | (green << 8) | (blue << 16));
       }
       /// @brief Get default system window background reference
       static constexpr inline Color systemWindowColor() noexcept { return static_cast<Color>(-1L); }
