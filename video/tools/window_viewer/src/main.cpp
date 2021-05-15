@@ -97,6 +97,7 @@ enum class CursorMode : uint32_t {
 };
 struct WindowParams {
   WindowHandle parent = (WindowHandle)0;
+  WindowHandle orig = (WindowHandle)0;
   WindowType mode = WindowType::window;
   ResizeMode resize = ResizeMode::fixed;
   FeatureMode feat = FeatureMode::none;
@@ -150,10 +151,10 @@ std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource:
          .setIcon(mainIcon)
          .setCursor(cursor)
          .setBackgroundColor(WindowResource::buildColorBrush(background));
-  if (params.parent == (WindowHandle)0 || params.mode == WindowType::dialog)
+  if (params.orig == (WindowHandle)0)
     return builder.create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"), params.parent);
   else
-    return builder.update(params.parent, false);
+    return builder.update(params.orig, false);
 }
 
 
@@ -312,6 +313,11 @@ void viewWindow(const WindowParams& params) {
     window->show();
 
     while (Window::pollEvents()) {
+      if (!window->handle()) {
+        std::this_thread::sleep_for(std::chrono::microseconds(16666LL)); // 60Hz
+        continue;
+      }
+      
       if (g_events.isRefreshed) {
         // update caption: input char, window size, cursor position
         if (window->displayMode() != WindowType::fullscreen) {
@@ -452,16 +458,17 @@ void menuWindow(WindowType mode, const char* typeName) {
     }
 
     printf("\nStyle:\n");
-    printMenu<5>({ "Cancel options...", "Default pos", "Centered", "Default pos, parent/original window", "Centered, parent/original window" });
-    option = readNumericInput(1, 4);
+    printMenu<6>({ "Cancel options...", "Default pos", "Centered", "Default pos, parent window", "Centered, parent window", "Centered, window updated" });
+    option = readNumericInput(1, 5);
     if (option == 0)
       continue;
-    bool hasParent = false;
+    bool hasParent = false, isUpdate = false;
     switch (option) {
-      case 1: params.isCentered = false; hasParent = false; break;
-      case 2: params.isCentered = true;  hasParent = false; break;
-      case 3: params.isCentered = false; hasParent = true; break;
-      case 4: params.isCentered = true;  hasParent = true; break;
+      case 1: params.isCentered = false; hasParent = false; isUpdate = false; break;
+      case 2: params.isCentered = true;  hasParent = false; isUpdate = false; break;
+      case 3: params.isCentered = false; hasParent = true;  isUpdate = false; break;
+      case 4: params.isCentered = true;  hasParent = true;  isUpdate = false; break;
+      case 5: params.isCentered = true;  hasParent = false; isUpdate = true; break;
       default: break;
     }
     
@@ -494,7 +501,7 @@ void menuWindow(WindowType mode, const char* typeName) {
       default: break;
     }
 
-    if (hasParent) { // create parent / original window
+    if (hasParent || isUpdate) { // create parent / original window
 #     ifdef _WINDOWS
         HMENU menuBar = CreateMenu();
         HMENU subMenu = CreatePopupMenu();
@@ -510,7 +517,7 @@ void menuWindow(WindowType mode, const char* typeName) {
       Window::Builder builder;
       parentWindow = builder.setDisplayMode(WindowType::window, WindowBehavior::none, ResizeMode::fixed)
                      .setSize(380, 220)
-                     .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
+                     .setPosition(200, 200)
                      .setIcon(WindowResource::buildIcon(SystemIcon::info))
                      .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,120,160)))
 #                    ifdef _WINDOWS
@@ -518,13 +525,18 @@ void menuWindow(WindowType mode, const char* typeName) {
 #                    endif
                      .create(_SYSTEM_STR("PARENT"), _SYSTEM_STR("Parent window"));
       parentWindow->show();
-      params.parent = parentWindow->handle();
+      
+      if (hasParent)
+        params.parent = parentWindow->handle();
+      else
+        params.orig = parentWindow->handle();
       Window::pollEvents();
     }
     
     viewWindow(params);
-    params.parent = (WindowHandle)0;
+    params.parent = params.orig = (WindowHandle)0;
     parentWindow = nullptr;
+    Window::pollEvents();
   }
 }
 

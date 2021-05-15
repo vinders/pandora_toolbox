@@ -252,7 +252,7 @@ namespace pandora {
         /// @brief Create a new Window with current builder params.
         /// @param[in] contextName   Unique identifier for window context (not empty, no special characters, no spaces, max 256 characters).
         /// @param[in] caption       Title text in window caption
-        /// @param[in] parentWindow  Handle of parent window (optional)
+        /// @param[in] parentWindow  Handle of parent window (optional, should be avoided for fullscreen windows)
         /// @warning - On Windows, * <system/windows_app.h> must have been initialized with the module handle (of current executable/library module).
         ///                        * or 'setModuleInstance' must be called.
         ///          - It is recommended to enable DPI awareness (manifest or via DisplayMonitor) before creating window or monitor instance.

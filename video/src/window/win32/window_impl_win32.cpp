@@ -35,6 +35,32 @@ Description : Window manager + builder - Win32 implementation (Windows)
   using pandora::hardware::DisplayMode;
   using pandora::hardware::DisplayMonitor;
   
+  namespace pandora {
+    namespace video {
+      class __WindowImplEventProc final {
+      public:
+        static __forceinline int refreshClientArea(__WindowImpl& window, DisplayArea& outArea) noexcept;
+        static void refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept;
+        static __forceinline void resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept;
+        
+        static __forceinline void readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept;
+        static __forceinline void refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
+                                                        uint32_t& outX, uint32_t& outY) noexcept;
+        static void enableCursorMode(__WindowImpl& window) noexcept;
+        static void disableCursorMode(uint32_t statusFlag) noexcept;
+        
+        static bool findWindowMonitor(__WindowImpl& window, const RECT& suggestedArea) noexcept;
+        static __forceinline void adjustWindowSizeOnDpiChange(__WindowImpl& window, const RECT& suggestedArea, 
+                                                              WindowDecorationSize& outDecorationSizes) noexcept;
+        
+        static __forceinline void dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept;
+
+        static __forceinline bool processKeyboardEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
+        static __forceinline bool processMouseEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
+        static __forceinline void processRawInputEvent(__WindowImpl& window, LPARAM lParam);
+      };
+    }
+  }
   
   // Get last error message
   std::string __WindowImpl::formatLastError(const char* prefix) {
@@ -216,10 +242,11 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Destroy window (or restore existing window style)
   void __WindowImpl::_destroy() noexcept {
     if (this->_handle) {
-      // if (this->_statusFlags & __P_FLAG_CURSOR_HOVER) // restore cursor + unregister to raw input
-        // __disableCursorMode(this->_statusFlags);
-
-      show(SW_HIDE); // hide window + restore original display mode
+      if (this->_statusFlags & __P_FLAG_CURSOR_HOVER) // restore cursor + unregister raw input
+        __WindowImplEventProc::disableCursorMode(this->_statusFlags);
+      if (this->_mode == WindowType::fullscreen || this->_statusFlags & __P_FLAG_FULLSCREEN_ON)
+        show(SW_SHOWMINNOACTIVE); // minimize fullscreen window + restore original display mode
+      
       __decrementWindowCount(); // inform 'pollEvents()' whether it's the last window or not -> decrement before destroying
       
       // existing window: restore original style
@@ -327,12 +354,21 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if ((this->_statusFlags & __P_FLAG_FULLSCREEN_ON) && type != WindowType::fullscreen)
       exitFullscreenMode();
     
-    // set window style flags
     DWORD prevStyle = this->_currentStyleFlag; // must be set before calling 'enterFullscreenMode'
     DWORD prevStyleExt = this->_currentStyleExtFlag;
+    auto prevMode = this->_mode;
+    auto prevBehavior = this->_behavior;
+    auto prevResize = this->_resizeMode;
+    auto prevRate = this->_refreshRate;
+
+    // set window style
     if (type == WindowType::fullscreen || type == WindowType::borderless)
       resizeMode = ResizeMode::fixed;
     toWindowStyleFlags(type, behavior, resizeMode, this->_currentStyleFlag, this->_currentStyleExtFlag);
+    this->_mode = type;
+    this->_behavior = behavior;
+    this->_resizeMode = resizeMode;
+    this->_refreshRate = rate;
     
     // display area: compute window decorations + replace user values (centered/default/...)
     DisplayArea windowArea, clientArea;
@@ -354,6 +390,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
         SetWindowLongPtr(this->_handle, GWL_EXSTYLE, prevStyleExt);
         this->_currentStyleFlag = prevStyle;
         this->_currentStyleExtFlag = prevStyleExt;
+        this->_mode = prevMode;
+        this->_behavior = prevBehavior;
+        this->_resizeMode = prevResize;
+        this->_refreshRate = prevRate;
         if (this->_mode == WindowType::fullscreen)
           enterFullscreenMode(windowArea, rate);
         return false;
@@ -362,10 +402,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     
     {// lock scope -> copy params after success
       std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-      this->_mode = type;
-      this->_behavior = behavior;
-      this->_resizeMode = resizeMode;
-      this->_refreshRate = rate;
       this->_decorationSizes = decorationSizes;
       this->_lastClientArea = clientArea;
       this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
@@ -558,15 +594,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return false;
   }
   
-  // Convert user-defined coord to client-area coord
-  static inline int32_t __toClientAreaCoord(int32_t userCoord, int32_t minCoord, int32_t maxCoord, uint32_t clientSize) noexcept {
-    switch (userCoord) {
-      case Window::Builder::defaultPosition(): return minCoord;
-      case Window::Builder::centeredPosition(): return (minCoord + maxCoord - (int32_t)clientSize)/2;
-      default: return userCoord;
-    }
-  }
-  
   // ---
   
   // Change mouse pointer X/Y position
@@ -680,13 +707,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
 // -- user area computation -- -------------------------------------------------
 
   // Verify if a borderless window has "fullscreen" behavior
-  static inline bool __isBorderlessFull(const DisplayMonitor& monitor, WindowType mode, 
-                                        WindowBehavior behavior, uint32_t width, uint32_t height) noexcept {
+  static inline bool __isBorderlessFull(const DisplayMonitor& monitor, const WindowDecorationSize& decorationSizes,
+                                        WindowType mode, WindowBehavior behavior, uint32_t width, uint32_t height) noexcept {
     return (mode == WindowType::borderless && (behavior & WindowBehavior::aboveTaskbar) == true
-        && (width == monitor.attributes().screenArea.width 
-          || width == Window::Builder::defaultSize()
-          || height == monitor.attributes().screenArea.height 
-          || height == Window::Builder::defaultSize())
+         && (width  == Window::Builder::defaultSize()
+          || height == Window::Builder::defaultSize()
+          || width + decorationSizes.left + decorationSizes.right  == monitor.attributes().screenArea.width 
+          || height + decorationSizes.top + decorationSizes.bottom == monitor.attributes().screenArea.height)
         );
   }
   // Get parent area (on failure, use work area)
@@ -728,19 +755,39 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Computer client-position (absolute) and window-position (absolute/relative) of window (based on user-defined values)
   template <bool _IsFullscreen>
   static inline void __computeUserPosition(int32_t userX, int32_t userY, uint32_t clientWidth, uint32_t clientHeight, 
-                                           const DisplayArea& parentArea, const WindowDecorationSize& decorationSizes,
+                                           const DisplayArea& parentArea, const DisplayArea& workArea, 
+                                           const WindowDecorationSize& decorationSizes,
                                            DisplayArea& outClientArea, DisplayArea& outWindowArea) noexcept {
     __if_constexpr (_IsFullscreen) {
-      outWindowArea.x = parentArea.x;
-      outWindowArea.y = parentArea.y;
+      outWindowArea.x = workArea.x;
+      outWindowArea.y = workArea.y;
       outClientArea.x = outWindowArea.x + decorationSizes.left;
       outClientArea.y = outWindowArea.y + decorationSizes.top;
     }
-    else {
-      int32_t maxCoordX = parentArea.x + (int32_t)parentArea.width - decorationSizes.right;
-      int32_t maxCoordY = parentArea.y + (int32_t)parentArea.height - decorationSizes.bottom;
-      outClientArea.x = __toClientAreaCoord(userX, parentArea.x + decorationSizes.left, maxCoordX, clientWidth);
-      outClientArea.y = __toClientAreaCoord(userY, parentArea.y + decorationSizes.top, maxCoordY, clientHeight);
+    else { // window/dialog
+      switch (userX) {
+        case Window::Builder::defaultPosition(): // left of work area
+          outClientArea.x = workArea.x + decorationSizes.left;
+          break;
+        case Window::Builder::centeredPosition(): // centered in work area
+          outClientArea.x = workArea.x + ((int32_t)workArea.width - (int32_t)clientWidth - decorationSizes.left - decorationSizes.right)/2;
+          if (outClientArea.x - decorationSizes.left < workArea.x) // clamp
+            outClientArea.x += workArea.x - outClientArea.x + decorationSizes.left;
+          break;
+        default: outClientArea.x = parentArea.x + userX; break;
+      }
+      switch (userY) {
+        case Window::Builder::defaultPosition(): // top of work area
+          outClientArea.y = workArea.y + decorationSizes.top;
+          break;
+        case Window::Builder::centeredPosition(): // centered in work area
+          outClientArea.y = workArea.y + ((int32_t)workArea.height - (int32_t)clientHeight - decorationSizes.top - decorationSizes.bottom)/2;
+          if (outClientArea.y - decorationSizes.top < workArea.y) // clamp
+            outClientArea.y += workArea.y - outClientArea.y + decorationSizes.top;
+          break;
+        default: outClientArea.y = parentArea.y + userY; break;
+      }
+      
       outWindowArea.x = outClientArea.x - decorationSizes.left;
       outWindowArea.y = outClientArea.y - decorationSizes.top;
     }
@@ -751,82 +798,72 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Compute client-position (absolute) and window-position (absolute if root/relative if child), based on user-defined values
   void __WindowImpl::computeUserPosition(int32_t x, int32_t y, const WindowDecorationSize& decorationSizes,
                                          DisplayArea& inOutClientArea, DisplayArea& outWindowPos) noexcept {
-    // child dialog -> relative window-area
-    if (this->_parent != nullptr) {
-      DisplayArea parentArea;
-      __getParentArea(this->_parent, *(this->_monitor), parentArea);
-      __computeUserPosition<false>(x, y, inOutClientArea.width, inOutClientArea.height,
-                                        parentArea, decorationSizes, inOutClientArea, outWindowPos);
+    // fullscreen -> decorations must fit inside -> reduce client area
+    if (this->_mode == WindowType::fullscreen 
+    || __isBorderlessFull(*(this->_monitor), decorationSizes, this->_mode, this->_behavior, inOutClientArea.width, inOutClientArea.height)) {
+      
+      __computeUserPosition<true>(x, y, inOutClientArea.width, inOutClientArea.height,
+                                  this->_monitor->attributes().screenArea, this->_monitor->attributes().screenArea, 
+                                  decorationSizes, inOutClientArea, outWindowPos);
     }
-    // root window -> absolute window-area
+    // window/dialog -> decorations outside of client area
     else {
-      bool isBorderlessFull = __isBorderlessFull(*(this->_monitor), this->_mode, this->_behavior, 
-                                                 inOutClientArea.width + decorationSizes.left + decorationSizes.right, 
-                                                 inOutClientArea.height + decorationSizes.top + decorationSizes.bottom);
-      if (this->_mode == WindowType::fullscreen || isBorderlessFull) { // full screen -> decorations must fit inside -> reduce client area
-        __computeUserPosition<true>(x, y, inOutClientArea.width, inOutClientArea.height,
-                                          this->_monitor->attributes().screenArea, decorationSizes, 
-                                          inOutClientArea, outWindowPos);
-      }
-      else { // window/dialog -> decorations outside of client area
-        __computeUserPosition<false>(x, y, inOutClientArea.width, inOutClientArea.height,
-                                           this->_monitor->attributes().workArea, decorationSizes, 
-                                           inOutClientArea, outWindowPos);
-      }
+      DisplayArea parentArea;
+      if (this->_parent != nullptr)
+        __getParentArea(this->_parent, *(this->_monitor), parentArea);
+
+      __computeUserPosition<false>(x, y, inOutClientArea.width, inOutClientArea.height,
+                                   (this->_parent != nullptr) ? parentArea : this->_monitor->attributes().workArea,
+                                   this->_monitor->attributes().workArea, decorationSizes, 
+                                   inOutClientArea, outWindowPos);
     }
   }
   // Compute client-size and window-size, based on user-defined values
   void __WindowImpl::computeUserSize(uint32_t width, uint32_t height, const WindowDecorationSize& decorationSizes, 
                                      DisplayArea& outClientSize, DisplayArea& outWindowSize) noexcept {
-    // child dialog -> relative window-area
-    if (this->_parent != nullptr) {
-      DisplayArea parentArea;
-      __getParentArea(this->_parent, *(this->_monitor), parentArea);
-      __computeUserSize<false>(width, height, parentArea, decorationSizes, outClientSize, outWindowSize);
+    // fullscreen -> decorations must fit inside -> reduce client area
+    if (this->_mode == WindowType::fullscreen 
+    || __isBorderlessFull(*(this->_monitor), decorationSizes, this->_mode, this->_behavior, width, height) ) {
+      
+      __computeUserSize<true>(width, height, this->_monitor->attributes().screenArea, 
+                              decorationSizes, outClientSize, outWindowSize);
     }
-    // root window -> absolute window-area
+    // window/dialog -> decorations outside of client area
     else {
-      bool isBorderlessFull = __isBorderlessFull(*(this->_monitor), this->_mode, this->_behavior, width, height);
-      if (this->_mode == WindowType::fullscreen || isBorderlessFull) { // full screen -> decorations must fit inside -> reduce client area
-        __computeUserSize<true>(width, height, this->_monitor->attributes().screenArea, 
-                                decorationSizes, outClientSize, outWindowSize);
-      }
-      else { // window/dialog -> decorations outside of client area
-        __computeUserSize<false>(width, height, this->_monitor->attributes().workArea, 
-                                 decorationSizes, outClientSize, outWindowSize);
-      }
+      DisplayArea parentArea;
+      if (this->_parent != nullptr)
+        __getParentArea(this->_parent, *(this->_monitor), parentArea);
+
+      __computeUserSize<false>(width, height, (this->_parent != nullptr) ? parentArea : this->_monitor->attributes().workArea,
+                               decorationSizes, outClientSize, outWindowSize);
     }
   }
   // Compute client-area (absolute) and window-area (absolute if root/relative if child), based on user-defined values
   void __WindowImpl::computeUserArea(WindowType mode, WindowBehavior behavior, const DisplayArea& userArea, 
                                      const WindowDecorationSize& decorationSizes,
                                      DisplayArea& outClientArea, DisplayArea& outWindowArea) noexcept {
-    // child dialog -> relative window-area
-    if (this->_parent != nullptr) {
-      DisplayArea parentArea;
-      __getParentArea(this->_parent, *(this->_monitor), parentArea);
-      
-      __computeUserSize<false>(userArea.width, userArea.height, parentArea, decorationSizes, outClientArea, outWindowArea);
-      __computeUserPosition<false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
-                                        parentArea, decorationSizes, outClientArea, outWindowArea);
+    // fullscreen -> decorations must fit inside -> reduce client area
+    if (this->_mode == WindowType::fullscreen 
+    || __isBorderlessFull(*(this->_monitor), decorationSizes, mode, behavior, userArea.width, userArea.height) ) {
+      __computeUserSize<true>(userArea.width, userArea.height, this->_monitor->attributes().screenArea, 
+                              decorationSizes, outClientArea, outWindowArea);
+      __computeUserPosition<true>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
+                                  this->_monitor->attributes().screenArea, this->_monitor->attributes().screenArea,
+                                  decorationSizes, outClientArea, outWindowArea);
     }
-    // root window -> absolute window-area
+    // window/dialog -> decorations outside of client area
     else {
-      bool isBorderlessFull = __isBorderlessFull(*(this->_monitor), mode, behavior, userArea.width, userArea.height);
-      if (mode == WindowType::fullscreen || isBorderlessFull) { // full screen -> decorations must fit inside -> reduce client area
-        __computeUserSize<true>(userArea.width, userArea.height, this->_monitor->attributes().screenArea, 
-                                decorationSizes, outClientArea, outWindowArea);
-        __computeUserPosition<true>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
-                                          this->_monitor->attributes().screenArea, decorationSizes, 
-                                          outClientArea, outWindowArea);
-      }
-      else { // window/dialog -> decorations outside of client area
-        __computeUserSize<false>(userArea.width, userArea.height, this->_monitor->attributes().workArea, 
-                                 decorationSizes, outClientArea, outWindowArea);
-        __computeUserPosition<false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
-                                           this->_monitor->attributes().workArea, decorationSizes, 
-                                           outClientArea, outWindowArea);
-      }
+      DisplayArea parentArea;
+      if (this->_parent != nullptr)
+        __getParentArea(this->_parent, *(this->_monitor), parentArea);
+      
+      __computeUserSize<false>(userArea.width, userArea.height, 
+                               (this->_parent != nullptr) ? parentArea : this->_monitor->attributes().workArea,
+                               decorationSizes, outClientArea, outWindowArea);
+      __computeUserPosition<false>(userArea.x, userArea.y, outClientArea.width, outClientArea.height,
+                                   (this->_parent != nullptr) ? parentArea : this->_monitor->attributes().workArea,
+                                   this->_monitor->attributes().workArea, decorationSizes, 
+                                   outClientArea, outWindowArea);
     }
   }
   
@@ -997,35 +1034,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
 // _____________________________________________________________________________
 
 // -- window event helpers -- --------------------------------------------------
-
-  namespace pandora {
-    namespace video {
-      class __WindowImplEventProc final {
-      public:
-        static __forceinline int refreshClientArea(__WindowImpl& window, DisplayArea& outArea) noexcept;
-        static void refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept;
-        static __forceinline void resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept;
-        
-        static __forceinline void readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept;
-        static __forceinline void refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
-                                                        uint32_t& outX, uint32_t& outY) noexcept;
-        static void enableCursorMode(__WindowImpl& window) noexcept;
-        static void disableCursorMode(uint32_t statusFlag) noexcept;
-        
-        static bool findWindowMonitor(__WindowImpl& window, const RECT& suggestedArea) noexcept;
-        static __forceinline void adjustWindowSizeOnDpiChange(__WindowImpl& window, const RECT& suggestedArea, 
-                                                              WindowDecorationSize& outDecorationSizes) noexcept;
-        
-        static __forceinline void dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept;
-
-        static __forceinline bool processKeyboardEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
-        static __forceinline bool processMouseEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
-        static __forceinline void processRawInputEvent(__WindowImpl& window, LPARAM lParam);
-      };
-    }
-  }
-
-  // ---
 
   // Refresh client-area + returns: 0(error) / 1(no changes) / 2 (changed)
   __forceinline int __WindowImplEventProc::refreshClientArea(__WindowImpl& window, DisplayArea& outArea) noexcept {
@@ -1785,6 +1793,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
           return 0;
         }
         case WM_DESTROY: { // close success -> confirmation message
+          if (window->_handle) { // WM_CLOSE won't have been received if destroyed by a parent window
+            __decrementWindowCount();  // inform pollEvents
+            window->_handle = nullptr; // inform pollCurrentWindowEvents
+            if (!window->_windowClassName.empty()) // avoid leaks
+              UnregisterClassW(window->_windowClassName.c_str(), window->_moduleInstance);
+          }
           PostQuitMessage(0);
           return 0;
         }
