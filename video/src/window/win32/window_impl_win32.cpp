@@ -114,6 +114,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
     _menu = (HMENU)GetMenu(handle);
     _eventProcessor = (WNDPROC)GetWindowLongPtr(handle, GWLP_WNDPROC);
     
+    WCHAR buffer[128]{ 0 };
+    if (GetWindowTextW(handle, buffer, sizeof(buffer)/sizeof(WCHAR)) > 0)
+      _caption = buffer;
+    
     // backup style
     if (GetWindowRect(handle, &_windowArea) == FALSE) {
       _windowArea.right = _windowArea.left + __P_DEFAULT_WINDOW_WIDTH;
@@ -131,6 +135,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
     SetClassLongPtr(handle, GCLP_HCURSOR, (LONG_PTR)_cursor);
     SetClassLongPtr(handle, GCLP_HBRBACKGROUND, (LONG_PTR)_backgroundColor);
     SetMenu(handle, _menu);
+    if (!_caption.empty())
+      SetWindowTextW(handle, _caption.c_str());
     
     // restore style
     SetWindowLong(handle, GWL_STYLE, _windowStyle | WS_VISIBLE);
@@ -248,9 +254,11 @@ Description : Window manager + builder - Win32 implementation (Windows)
         show(SW_SHOWMINNOACTIVE); // minimize fullscreen window + restore original display mode
       
       __decrementWindowCount(); // inform 'pollEvents()' whether it's the last window or not -> decrement before destroying
-      
+
       // existing window: restore original style
       if (this->_originalStyle != nullptr) {
+        RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance BEFORE restoring it
+        show(SW_RESTORE);
         _originalStyle->applyStyle(this->_handle);
       }
       // new window: destroy
@@ -258,8 +266,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
         DestroyWindow(this->_handle);
         if (!this->_windowClassName.empty())
           UnregisterClassW(this->_windowClassName.c_str(), this->_moduleInstance);
+        RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance AFTER destroying it
       }
-      RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance
       this->_handle = nullptr;
     }
   }
@@ -304,7 +312,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       enterFullscreenMode(lastWindowArea(), this->_refreshRate);
     }
     else { // window mode
-      isVisibilityCommandSet = (visibilityFlag == SW_SHOW || visibilityFlag == SW_SHOWDEFAULT
+      isVisibilityCommandSet = (visibilityFlag == SW_SHOW || visibilityFlag == SW_SHOWDEFAULT || visibilityFlag == SW_RESTORE
                              || (visibilityFlag == SW_SHOWMAXIMIZED && (this->_currentStyleFlag & WS_MAXIMIZE)) );
       if (ShowWindow(this->_handle, isVisibilityCommandSet ? visibilityFlag : SW_SHOW) == FALSE)
         return false; // display failure
@@ -507,7 +515,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       case Window::VisibilityCommand::hide: return SW_HIDE;
       case Window::VisibilityCommand::show: return SW_SHOW;
       case Window::VisibilityCommand::showInactive: return SW_SHOWNA;
-      case Window::VisibilityCommand::restore:  return SW_SHOWDEFAULT;
+      case Window::VisibilityCommand::restore:  return SW_RESTORE;
       case Window::VisibilityCommand::minimize: return SW_SHOWMINNOACTIVE;
       case Window::VisibilityCommand::maximize: return SW_SHOWMAXIMIZED;
       default: return SW_SHOWDEFAULT;

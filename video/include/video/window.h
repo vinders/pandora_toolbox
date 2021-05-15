@@ -212,8 +212,8 @@ namespace pandora {
         
         // -- display params --
         
-        static inline constexpr int32_t defaultPosition() noexcept { return 0x7FFFFFFF; }  ///< default system X/Y coords
-        static inline constexpr int32_t centeredPosition() noexcept { return 0x7FFFFFFE; } ///< center window
+        static inline constexpr int32_t defaultPosition() noexcept { return 0x7FFFFFFF; }  ///< default work area origin coords
+        static inline constexpr int32_t centeredPosition() noexcept { return 0x7FFFFFFE; } ///< centered window coords
         static inline constexpr uint32_t defaultSize() noexcept { return 0; } ///< default system window size (or desktop size in fullscreen)
         
         /// @brief Set display monitor on which the window should appear (if omitted, will use default monitor)

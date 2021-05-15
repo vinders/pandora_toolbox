@@ -74,6 +74,7 @@ namespace pandora {
       void applyStyle(HWND handle) noexcept; // apply stored style properties on existing window (restore)
       
     private:
+      std::wstring _caption;
       RECT _windowArea{ -1,-1,-1,-1 };
 
       HICON _appIcon = nullptr;
