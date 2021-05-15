@@ -257,19 +257,21 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
       // existing window: restore original style
       if (this->_originalStyle != nullptr) {
-        RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance BEFORE restoring it
+        RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance BEFORE restoring it (avoid constraints from current instance)
         show(SW_RESTORE);
         _originalStyle->applyStyle(this->_handle);
+        this->_handle = nullptr;
       }
       // new window: destroy
       else {
-        DestroyWindow(this->_handle);
-        if (!this->_windowClassName.empty())
-          UnregisterClassW(this->_windowClassName.c_str(), this->_moduleInstance);
-        RemovePropW(this->_handle, __P_WINDOW_ID); // unreference window instance AFTER destroying it
+        HWND handle = this->_handle;
+        this->_handle = nullptr; // reset before destroying -> avoid recursive destruction by WM_DESTROY
+        DestroyWindow(handle);
+        RemovePropW(handle, __P_WINDOW_ID); // unreference window instance AFTER destroying it -> let WM_DESTROY send WM_QUIT
       }
-      this->_handle = nullptr;
     }
+    if (!this->_windowClassName.empty())
+      UnregisterClassW(this->_windowClassName.c_str(), this->_moduleInstance);
   }
   // Instance destruction
   __WindowImpl::~__WindowImpl() noexcept {
@@ -1801,11 +1803,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
           return 0;
         }
         case WM_DESTROY: { // close success -> confirmation message
-          if (window->_handle) { // WM_CLOSE won't have been received if destroyed by a parent window
+          if (window->_handle) { // WM_CLOSE not received: destroyed by a parent window
             __decrementWindowCount();  // inform pollEvents
             window->_handle = nullptr; // inform pollCurrentWindowEvents
-            if (!window->_windowClassName.empty()) // avoid leaks
-              UnregisterClassW(window->_windowClassName.c_str(), window->_moduleInstance);
           }
           PostQuitMessage(0);
           return 0;
