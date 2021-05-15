@@ -107,6 +107,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Store style properties from existing window (backup)
   void WindowStyle::backupStyle(HWND handle) noexcept {
     // backup resources
+    _oldProp = GetPropW(handle, __P_WINDOW_ID); // if parent is a pandora::video::Window instance, backup prop
     _appIcon = (HICON)GetClassLongPtr(handle, GCLP_HICON);
     _captionIcon = (HICON)GetClassLongPtr(handle, GCLP_HICONSM);
     _cursor = (HCURSOR)GetClassLongPtr(handle, GCLP_HCURSOR);
@@ -142,9 +143,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
     SetWindowLong(handle, GWL_STYLE, _windowStyle | WS_VISIBLE);
     SetWindowLong(handle, GWL_EXSTYLE, _windowStyleExt);
     SetWindowLongPtr(handle, GWLP_WNDPROC, (LONG_PTR)_eventProcessor);
+
     SetWindowPos(handle, HWND_TOP, (int)_windowArea.left, (int)_windowArea.top,
                  (int)_windowArea.right - _windowArea.left, (int)_windowArea.bottom - _windowArea.top, 
                  SWP_SHOWWINDOW | SWP_NOZORDER | SWP_FRAMECHANGED);
+    if (_oldProp) // if parent is a pandora::video::Window instance, restore prop (after restoring size, in case it's fixed-size)
+      SetPropW(handle, __P_WINDOW_ID, _oldProp);
     if (_menu)
       DrawMenuBar(handle);
   }

@@ -77,6 +77,7 @@ namespace pandora {
       std::wstring _caption;
       RECT _windowArea{ -1,-1,-1,-1 };
 
+      HANDLE _oldProp = nullptr;
       HICON _appIcon = nullptr;
       HICON _captionIcon = nullptr;
       HCURSOR _cursor = nullptr;
