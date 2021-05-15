@@ -550,8 +550,12 @@ void menuWindow(WindowType mode, const char* typeName) {
       printf("-- user choice: %u", viewMessageBox(1, false));
       printf("-- user choice: %u", viewMessageBox(2, true));
       printf("-- user choice: %u", viewMessageBox(3, false));
-      viewWindow(WindowType::window, ResizeMode::fixed);
-      viewWindow(WindowType::fullscreen, ResizeMode::fixed);
+      
+      WindowParams params;
+      params.mode = WindowType::window;
+      viewWindow(params);
+      params.mode = WindowType::fullscreen;
+      viewWindow(params);
     }
     catch (const std::exception& exc) { LOGE("%s", exc.what()); }
   }
