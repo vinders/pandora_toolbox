@@ -35,20 +35,9 @@ Window viewer - utility to display window, dialog, or modal message-box
 
 #define _DEFAULT_WINDOW_WIDTH 800
 #define _DEFAULT_WINDOW_HEIGHT 600
+#define _REFRESH_RATE 60
 
 using namespace pandora::video;
-
-
-// -- test data -- -------------------------------------------------------------
-
-bool g_isRefreshed = false;
-bool g_hasScrollbars = false;
-uint32_t g_lastSizeX = _DEFAULT_WINDOW_WIDTH;
-uint32_t g_lastSizeY = _DEFAULT_WINDOW_HEIGHT;
-uint32_t g_lastCursorPosX = 0;
-uint32_t g_lastCursorPosY = 0;
-uint32_t g_lastCharInput = (uint32_t)'-';
-bool g_hasClicked = false;
 
 
 // -- console helpers -- -------------------------------------------------------
@@ -92,6 +81,30 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
 
 // -- window helpers -- --------------------------------------------------------
 
+enum class FeatureMode : uint32_t {
+  none = 0,
+  inputKeyInCaption,
+  fullscreenToggle,
+  cursorChangeOnClick,
+  colorChangeOnClick,
+  rainbowBackground
+};
+enum class CursorMode : uint32_t {
+  normal = 0,
+  custom,
+  hidden,
+  rawMotion
+};
+struct WindowParams {
+  WindowHandle parent = (WindowHandle)0;
+  WindowType mode = WindowType::window;
+  ResizeMode resize = ResizeMode::fixed;
+  FeatureMode feat = FeatureMode::none;
+  CursorMode cursorMode = CursorMode::normal;
+  bool isCentered = true;
+  bool isScrollable = false;
+};
+
 // build icon
 std::shared_ptr<WindowResource> buildWindowIcon(bool usePackage) {
   if (usePackage) {
@@ -104,7 +117,6 @@ std::shared_ptr<WindowResource> buildWindowIcon(bool usePackage) {
   else
     return WindowResource::buildIcon(SystemIcon::app);
 }
-
 // build cursor
 std::shared_ptr<WindowResource> buildWindowCursor(bool usePackage) {
   if (usePackage) {
@@ -117,33 +129,56 @@ std::shared_ptr<WindowResource> buildWindowCursor(bool usePackage) {
   else
     return WindowResource::buildCursor(SystemCursor::pointer);
 }
-
 // get display behavior
 WindowBehavior getBehavior(bool isScrollable) {
   return isScrollable ? (WindowBehavior::scrollV | WindowBehavior::scrollH) : WindowBehavior::none;
 }
 
 // create main window
-std::unique_ptr<Window> createWindow(WindowType mode, ResizeMode resize, WindowResource::Color background,
-                                     bool isCentered, bool isScrollable, bool hasCustomCursor) { // throws on failure
+std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource::Color background) { // throws on failure
   std::shared_ptr<WindowResource> mainIcon = buildWindowIcon(true);
   std::shared_ptr<WindowResource> cursor = nullptr;
-  if (hasCustomCursor)
+  if (params.cursorMode == CursorMode::custom)
       cursor = buildWindowCursor(true);
-  int32_t position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
+  int32_t position = params.isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
   
   Window::Builder builder;
-  return builder.setDisplayMode(mode, getBehavior(isScrollable), resize)
-         .setRefreshRate(60)
+  builder.setDisplayMode(params.mode, getBehavior(params.isScrollable), params.resize)
+         .setRefreshRate(_REFRESH_RATE)
          .setSize(_DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT)
          .setPosition(position, position)
          .setIcon(mainIcon)
          .setCursor(cursor)
-         .setBackgroundColor(WindowResource::buildColorBrush(background))
-         .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
+         .setBackgroundColor(WindowResource::buildColorBrush(background));
+  if (params.parent == (WindowHandle)0 || params.mode == WindowType::dialog)
+    return builder.create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"), params.parent);
+  else
+    return builder.update(params.parent, false);
 }
 
-// ---
+
+// -- window events -- ---------------------------------------------------------
+
+struct {
+  uint32_t lastSizeX;
+  uint32_t lastSizeY;
+  uint32_t lastCursorPosX;
+  uint32_t lastCursorPosY;
+  uint32_t lastCharInput;
+  bool hasScrollbars;
+  bool isRefreshed;
+  bool hasClicked;
+  
+  void reset(bool isScrollable) noexcept {
+    lastSizeX = _DEFAULT_WINDOW_WIDTH;
+    lastSizeY = _DEFAULT_WINDOW_HEIGHT;
+    lastCursorPosX = lastCursorPosY = 0;
+    lastCharInput = (uint32_t)'-';
+    hasScrollbars = isScrollable;
+    isRefreshed = false;
+    hasClicked = false;
+  }
+} g_events;
 
 // window/hardware event handler
 bool onWindowEvent(Window*, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
@@ -163,12 +198,12 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t, int32_t, int32_t, void*
 bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
     case PositionEvent::sizePositionChanged: 
-      g_lastSizeX = sizeX; 
-      g_lastSizeY = sizeY; 
-      if (g_hasScrollbars)
+      g_events.lastSizeX = sizeX; 
+      g_events.lastSizeY = sizeY; 
+      if (g_events.hasScrollbars)
         sender->setScrollbarRange((uint16_t)sender->getScrollPositionH(), (uint16_t)sender->getScrollPositionV(), 
                                   (uint16_t)sizeX*2, (uint16_t)sizeY*2);
-      g_isRefreshed = true;
+      g_events.isRefreshed = true;
       break;
     default: break;
   }
@@ -185,8 +220,8 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
       }
       break;
     case KeyboardEvent::charInput:
-      g_lastCharInput = keyCode;
-      g_isRefreshed = true; 
+      g_events.lastCharInput = keyCode;
+      g_events.isRefreshed = true; 
       break;
     default: break;
   }
@@ -196,19 +231,19 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t) {
   switch (event) {
     case MouseEvent::mouseMove:
-      g_lastCursorPosX = x;
-      g_lastCursorPosY = y;
-      g_isRefreshed = true;
+      g_events.lastCursorPosX = x;
+      g_events.lastCursorPosY = y;
+      g_events.isRefreshed = true;
       break;
     case MouseEvent::buttonDown:
       if ((MouseButton)index == MouseButton::left) {
-        g_hasClicked = true;
-        g_isRefreshed = true;
+        g_events.hasClicked = true;
+        g_events.isRefreshed = true;
       }
       break;
     case MouseEvent::rawMotion:
-      g_lastCursorPosX += x;
-      g_lastCursorPosY += y;
+      g_events.lastCursorPosX += x;
+      g_events.lastCursorPosY += y;
       break;
     default: break;
   }
@@ -248,85 +283,73 @@ uint32_t viewMessageBox(uint32_t numberOfActions, bool useCustomLabels) {
 
 // -- window viewer -- ---------------------------------------------------------
 
-enum class FeatureMode : uint32_t {
-  none = 0,
-  inputKeyInCaption,
-  fullscreenToggle,
-  cursorChangeOnClick,
-  colorChangeOnClick,
-  rainbowBackground
-};
-enum class CursorMode : uint32_t {
-  normal = 0,
-  custom,
-  hidden,
-  rawMotion
-};
 struct BackgroundColor {
-  uint8_t r, g, b;
+  uint32_t r, g, b;
 };
 
 // Display window
-void viewWindow(WindowType mode, ResizeMode resize, FeatureMode feat = FeatureMode::none, 
-                bool isCentered = true, bool isScrollable = false, CursorMode cursorMode = CursorMode::normal) {
+void viewWindow(const WindowParams& params) {
   try {
-    BackgroundColor back{ (feat == FeatureMode::rainbowBackground || mode == WindowType::fullscreen) 
-                          ? (uint8_t)255 : (uint8_t)0, (uint8_t)0, (uint8_t)0 };
-    auto window = createWindow(mode, resize, WindowResource::rgbColor(back.r,back.g,back.b), 
-                               isCentered, isScrollable, (cursorMode == CursorMode::custom));
+    bool hasCursorChanged = false;
+    g_events.reset(params.isScrollable);
+    BackgroundColor back = (params.feat == FeatureMode::rainbowBackground || params.mode == WindowType::fullscreen)
+                         ? BackgroundColor{ 255,0,0 }
+                         : BackgroundColor{ 0,0,0 };
+    
+    auto window = createWindow(params, WindowResource::rgbColor(back.r,back.g,back.b));
     window->setMinClientAreaSize(400, 300);
-    g_lastCursorPosX = g_lastCursorPosY = 0;
-    g_hasScrollbars = isScrollable;
-    if (isScrollable)
+    if (params.isScrollable)
       window->setScrollbarRange(0, 0, (uint16_t)_DEFAULT_WINDOW_WIDTH*2, (uint16_t)_DEFAULT_WINDOW_HEIGHT*2);
 
     window->setWindowHandler(&onWindowEvent);
     window->setPositionHandler(&onPositionEvent);
     window->setKeyboardHandler(&onKeyboardEvent);
-    switch (cursorMode) {
-      case CursorMode::hidden: window->setMouseHandler(&onMouseEvent, Window::CursorMode::hidden); break;
+    switch (params.cursorMode) {
+      case CursorMode::hidden:    window->setMouseHandler(&onMouseEvent, Window::CursorMode::hidden); break;
       case CursorMode::rawMotion: window->setMouseHandler(&onMouseEvent, Window::CursorMode::hiddenRaw); break;
       default: window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible); break;
     }
     window->show();
 
-    bool hasCursorChanged = false;
     while (Window::pollEvents()) {
-      if (g_isRefreshed) {
+      if (g_events.isRefreshed) {
         // update caption: input char, window size, cursor position
         if (window->displayMode() != WindowType::fullscreen) {
           window_char buffer[64]{ 0 };
-          if (feat == FeatureMode::inputKeyInCaption)
-            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), _SYSTEM_STR("Example Window - input:%c - %ux%u [%u-%u]"),
-              (window_char)g_lastCharInput, g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
+          if (params.feat == FeatureMode::inputKeyInCaption)
+            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), 
+                            _SYSTEM_STR("Example Window - input:%c - %ux%u [%u-%u]"), (window_char)g_events.lastCharInput,
+                            g_events.lastSizeX, g_events.lastSizeY, g_events.lastCursorPosX, g_events.lastCursorPosY);
           else
-            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), _SYSTEM_STR("Example Window - %ux%u [%u-%u]"),
-              g_lastSizeX, g_lastSizeY, g_lastCursorPosX, g_lastCursorPosY);
+            _SYSTEM_sprintf(buffer, sizeof(buffer) / sizeof(window_char), 
+                            _SYSTEM_STR("Example Window - %ux%u [%u-%u]"),
+                            g_events.lastSizeX, g_events.lastSizeY, g_events.lastCursorPosX, g_events.lastCursorPosY);
           window->setCaption((const window_char*)buffer);
         }
 
         // click event
-        if (g_hasClicked) {
-          switch (feat) {
+        if (g_events.hasClicked) {
+          switch (params.feat) {
             case FeatureMode::fullscreenToggle: {
-              auto position = isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
+              int32_t position = params.isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
               pandora::hardware::DisplayArea clientArea{ position, position, _DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT };
               if (window->displayMode() == WindowType::fullscreen)
-                window->setDisplayMode((mode != WindowType::fullscreen) ? mode : WindowType::window, getBehavior(isScrollable), resize, clientArea);
+                window->setDisplayMode((params.mode != WindowType::fullscreen) ? params.mode : WindowType::window, 
+                                       getBehavior(params.isScrollable), params.resize, clientArea);
               else
-                window->setDisplayMode(WindowType::fullscreen, getBehavior(isScrollable), resize, clientArea, 60);
+                window->setDisplayMode(WindowType::fullscreen, getBehavior(params.isScrollable), params.resize, clientArea, _REFRESH_RATE);
               break;
             }
             case FeatureMode::cursorChangeOnClick: {
               hasCursorChanged ^= true;
-              switch (cursorMode) {
+              switch (params.cursorMode) {
                 case CursorMode::normal: window->setCursor(buildWindowCursor(hasCursorChanged)); break;
                 case CursorMode::custom: window->setCursor(buildWindowCursor(!hasCursorChanged)); break;
                 case CursorMode::hidden: 
                   window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hidden); 
                   break;
                 case CursorMode::rawMotion:
-                  g_lastCursorPosX = g_lastCursorPosY = 0;
+                  g_events.lastCursorPosX = g_events.lastCursorPosY = 0; // reset start position
                   window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hiddenRaw); 
                   break;
                 default: break;
@@ -334,20 +357,20 @@ void viewWindow(WindowType mode, ResizeMode resize, FeatureMode feat = FeatureMo
               break;
             }
             case FeatureMode::colorChangeOnClick: {
-              back.r = (back.r) ? (uint8_t)0 : (uint8_t)255;
+              back.r = (back.r) ? 0 : 255;
               window->setBackgroundColorBrush(WindowResource::buildColorBrush(WindowResource::rgbColor(back.r,back.g,back.b)));
               window->clearClientArea();
               break;
             }
             default: break;
           }
-          g_hasClicked = false;
+          g_events.hasClicked = false;
         }
-        g_isRefreshed = false;
+        g_events.isRefreshed = false;
       }
 
       // rainbow background update
-      if (feat == FeatureMode::rainbowBackground) {
+      if (params.feat == FeatureMode::rainbowBackground) {
         if (back.r > 0 && back.b == 0) { 
           --back.r; ++back.g; 
         }
@@ -401,12 +424,10 @@ void menuMessageBox() {
 
 // window/dialog menu
 void menuWindow(WindowType mode, const char* typeName) {
-  ResizeMode resizeMode = ResizeMode::fixed;
-  bool isScrollable = false;
-  bool isCentered = false;
-  CursorMode cursor = CursorMode::normal;
-  FeatureMode feat = FeatureMode::none;
-
+  WindowParams params;
+  params.mode = mode;
+  std::unique_ptr<Window> parentWindow = nullptr;
+  
   bool isRunning = true;
   while (isRunning) {
     clearScreen();
@@ -416,49 +437,94 @@ void menuWindow(WindowType mode, const char* typeName) {
     printf("\nSize mode:\n");
     printMenu<9>({ "Back to main menu...", "Fixed", "ResizableX", "ResizableY", "Resizable", "Homothety", 
                                            "Fixed / scrollbars", "Resizable / scrollbars", "Homothety / scrollbars" });
-    int size = readNumericInput(1, 8);
-    if (size == 0) { isRunning = false; continue; }
-    switch (size) {
-      case 1: resizeMode = ResizeMode::fixed; isScrollable = false; break;
-      case 2: resizeMode = ResizeMode::resizableX; isScrollable = false; break;
-      case 3: resizeMode = ResizeMode::resizableY; isScrollable = false; break;
-      case 4: resizeMode = ResizeMode::resizable; isScrollable = false; break;
-      case 5: resizeMode = ResizeMode::resizable|ResizeMode::homothety; isScrollable = false; break;
-      case 6: resizeMode = ResizeMode::fixed; isScrollable = true; break;
-      case 7: resizeMode = ResizeMode::resizable; isScrollable = true; break;
-      case 8: resizeMode = ResizeMode::resizable|ResizeMode::homothety; isScrollable = true; break;
+    int option = readNumericInput(1, 8);
+    if (option == 0) { isRunning = false; continue; }
+    switch (option) {
+      case 1: params.isScrollable = false; params.resize = ResizeMode::fixed; break;
+      case 2: params.isScrollable = false; params.resize = ResizeMode::resizableX; break;
+      case 3: params.isScrollable = false; params.resize = ResizeMode::resizableY; break;
+      case 4: params.isScrollable = false; params.resize = ResizeMode::resizable; break;
+      case 5: params.isScrollable = false; params.resize = ResizeMode::resizable|ResizeMode::homothety; break;
+      case 6: params.isScrollable = true;  params.resize = ResizeMode::fixed; break;
+      case 7: params.isScrollable = true;  params.resize = ResizeMode::resizable; break;
+      case 8: params.isScrollable = true;  params.resize = ResizeMode::resizable|ResizeMode::homothety; break;
       default: break;
     }
 
     printf("\nStyle:\n");
-    printMenu<6>({ "Back to main menu...", "Default pos", "Centered", "Centered / custom cursor", "Centered / hidden cursor", "Centered / mouse capture" });
-    int style = readNumericInput(1, 5);
-    if (style == 0) { isRunning = false; continue; }
-    switch (style) {
-      case 1: isCentered = false; cursor = CursorMode::normal; break;
-      case 2: isCentered = true; cursor = CursorMode::normal; break;
-      case 3: isCentered = true; cursor = CursorMode::custom; break;
-      case 4: isCentered = true; cursor = CursorMode::hidden; break;
-      case 5: isCentered = true; cursor = CursorMode::rawMotion; break;
+    printMenu<5>({ "Cancel options...", "Default pos", "Centered", "Default pos, parent/original window", "Centered, parent/original window" });
+    option = readNumericInput(1, 4);
+    if (option == 0)
+      continue;
+    bool hasParent = false;
+    switch (option) {
+      case 1: params.isCentered = false; hasParent = false; break;
+      case 2: params.isCentered = true;  hasParent = false; break;
+      case 3: params.isCentered = false; hasParent = true; break;
+      case 4: params.isCentered = true;  hasParent = true; break;
+      default: break;
+    }
+    
+    printf("\nCursor style:\n");
+    printMenu<5>({ "Cancel options...", "Standard", "Custom", "Hidden", "Mouse capture" });
+    option = readNumericInput(1, 4);
+    if (option == 0)
+      continue;
+    switch (option) {
+      case 1: params.cursorMode = CursorMode::normal; break;
+      case 2: params.cursorMode = CursorMode::custom; break;
+      case 3: params.cursorMode = CursorMode::hidden; break;
+      case 4: params.cursorMode = CursorMode::rawMotion; break;
       default: break;
     }
 
     printf("\nFeature:\n");
-    printMenu<7>({ "Back to main menu...", "Standard", "Last input key in caption", "Toggle window/fullscreen on click", 
+    printMenu<7>({ "Cancel options...", "Standard", "Last input key in caption", "Toggle window/fullscreen on click", 
                                            "Change cursor on click", "Change color on click", "Rainbow background" });
-    int option = readNumericInput(1, 6);
-    if (option == 0) { isRunning = false; continue; }
+    option = readNumericInput(1, 6);
+    if (option == 0)
+      continue;
     switch (option) {
-      case 1: feat = FeatureMode::none; break;
-      case 2: feat = FeatureMode::inputKeyInCaption; break;
-      case 3: feat = FeatureMode::fullscreenToggle; break;
-      case 4: feat = FeatureMode::cursorChangeOnClick; break;
-      case 5: feat = FeatureMode::colorChangeOnClick; break;
-      case 6: feat = FeatureMode::rainbowBackground; break;
+      case 1: params.feat = FeatureMode::none; break;
+      case 2: params.feat = FeatureMode::inputKeyInCaption; break;
+      case 3: params.feat = FeatureMode::fullscreenToggle; break;
+      case 4: params.feat = FeatureMode::cursorChangeOnClick; break;
+      case 5: params.feat = FeatureMode::colorChangeOnClick; break;
+      case 6: params.feat = FeatureMode::rainbowBackground; break;
       default: break;
     }
 
-    viewWindow(mode, resizeMode, feat, isCentered, isScrollable, cursor);
+    if (hasParent) { // create parent / original window
+#     ifdef _WINDOWS
+        HMENU menuBar = CreateMenu();
+        HMENU subMenu = CreatePopupMenu();
+        AppendMenuW(subMenu, MF_STRING, 161, L"&First item");
+        AppendMenuW(subMenu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(subMenu, MF_STRING, 162, L"&Second item");
+        AppendMenuW(menuBar, MF_POPUP, (UINT_PTR)subMenu, L"&Menu");
+        std::shared_ptr<WindowResource> menu = WindowResource::buildMenu(menuBar);
+#     else
+        std::shared_ptr<WindowResource> menu = nullptr;
+#     endif
+    
+      Window::Builder builder;
+      parentWindow = builder.setDisplayMode(WindowType::window, WindowBehavior::none, ResizeMode::fixed)
+                     .setSize(380, 220)
+                     .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
+                     .setIcon(WindowResource::buildIcon(SystemIcon::info))
+                     .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,120,160)))
+#                    ifdef _WINDOWS
+                       .setMenu(menu)
+#                    endif
+                     .create(_SYSTEM_STR("PARENT"), _SYSTEM_STR("Parent window"));
+      parentWindow->show();
+      params.parent = parentWindow->handle();
+      Window::pollEvents();
+    }
+    
+    viewWindow(params);
+    params.parent = (WindowHandle)0;
+    parentWindow = nullptr;
   }
 }
 
