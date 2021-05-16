@@ -1,0 +1,56 @@
+# ------------------------------------------------------------------------------
+# -- METHOD 1 - Script to generate makefile or IDE solution
+# ------------------------------------------------------------------------------
+
+# 1 - Install CMake on your system (at least 3.14): cmake.org
+#     You also need Doxygen if you wish to generate docs (output: subdirectory _docs for each library).
+
+# 2 - Open terminal in main project directory (containing CMakeLists.txt)
+
+# 3 - Run the script for your favorite IDE (or makefile) in the _scripts subdirectory:
+#     example: ./_scripts/cmake_unix-make-cpp17.sh for makefile.
+#     example: ./_scripts/cmake_codeblocks.sh for Code::Blocks.
+
+      ./_scripts/cmake_unix-make-cpp17.sh
+
+# 4 - Open '_build' sub-directory in file explorer:
+#     <PROJECT_ROOT>/_build/
+
+# 5 - Find the directory with the same IDE name as the script executed earlier:
+#     <PROJECT_ROOT>/_build/<NAME_OF_IDE>/
+#     example: <PROJECT_ROOT>/_build/eclipse/
+
+# 6 - * IDE: in this directory, open the solution file ("pandora.<EXT>"):
+#            example: "pandora.cbp" for Code::Blocks.
+#     * Makefile: in this directory, open a terminal, and run "make -j<NB_CORES>":
+#                 example: make -j4
+
+# 7 - Build the libraries/tests/tools/docs.
+
+
+# ------------------------------------------------------------------------------
+# -- METHOD 2 - Visual Studio Code
+# ------------------------------------------------------------------------------
+
+# 1 - Open Visual Studio Code.
+#     Install VS-Code extensions:
+#     * C/C++
+#     * CMake
+#     * CMake Test Explorer
+#     * CMake Tools
+#     * Google Test Explorer for Visual Studio Code
+#     * Test Explorer UI
+#     Then close and reload Visual Studio Code.
+
+# 2 - "Open folder": select the main project directory (containing CMakeLists.txt).
+#     If CMake doesn't automatically detect the project, you may need to add to .vscode/settings.json:
+#     {
+#       "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+#     }
+
+# 3 - Visual Studio Code will detect the compilers/toolchains on your system.
+#     Choose the desired "Cmake Kit".
+
+# 4 - You can use CMake Tools to choose the CMake options of the project ("CWORK_<...>" ).
+
+# 5 - Build the libraries/tests/tools/docs.

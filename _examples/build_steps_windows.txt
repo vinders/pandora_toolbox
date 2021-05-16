@@ -1,0 +1,82 @@
+# ------------------------------------------------------------------------------
+# -- METHOD 1 - Scripts for Visual Studio, Eclipse, Code::Blocks, Code-Lite, MinGW-makefiles...
+# ------------------------------------------------------------------------------
+
+# 1 - Install CMake on your system (at least 3.14): cmake.org
+#     You also need Doxygen if you wish to generate docs (output: subdirectory _docs for each library).
+
+# 2 - Open '_scripts' sub-directory in file explorer 
+#     (located in main directory that contains CMakeLists.txt):
+#     <PROJECT_ROOT>/_scripts/
+
+# 3 - Double-click on the script for your favorite IDE:
+#     "cmake_<NAME_OF_IDE>.bat"
+#     example: "cmake_vs2019-64.bat" for Visual Studio 2019 (x64 build).
+
+# 4 - Open '_build' sub-directory in file explorer:
+#     <PROJECT_ROOT>/_build/
+
+# 5 - Find the directory with the same IDE name as the script executed earlier:
+#     <PROJECT_ROOT>/_build/<NAME_OF_IDE>/
+#     example: <PROJECT_ROOT>/_build/vs2019-64/ for Visual Studio 2019 (x64 build).
+
+# 6 - In this directory, open the solution file ("pandora.<EXT>")
+#     example: "pandora.sln" for Visual Studio.
+
+# 7 - Build the libraries/tests/tools/docs.
+      Note that most IDE will allow changing the CMake options of the project ("CWORK_<...>" ).
+
+
+# ------------------------------------------------------------------------------
+# -- METHOD 2 - CMake-GUI
+# ------------------------------------------------------------------------------
+
+# 1 - Install CMake on your system (at least 3.14), with the GUI extension: cmake.org
+#     You also need Doxygen if you wish to generate docs (output: subdirectory _docs for each library).
+
+# 2 - Launch CMake-GUI and select project:
+#     * source code directory: browse and select the main project directory (containing CMakeLists.txt):
+#       <PROJECT_ROOT>
+#     * binary build directory: choose a new build subdirectory, 
+#       such as '_build/my_platform' in main project directory:
+#       example: <PROJECT_ROOT>/_build/vs2019
+
+# 3 - Press the "Configure" button.
+#     Choose your favorite IDE, and don't forget to choose the architecture (Win32 / x64), then press OK.
+#     When complete, check/uncheck the "CWORK_<...>" options you need in the list of options that has appeared.
+
+# 4 - Press the "Generate" button to create the solution files.
+
+# 5 - Press the "Open project" button to open the generated solution.
+#     You can also open it manually in the build directory that was selected earlier:
+#     example: <PROJECT_ROOT>/_build/vs2019/pandora.sln
+
+# 6 - Build the libraries/tests/tools/docs.
+
+
+# ------------------------------------------------------------------------------
+# -- METHOD 3 - Visual Studio Code
+# ------------------------------------------------------------------------------
+
+# 1 - Open Visual Studio Code.
+#     Install VS-Code extensions:
+#     * C/C++
+#     * CMake
+#     * CMake Test Explorer
+#     * CMake Tools
+#     * Google Test Explorer for Visual Studio Code
+#     * Test Explorer UI
+#     Then close and reload Visual Studio Code.
+
+# 2 - "Open folder": select the main project directory (containing CMakeLists.txt).
+#     If CMake doesn't automatically detect the project, you may need to add to .vscode/settings.json:
+#     {
+#       "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+#     }
+
+# 3 - Visual Studio Code will detect the compilers/toolchains on your system.
+#     Choose the desired "Cmake Kit".
+
+# 4 - You can use CMake Tools to choose the CMake options of the project ("CWORK_<...>" ).
+
+# 5 - Build the libraries/tests/tools/docs.
