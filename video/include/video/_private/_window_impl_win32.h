@@ -280,8 +280,8 @@ inline void pandora::video::__WindowImpl::lastRelativeClientRect(RECT& outRect) 
   std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   outRect.left = 0;
   outRect.top = 0;
-  outRect.right = (int)this->_lastClientArea.x + (int)this->_lastClientArea.width;
-  outRect.bottom = (int)this->_lastClientArea.y + (int)this->_lastClientArea.height;
+  outRect.right = (int)this->_lastClientArea.width;
+  outRect.bottom = (int)this->_lastClientArea.height;
 }
 inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastClientPosition() const noexcept {
   std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
