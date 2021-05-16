@@ -1531,6 +1531,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
   // main window event processor
   LRESULT CALLBACK __WindowImpl::windowEventProcessor(HWND handle, UINT message, WPARAM wParam, LPARAM lParam) {
+    bool isCommandEvent = false;
     __WindowImpl* window = reinterpret_cast<__WindowImpl*>(GetPropW(handle, __P_WINDOW_ID));
     if (window == nullptr)
       return DefWindowProcW(handle, message, wParam, lParam); // system event processor
@@ -1539,11 +1540,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (message >= WM_MOUSEFIRST && message <= WM_MOUSELAST) {
       if (window->_onMouseEvent && __WindowImplEventProc::processMouseEvent(*window, message, wParam, lParam))
         return 0; // handler said to ignore system processing
+      isCommandEvent = true;
     }
     // > keyboard events --
     else if (message <= WM_KEYLAST && message >= WM_KEYFIRST) {
       if (window->_onKeyboardEvent && __WindowImplEventProc::processKeyboardEvent(*window, message, wParam, lParam))
         return 0; // handler said to ignore system processing
+      isCommandEvent = true;
     }
     else {
       switch (message) {
@@ -1580,6 +1583,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         case WM_INPUT: { // raw mouse moves
           if ((window->_statusFlags & __P_FLAG_CURSOR_RAW_INPUT) && window->_onMouseEvent)
             __WindowImplEventProc::processRawInputEvent(*window, lParam);
+          isCommandEvent = true;
           break;
         }
 
@@ -1739,6 +1743,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 return 0;
             }
           }
+          isCommandEvent = true;
           break;
         }
         
@@ -1824,6 +1829,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         case WM_COMMAND: {
           if (window->_onWindowEvent && window->hasMenu() && HIWORD(wParam) == 0)
             window->_onWindowEvent(&window->_container, WindowEvent::menuCommand, 0, (int32_t)wParam,0, nullptr);
+          isCommandEvent = true;
           break;
         }
         // drag and drop
@@ -1894,6 +1900,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 window->_onWindowEvent(&window->_container, WindowEvent::deviceInterfaceChange, 0, 0,0,nullptr);
             }
           }
+          isCommandEvent = true;
           break;
         }
         // system operation
@@ -1912,6 +1919,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
               break;
             default: break;
           }
+          isCommandEvent = true;
           break;
         }
         // system suspend/resume
@@ -1926,6 +1934,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             if (window->_onWindowEvent)
               window->_onWindowEvent(&window->_container, WindowEvent::suspendResume, 0, 0,0,nullptr);
           }
+          isCommandEvent = true;
           break;
         }
         // input language change
@@ -1933,19 +1942,17 @@ Description : Window manager + builder - Win32 implementation (Windows)
           if (window->_onWindowEvent)
             window->_onWindowEvent(&window->_container, WindowEvent::inputLangChanged, (uint32_t)wParam, 
                                    ((int32_t)lParam & 0xFF), (((int32_t)lParam & 0xFF00) >> 8), (void*)lParam);
+          isCommandEvent = true;
           break; 
         }
-        default: break;
+        default: isCommandEvent = true; break;
       }
     }
     
-    // if original window processor existed, use it
-    if (window->_statusFlags & __P_FLAG_USE_ORIG_EVENT_PROC)
+    if ((window->_statusFlags & __P_FLAG_USE_ORIG_EVENT_PROC) && isCommandEvent) // call original event proc if requested
       return window->_originalStyle->_eventProcessor(handle, message, wParam, lParam);
     return DefWindowProcW(handle, message, wParam, lParam); // system window processor
   }
-
-
 
 # undef __if_constexpr
 #endif
