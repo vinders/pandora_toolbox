@@ -169,7 +169,7 @@ namespace pandora {
     ///        * event:       window size/position event type
     ///        * posX/posY:   horizontal/vertical positions (see PositionEvent enum)
     ///        * sizeX/sizeY: horizontal/vertical sizes or limits (see PositionEvent enum)
-    ///        * bool return:  true to prevent default size processing / to confirm scroll event, false to allow normal processing
+    ///        * bool return:  true to prevent default size processing, false to allow normal processing
     /// @warning Handler should NOT throw exceptions -> use try/catch in it
     using PositionEventHandler = bool (*)(Window* sender, PositionEvent event, int32_t posX, int32_t posY, uint32_t sizeX, uint32_t sizeY);
   }

@@ -46,6 +46,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
         static __forceinline void readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept;
         static __forceinline void refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
                                                         uint32_t& outX, uint32_t& outY) noexcept;
+        static void moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, uint32_t& outX, uint32_t& outY) noexcept;
+        static __forceinline void setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
+                                                       uint32_t& outX, uint32_t& outY) noexcept;
         static void enableCursorMode(__WindowImpl& window) noexcept;
         static void disableCursorMode(uint32_t statusFlag) noexcept;
         
@@ -1196,9 +1199,40 @@ Description : Window manager + builder - Win32 implementation (Windows)
       window._lastScrollPosition.x = (int32_t)HIWORD(wParam);
     else
       window._lastScrollPosition.y = (int32_t)HIWORD(wParam);
-
-    outX = window._lastScrollPosition.x;
-    outY = window._lastScrollPosition.y;
+    outX = (uint32_t)window._lastScrollPosition.x;
+    outY = (uint32_t)window._lastScrollPosition.y;
+  }
+  // move scroll position during scroll event
+  void __WindowImplEventProc::moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, 
+                                                               uint32_t& outX, uint32_t& outY) noexcept {
+    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
+    if (message == WM_HSCROLL) {
+      window._lastScrollPosition.x += add;
+      if (window._lastScrollPosition.x < 0)
+        window._lastScrollPosition.x = 0;
+      else if (window._lastScrollPosition.x > (int32_t)window._maxScrollPosition.width)
+        window._lastScrollPosition.x = (int32_t)window._maxScrollPosition.width;
+    }
+    else {
+      window._lastScrollPosition.y += add;
+      if (window._lastScrollPosition.y < 0)
+        window._lastScrollPosition.y = 0;
+      else if (window._lastScrollPosition.y > (int32_t)window._maxScrollPosition.height)
+        window._lastScrollPosition.y = (int32_t)window._maxScrollPosition.height;
+    }
+    outX = (uint32_t)window._lastScrollPosition.x;
+    outY = (uint32_t)window._lastScrollPosition.y;
+  }
+  // move scroll position to top/bottom during scroll event
+  __forceinline void __WindowImplEventProc::setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
+                                                                 uint32_t& outX, uint32_t& outY) noexcept {
+    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
+    if (message == WM_HSCROLL)
+      window._lastScrollPosition.x = isMin ? 0 : (int32_t)window._maxScrollPosition.width;
+    else
+      window._lastScrollPosition.y = isMin ? 0 : (int32_t)window._maxScrollPosition.height;
+    outX = (uint32_t)window._lastScrollPosition.x;
+    outY = (uint32_t)window._lastScrollPosition.y;
   }
 
   // Cursor in client area: hide cursor / enable raw mouse events
@@ -1728,19 +1762,35 @@ Description : Window manager + builder - Win32 implementation (Windows)
         case WM_HSCROLL: {
           if (window->_onPositionEvent) {
             uint32_t type = (uint32_t)LOWORD(wParam);
+            uint32_t posX = (uint32_t)-1, posY = (uint32_t)-1;
+            
             if (type == SB_THUMBTRACK) {
-              uint32_t posX, posY;
               __WindowImplEventProc::refreshScrollPosition(*window, message, wParam, posX, posY);
               if (window->_onPositionEvent(&window->_container, PositionEvent::scrollPositionTrack, posX, posY,
                                            window->_maxScrollPosition.width, window->_maxScrollPosition.height))
                 return 0;
             }
-            else if (type == SB_THUMBPOSITION) {
-              uint32_t posX, posY;
-              __WindowImplEventProc::refreshScrollPosition(*window, message, wParam, posX, posY);
-              if (window->_onPositionEvent(&window->_container, PositionEvent::scrollPositionChanged, posX, posY,
-                                           window->_maxScrollPosition.width, window->_maxScrollPosition.height))
-                return 0;
+            else {
+              switch (type) {
+                case SB_THUMBPOSITION: __WindowImplEventProc::refreshScrollPosition(*window, message, wParam, posX, posY); break;
+                case SB_TOP:    __WindowImplEventProc::setScrollMaxPosition(*window, message, true, posX, posY); break;
+                case SB_BOTTOM: __WindowImplEventProc::setScrollMaxPosition(*window, message, false, posX, posY); break;
+                case SB_PAGEUP:   __WindowImplEventProc::moveScrollPosition(*window, message, -((int32_t)window->_scrollUnit << 8), posX, posY); break;
+                case SB_PAGEDOWN: __WindowImplEventProc::moveScrollPosition(*window, message, ((int32_t)window->_scrollUnit << 8), posX, posY); break;
+                case SB_LINEUP:   __WindowImplEventProc::moveScrollPosition(*window, message, -((int32_t)window->_scrollUnit << 3), posX, posY); break;
+                case SB_LINEDOWN: __WindowImplEventProc::moveScrollPosition(*window, message, ((int32_t)window->_scrollUnit << 3), posX, posY); break;
+                default: break;
+              }
+              if (posX != (uint32_t)-1) {
+                if (message == WM_VSCROLL)
+                  window->setScrollPositionV(posY);
+                else
+                  window->setScrollPositionH(posX);
+                
+                if (window->_onPositionEvent(&window->_container, PositionEvent::scrollPositionChanged, posX, posY,
+                                             window->_maxScrollPosition.width, window->_maxScrollPosition.height))
+                  return 0;
+              }
             }
           }
           isCommandEvent = true;
