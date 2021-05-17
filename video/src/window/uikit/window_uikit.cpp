@@ -210,6 +210,11 @@ Description : Window manager + builder - UIKit implementation (iOS)
     //...
     return false;
   }
+  // Change mouse pointer visibility/limits/events
+  void Window::setCursorMode(CursorMode cursorMode) noexcept {
+    //...
+    return false;
+  }
   
   // Change window title
   bool Window::setCaption(const window_char* caption) noexcept {

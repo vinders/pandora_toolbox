@@ -208,6 +208,11 @@ Description : Window manager + builder - JNI implementation (Android)
     //...
     return false;
   }
+  // Change mouse pointer visibility/limits/events
+  void Window::setCursorMode(CursorMode cursorMode) noexcept {
+    //...
+    return false;
+  }
   
   // Change window title
   bool Window::setCaption(const window_char* caption) noexcept {
