@@ -327,9 +327,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
       enterFullscreenMode(lastWindowArea(), this->_refreshRate);
     }
     else { // window mode
+      SetLastError(0);
       isVisibilityCommandSet = (visibilityFlag == SW_SHOW || visibilityFlag == SW_SHOWDEFAULT || visibilityFlag == SW_RESTORE
                              || (visibilityFlag == SW_SHOWMAXIMIZED && (this->_currentStyleFlag & WS_MAXIMIZE)) );
-      if (ShowWindow(this->_handle, isVisibilityCommandSet ? visibilityFlag : SW_SHOW) == FALSE)
+      if (ShowWindow(this->_handle, isVisibilityCommandSet ? visibilityFlag : SW_SHOW) == FALSE && GetLastError() != 0)
         return false; // display failure
     }
     if (this->_menuHandle)
@@ -356,12 +357,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if ((this->_statusFlags & __P_FLAG_FIRST_DISPLAY_DONE) == 0)
       return firstShow(visibilityFlag);
 
+    SetLastError(0);
     if (visibilityFlag == SW_HIDE || visibilityFlag == SW_SHOWMINNOACTIVE) {
-      if (ShowWindow(this->_handle, visibilityFlag) == FALSE)
+      if (ShowWindow(this->_handle, visibilityFlag) == FALSE && GetLastError() != 0)
         return false;
     }
     else {
-      if (ShowWindow(this->_handle, (this->_mode == WindowType::fullscreen) ? SW_SHOWMAXIMIZED : visibilityFlag) == FALSE)
+      if (ShowWindow(this->_handle, (this->_mode == WindowType::fullscreen) ? SW_SHOWMAXIMIZED : visibilityFlag) == FALSE && GetLastError() != 0)
         return false;
       if (visibilityFlag != SW_SHOWNA || this->_mode == WindowType::fullscreen) {
         SetForegroundWindow(this->_handle);
@@ -1026,17 +1028,20 @@ Description : Window manager + builder - Win32 implementation (Windows)
     DisplayArea clientSize, windowSize;
     computeUserSize(width, height, this->_decorationSizes, clientSize, windowSize);
     
+    double prevRatio = this->_clientAreaRatio;
+    this->_clientAreaRatio = (double)clientSize.width / (double)clientSize.height; // update ratio before, for homothety checks
     if (SetWindowPos(this->_handle, HWND_TOP, 0, 0, (int)windowSize.width,(int)windowSize.height, 
                      (SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW)) != FALSE) {
       this->_lastClientArea.width = clientSize.width;
       this->_lastClientArea.height = clientSize.height;
-      this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
       if (isScrollable())
         adjustScrollbarPageSize(this->_lastClientArea, false);
     
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
     }
+    else
+      this->_clientAreaRatio = prevRatio;
     return false;
   }
   
@@ -1049,16 +1054,19 @@ Description : Window manager + builder - Win32 implementation (Windows)
     DisplayArea clientArea, windowArea;
     computeUserArea(this->_mode, this->_behavior, userArea, this->_decorationSizes, clientArea, windowArea);
 
+    double prevRatio = this->_clientAreaRatio;
+    this->_clientAreaRatio = (double)clientArea.width / (double)clientArea.height; // update ratio before, for homothety checks
     if (SetWindowPos(this->_handle, HWND_TOP, (int)windowArea.x,(int)windowArea.y, 
                      (int)windowArea.width,(int)windowArea.height, (SWP_NOZORDER | SWP_SHOWWINDOW)) != FALSE) {
       this->_lastClientArea = clientArea;
-      this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
       if (isScrollable())
         adjustScrollbarPageSize(this->_lastClientArea, false);
       
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
     }
+    else
+      this->_clientAreaRatio = prevRatio;
     return false;
   }
   
