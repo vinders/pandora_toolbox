@@ -74,9 +74,10 @@ namespace pandora {
     public:
       /// @brief Show/hide/raw cursor mode
       enum class CursorMode : uint32_t {
-        visible   = 0u, ///< Show cursor + receive normal move events (position)
-        hidden    = 1u, ///< Hide cursor + receive normal move events (position)
-        hiddenRaw = 2u  ///< Hide cursor + receive raw move events (delta) -- should only be used for one window
+        visible   = 0u, ///< Visible cursor + no constraints + normal move events (position)
+        clipped   = 1u, ///< Visible cursor + limit to client area + normal move events (position) -- should only be used for one window
+        hidden    = 2u, ///< Hidden cursor + no constraints + normal move events (position)
+        hiddenRaw = 3u  ///< Hidden cursor + limit to client area + receive raw motion events (delta) -- should only be used for one window
       };
       /// @brief Type of cursor position to get/set
       enum class CursorPositionType : uint32_t {
@@ -123,7 +124,8 @@ namespace pandora {
       PixelSize getClientSize() const noexcept; ///< Get current size of the client area
       float contentScale() const noexcept;      ///< Read scale factor to use for content (based on DPI)
       
-      PixelPosition cursorPosition(CursorPositionType mode) noexcept;///< Get current mouse pointer position (-1 on error)
+      std::basic_string<window_char> getCaption() const; ///< Read current caption title
+      PixelPosition getCursorPosition(CursorPositionType mode) const noexcept;///< Get current mouse pointer position (-1 on error)
       PixelPosition getScrollPosition() const noexcept; ///< Read horizontal/vertical scroll box position (-1 on error)
       int32_t getScrollPositionV() const noexcept; ///< Read vertical scroll box position (-1 on error)
       int32_t getScrollPositionH() const noexcept; ///< Read horizontal scroll box position (-1 on error)
@@ -136,7 +138,7 @@ namespace pandora {
       // -- display changes --
       
       bool show(VisibilityCommand state = VisibilityCommand::show) noexcept; ///< Show/hide/maximize/minimize/restore window
-      bool move(int32_t x, int32_t y) noexcept; ///< Move window to position (not allowed in fullscreen)
+      bool move(int32_t x, int32_t y) noexcept; ///< Move window client area to position (not allowed in fullscreen)
       bool resize(uint32_t width, uint32_t height) noexcept; ///< Change window size (not allowed in fullscreen: use setDisplayMode)
       bool resize(const pandora::hardware::DisplayArea& clientArea) noexcept; ///< Change window size and position (not allowed in fullscreen: use setDisplayMode)
       
@@ -159,8 +161,9 @@ namespace pandora {
       
       // -- resource changes --
       
-      bool setCursor(std::shared_ptr<WindowResource> cursor) noexcept; ///< Change mouse pointer image (won't change cursor visibility -> see 'setMouseHandler')
-      bool setCursorPosition(int32_t x, int32_t y, CursorPositionType mode) noexcept; ///< Change mouse pointer position (won't change cursor visibility -> see 'setMouseHandler')
+      bool setCursor(std::shared_ptr<WindowResource> cursor) noexcept; ///< Change mouse pointer image (won't change cursor visibility)
+      bool setCursorPosition(int32_t x, int32_t y, CursorPositionType mode) noexcept; ///< Change mouse pointer position (won't change cursor visibility)
+      void setCursorMode(CursorMode cursorMode) noexcept; ///< Change mouse pointer visibility/limits/events
       
       bool setCaption(const window_char* caption) noexcept; ///< Change title in window caption
       bool setMenu(std::shared_ptr<WindowResource> menu) noexcept; ///< Add/replace native menu bar (use NULL to remove current menu)
@@ -172,7 +175,7 @@ namespace pandora {
       void setWindowHandler(WindowEventHandler handler) noexcept;     ///< Set/replace window/hardware event handler (NULL to unregister)
       void setPositionHandler(PositionEventHandler handler) noexcept; ///< Set/replace size/position event handler (NULL to unregister)
       void setKeyboardHandler(KeyboardEventHandler handler) noexcept; ///< Set/replace keyboard event handler (NULL to unregister)
-      void setMouseHandler(MouseEventHandler handler, CursorMode cursor = CursorMode::visible) noexcept; ///< Set/replace mouse event handler (NULL to unregister)
+      void setMouseHandler(MouseEventHandler handler, CursorMode cursorMode = CursorMode::visible) noexcept; ///< Set/replace mouse event handler (NULL to unregister)
       
       /// @brief Process/forward pending events for all existing windows (user input, size changes, shutdown...).
       ///        - Should be called regularly, to dispatch window events.

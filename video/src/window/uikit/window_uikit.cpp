@@ -117,8 +117,11 @@ Description : Window manager + builder - UIKit implementation (iOS)
   
   // ---
   
+  // Read current caption title
+  std::basic_string<window_char> Window::getCaption() const { return ""; }
+  
   // Get current mouse pointer position
-  PixelPosition Window::cursorPosition(Window::CursorPositionType mode) noexcept {
+  PixelPosition Window::getCursorPosition(Window::CursorPositionType mode) const noexcept {
     //...
     return { -1, -1 };
   }

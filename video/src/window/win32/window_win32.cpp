@@ -141,8 +141,17 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
   // ---
   
+  // Read current caption title
+  std::basic_string<window_char> Window::getCaption() const {
+    WCHAR buffer[128]{ 0 };
+    int length = GetWindowTextW(this->_impl->handle(), buffer, sizeof(buffer)/sizeof(WCHAR));
+    if (length > 0) // result != -1, and not empty
+      return std::basic_string<window_char>(buffer, length); 
+    return L""; 
+  }
+  
   // Get current mouse pointer position
-  PixelPosition Window::cursorPosition(Window::CursorPositionType mode) noexcept {
+  PixelPosition Window::getCursorPosition(Window::CursorPositionType mode) const noexcept {
     POINT pos;
     if (GetCursorPos(&pos) != FALSE) {
       if (mode == Window::CursorPositionType::relative) { // relative to client area
@@ -262,6 +271,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
   bool Window::setCursorPosition(int32_t x, int32_t y, Window::CursorPositionType mode) noexcept {
     return this->_impl->setCursorPosition(x, y, mode);
   }
+  // Change mouse pointer visibility/limits/events
+  void Window::setCursorMode(CursorMode cursorMode) noexcept {
+    return this->_impl->setCursorMode(cursorMode);
+  }
   
   // Change window title
   bool Window::setCaption(const window_char* caption) noexcept {
@@ -309,7 +322,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Set/replace keyboard event handler (NULL to unregister)
   void Window::setKeyboardHandler(KeyboardEventHandler handler) noexcept { this->_impl->setKeyboardHandler(handler); }
   // Set/replace mouse event handler (NULL to unregister)
-  void Window::setMouseHandler(MouseEventHandler handler, Window::CursorMode cursor) noexcept { this->_impl->setMouseHandler(handler, cursor); }
+  void Window::setMouseHandler(MouseEventHandler handler, Window::CursorMode cursorMode) noexcept { this->_impl->setMouseHandler(handler, cursorMode); }
   
   // ---
 

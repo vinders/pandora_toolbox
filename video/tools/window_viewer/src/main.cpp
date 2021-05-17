@@ -89,19 +89,14 @@ enum class FeatureMode : uint32_t {
   colorChangeOnClick,
   rainbowBackground
 };
-enum class CursorMode : uint32_t {
-  normal = 0,
-  custom,
-  hidden,
-  rawMotion
-};
 struct WindowParams {
   WindowHandle parent = (WindowHandle)0;
   WindowHandle orig = (WindowHandle)0;
   WindowType mode = WindowType::window;
   ResizeMode resize = ResizeMode::fixed;
   FeatureMode feat = FeatureMode::none;
-  CursorMode cursorMode = CursorMode::normal;
+  Window::CursorMode cursorMode = Window::CursorMode::visible;
+  bool hasCustomCursor = false;
   bool isCentered = true;
   bool isScrollable = false;
 };
@@ -139,7 +134,7 @@ WindowBehavior getBehavior(bool isScrollable) {
 std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource::Color background) { // throws on failure
   std::shared_ptr<WindowResource> mainIcon = buildWindowIcon(true);
   std::shared_ptr<WindowResource> cursor = nullptr;
-  if (params.cursorMode == CursorMode::custom)
+  if (params.hasCustomCursor)
       cursor = buildWindowCursor(true);
   int32_t position = params.isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
   
@@ -245,6 +240,7 @@ bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t index
     case MouseEvent::rawMotion:
       g_events.lastCursorPosX += x;
       g_events.lastCursorPosY += y;
+      g_events.isRefreshed = true;
       break;
     default: break;
   }
@@ -301,15 +297,13 @@ void viewWindow(const WindowParams& params) {
     window->setMinClientAreaSize(400, 300);
     if (params.isScrollable)
       window->setScrollbarRange(0, 0, (uint16_t)_DEFAULT_WINDOW_WIDTH*2, (uint16_t)_DEFAULT_WINDOW_HEIGHT*2);
+    if (params.cursorMode == Window::CursorMode::hiddenRaw)
+      g_events.lastCursorPosX = g_events.lastCursorPosY = 1000; // reset start position
 
     window->setWindowHandler(&onWindowEvent);
     window->setPositionHandler(&onPositionEvent);
     window->setKeyboardHandler(&onKeyboardEvent);
-    switch (params.cursorMode) {
-      case CursorMode::hidden:    window->setMouseHandler(&onMouseEvent, Window::CursorMode::hidden); break;
-      case CursorMode::rawMotion: window->setMouseHandler(&onMouseEvent, Window::CursorMode::hiddenRaw); break;
-      default: window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible); break;
-    }
+    window->setMouseHandler(&onMouseEvent, params.cursorMode);
     window->show();
 
     while (Window::pollEvents()) {
@@ -349,16 +343,17 @@ void viewWindow(const WindowParams& params) {
             case FeatureMode::cursorChangeOnClick: {
               hasCursorChanged ^= true;
               switch (params.cursorMode) {
-                case CursorMode::normal: window->setCursor(buildWindowCursor(hasCursorChanged)); break;
-                case CursorMode::custom: window->setCursor(buildWindowCursor(!hasCursorChanged)); break;
-                case CursorMode::hidden: 
-                  window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hidden); 
+                case Window::CursorMode::hidden: window->setCursorMode(hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hidden); break;
+                case Window::CursorMode::hiddenRaw:
+                  g_events.lastCursorPosX = g_events.lastCursorPosY = 1000; // reset start position
+                  window->setCursorMode(hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hiddenRaw);
                   break;
-                case CursorMode::rawMotion:
-                  g_events.lastCursorPosX = g_events.lastCursorPosY = 0; // reset start position
-                  window->setMouseHandler(&onMouseEvent, hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::hiddenRaw); 
+                case Window::CursorMode::clipped: 
+                  window->setCursor(buildWindowCursor(params.hasCustomCursor ? !hasCursorChanged : hasCursorChanged));
+                  window->setCursorMode(hasCursorChanged ? Window::CursorMode::visible : Window::CursorMode::clipped);
                   break;
-                default: break;
+                case Window::CursorMode::visible:
+                default: window->setCursor(buildWindowCursor(params.hasCustomCursor ? !hasCursorChanged : hasCursorChanged));break;
               }
               break;
             }
@@ -473,15 +468,17 @@ void menuWindow(WindowType mode, const char* typeName) {
     }
     
     printf("\nCursor style:\n");
-    printMenu<5>({ "Cancel options...", "Standard", "Custom", "Hidden", "Mouse capture" });
-    option = readNumericInput(1, 4);
+    printMenu<7>({ "Cancel options...", "Normal", "Custom", "Clipped", "Clipped / custom", "Hidden", "Mouse capture" });
+    option = readNumericInput(1, 6);
     if (option == 0)
       continue;
     switch (option) {
-      case 1: params.cursorMode = CursorMode::normal; break;
-      case 2: params.cursorMode = CursorMode::custom; break;
-      case 3: params.cursorMode = CursorMode::hidden; break;
-      case 4: params.cursorMode = CursorMode::rawMotion; break;
+      case 1: params.hasCustomCursor = false; params.cursorMode = Window::CursorMode::visible; break;
+      case 2: params.hasCustomCursor = true;  params.cursorMode = Window::CursorMode::visible; break;
+      case 3: params.hasCustomCursor = false; params.cursorMode = Window::CursorMode::clipped; break;
+      case 4: params.hasCustomCursor = true;  params.cursorMode = Window::CursorMode::clipped; break;
+      case 5: params.hasCustomCursor = false; params.cursorMode = Window::CursorMode::hidden; break;
+      case 6: params.hasCustomCursor = false; params.cursorMode = Window::CursorMode::hiddenRaw; break;
       default: break;
     }
 

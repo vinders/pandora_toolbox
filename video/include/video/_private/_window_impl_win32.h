@@ -19,7 +19,7 @@ License :     MIT
 # define __P_DEFAULT_WINDOW_HEIGHT     600  // default height (if system work area can't be read)
 # define __P_DEFAULT_MIN_WINDOW_WIDTH  220  // min resizable width
 # define __P_DEFAULT_MIN_WINDOW_HEIGHT 100  // min resizable height
-# define __P_UNKNOWN_CURSOR_POS 0x7FFFFFFF
+# define __P_RAW_ABSOLUTE_MAX_COORD  65535
 
 // -- window state flags --
 
@@ -40,16 +40,20 @@ License :     MIT
 # define __P_FLAG_WINDOW_MINIMIZED    0x0040  // window is minimized
 # define __P_FLAG_WINDOW_MAXIMIZED    0x0080  // window is maximized
 
-# define __P_FLAG_POWER_SUSPENDED     0x0100  // host system is locked or suspended
-# define __P_FLAG_MODE_CHANGE_PENDING 0x0200  // window display resolution change has just occurred
-# define __P_FLAG_RESIZED_MOVED       0x0400  // window is currently being resized or moved
-# define __P_FLAG_CURSOR_RAW_INPUT    0x0800  // use raw move events for mouse
-# define __P_FLAG_CURSOR_HIDE         0x1000  // cursor should be hidden when the window is active
-# define __P_FLAG_CURSOR_HOVER        0x2000  // cursor is currently in client area
-# define __P_FLAG_CURSOR_MENULOOP     0x4000  // menu loop is currently active
-# define __P_FLAG_CURSOR_EVENT_REG    0x8000  // registration to native cursor events for current window
-# define __P_FLAG_SIZE_HANDLER_CHANGE 0x10000 // a size change has been triggered by the size handler (and should not be re-processed)
-# define __P_FLAG_SCROLLRANGE_HANDLER_CHANGE 0x20000 // a scroll range change has been triggered by the size handler (and should not be re-processed)
+# define __P_FLAG_POWER_SUSPENDED     0x0200  // host system is locked or suspended
+# define __P_FLAG_MODE_CHANGE_PENDING 0x0400  // window display resolution change has just occurred
+# define __P_FLAG_RESIZED_MOVED       0x0800  // window is currently being resized or moved
+# define __P_FLAG_CURSOR_RAW          0x1000  // use raw motion events for mouse
+# define __P_FLAG_CURSOR_HIDE         0x2000  // cursor should be hidden when the window is active
+# define __P_FLAG_CURSOR_CLIP         0x4000  // cursor should be clipped to client-area when the window is active
+# define __P_FLAG_CURSOR_IS_HOVER     0x10000 // state: cursor is currently in client area
+# define __P_FLAG_CURSOR_IN_MENULOOP  0x20000 // state: menu loop is currently active
+# define __P_FLAG_CURSOR_IS_TRACKING  0x40000 // state: registered to cursor leave/hover events for current window
+# define __P_FLAG_CURSOR_IS_CAPTURED  0x80000 // state: current window is active
+
+# define __P_FLAG_SIZE_HANDLER_CHANGE 0x100000 // a size change has been triggered by the size handler (and should not be re-processed)
+# define __P_FLAG_SCROLLRANGE_HANDLER_CHANGE 0x200000 // a scroll range change has been triggered by the size handler (and should not be re-processed)
+# define __P_FLAG_CAPTURE_HANDLER_ON         0x400000 // capture out of window activated (after mouse leave in clipped mode)
 
 namespace pandora {
   namespace video {
@@ -132,7 +136,9 @@ namespace pandora {
       float contentScale() const noexcept;
       inline pandora::hardware::DisplayArea lastWindowArea() const noexcept;
       inline pandora::hardware::DisplayArea lastClientArea() const noexcept;
+      inline void lastAbsoluteClientRect(RECT& outRect) const noexcept;
       inline void lastRelativeClientRect(RECT& outRect) const noexcept;
+      inline PixelPosition lastAbsoluteClientCenter() const noexcept;
       inline PixelPosition lastClientPosition() const noexcept;
       inline PixelSize lastClientSize() const noexcept;
       
@@ -166,6 +172,7 @@ namespace pandora {
       bool setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept;
       
       bool setCursorPosition(int32_t x, int32_t y, Window::CursorPositionType mode) noexcept;
+      void setCursorMode(Window::CursorMode cursorMode) noexcept;
       
       bool setScrollbarRange(uint32_t posH, uint32_t posV, uint32_t horizontalMax, uint32_t verticalMax, uint32_t pixelsPerUnit) noexcept;
       bool setScrollPositionH(uint32_t pos) noexcept;
@@ -176,7 +183,7 @@ namespace pandora {
       void setWindowHandler(WindowEventHandler handler) noexcept;
       void setPositionHandler(PositionEventHandler handler) noexcept;
       void setKeyboardHandler(KeyboardEventHandler handler) noexcept;
-      void setMouseHandler(MouseEventHandler handler, Window::CursorMode cursor) noexcept;
+      void setMouseHandler(MouseEventHandler handler, Window::CursorMode cursorMode) noexcept;
     
       static LRESULT CALLBACK windowEventProcessor(HWND handle, UINT message, WPARAM wParam, LPARAM lParam);
       
@@ -238,7 +245,8 @@ namespace pandora {
       WindowDecorationSize _decorationSizes{ 0,0,0,0 }; // size of window decoration (caption/borders/scrollbars)
       pandora::hardware::DisplayArea _lastClientArea{ 0,0,__P_DEFAULT_WINDOW_WIDTH,__P_DEFAULT_WINDOW_HEIGHT }; // last known client-area size/position
       PixelSize     _minClientSize{ __P_DEFAULT_MIN_WINDOW_WIDTH,__P_DEFAULT_MIN_WINDOW_HEIGHT }; // minimum client-area size
-      PixelPosition _lastCursorPosition{ __P_UNKNOWN_CURSOR_POS,__P_UNKNOWN_CURSOR_POS }; // last known cursor position (for raw motion mode only)
+      PixelPosition _lastCursorPosition{ __P_RAW_ABSOLUTE_MAX_COORD/2,__P_RAW_ABSOLUTE_MAX_COORD/2 }; // last normalized cursor position 
+                                                                                                      //(fraction of __P_RAW_ABSOLUTE_MAX_COORD, raw motion only)
       PixelPosition _lastScrollPosition{ 0,0 };   // last known scroll position
       PixelSize     _maxScrollPosition{ 0,0 };    // scroll range limits
       double        _clientAreaRatio = 4.0/3.0;   // ratio used for homothety
@@ -252,6 +260,7 @@ namespace pandora {
       WindowType _mode = WindowType::window;
       WindowBehavior _behavior = WindowBehavior::none;
       ResizeMode _resizeMode = ResizeMode::fixed;
+      Window::CursorMode _cursorMode = Window::CursorMode::visible;
       uint32_t _refreshRate = 0; // milli-Hz
     };
   }
@@ -276,12 +285,24 @@ inline pandora::hardware::DisplayArea pandora::video::__WindowImpl::lastClientAr
   std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   return this->_lastClientArea;
 }
+inline void pandora::video::__WindowImpl::lastAbsoluteClientRect(RECT& outRect) const noexcept {
+  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
+  outRect.left = (int)this->_lastClientArea.x;
+  outRect.top = (int)this->_lastClientArea.y;
+  outRect.right = (int)this->_lastClientArea.x + (int)this->_lastClientArea.width;
+  outRect.bottom = (int)this->_lastClientArea.y + (int)this->_lastClientArea.height;
+}
 inline void pandora::video::__WindowImpl::lastRelativeClientRect(RECT& outRect) const noexcept {
   std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   outRect.left = 0;
   outRect.top = 0;
   outRect.right = (int)this->_lastClientArea.width;
   outRect.bottom = (int)this->_lastClientArea.height;
+}
+inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastAbsoluteClientCenter() const noexcept {
+  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
+  return pandora::video::PixelPosition{ this->_lastClientArea.x + (int32_t)(this->_lastClientArea.width>>1), 
+                                        this->_lastClientArea.y + (int32_t)(this->_lastClientArea.height>>1) };
 }
 inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastClientPosition() const noexcept {
   std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);

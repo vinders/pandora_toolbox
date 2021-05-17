@@ -71,7 +71,7 @@ namespace pandora {
       buttonUp     = 4u, ///< button released:     index = button index (can be cast to 'MouseButton')
       mouseWheelV  = 5u, ///< mouse wheel vertical move:   index = distance in multiples of 'mouseWheelDelta()' (forward > 0, backwards < 0)
       mouseWheelH  = 6u, ///< mouse wheel horizontal move: index = distance in multiples of 'mouseWheelDelta()' (right > 0, left < 0)
-      rawMotion    = 7u  ///< raw mouse X/Y delta -- only received in CursorMode::hiddenRaw
+      rawMotion    = 7u  ///< raw mouse X/Y delta (normalized) -- only received in CursorMode::hiddenRaw
     };
     int32_t mouseWheelDelta() noexcept; ///< Distance unit for mouse wheel movements
     

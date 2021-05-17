@@ -43,14 +43,20 @@ Description : Window manager + builder - Win32 implementation (Windows)
         static void refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept;
         static __forceinline void resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept;
         
-        static __forceinline void readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept;
         static __forceinline void refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
                                                         uint32_t& outX, uint32_t& outY) noexcept;
         static void moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, uint32_t& outX, uint32_t& outY) noexcept;
         static __forceinline void setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
                                                        uint32_t& outX, uint32_t& outY) noexcept;
-        static void enableCursorMode(__WindowImpl& window) noexcept;
-        static void disableCursorMode(uint32_t statusFlag) noexcept;
+                                                       
+        static __forceinline void setCursorOnHover(uint32_t& statusFlag) noexcept;
+        static __forceinline void unsetCursorOnLeave(uint32_t& statusFlag) noexcept;
+        static __forceinline void setCursorOnMenuExit(__WindowImpl& window) noexcept;
+        static __forceinline void unsetCursorOnMenuEnter(uint32_t& statusFlag) noexcept;
+        static void activateCursor(__WindowImpl& window) noexcept;
+        static void unactivateCursor(__WindowImpl& window) noexcept;
+        static void centerCursor(__WindowImpl& window) noexcept;
+        static __forceinline void clipCursor(__WindowImpl& window) noexcept;
         
         static bool findWindowMonitor(__WindowImpl& window, const RECT& suggestedArea) noexcept;
         static __forceinline void adjustWindowSizeOnDpiChange(__WindowImpl& window, const RECT& suggestedArea, 
@@ -255,8 +261,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Destroy window (or restore existing window style)
   void __WindowImpl::_destroy() noexcept {
     if (this->_handle) {
-      if (this->_statusFlags & __P_FLAG_CURSOR_HOVER) // restore cursor + unregister raw input
-        __WindowImplEventProc::disableCursorMode(this->_statusFlags);
+      __WindowImplEventProc::unsetCursorOnLeave(this->_statusFlags);
+      __WindowImplEventProc::unactivateCursor(*this);
       if (this->_mode == WindowType::fullscreen || this->_statusFlags & __P_FLAG_FULLSCREEN_ON)
         show(SW_SHOWMINNOACTIVE); // minimize fullscreen window + restore original display mode
       
@@ -357,8 +363,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
     else {
       if (ShowWindow(this->_handle, (this->_mode == WindowType::fullscreen) ? SW_SHOWMAXIMIZED : visibilityFlag) == FALSE)
         return false;
-      SetForegroundWindow(this->_handle);
-      SetFocus(this->_handle);
+      if (visibilityFlag != SW_SHOWNA || this->_mode == WindowType::fullscreen) {
+        SetForegroundWindow(this->_handle);
+        SetFocus(this->_handle);
+      }
     }
     return true;
   }
@@ -370,6 +378,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
                                     const DisplayArea& userArea, uint32_t rate) {
     if ((this->_statusFlags & __P_FLAG_FULLSCREEN_ON) && type != WindowType::fullscreen)
       exitFullscreenMode();
+    __WindowImplEventProc::unactivateCursor(*this); // release capture before changing window mode
     
     DWORD prevStyle = this->_currentStyleFlag; // must be set before calling 'enterFullscreenMode'
     DWORD prevStyleExt = this->_currentStyleExtFlag;
@@ -413,6 +422,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
         this->_refreshRate = prevRate;
         if (this->_mode == WindowType::fullscreen)
           enterFullscreenMode(windowArea, rate);
+        if (this->_statusFlags & __P_FLAG_WINDOW_ACTIVE)
+          __WindowImplEventProc::activateCursor(*this);
         return false;
       }
     }
@@ -432,6 +443,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
     SetForegroundWindow(this->_handle);
     SetFocus(this->_handle);
+    __WindowImplEventProc::activateCursor(*this); // restore capture
     return true;
   }
   
@@ -627,6 +639,29 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     else // absolute
       return (SetCursorPos((int)x, (int)y) != FALSE);
+  }
+  // Change cursor visibility/limits/events
+  void __WindowImpl::setCursorMode(Window::CursorMode cursorMode) noexcept {
+    __WindowImplEventProc::unactivateCursor(*this);
+    __WindowImplEventProc::unsetCursorOnLeave(this->_statusFlags);
+    
+    this->_cursorMode = cursorMode;
+    switch (cursorMode) {
+      case Window::CursorMode::clipped:
+        __P_ADD_REMOVE_FLAGS(this->_statusFlags, __P_FLAG_CURSOR_CLIP, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_RAW); break;
+        break;
+      case Window::CursorMode::hidden:
+        __P_ADD_REMOVE_FLAGS(this->_statusFlags, __P_FLAG_CURSOR_HIDE, __P_FLAG_CURSOR_CLIP | __P_FLAG_CURSOR_RAW); break;
+      case Window::CursorMode::hiddenRaw:
+        __P_ADD_FLAG(this->_statusFlags, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_CLIP | __P_FLAG_CURSOR_RAW); break;
+      case Window::CursorMode::visible:
+      default:
+        __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_CLIP | __P_FLAG_CURSOR_RAW); break;
+    }
+    if (this->_statusFlags & __P_FLAG_CURSOR_IS_HOVER)
+      __WindowImplEventProc::setCursorOnHover(this->_statusFlags);
+    if (this->_statusFlags & __P_FLAG_WINDOW_ACTIVE)
+      __WindowImplEventProc::activateCursor(*this);
   }
   
   // ---
@@ -1174,23 +1209,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
   // ---
 
-  // Get current cursor position, relative to client-area (-1 on failure)
-  __forceinline void __WindowImplEventProc::readRelativeCursorPosition(HWND handle, const DisplayArea& clientArea, PixelPosition& outPos) noexcept {
-    POINT cursorPos;
-    if (GetCursorPos(&cursorPos)) {
-      if (ScreenToClient(handle, &cursorPos)) {
-        outPos.x = cursorPos.x;
-        outPos.y = cursorPos.y;
-      }
-      else {
-        outPos.x = cursorPos.x - clientArea.x;
-        outPos.y = cursorPos.y - clientArea.y;
-      }
-    }
-    else
-      outPos.x = outPos.y = __P_UNKNOWN_CURSOR_POS;
-  }
-
   // refresh scroll position during scroll event
   __forceinline void __WindowImplEventProc::refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
                                                                   uint32_t& outX, uint32_t& outY) noexcept {
@@ -1234,30 +1252,128 @@ Description : Window manager + builder - Win32 implementation (Windows)
     outX = (uint32_t)window._lastScrollPosition.x;
     outY = (uint32_t)window._lastScrollPosition.y;
   }
+  
+  // ---
+  
+  // Cursor in client area: hide cursor
+  __forceinline void __WindowImplEventProc::setCursorOnHover(uint32_t& statusFlags) noexcept {
+    if ((statusFlags & (__P_FLAG_CURSOR_IN_MENULOOP|__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_RAW)) == __P_FLAG_CURSOR_HIDE)
+      ShowCursor(false);
+  }
+  // Cursor out of range: show cursor
+  __forceinline void __WindowImplEventProc::unsetCursorOnLeave(uint32_t& statusFlags) noexcept {
+    if ((statusFlags & (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_IN_MENULOOP|__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_RAW)) == (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_HIDE))
+      ShowCursor(true);
+  }
 
-  // Cursor in client area: hide cursor / enable raw mouse events
-  void __WindowImplEventProc::enableCursorMode(__WindowImpl& window) noexcept {
-    if (window._statusFlags & __P_FLAG_CURSOR_HIDE) {
-      if (window._statusFlags & __P_FLAG_CURSOR_RAW_INPUT) {
+  // Cursor in client-area after menu exit: hide cursor
+  __forceinline void __WindowImplEventProc::setCursorOnMenuExit(__WindowImpl& window) noexcept {
+    if ((window._statusFlags & (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_RAW)) == (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_HIDE)) {
+      ShowCursor(false);
+    }
+    else if (window._statusFlags & __P_FLAG_CURSOR_IS_CAPTURED) {
+      if (window._statusFlags & __P_FLAG_CURSOR_RAW) {
         const RAWINPUTDEVICE device = { 0x01, 0x02, 0, window._handle };
         if (!RegisterRawInputDevices(&device, 1, sizeof(device)))
           return; // failure -> do not hide cursor -> let user know that mouse capture doesn't work
         
-        std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
-        readRelativeCursorPosition(window._handle, window._lastClientArea, window._lastCursorPosition);
+        ShowCursor(false); // hide cursor
+        __WindowImplEventProc::centerCursor(window);
       }
-      ShowCursor(false); // hide cursor
     }
   }
-  // Cursor out of range: show cursor / disable raw mouse events
-  void __WindowImplEventProc::disableCursorMode(uint32_t statusFlag) noexcept {
-    if (statusFlag & __P_FLAG_CURSOR_HIDE) {
-      if (statusFlag & __P_FLAG_CURSOR_RAW_INPUT) {
+  // Cursor on menu enter: show cursor
+  __forceinline void __WindowImplEventProc::unsetCursorOnMenuEnter(uint32_t& statusFlags) noexcept {
+    if ((statusFlags & (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_RAW)) == (__P_FLAG_CURSOR_IS_HOVER|__P_FLAG_CURSOR_HIDE)) {
+      ShowCursor(true);
+    }
+    else if (statusFlags & __P_FLAG_CURSOR_IS_CAPTURED) {
+      if (statusFlags & __P_FLAG_CURSOR_RAW) {
         const RAWINPUTDEVICE device = { 0x01, 0x02, RIDEV_REMOVE, nullptr };
         RegisterRawInputDevices(&device, 1, sizeof(device));
       }
-      ShowCursor(true);
+      ShowCursor(true); // show cursor
     }
+  }
+  
+  // Cursor active: clip cursor to client-area
+  void __WindowImplEventProc::activateCursor(__WindowImpl& window) noexcept {
+    if ((window._statusFlags & (__P_FLAG_CURSOR_CLIP|__P_FLAG_CURSOR_IS_CAPTURED)) == __P_FLAG_CURSOR_CLIP) {
+      if (window._statusFlags & __P_FLAG_CURSOR_RAW) {
+        const RAWINPUTDEVICE device = { 0x01, 0x02, 0, window._handle };
+        if (!RegisterRawInputDevices(&device, 1, sizeof(device)))
+          return; // failure -> do not hide cursor -> let user know that mouse capture doesn't work
+        
+        ShowCursor(false); // hide cursor
+        __WindowImplEventProc::centerCursor(window);
+      }
+      else
+        __WindowImplEventProc::clipCursor(window);
+      
+      RECT clientBounds;
+      window.lastAbsoluteClientRect(clientBounds);
+      ClipCursor(&clientBounds);
+      __P_ADD_FLAG(window._statusFlags, __P_FLAG_CURSOR_IS_CAPTURED);
+    }
+  }
+  // Cursor unactivated: remove cursor constraints
+  void __WindowImplEventProc::unactivateCursor(__WindowImpl& window) noexcept {
+    if ((window._statusFlags & (__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_IS_CAPTURED)) == (__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_IS_CAPTURED)) {
+      if (window._statusFlags & __P_FLAG_CURSOR_RAW) {
+        const RAWINPUTDEVICE device = { 0x01, 0x02, RIDEV_REMOVE, nullptr };
+        RegisterRawInputDevices(&device, 1, sizeof(device));
+      }
+      ShowCursor(true); // show cursor
+    }
+    ClipCursor(nullptr);
+    __P_REMOVE_FLAG(window._statusFlags, __P_FLAG_CURSOR_IS_CAPTURED);
+  }
+  
+  // recenter cursor position (for raw event mode)
+  void __WindowImplEventProc::centerCursor(__WindowImpl& window) noexcept {
+    if (window._statusFlags & __P_FLAG_CURSOR_IS_HOVER) {
+      window._lastCursorPosition.x = window._lastCursorPosition.y = __P_RAW_ABSOLUTE_MAX_COORD/2;
+      
+      auto centerPos = window.lastAbsoluteClientCenter();
+      if (!SetCursorPos((int)centerPos.x, (int)centerPos.y)) { // recenter cursor
+        POINT cursorPos;
+        if (GetCursorPos(&cursorPos)) {
+          auto clientArea = window.lastClientArea();
+          window._lastCursorPosition.x = static_cast<int32_t>( ((double)cursorPos.x - (double)clientArea.x) * (double)__P_RAW_ABSOLUTE_MAX_COORD / (double)clientArea.width + 0.5);
+          window._lastCursorPosition.y = static_cast<int32_t>( ((double)cursorPos.y - (double)clientArea.y) * (double)__P_RAW_ABSOLUTE_MAX_COORD / (double)clientArea.height + 0.5);
+        }
+      }
+    }
+  }
+  // force cursor to remain in client-area bounds
+  __forceinline void __WindowImplEventProc::clipCursor(__WindowImpl& window) noexcept {
+    POINT cursorPos;
+    if (GetCursorPos(&cursorPos)) {
+      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
+      if (cursorPos.x < (int)window._lastClientArea.x)
+        cursorPos.x = (int)window._lastClientArea.x + 1;
+      else if (cursorPos.x >= (int)window._lastClientArea.x + (int)window._lastClientArea.width)
+        cursorPos.x = (int)window._lastClientArea.x + (int)window._lastClientArea.width - 2;
+      
+      if (cursorPos.y < (int)window._lastClientArea.y)
+        cursorPos.y = (int)window._lastClientArea.y + 1;
+      else if (cursorPos.y >= (int)window._lastClientArea.y + (int)window._lastClientArea.height)
+        cursorPos.y = (int)window._lastClientArea.y + (int)window._lastClientArea.height - 2;
+
+      SendMessage(window._handle, WM_MOUSEMOVE, 0, MAKELPARAM(cursorPos.x, cursorPos.y));
+      SetCursorPos(cursorPos.x, cursorPos.y);
+    }
+  }
+
+  // enable tracking of TME_HOVER and/or TME_LEAVE events
+  static inline void __trackMouseHoverLeave(HWND handle, DWORD eventTypes, bool isClipped) noexcept {
+    TRACKMOUSEEVENT tme;
+    ZeroMemory(&tme, sizeof(tme));
+    tme.cbSize = sizeof(tme);
+    tme.dwFlags = eventTypes;
+    tme.dwHoverTime = isClipped ? 0 : 16u;
+    tme.hwndTrack = handle;
+    TrackMouseEvent(&tme);
   }
   
   // ---
@@ -1361,30 +1477,11 @@ Description : Window manager + builder - Win32 implementation (Windows)
   void __WindowImpl::setPositionHandler(PositionEventHandler handler) noexcept { this->_onPositionEvent = handler; }
   // Set/replace keyboard event handler (NULL to unregister)
   void __WindowImpl::setKeyboardHandler(KeyboardEventHandler handler) noexcept { this->_onKeyboardEvent = handler; }
-  
   // Set/replace mouse event handler (NULL to unregister)
-  void __WindowImpl::setMouseHandler(MouseEventHandler handler, Window::CursorMode cursor) noexcept {
-    this->_onMouseEvent = handler;
-    if ((this->_statusFlags & (__P_FLAG_CURSOR_HOVER|__P_FLAG_CURSOR_HIDE)) == (__P_FLAG_CURSOR_HOVER|__P_FLAG_CURSOR_HIDE))
-      __WindowImplEventProc::disableCursorMode(this->_statusFlags);
-    
-    if (handler) {
-      switch (cursor) {
-        case Window::CursorMode::hidden:
-          __P_ADD_REMOVE_FLAGS(this->_statusFlags, __P_FLAG_CURSOR_HIDE, __P_FLAG_CURSOR_RAW_INPUT); break;
-        case Window::CursorMode::hiddenRaw:
-          __P_ADD_FLAG(this->_statusFlags, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_RAW_INPUT); break;
-        case Window::CursorMode::visible:
-        default:
-          __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_RAW_INPUT); break;
-      }
-      if (this->_statusFlags & __P_FLAG_CURSOR_HOVER) {
-        std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-        __WindowImplEventProc::enableCursorMode(*this);
-      }
-    }
-    else
-      __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_CURSOR_HIDE | __P_FLAG_CURSOR_RAW_INPUT);
+  void __WindowImpl::setMouseHandler(MouseEventHandler handler, Window::CursorMode cursorMode) noexcept { 
+    this->_onMouseEvent = handler; 
+    if (this->_cursorMode != cursorMode)
+      setCursorMode(cursorMode);
   }
 
 
@@ -1471,20 +1568,20 @@ Description : Window manager + builder - Win32 implementation (Windows)
     int32_t y = (int32_t)GET_Y_LPARAM(lParam);
     
     switch (message) {
-      case WM_MOUSEMOVE: { // TME_LEAVE is unregistered when the cursor leaves the window -> register when it comes back
-        if ((window._statusFlags & __P_FLAG_CURSOR_EVENT_REG) == 0) {
-          TRACKMOUSEEVENT tme;
-          ZeroMemory(&tme, sizeof(tme));
-          tme.cbSize = sizeof(tme);
-          tme.dwFlags = TME_LEAVE | TME_HOVER;
-          tme.dwHoverTime = 20u;
-          tme.hwndTrack = window._handle;
-          TrackMouseEvent(&tme);
-
-          __P_ADD_FLAG(window._statusFlags, __P_FLAG_CURSOR_EVENT_REG);
+      case WM_MOUSEMOVE: { 
+        // TME_LEAVE is unregistered when the cursor leaves the window -> register when it comes back
+        if ((window._statusFlags & __P_FLAG_CURSOR_IS_TRACKING) == 0) {
+          __trackMouseHoverLeave(window._handle, TME_LEAVE | TME_HOVER, (window._statusFlags & __P_FLAG_CURSOR_CLIP));
+          __P_ADD_FLAG(window._statusFlags, __P_FLAG_CURSOR_IS_TRACKING);
         }
-        if (window._statusFlags & __P_FLAG_CURSOR_RAW_INPUT)
-          return false; // do not expose "normal" move events in raw mode
+        // stop external capture after clipping confirmed
+        if (window._statusFlags & __P_FLAG_CAPTURE_HANDLER_ON) {
+          ReleaseCapture();
+          __P_REMOVE_FLAG(window._statusFlags, __P_FLAG_CAPTURE_HANDLER_ON);
+        }
+        // do not expose move events in raw mode
+        if (window._statusFlags & __P_FLAG_CURSOR_RAW)
+          return false; 
         
         eventType = MouseEvent::mouseMove; activeKeys = (uint8_t)wParam;
         break;
@@ -1508,7 +1605,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     return (eventType != MouseEvent::none && window._onMouseEvent(&window._container, eventType, x, y, value, activeKeys));
   }
   
-  // process raw mouse motion events
+  // process raw mouse motion events (WM_INPUT)
   __forceinline void __WindowImplEventProc::processRawInputEvent(__WindowImpl& window, LPARAM lParam) {
     UINT rawSize = 0;
     if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &rawSize, sizeof(RAWINPUTHEADER)) != 0) // get data length
@@ -1532,32 +1629,26 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (rawData.header.dwType != RIM_TYPEMOUSE) // not a mouse event
         return;
 
-      int32_t deltaX, deltaY;
+      int32_t deltaX = 0, deltaY = 0;
       if (rawData.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
         std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
-        if (window._lastCursorPosition.x != __P_UNKNOWN_CURSOR_POS) {
-          deltaX = rawData.data.mouse.lLastX - window._lastCursorPosition.x;
-          deltaY = rawData.data.mouse.lLastY - window._lastCursorPosition.y;
-        }
-        else
-          deltaX = deltaY = 0;
+        deltaX = rawData.data.mouse.lLastX - window._lastCursorPosition.x;
+        deltaY = rawData.data.mouse.lLastY - window._lastCursorPosition.y;
 
-        window._lastCursorPosition.x = rawData.data.mouse.lLastX;
-        window._lastCursorPosition.y = rawData.data.mouse.lLastY;
+        window._lastCursorPosition = window.lastAbsoluteClientCenter();
+        if (!SetCursorPos((int)window._lastCursorPosition.x, (int)window._lastCursorPosition.y)) { // recenter cursor
+          window._lastCursorPosition.x = rawData.data.mouse.lLastX;
+          window._lastCursorPosition.y = rawData.data.mouse.lLastY;
+        }
       }
       else { // relative
         std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
         deltaX = rawData.data.mouse.lLastX;
         deltaY = rawData.data.mouse.lLastY;
-        if (window._lastCursorPosition.x != __P_UNKNOWN_CURSOR_POS) {
-          window._lastCursorPosition.x += deltaX;
-          window._lastCursorPosition.y += deltaY;
-        }
-        else
-          readRelativeCursorPosition(window._handle, window._lastClientArea, window._lastCursorPosition);
+        __WindowImplEventProc::centerCursor(window);
       }
-
-      window._onMouseEvent(&window._container, MouseEvent::rawMotion, deltaX, deltaY, 0, 0); // handler
+      if (deltaX || deltaY)
+        window._onMouseEvent(&window._container, MouseEvent::rawMotion, deltaX, deltaY, 0, 0); // handler
     }
   }
   
@@ -1586,36 +1677,42 @@ Description : Window manager + builder - Win32 implementation (Windows)
       switch (message) {
         // > custom mouse move events
         case WM_MOUSEHOVER: { // mouse enters client area
-          if ((window->_statusFlags & __P_FLAG_CURSOR_HOVER) == 0) {
-            __P_ADD_FLAG(window->_statusFlags, __P_FLAG_CURSOR_HOVER);
-            if ((window->_statusFlags & __P_FLAG_CURSOR_MENULOOP) == 0)
-              __WindowImplEventProc::enableCursorMode(*window);
+          if ((window->_statusFlags & __P_FLAG_CURSOR_IS_HOVER) == 0) {
+            __P_ADD_FLAG(window->_statusFlags, __P_FLAG_CURSOR_IS_HOVER);
+            __WindowImplEventProc::setCursorOnHover(window->_statusFlags);
           }
           break;
         }
         case WM_MOUSELEAVE: { // mouse leaves client area (-> unregisters TME_LEAVE -> re-registered in WM_MOUSEMOVE in 'processMouseEvent')
-          if ((window->_statusFlags & (__P_FLAG_CURSOR_HOVER|__P_FLAG_CURSOR_MENULOOP)) == __P_FLAG_CURSOR_HOVER)
-            __WindowImplEventProc::disableCursorMode(window->_statusFlags);
-          __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_CURSOR_EVENT_REG | __P_FLAG_CURSOR_HOVER);
+          // mouse clipping -> prevent from leaving (only useful when ClipCursor(RECT) fails)
+          if ((window->_statusFlags & (__P_FLAG_CURSOR_IS_CAPTURED|__P_FLAG_CURSOR_CLIP|__P_FLAG_CURSOR_IN_MENULOOP)) == (__P_FLAG_CURSOR_IS_CAPTURED|__P_FLAG_CURSOR_CLIP)) {
+            if (window->_statusFlags & __P_FLAG_CURSOR_RAW) // raw events -> recenter
+              __WindowImplEventProc::centerCursor(*window);
+            else
+              __WindowImplEventProc::clipCursor(*window);
+            SetCapture(window->_handle);
+            __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_CAPTURE_HANDLER_ON, __P_FLAG_CURSOR_IS_TRACKING);
+            return 0;
+          }
+          __WindowImplEventProc::unsetCursorOnLeave(window->_statusFlags);
+          __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_CURSOR_IS_TRACKING | __P_FLAG_CURSOR_IS_HOVER);
 
           if (window->_onMouseEvent && window->_onMouseEvent(&window->_container, MouseEvent::mouseLeave, 0, 0, 0, 0))
             return 0;
           break;
         }
         case WM_ENTERMENULOOP: { // menu loop entered
-          if (window->_statusFlags & __P_FLAG_CURSOR_HOVER)
-            __WindowImplEventProc::disableCursorMode(window->_statusFlags);
-          __P_ADD_FLAG(window->_statusFlags, __P_FLAG_CURSOR_MENULOOP);
+          __WindowImplEventProc::unsetCursorOnMenuEnter(window->_statusFlags);
+          __P_ADD_FLAG(window->_statusFlags, __P_FLAG_CURSOR_IN_MENULOOP);
           break;
         }
         case WM_EXITMENULOOP: { // menu loop left
-          if (window->_statusFlags & __P_FLAG_CURSOR_HOVER)
-            __WindowImplEventProc::enableCursorMode(*window);
-          __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_CURSOR_MENULOOP);
+          __WindowImplEventProc::setCursorOnMenuExit(*window);
+          __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_CURSOR_IN_MENULOOP);
           break;
         }
         case WM_INPUT: { // raw mouse moves
-          if ((window->_statusFlags & __P_FLAG_CURSOR_RAW_INPUT) && window->_onMouseEvent)
+          if ((window->_statusFlags & __P_FLAG_CURSOR_RAW) && window->_onMouseEvent)
             __WindowImplEventProc::processRawInputEvent(*window, lParam);
           isCommandEvent = true;
           break;
@@ -1638,11 +1735,15 @@ Description : Window manager + builder - Win32 implementation (Windows)
         case WM_MOVE: { // window currently moving / moved by command
           if (window->_onPositionEvent) {
             PixelSize clientSize = window->lastClientSize();
-            int16_t x = LOWORD(lParam); // force 16bit ints to keep value sign
-            int16_t y = HIWORD(lParam);
             window->_onPositionEvent(&window->_container, (window->_statusFlags & __P_FLAG_RESIZED_MOVED)
                                      ? PositionEvent::sizePositionTrack : PositionEvent::sizePositionChanged, // user move tracking / system move
-                                     (int32_t)x, (int32_t)y, clientSize.width, clientSize.height);
+                                     GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clientSize.width, clientSize.height);
+          }
+          // adapt constraints if mouse captured
+          if (window->_statusFlags & __P_FLAG_CURSOR_IS_CAPTURED) {
+            RECT clientBounds;
+            window->lastAbsoluteClientRect(clientBounds);
+            ClipCursor(&clientBounds);
           }
           break;
         }
@@ -1668,12 +1769,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
         case WM_SIZE: {
           switch (wParam) {
             case SIZE_MINIMIZED: {
-              if (window->_statusFlags & __P_FLAG_CURSOR_HOVER)
-                __WindowImplEventProc::disableCursorMode(window->_statusFlags);
+              __WindowImplEventProc::unactivateCursor(*window);
+              __WindowImplEventProc::unsetCursorOnLeave(window->_statusFlags);
               if (window->_statusFlags & __P_FLAG_FULLSCREEN_ON)
                 window->exitFullscreenMode();
               __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_WINDOW_MINIMIZED, 
-                                   __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE | __P_FLAG_RESIZED_MOVED | __P_FLAG_CURSOR_EVENT_REG | __P_FLAG_CURSOR_HOVER);
+                                   __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE | __P_FLAG_RESIZED_MOVED | __P_FLAG_CURSOR_IS_TRACKING | __P_FLAG_CURSOR_IS_HOVER);
               
               if (window->_onWindowEvent)
                 window->_onWindowEvent(&window->_container, WindowEvent::stateChanged, (uint32_t)WindowActivity::hidden, 0,0,nullptr);
@@ -1710,6 +1811,13 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 window->enterFullscreenMode(window->lastWindowArea(), window->_refreshRate);
                 SetForegroundWindow(window->_handle);
                 SetFocus(window->_handle);
+              }
+              
+              // adapt constraints if mouse captured
+              if (window->_statusFlags & __P_FLAG_CURSOR_IS_CAPTURED) {
+                RECT clientBounds;
+                window->lastAbsoluteClientRect(clientBounds);
+                ClipCursor(&clientBounds);
               }
               break;
             }
@@ -1832,12 +1940,16 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 DisplayArea clientArea;
                 __WindowImplEventProc::refreshClientArea(*window, clientArea);
               }
+              __WindowImplEventProc::activateCursor(*window);
             }
           }
           else if (window->_statusFlags & __P_FLAG_WINDOW_ACTIVE) { // inactive
             __P_REMOVE_FLAG(window->_statusFlags, __P_FLAG_WINDOW_ACTIVE);
+            __WindowImplEventProc::unactivateCursor(*window);
+            
             if (window->_mode == WindowType::fullscreen)
               SendMessage(window->_handle, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+            
             if (window->_onWindowEvent)
               window->_onWindowEvent(&window->_container, WindowEvent::stateChanged, (window->_statusFlags & __P_FLAG_WINDOW_VISIBLE) 
                 ? (uint32_t)WindowActivity::inactive 
