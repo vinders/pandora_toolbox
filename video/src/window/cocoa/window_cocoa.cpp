@@ -85,7 +85,7 @@ Description : Window manager + builder - Cocoa implementation (Mac OS)
   // destroy window (or restore existing window style)
   Window::~Window() noexcept {
     if (this->_impl) {
-      delete _impl;
+      //delete _impl;
       this->_impl = nullptr;
     }
   }
@@ -214,7 +214,6 @@ Description : Window manager + builder - Cocoa implementation (Mac OS)
   // Change mouse pointer visibility/limits/events
   void Window::setCursorMode(CursorMode cursorMode) noexcept {
     //...
-    return false;
   }
   
   // Change window title
