@@ -111,14 +111,28 @@ unset(CWORK_AUTODETECTED_FILES)
 
 set(_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py) # shaders
 
-# common source files
+# base source files
 autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.[hc]*") # src
 if(CWORK_AUTODETECTED_FILES)
-    set(_SOURCE_FILES ${CWORK_AUTODETECTED_FILES})
+    if(NOT IOS AND NOT APPLE)
+        set(_SOURCE_FILES ${CWORK_AUTODETECTED_FILES})
+    else()
+        foreach(_file ${CWORK_AUTODETECTED_FILES})
+            if(NOT _file MATCHES "*_noapple.cpp")
+                set(_SOURCE_FILES ${_SOURCE_FILES} "${_file}")
+            endif()
+        endforeach()
+    endif()
+    unset(CWORK_AUTODETECTED_FILES)
+endif()
+if(IOS OR APPLE)
+    autodetect_source_files_no_recurse(${_SOURCE_DIR} "*.m*") # src
+    set(_SOURCE_FILES ${_SOURCE_FILES} ${CWORK_AUTODETECTED_FILES})
+    cwork_set_source_language(CXX ${CWORK_AUTODETECTED_FILES}) # tag objective-C++ files
     unset(CWORK_AUTODETECTED_FILES)
 endif()
 
-# system-specific source files
+# window management source files
 autodetect_source_files("${_SOURCE_DIR}/window/${_SYSTEM_SOURCE_SUFFIX}" "*.[hcm]*") # src/window
 if(CWORK_AUTODETECTED_FILES)
     if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
@@ -129,11 +143,11 @@ if(CWORK_AUTODETECTED_FILES)
             set(_OBJC_SOURCE_FILES "")
             foreach(_file ${CWORK_AUTODETECTED_FILES})
                 if(_file MATCHES ".*\\.m$")
-                    set(_OBJC_SOURCE_FILES ${_OBJC_SOURCE_FILES} ${_file})
+                    set(_OBJC_SOURCE_FILES ${_OBJC_SOURCE_FILES} "${_file}")
                 endif()
             endforeach()
             if(NOT _OBJC_SOURCE_FILES STREQUAL "") # tag objective-C files
-                cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
+                cwork_set_source_language(C ${_OBJC_SOURCE_FILES})
             endif()
         endif()
     endif()

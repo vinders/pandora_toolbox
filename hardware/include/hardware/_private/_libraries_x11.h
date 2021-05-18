@@ -16,6 +16,7 @@ License :     MIT
 # include <X11/XKBlib.h>
 # include <X11/extensions/Xrandr.h> // display mode
 # include <X11/extensions/Xinerama.h> // legacy monitor indices
+# include <X11/extensions/scrnsaver.h>
 
 # define __P_HARDWARE_X11_BASE_DPI 96.0f
 
@@ -92,9 +93,11 @@ License :     MIT
       typedef Bool        (* __x11_XQueryPointer)(Display*,Window,Window*,Window*,int*,int*,int*,int*,unsigned int*);
       typedef int         (* __x11_XRaiseWindow)(Display*,Window);
       typedef Bool        (* __x11_XRegisterIMInstantiateCallback)(Display*,void*,char*,char*,XIDProc,XPointer);
+      typedef int         (* __x11_XResetScreenSaver)(Display*);
       typedef int         (* __x11_XResizeWindow)(Display*,Window,unsigned int,unsigned int);
       typedef char*       (* __x11_XResourceManagerString)(Display*);
       typedef int         (* __x11_XSaveContext)(Display*,XID,XContext,const char*);
+      typedef void        (* __x11_XScreenSaverSuspend)(Display*,Bool);
       typedef int         (* __x11_XSelectInput)(Display*,Window,long);
       typedef Status      (* __x11_XSendEvent)(Display*,Window,Bool,long,XEvent*);
       typedef int         (* __x11_XSetClassHint)(Display*,Window,XClassHint*);
@@ -249,9 +252,11 @@ License :     MIT
           __x11_XQueryPointer        QueryPointer_ = nullptr;
           __x11_XRaiseWindow         RaiseWindow_ = nullptr;
           __x11_XRegisterIMInstantiateCallback RegisterIMInstantiateCallback_ = nullptr;
+          __x11_XResetScreenSaver    ResetScreenSaver_ = nullptr;
           __x11_XResizeWindow        ResizeWindow_ = nullptr;
           __x11_XResourceManagerString ResourceManagerString_ = nullptr;
           __x11_XSaveContext         SaveContext_ = nullptr;
+          __x11_XScreenSaverSuspend  ScreenSaverSuspend_ = nullptr;
           __x11_XSelectInput         SelectInput_ = nullptr;
           __x11_XSendEvent           SendEvent_ = nullptr;
           __x11_XSetClassHint        SetClassHint_ = nullptr;

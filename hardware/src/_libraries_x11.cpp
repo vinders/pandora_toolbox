@@ -281,9 +281,11 @@ License :     MIT
     this->xlib.QueryPointer_ = _getSymbolAddress<__x11_XQueryPointer>(this->xlib.instance, "XQueryPointer");
     this->xlib.RaiseWindow_ = _getSymbolAddress<__x11_XRaiseWindow>(this->xlib.instance, "XRaiseWindow");
     this->xlib.RegisterIMInstantiateCallback_ = _getSymbolAddress<__x11_XRegisterIMInstantiateCallback>(this->xlib.instance, "XRegisterIMInstantiateCallback");
+    this->xlib.ResetScreenSaver_ = _getSymbolAddress<__x11_XResetScreenSaver>(this->xlib.instance, "XResetScreenSaver");
     this->xlib.ResizeWindow_ = _getSymbolAddress<__x11_XResizeWindow>(this->xlib.instance, "XResizeWindow");
     this->xlib.ResourceManagerString_ = _getSymbolAddress<__x11_XResourceManagerString>(this->xlib.instance, "XResourceManagerString");
     this->xlib.SaveContext_ = _getSymbolAddress<__x11_XSaveContext>(this->xlib.instance, "XSaveContext");
+    this->xlib.ScreenSaverSuspend_ = _getSymbolAddress<__x11_XScreenSaverSuspend>(this->xlib.instance, "XScreenSaverSuspend");
     this->xlib.SelectInput_ = _getSymbolAddress<__x11_XSelectInput>(this->xlib.instance, "XSelectInput");
     this->xlib.SendEvent_ = _getSymbolAddress<__x11_XSendEvent>(this->xlib.instance, "XSendEvent");
     this->xlib.SetClassHint_ = _getSymbolAddress<__x11_XSetClassHint>(this->xlib.instance, "XSetClassHint");

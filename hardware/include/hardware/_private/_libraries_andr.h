@@ -109,6 +109,12 @@ License :     MIT
         // restore default display mode of a display
         void restoreDisplayMode(AndroidJavaSession& jenv, jobject& activity, jobject& display, DisplayMonitor::Density& inOutDensity);
         
+        
+        // must be called once (per instance) before using '_window' variable
+        // remarks: can be called multiple times (will not re-bind what's already bound)
+        // throws on failure
+        void bindWindowClass(AndroidJavaSession& jenv);
+        
 
         // -- bindings --
         
@@ -183,6 +189,8 @@ License :     MIT
           jclass definition;
           jmethodID getAttributes;
           jmethodID setAttributes;
+          jmethodID addFlags;
+          jmethodID clearFlags;
           bool isCached = false;
         };
         // android/view/WindowManager.LayoutParams

@@ -300,6 +300,10 @@ License :     MIT
       _P_THROW_ON_BINDING_FAILURE(jenv, "window method", out.getAttributes);
       out.setAttributes = jenv.env().GetMethodID(out.definition, "setAttributes", "(Landroid/view/WindowManager$LayoutParams;)V");
       _P_THROW_ON_BINDING_FAILURE(jenv, "window method", out.setAttributes);
+      out.addFlags = jenv.env().GetMethodID(out.definition, "addFlags", "(I)V");
+      _P_THROW_ON_BINDING_FAILURE(jenv, "window method", out.addFlags);
+      out.clearFlags = jenv.env().GetMethodID(out.definition, "clearFlags", "(I)V");
+      _P_THROW_ON_BINDING_FAILURE(jenv, "window method", out.clearFlags);
       
       out.isCached = true;
     }
@@ -385,6 +389,10 @@ License :     MIT
     __bindDisplayClass(jenv, this->_displayMetrics.isAvailable, this->_display); // throws
     __bindDisplayModeClass(jenv, this->_displayMode); // throws
     __bindRectClass(jenv, this->_rect); // throws
+  }
+  // must be called once (per instance) before using '_window' variable
+  void AndroidBindings::bindWindowClass(AndroidJavaSession& jenv) {
+    __bindWindowClass(jenv, this->_window);
   }
   
   // ---

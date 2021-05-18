@@ -60,7 +60,7 @@ if(CWORK_AUTODETECTED_FILES) # filter: remove unwanted system-specific files
     
     cwork_set_source_files(${_SOURCE_FILES})
     if((IOS OR APPLE) AND NOT _OBJC_SOURCE_FILES STREQUAL "") # tag objective-C files
-        cwork_set_source_language(C, ${_OBJC_SOURCE_FILES})
+        cwork_set_source_language(C ${_OBJC_SOURCE_FILES})
     endif()
 endif()
 
