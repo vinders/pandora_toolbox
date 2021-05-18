@@ -6,11 +6,11 @@ License :     MIT
 # if defined(_WINDOWS)
 #   include <system/api/windows_api.h>
 # elif defined(__ANDROID__)
+#   include <system/api/android_app.h>
 #   include <hardware/_private/_libraries_andr.h>
 # elif defined(_P_ENABLE_LINUX_WAYLAND)
 #   include <hardware/_private/_libraries_wln.h>
 # elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
-#   include <system/api/android_app.h>
 #   include <hardware/_private/_libraries_x11.h>
 # endif
 
@@ -154,10 +154,8 @@ License :     MIT
     void pandora::video::notifyScreenActivity(void*) noexcept {
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
-        if (libs.xlib.ResetScreenSaver_) {
+        if (libs.xlib.ResetScreenSaver_)
           libs.xlib.ResetScreenSaver_(libs.displayServer);
-          return true;
-        }
       }
       catch (...) {}
     }
