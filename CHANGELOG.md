@@ -1,6 +1,30 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.75.2.475
+2021-05-18 - e9cea0a89a0f7c997083daf2fe246865f2aac6e6
+### features
+vinders (13):
+* video: modal message box (Win32/Cocoa impl for windows/macOS)
+* video: modal message box (UIKit impl for iOS)
+* video: modal message box (java/JNI impl for android)
+* video: modal message box (X11 impl for linux/unix/bsd)
+* video: modal message box: allow custom labels for buttons
+* cwork: custom cmake framework: add resource management (images/icons/fonts) + adapt android manifest/gradle/app-tree for resources
+* cwork: custom cmake framework: add "console" build mode + set "executable" builds in GUI mode
+* video: window virtual-keycode mappings (windows/macOS/iOS/android)
+* video: window resource builder (icon/cursor/brush): Win32 impl (windows)
+* video: window input events & handlers + event data helpers (window/keyboard/mouse/tch-scr)
+* video: window manager + builder (Win32 impl for windows)
+* video: window manager + builder for Windows: add mouse capture + raw input mode
+* video: screen-saver: disable/restore + ping activity (reset idle timer)
+### fixes
+vinders (2):
+* video: window manager + builder for Windows: refactor + fix fullscreen issues
+* video: window manager + builder for Windows: support parent window close + fix size calculations
+
+---
+
 ## 0.62.1.352
 2021-04-24 - 40c1a8290e3244e1c58415bf3653303422657d17
 ### features

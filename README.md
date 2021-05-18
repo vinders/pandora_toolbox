@@ -29,6 +29,8 @@ Contributors should take a look at the [issue reporting and contribution](./CONT
 
 ## Libraries
 
+For more details, see [features and compatibility](./FEATURES.md).
+
 |    name    |                                                   description                                                        |
 |------------|----------------------------------------------------------------------------------------------------------------------|
 | *hardware* | CPU specifications reader, instruction sets detection, process affinity, device handlers...                          |
