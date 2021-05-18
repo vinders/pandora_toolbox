@@ -173,6 +173,20 @@ License :     MIT
       _bindXinerama();
     }
     
+    // load XSS library
+#   if defined(__CYGWIN__)
+      this->xss.instance = _loadLibrary("libXss-1.so");
+#   else
+      this->xss.instance = _loadLibrary("libXss.so.1");
+#   endif
+    if (this->xss.instance == nullptr)
+      this->xss.instance = _loadLibrary("libXss.so");
+    
+    if (this->xss.instance != nullptr) {
+      this->xss.ScreenSaverSuspend_ = _getSymbolAddress<__x11_XScreenSaverSuspend>(this->xss.instance, "XScreenSaverSuspend");
+      this->xss.isAvailable = (this->xss.ScreenSaverSuspend_ != nullptr);
+    }
+    
     // load Atom properties
     _bindAtoms();
     
@@ -285,7 +299,6 @@ License :     MIT
     this->xlib.ResizeWindow_ = _getSymbolAddress<__x11_XResizeWindow>(this->xlib.instance, "XResizeWindow");
     this->xlib.ResourceManagerString_ = _getSymbolAddress<__x11_XResourceManagerString>(this->xlib.instance, "XResourceManagerString");
     this->xlib.SaveContext_ = _getSymbolAddress<__x11_XSaveContext>(this->xlib.instance, "XSaveContext");
-    this->xlib.ScreenSaverSuspend_ = _getSymbolAddress<__x11_XScreenSaverSuspend>(this->xlib.instance, "XScreenSaverSuspend");
     this->xlib.SelectInput_ = _getSymbolAddress<__x11_XSelectInput>(this->xlib.instance, "XSelectInput");
     this->xlib.SendEvent_ = _getSymbolAddress<__x11_XSendEvent>(this->xlib.instance, "XSendEvent");
     this->xlib.SetClassHint_ = _getSymbolAddress<__x11_XSetClassHint>(this->xlib.instance, "XSetClassHint");

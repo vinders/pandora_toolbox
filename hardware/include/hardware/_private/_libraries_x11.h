@@ -97,7 +97,6 @@ License :     MIT
       typedef int         (* __x11_XResizeWindow)(Display*,Window,unsigned int,unsigned int);
       typedef char*       (* __x11_XResourceManagerString)(Display*);
       typedef int         (* __x11_XSaveContext)(Display*,XID,XContext,const char*);
-      typedef void        (* __x11_XScreenSaverSuspend)(Display*,Bool);
       typedef int         (* __x11_XSelectInput)(Display*,Window,long);
       typedef Status      (* __x11_XSendEvent)(Display*,Window,Bool,long,XEvent*);
       typedef int         (* __x11_XSetClassHint)(Display*,Window,XClassHint*);
@@ -167,6 +166,9 @@ License :     MIT
 
       // xf86vm functions
       typedef Bool (* __x11_XF86VidModeQueryExtension)(Display*,int*,int*);
+      
+      // xss functions
+      typedef void        (* __x11_XScreenSaverSuspend)(Display*,Bool);
       
       
       // library loader - X11
@@ -256,7 +258,6 @@ License :     MIT
           __x11_XResizeWindow        ResizeWindow_ = nullptr;
           __x11_XResourceManagerString ResourceManagerString_ = nullptr;
           __x11_XSaveContext         SaveContext_ = nullptr;
-          __x11_XScreenSaverSuspend  ScreenSaverSuspend_ = nullptr;
           __x11_XSelectInput         SelectInput_ = nullptr;
           __x11_XSendEvent           SendEvent_ = nullptr;
           __x11_XSetClassHint        SetClassHint_ = nullptr;
@@ -336,6 +337,11 @@ License :     MIT
           __x11_XineramaQueryVersion   QueryVersion_ = nullptr;
           __x11_XineramaQueryScreens   QueryScreens_ = nullptr;
         } xinerama;
+        struct {
+          bool isAvailable   = false;
+          LibHandle instance = nullptr;
+          __x11_XScreenSaverSuspend  ScreenSaverSuspend_ = nullptr;
+        } xss;
         
         struct {
           // window manager

@@ -131,8 +131,8 @@ License :     MIT
     bool pandora::video::disableScreenSaver(void*) noexcept {
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
-        if (libs.xlib.ScreenSaverSuspend_) {
-          libs.xlib.ScreenSaverSuspend_(libs.displayServer, True);
+        if (libs.xss.isAvailable) {
+          libs.xss.ScreenSaverSuspend_(libs.displayServer, True);
           return true;
         }
       }
@@ -142,8 +142,8 @@ License :     MIT
     bool pandora::video::restoreScreenSaver() noexcept {
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
-        if (libs.xlib.ScreenSaverSuspend_) {
-          libs.xlib.ScreenSaverSuspend_(libs.displayServer, False);
+        if (libs.xss.isAvailable) {
+          libs.xss.ScreenSaverSuspend_(libs.displayServer, False);
           return true;
         }
       }
