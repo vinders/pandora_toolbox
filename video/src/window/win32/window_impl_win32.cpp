@@ -321,6 +321,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Adjust window visibility/size (first display)
   bool __WindowImpl::firstShow(int visibilityFlag) noexcept {
     bool isVisibilityCommandSet = false;
+    PixelSize clientSize = lastClientSize();
     
     if (this->_mode == WindowType::fullscreen) { // fullscreen mode
       isVisibilityCommandSet = (visibilityFlag != SW_HIDE && visibilityFlag != SW_SHOWMINNOACTIVE);
@@ -337,7 +338,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       DrawMenuBar(this->_handle);
     
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-    adjustVisibleClientSize(); // adjust size, based on actual window
+    adjustVisibleClientSize(clientSize); // adjust size, based on actual window
     
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
     if (isVisibilityCommandSet) {
@@ -422,7 +423,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         this->_behavior = prevBehavior;
         this->_resizeMode = prevResize;
         this->_refreshRate = prevRate;
-        if (this->_mode == WindowType::fullscreen)
+        if (this->_mode == WindowType::fullscreen) // restore previous resolution on failure
           enterFullscreenMode(windowArea, rate);
         if (this->_statusFlags & __P_FLAG_WINDOW_ACTIVE)
           __WindowImplEventProc::activateCursor(*this);
@@ -438,7 +439,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     // adjust size, based on actual window
     std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-    adjustVisibleClientSize();
+    adjustVisibleClientSize(PixelSize{ clientArea.width, clientArea.height });
     if (isScrollable())
       adjustScrollbarPageSize(clientArea, true);
     
@@ -453,20 +454,28 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
   // Replace window menu (or remove if null)
   bool __WindowImpl::setMenu(HMENU menuHandle) noexcept {
-    if (SetMenu(this->_handle, menuHandle) != FALSE || menuHandle == nullptr) {
-      bool hasSizeChanged = ((menuHandle && !this->_menuHandle) || (this->_menuHandle && !menuHandle));
-      this->_menuHandle = menuHandle;
-      if (menuHandle && this->_statusFlags & __P_FLAG_WINDOW_VISIBLE)
+    if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) {
+      auto clientSize = lastClientSize();
+      if (SetMenu(this->_handle, menuHandle) != FALSE || menuHandle == nullptr) {
+        bool hasSizeChanged = ((menuHandle && !this->_menuHandle) || (this->_menuHandle && !menuHandle));
+        this->_menuHandle = menuHandle;
         DrawMenuBar(this->_handle);
-      
-      if (hasSizeChanged) {
-        std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-        if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE)
-          adjustVisibleClientSize();
-        else
-          __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
+
+        if (hasSizeChanged) {
+          std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
+          adjustVisibleClientSize(clientSize);
+        }
+        return true;
       }
-      return true;
+    }
+    else {
+      if (SetMenu(this->_handle, menuHandle) != FALSE || menuHandle == nullptr) {
+        bool hasSizeChanged = ((menuHandle && !this->_menuHandle) || (this->_menuHandle && !menuHandle));
+        this->_menuHandle = menuHandle;
+        if (hasSizeChanged)
+          __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
+        return true;
+      }
     }
     return false;
   }
@@ -674,7 +683,15 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (posV > verticalMax || posH > horizontalMax || pixelsPerUnit == 0)
       return false;
     
-    BOOL repaint = (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) ? TRUE : FALSE;
+    BOOL repaint;
+    PixelSize clientSize;
+    if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) {
+      repaint = TRUE;
+      clientSize = lastClientSize();
+    }
+    else
+      repaint = FALSE;
+
     this->_scrollUnit = pixelsPerUnit;
     
     SCROLLINFO scrollInfo;
@@ -703,6 +720,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
       scrollInfo.nPage = this->_lastClientArea.height / pixelsPerUnit;
       SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, repaint);
     }
+    if (repaint)
+      adjustVisibleClientSize(clientSize);
     return true;
   }
   
@@ -924,7 +943,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // ---
   
   // Adjust client size after first display (to match requested size)
-  void __WindowImpl::adjustVisibleClientSize() noexcept {
+  void __WindowImpl::adjustVisibleClientSize(const PixelSize& expected) noexcept {
     // verify client area -> if size is incorrect, fix it
     DisplayArea realClientArea, windowArea;
     if (readVisibleClientArea(realClientArea)) {
@@ -951,8 +970,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
         this->_lastClientArea.x = realClientArea.x;
         this->_lastClientArea.y = realClientArea.y;
         if (SetWindowPos(this->_handle, HWND_TOP, 0, 0, 
-                         (int)this->_lastClientArea.width + (int)this->_decorationSizes.left + (int)this->_decorationSizes.right, 
-                         (int)this->_lastClientArea.height + (int)this->_decorationSizes.top + (int)this->_decorationSizes.bottom, 
+                         (int)expected.width + (int)this->_decorationSizes.left + (int)this->_decorationSizes.right, 
+                         (int)expected.height + (int)this->_decorationSizes.top + (int)this->_decorationSizes.bottom, 
                          (SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW)) == FALSE) {
           this->_lastClientArea.width = realClientArea.width; // on failure, refresh stored values
           this->_lastClientArea.height = realClientArea.height;

@@ -133,6 +133,7 @@ uint32_t WindowTest::_lastSizeY = 0;
     }
     if (!isUpdate) {
       window->show();
+      EXPECT_TRUE(window->pollCurrentWindowEvents());
       EXPECT_TRUE(window->handle() != (WindowHandle)0);
       EXPECT_EQ(params.mode, window->displayMode());
       EXPECT_EQ(params.behavior, window->behavior());
@@ -158,10 +159,10 @@ uint32_t WindowTest::_lastSizeY = 0;
         EXPECT_TRUE(actualClientArea.y - offsetY != 0);
       }
     }
-    if (params.clientArea.width != Window::Builder::defaultSize() && params.scrollRangeX == 0) {
+    if (params.clientArea.width != Window::Builder::defaultSize()) {
       EXPECT_EQ(params.clientArea.width, actualClientArea.width);
     }
-    if (params.clientArea.height != Window::Builder::defaultSize() && params.scrollRangeY == 0) {
+    if (params.clientArea.height != Window::Builder::defaultSize()) {
       EXPECT_EQ(params.clientArea.height, actualClientArea.height);
     }
     EXPECT_EQ(actualClientArea.width, window->getClientSize().width);

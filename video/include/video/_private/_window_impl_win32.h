@@ -211,7 +211,7 @@ namespace pandora {
       void computeUserArea(WindowType mode, WindowBehavior behavior, const pandora::hardware::DisplayArea& userArea, 
                            const WindowDecorationSize& decorationSizes, pandora::hardware::DisplayArea& outClientArea, 
                            pandora::hardware::DisplayArea& outWindowArea) noexcept;
-      void adjustVisibleClientSize() noexcept;
+      void adjustVisibleClientSize(const PixelSize& expected) noexcept;
       
       // -- display resolution/mode --
       
