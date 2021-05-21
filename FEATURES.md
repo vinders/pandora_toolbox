@@ -1,4 +1,4 @@
-# Feature list
+# Features and compatibility
 
 <sub>![win](_img/badges/system_win.png) *Windows* , 
 ![mac](_img/badges/system_mac.png) *MacOS* , 
@@ -29,6 +29,7 @@
 | *io/file_handle.h*               | Managed C file handle (RAII)                | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *io/file_system_io.h*            | File-system operations + metadata reader    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *io/file_system_locations.h*     | Standard OS-specific location finder        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
+| *io/key_value_serializer.h*      | Serializable value tree + serializer interface| ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | | | | | | | | |
 | >          **logic**             |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 | *logic/math.h*                   | Math algorithms: GCD/pow2/near-equal/...    | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
