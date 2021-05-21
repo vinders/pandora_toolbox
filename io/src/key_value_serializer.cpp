@@ -3,6 +3,7 @@ Author  :     Romain Vinders
 License :     MIT
 *******************************************************************************/
 #include <cassert>
+#include <cstring>
 #include <stdexcept>
 #include "io/key_value_serializer.h"
 
