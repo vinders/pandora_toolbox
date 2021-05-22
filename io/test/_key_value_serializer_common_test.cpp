@@ -100,7 +100,7 @@ TEST_F(_KeyValueSerializerCommonTest, copyEscapedTextInQuotesTest) {
   
   result = "";
   _copyEscapedTextInQuotes("\tthis is a multi-line string:\r\nLine 2...\r\nLine3 !\nEnd\n\t", result);
-  EXPECT_EQ(std::string("\"this is a multi-line string:\\\nLine 2...\\\nLine3 !\\\nEnd\\\n\""), result);
+  EXPECT_EQ(std::string("\"\tthis is a multi-line string:\\r\\nLine 2...\\r\\nLine3 !\\nEnd\\n\t\""), result);
 }
 
 TEST_F(_KeyValueSerializerCommonTest, copyCommentTest) {

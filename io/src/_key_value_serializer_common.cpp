@@ -20,9 +20,18 @@ void pandora::io::_copyEscapedTextInQuotes(const char* text, std::string& outBuf
         if (it > partBegin) // don't add empty parts
           outBuffer += std::string(partBegin, it - partBegin);
         
-        if ((unsigned char)*it >= (unsigned char)0x20u || *it == '\n') { // value not skipped
+        if ((unsigned char)*it >= (unsigned char)0x20u) { // value not skipped
           outBuffer += '\\';
           outBuffer += *it;
+        }
+        else {
+          switch (*it) {
+            case '\n': outBuffer += '\\'; outBuffer += 'n'; break;
+            case '\r': outBuffer += '\\'; outBuffer += 'r'; break;
+            case '\a': outBuffer += '\\'; outBuffer += 'a'; break;
+            case '\t': outBuffer += '\t'; break;
+            default: break;
+          }
         }
         partBegin = it + 1;
       }
