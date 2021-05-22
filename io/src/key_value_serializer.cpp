@@ -234,7 +234,7 @@ const char* SerializableValue::getText() const {
 
 // -- private helpers -- -------------------------------------------------------
 
-SerializableValue::SerializableValue(size_t length, char* movedValue) noexcept {
+SerializableValue::SerializableValue(size_t length, char* movedValue) noexcept : _valueType(SerializableValue::Type::text) {
   this->_length = (movedValue != nullptr) ? length : 0;
   this->_value.text = movedValue;
 }
