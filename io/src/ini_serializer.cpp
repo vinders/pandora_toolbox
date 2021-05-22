@@ -349,6 +349,7 @@ const char* IniSerializer::_readObject(const char* serialized, bool isRoot, Seri
             lastKeyState = __KeyState::none;
             break;
           }
+          default: break;
         }
       }
     }
