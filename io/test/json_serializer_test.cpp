@@ -446,18 +446,24 @@ TEST_F(JsonSerializerTest, fromJsonEmptyStringTest) {
 }
 
 TEST_F(JsonSerializerTest, fromJsonInvalidTest) {
+  
+}
+
+TEST_F(JsonSerializerTest, fromJsonTypesCommObjectsTest) {
+  const char* raw = "{  \"bool\": true // always true\n}\n";
+  JsonSerializer serializer;
+  auto result = serializer.fromString(raw);
+}
+
+TEST_F(JsonSerializerTest, fromJsonBracketlessTest) {
+  
+}
+
+TEST_F(JsonSerializerTest, fromJsonNoObjectTest) {
 
 }
 
-TEST_F(JsonSerializerTest, fromJsonTypesCommSectionsTest) {
-  // avec et sans { } autour de tout
-}
-
-TEST_F(JsonSerializerTest, fromJsonNoSectionTest) {
-
-}
-
-TEST_F(JsonSerializerTest, fromJsonMainPropsAndSectionTest) {
+TEST_F(JsonSerializerTest, fromJsonMainPropsAndObjectTest) {
 
 }
 

@@ -160,7 +160,7 @@ static const char* __skipJsonComment(const char* serialized) noexcept {
     while (*serialized && *serialized != '\n')
       ++serialized;
     if (*serialized)
-      return (serialized + 1);
+      return serialized;
   }
   else if (*serialized == '*') {
     ++serialized;
@@ -168,7 +168,7 @@ static const char* __skipJsonComment(const char* serialized) noexcept {
     while (*serialized && (*serialized != '*' || *(serialized + 1) != '/'))
       ++serialized;
     if (*serialized)
-      return (serialized + 2);
+      return (serialized + 1);
   }
   return nullptr;
 }
