@@ -6,11 +6,6 @@ License :     MIT
 #include <stdexcept>
 #include "io/_private/_key_value_serializer_common.h"
 #include "io/json_serializer.h"
-#if !defined(_CPP_REVISION) || _CPP_REVISION != 14
-# define __if_constexpr if constexpr
-#else
-# define __if_constexpr if
-#endif
 
 #define __P_COMMENT_PREFIX "// "
 #define __P_COMMENT_CHAR   '/'

@@ -8,11 +8,6 @@ License :     MIT
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#if !defined(_CPP_REVISION) || _CPP_REVISION != 14
-# define __if_constexpr if constexpr
-#else
-# define __if_constexpr if
-#endif
 
 namespace pandora { 
   namespace io {
@@ -77,4 +72,3 @@ namespace pandora {
                           char endSymbol1, char endSymbol2 = (char)-1, char endSymbol3 = (char)-1);
   }
 }
-#undef __if_constexpr
