@@ -239,16 +239,88 @@ TEST_F(IniSerializerTest, toIniBaseTypesCommentsTest) {
   EXPECT_EQ(expectedLines.size(), count);
 }
 
-TEST_F(IniSerializerTest, toIniObjectsTest) {
-  
-}
+TEST_F(IniSerializerTest, toIniAllTypesTest) {
+  SerializableValue::Object root;
+  root["int 1"] = SerializableValue(999);
+  root["str=base"] = SerializableValue("simple text");
+  root["str=empty"] = SerializableValue("");
+  root["bool;"] = SerializableValue(true);
+  root.at("bool;").setComment("always true");
+  root["int2 "] = SerializableValue(-42);
+  root.at("int2 ").setComment("one\ntwo");
+  root["str#lines "] = SerializableValue("\ttext value\nwith lines...\n");
+  root["<array>"] = SerializableValue(SerializableValue::Array{ SerializableValue("array text"), SerializableValue(7), 
+                                                                SerializableValue(-42), SerializableValue(true) });
+  SerializableValue::Object section1;
+  section1["sub-int 1"] = SerializableValue(0);
+  section1["my list1"] = SerializableValue(SerializableValue::Array{ SerializableValue(0), SerializableValue(7), 
+                                                                    SerializableValue(42), SerializableValue(-42) });
+  section1.at("my list1").setComment("here comes the fun\nbe ready!");
+  section1["my list 2"] = SerializableValue(SerializableValue::Array{ SerializableValue("0"), SerializableValue("7"), 
+                                                                      SerializableValue("42"), SerializableValue("-42") });
+  section1["sub-str 1"] = SerializableValue("0");
+  section1.at("sub-str 1").setComment("dummy");
+  root["sec 1"] = std::move(section1);
+  root.at("sec 1").setComment("this section has a title...");
 
-TEST_F(IniSerializerTest, toIniArraysTest) {
-  
-}
+  root["sec 2 (empty)"] = SerializableValue::Object{};
 
-TEST_F(IniSerializerTest, toIniAllTypesCommentsTest) {
-  
+  SerializableValue::Object section3;
+  section3["isOk"] = SerializableValue(false);
+  section3["count"] = SerializableValue(57);
+  section3["name"] = SerializableValue("alpha");
+  root["sec-3"] = std::move(section3);
+
+  IniSerializer serializer;
+  auto result = serializer.toString(root);
+
+  std::set<std::string> expectedLines{
+    "int 1=999",
+    "str\\=base=\"simple text\"",
+    "str\\=empty=\"\"",
+    "bool\\;=true ;always true",
+    "int2=-42 ;one",
+    ";two",
+    "str\\#lines=\"\ttext value\\nwith lines...\\n\"",
+    "<array>[]=\"array text\"",
+    "<array>[]=7",
+    "<array>[]=-42",
+    "<array>[]=true",
+    "[sec 1]",
+    ";this section has a title...",
+    "sub-int 1=0",
+    ";here comes the fun",
+    ";be ready!",
+    "my list1[]=0",
+    "my list1[]=7",
+    "my list1[]=42",
+    "my list1[]=-42",
+    "my list 2[]=\"0\"",
+    "my list 2[]=\"7\"",
+    "my list 2[]=\"42\"",
+    "my list 2[]=\"-42\"",
+    "sub-str 1=\"0\" ;dummy",
+    "[sec 2 (empty)]",
+    "[sec-3]",
+    "isOk=false",
+    "count=57",
+    "name=\"alpha\""
+  };
+  size_t start = 0, end = 0, count = 0;
+  while ((end = result.find_first_of('\n', start)) != std::string::npos) {
+    std::string part = result.substr(start, end - start);
+    if (!part.empty()) {
+      bool isFound = expectedLines.find(part) != expectedLines.end();
+      EXPECT_TRUE(isFound);
+      if (isFound)
+        printf("FOUND: %s\n", part.c_str());
+      else
+        printf("NOT FOUND: %s\n", part.c_str());
+      ++count;
+    }
+    start = end + 1;
+  }
+  EXPECT_EQ(expectedLines.size(), count);
 }
 
 
@@ -559,4 +631,140 @@ TEST_F(IniSerializerTest, fromIniMainPropsAndSectionTest) {
   ASSERT_TRUE(raw3Section->find("dummy") != raw3Section->end());
   EXPECT_EQ(SerializableValue::Type::text, raw3Section->at("dummy").type());
   EXPECT_STREQ("not-same-section", raw3Section->at("dummy").getText());
+}
+
+
+// -- INI serializer/deserializer --
+
+TEST_F(IniSerializerTest, toFromIniTest) {
+  // data to serialize
+  SerializableValue::Object root;
+  root["int 1"] = SerializableValue(999);
+  root["str=base"] = SerializableValue("simple text");
+  root["str=empty"] = SerializableValue("");
+  root["bool;"] = SerializableValue(true);
+  root.at("bool;").setComment("always true");
+  root["int2 "] = SerializableValue(-42);
+  root.at("int2 ").setComment("one\ntwo");
+  root["str#lines "] = SerializableValue("\ttext value\nwith lines...\n");
+  root["<array>"] = SerializableValue(SerializableValue::Array{ SerializableValue("array text"), SerializableValue(7), 
+                                                                SerializableValue(-42), SerializableValue(true) });
+  SerializableValue::Object section1;
+  section1["sub-int 1"] = SerializableValue(0);
+  section1["my list1"] = SerializableValue(SerializableValue::Array{ SerializableValue(0), SerializableValue(7), 
+                                                                     SerializableValue(42), SerializableValue(-42) });
+  section1.at("my list1").setComment("here comes the fun\nbe ready!");
+  section1["my list 2"] = SerializableValue(SerializableValue::Array{ SerializableValue("0"), SerializableValue("7"), 
+                                                                      SerializableValue("-42") });
+  section1["sub-str 1"] = SerializableValue("0");
+  section1.at("sub-str 1").setComment("dummy");
+  root["sec 1"] = std::move(section1);
+  root.at("sec 1").setComment("this section has a title...");
+
+  root["sec 2 (empty)"] = SerializableValue::Object{};
+
+  SerializableValue::Object section3;
+  section3["isOk"] = SerializableValue(false);
+  section3["count"] = SerializableValue(57);
+  section3["name"] = SerializableValue("alpha");
+  root["sec-3"] = std::move(section3);
+
+  // serialize/deserialize
+  IniSerializer serializer;
+  std::string serialized = serializer.toString(root);
+  auto result = serializer.fromString(serialized.c_str());
+
+  // verify data
+  EXPECT_EQ((size_t)10, result.size());
+
+  ASSERT_TRUE(result.find("int 1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("int 1").type());
+  EXPECT_EQ((int32_t)999, result.at("int 1").getInteger());
+  ASSERT_TRUE(result.find("str=base") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("str=base").type());
+  EXPECT_STREQ("simple text", result.at("str=base").getText());
+  ASSERT_TRUE(result.find("str=empty") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("str=empty").type());
+  EXPECT_TRUE(result.at("str=empty").getText() == nullptr);
+  ASSERT_TRUE(result.find("bool;") != result.end());
+  EXPECT_EQ(SerializableValue::Type::boolean, result.at("bool;").type());
+  EXPECT_EQ(true, result.at("bool;").getBoolean());
+  ASSERT_TRUE(result.find("int2") != result.end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("int2").type());
+  EXPECT_EQ((int32_t)-42, result.at("int2").getInteger());
+  ASSERT_TRUE(result.find("str#lines") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("str#lines").type());
+  EXPECT_STREQ("\ttext value\nwith lines...\n", result.at("str#lines").getText());
+
+  ASSERT_TRUE(result.find("<array>") != result.end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("<array>").type());
+  const auto* arrayRef = result.at("<array>").getArray();
+  ASSERT_TRUE(arrayRef != nullptr);
+  ASSERT_EQ((size_t)4u, arrayRef->size());
+  EXPECT_EQ(SerializableValue::Type::text, (*arrayRef)[0].type());
+  EXPECT_STREQ("array text", (*arrayRef)[0].getText());
+  EXPECT_EQ(SerializableValue::Type::integer, (*arrayRef)[1].type());
+  EXPECT_EQ((int32_t)7, (*arrayRef)[1].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*arrayRef)[2].type());
+  EXPECT_EQ((int32_t)-42, (*arrayRef)[2].getInteger());
+  EXPECT_EQ(SerializableValue::Type::boolean, (*arrayRef)[3].type());
+  EXPECT_EQ(true, (*arrayRef)[3].getBoolean());
+
+  ASSERT_TRUE(result.find("sec 1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("sec 1").type());
+  EXPECT_EQ((size_t)4u, result.at("sec 1").size());
+  const auto* sec1Ref = result.at("sec 1").getObject();
+  ASSERT_TRUE(sec1Ref != nullptr);
+  ASSERT_TRUE(sec1Ref->find("sub-int 1") != sec1Ref->end());
+  EXPECT_EQ(SerializableValue::Type::integer, sec1Ref->at("sub-int 1").type());
+  EXPECT_EQ((int32_t)0, sec1Ref->at("sub-int 1").getInteger());
+  ASSERT_TRUE(sec1Ref->find("sub-str 1") != sec1Ref->end());
+  EXPECT_EQ(SerializableValue::Type::text, sec1Ref->at("sub-str 1").type());
+  EXPECT_STREQ("0", sec1Ref->at("sub-str 1").getText());
+
+  ASSERT_TRUE(sec1Ref->find("my list1") != sec1Ref->end());
+  EXPECT_EQ(SerializableValue::Type::arrays, sec1Ref->at("my list1").type());
+  const auto* s1Array1Ref = sec1Ref->at("my list1").getArray();
+  ASSERT_TRUE(s1Array1Ref != nullptr);
+  ASSERT_EQ((size_t)4u, s1Array1Ref->size());
+  EXPECT_EQ(SerializableValue::Type::integer, (*s1Array1Ref)[0].type());
+  EXPECT_EQ((int32_t)0, (*s1Array1Ref)[0].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*s1Array1Ref)[1].type());
+  EXPECT_EQ((int32_t)7, (*s1Array1Ref)[1].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*s1Array1Ref)[2].type());
+  EXPECT_EQ((int32_t)42, (*s1Array1Ref)[2].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*s1Array1Ref)[3].type());
+  EXPECT_EQ((int32_t)-42, (*s1Array1Ref)[3].getInteger());
+
+  ASSERT_TRUE(sec1Ref->find("my list 2") != sec1Ref->end());
+  EXPECT_EQ(SerializableValue::Type::arrays, sec1Ref->at("my list 2").type());
+  const auto* s1Array2Ref = sec1Ref->at("my list 2").getArray();
+  ASSERT_TRUE(s1Array2Ref != nullptr);
+  ASSERT_EQ((size_t)3u, s1Array2Ref->size());
+  EXPECT_EQ(SerializableValue::Type::text, (*s1Array2Ref)[0].type());
+  EXPECT_STREQ("0", (*s1Array2Ref)[0].getText());
+  EXPECT_EQ(SerializableValue::Type::text, (*s1Array2Ref)[1].type());
+  EXPECT_STREQ("7", (*s1Array2Ref)[1].getText());
+  EXPECT_EQ(SerializableValue::Type::text, (*s1Array2Ref)[2].type());
+  EXPECT_STREQ("-42", (*s1Array2Ref)[2].getText());
+
+  ASSERT_TRUE(result.find("sec 2 (empty)") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("sec 2 (empty)").type());
+  EXPECT_EQ((size_t)0u, result.at("sec 2 (empty)").size());
+  EXPECT_TRUE(result.at("sec 2 (empty)").getObject() == nullptr);
+
+  ASSERT_TRUE(result.find("sec-3") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("sec-3").type());
+  EXPECT_EQ((size_t)3u, result.at("sec-3").size());
+  const auto* sec3Ref = result.at("sec-3").getObject();
+  ASSERT_TRUE(sec3Ref != nullptr);
+  ASSERT_TRUE(sec3Ref->find("isOk") != sec3Ref->end());
+  EXPECT_EQ(SerializableValue::Type::boolean, sec3Ref->at("isOk").type());
+  EXPECT_EQ(false, sec3Ref->at("isOk").getBoolean());
+  ASSERT_TRUE(sec3Ref->find("count") != sec3Ref->end());
+  EXPECT_EQ(SerializableValue::Type::integer, sec3Ref->at("count").type());
+  EXPECT_EQ((int32_t)57, sec3Ref->at("count").getInteger());
+  ASSERT_TRUE(sec3Ref->find("name") != sec3Ref->end());
+  EXPECT_EQ(SerializableValue::Type::text, sec3Ref->at("name").type());
+  EXPECT_STREQ("alpha", sec3Ref->at("name").getText());
 }
