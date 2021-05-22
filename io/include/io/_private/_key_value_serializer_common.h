@@ -56,21 +56,22 @@ namespace pandora {
       double number;
     };
     
-    // read boolean value from serialized data
+    // read boolean value from serialized data (true / false)
+    // returns: pointer to last letter (or NULL if not a bool value)
     const char* _readBoolean(const char* serialized, bool& outValue) noexcept;
     // read number value from serialized data
+    // returns: pointer to last digit/decimal (same as 'serialized' if not digit/sign/decimal found)
     const char* _readNumber(const char* serialized, __Number& outValue, bool& outIsInteger) noexcept;
     
     // read text between quotes + restore escaped characters -- text values/keys
-    // returns: pointer to next character after ending quote (or nullptr on failure: last character reached without finding it)
+    // returns: pointer to ending quote (or NULL on failure: null/zero character reached without finding it)
     // param "outValue": text value returned on success (note: if string size is 0, the value will be NULL)
     const char* _readText(const char* serialized, char** outValue, size_t& outSize);
     
-    // read text (no quotes) until end symbol(s) + restore escaped characters -- text values/keys
-    // returns: pointer to next character after end symbol (or end symbol if endSymbol==0)
-    //          (or nullptr on failure: last character reached without finding end symbol(s))
+    // read text (no quotes) until end symbol(s) (not skipped) + restore escaped characters -- text values/keys
+    // returns: pointer to end symbol (or NULL on failure: null/zero character reached without finding end symbol(s))
     // param "outValue": text value returned on success (note: if string size is 0, the value will be NULL)
-    // param "allowEndOfData": parse an entire file/payload (of no end symbol is found) -> will always return pointer to ending character if no end symbol
+    // param "allowEndOfData": parse an entire file/payload (of no end symbol is found) -> will always return pointer (to null/zero character if no end symbol)
     // param "endSymbol#": can be a symbol like ':' or '=' to parse keys without quotes (ini/yaml/...) -> outValue may need to be trimmed!
     const char* _readText(const char* serialized, char** outValue, size_t& outSize, bool allowEndOfData, 
                           char endSymbol1, char endSymbol2 = (char)-1, char endSymbol3 = (char)-1);

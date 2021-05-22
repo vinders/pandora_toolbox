@@ -81,13 +81,13 @@ const char* pandora::io::_readBoolean(const char* serialized, bool& outValue) no
   if (*serialized == 't') {
     if (*(++serialized) == 'r' && *(++serialized) == 'u' && *(++serialized) == 'e') {
       outValue = true;
-      return (serialized + 1);
+      return serialized;
     }
   }
   else if (*serialized == 'f') {
     if (*(++serialized) == 'a' && *(++serialized) == 'l' && *(++serialized) == 's' && *(++serialized) == 'e') {
       outValue = false;
-      return (serialized + 1);
+      return serialized;
     }
   }
   return nullptr;
@@ -101,33 +101,34 @@ const char* pandora::io::_readNumber(const char* serialized, __Number& outValue,
   uint64_t decimals = 0;
   uint64_t decimalWeight = 1uLL;
   
-  if (*serialized == '-') {
+  const char* it = serialized;
+  if (*it == '-') {
     isPositive = false;
-    ++serialized;
+    ++it;
   }
-  else if (*serialized == '+')
-    ++serialized;
+  else if (*it == '+')
+    ++it;
   
-  while (*serialized) {
-    if (*serialized >= '0' && *serialized <= '9') {
+  while (*it) {
+    if (*it >= '0' && *it <= '9') {
       if (isDecimalFound) {
         decimals *= 10uLL;
-        decimals += static_cast<uint64_t>(*serialized) - (uint64_t)'0';
+        decimals += static_cast<uint64_t>(*it) - (uint64_t)'0';
         decimalWeight *= 10uLL;
       }
       else {
         integer *= 10uLL;
-        integer += static_cast<uint64_t>(*serialized) - (uint64_t)'0';
+        integer += static_cast<uint64_t>(*it) - (uint64_t)'0';
       }
     }
-    else if (*serialized == '.') {
+    else if (*it == '.') {
       if (isDecimalFound) // already found -> end of number
         break;
       isDecimalFound = true;
     }
     else // other symbol -> end of number
       break;
-    ++serialized;
+    ++it;
   }
   
   outIsInteger = !isDecimalFound;
@@ -136,7 +137,7 @@ const char* pandora::io::_readNumber(const char* serialized, __Number& outValue,
   else
     outValue.number = isPositive ? static_cast<double>(integer) + (double)decimals/(double)decimalWeight
                                  : -static_cast<double>(integer) - (double)decimals/(double)decimalWeight;
-  return serialized;
+  return (it > serialized) ? --it : serialized;
 }
 
 // ---
@@ -171,7 +172,7 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
       // output value
       outSize = currentSize;
       *outValue = buffer;
-      return (serialized + 1);
+      return serialized;
     }
     
     if (*serialized == '\\') {
@@ -240,7 +241,7 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
       
       outSize = currentSize; // no buffer resize: value must be trimmed -> too big anyway
       *outValue = buffer;
-      return (serialized + 1);
+      return serialized;
     }
     
     if (*serialized == '\\') {

@@ -185,11 +185,11 @@ TEST_F(_KeyValueSerializerCommonTest, readBooleanTest) {
   EXPECT_FALSE(result);
   
   const char* end = _readBoolean("false--other stuff...", result);
-  EXPECT_TRUE(end != nullptr && *end == '-');
+  EXPECT_TRUE(end != nullptr && *end == 'e');
   end = _readBoolean("false ", result);
-  EXPECT_TRUE(end != nullptr && *end == ' ');
+  EXPECT_TRUE(end != nullptr && *end == 'e');
   end = _readBoolean("true); other stuff...", result);
-  EXPECT_TRUE(end != nullptr && *end == ')');
+  EXPECT_TRUE(end != nullptr && *end == 'e');
 }
 
 TEST_F(_KeyValueSerializerCommonTest, readNumberTest) {
@@ -207,158 +207,162 @@ TEST_F(_KeyValueSerializerCommonTest, readNumberTest) {
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   isInt = false;
-  EXPECT_EQ(' ', *(_readNumber("2 2", value, isInt)));
+  EXPECT_EQ('2', *(_readNumber("2 2", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)2, value.integer);
   isInt = false;
-  EXPECT_EQ('a', *(_readNumber("3a", value, isInt)));
+  EXPECT_EQ('3', *(_readNumber("3a", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)3, value.integer);
   isInt = false;
-  EXPECT_EQ('-', *(_readNumber("2-2", value, isInt)));
+  EXPECT_EQ('2', *(_readNumber("2-2", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)2, value.integer);
   isInt = true;
-  EXPECT_EQ('.', *(_readNumber("2.2.2", value, isInt)));
+  EXPECT_EQ('2', *(_readNumber("2.2.2", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(2.2, value.number);
   isInt = false;
-  EXPECT_EQ('-', *(_readNumber("+-2", value, isInt)));
+  EXPECT_EQ('+', *(_readNumber("+-2", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("0", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("0", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("0000000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("0000000", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("000005", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("000005", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)5, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("1000000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("1000000", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)1000000, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("123456789", value, isInt)));
+  EXPECT_EQ('9', *(_readNumber("123456789", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)123456789, value.integer);
-  EXPECT_EQ((char)0, *(_readNumber("3000000000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("3000000000", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_TRUE(value.integer < 0); // overflow
   
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("+0", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("+0", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("-0", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("-0", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)0, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("+57", value, isInt)));
+  EXPECT_EQ('-', *(_readNumber("-", value, isInt)));
+  EXPECT_TRUE(isInt);
+  EXPECT_EQ((int32_t)0, value.integer);
+  isInt = false;
+  EXPECT_EQ('7', *(_readNumber("+57", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)57, value.integer);
   isInt = false;
-  EXPECT_EQ((char)0, *(_readNumber("-62", value, isInt)));
+  EXPECT_EQ('2', *(_readNumber("-62", value, isInt)));
   EXPECT_TRUE(isInt);
   EXPECT_EQ((int32_t)-62, value.integer);
   
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber(".", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber(".", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber(".5", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber(".5", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.5, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("0.5", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("0.5", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.5, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("000000.5", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("000000.5", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.5, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("1.", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber("1.", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(1.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("000001.", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber("000001.", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(1.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("1.0000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("1.0000", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(1.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("150000000.", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber("150000000.", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(150000000.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("0.00000005", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("0.00000005", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.00000005, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("85.57", value, isInt)));
+  EXPECT_EQ('7', *(_readNumber("85.57", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(85.57, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("1456.087", value, isInt)));
+  EXPECT_EQ('7', *(_readNumber("1456.087", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(1456.087, value.number);
   isInt = true;
   
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("+1.0000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("+1.0000", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(1.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("+150000000.", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber("+150000000.", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(150000000.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("+0.00000005", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("+0.00000005", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(0.00000005, value.number);
-  EXPECT_EQ((char)0, *(_readNumber("+85.57", value, isInt)));
+  EXPECT_EQ('7', *(_readNumber("+85.57", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(85.57, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("-1.0000", value, isInt)));
+  EXPECT_EQ('0', *(_readNumber("-1.0000", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(-1.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("-150000000.", value, isInt)));
+  EXPECT_EQ('.', *(_readNumber("-150000000.", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(-150000000.0, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("-0.00000005", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("-0.00000005", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(-0.00000005, value.number);
-  EXPECT_EQ((char)0, *(_readNumber("-85.57", value, isInt)));
+  EXPECT_EQ('7', *(_readNumber("-85.57", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(-85.57, value.number);
   
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("-.5", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("-.5", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_EQ(-0.5, value.number);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("0.333333333333333333", value, isInt)));
+  EXPECT_EQ('3', *(_readNumber("0.333333333333333333", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_TRUE(value.number >= 0.3333333 && value.number <= 0.3333334);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("-1480252.78421005", value, isInt)));
+  EXPECT_EQ('5', *(_readNumber("-1480252.78421005", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_TRUE(value.number >= -1480252.785 && value.number <= -1480252.784);
   isInt = true;
-  EXPECT_EQ((char)0, *(_readNumber("59.94005994005994", value, isInt)));
+  EXPECT_EQ('4', *(_readNumber("59.94005994005994", value, isInt)));
   EXPECT_FALSE(isInt);
   EXPECT_TRUE(value.number >= 59.94005994 && value.number <= 59.94005995);
 }
@@ -389,32 +393,32 @@ TEST_F(_KeyValueSerializerCommonTest, readTextInQuotesTest) {
   const char* it = nullptr;
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\"abc\"", &text, length)));
-  if (it) { EXPECT_EQ((char)0, *it); EXPECT_STREQ("abc", text); }
+  if (it) { EXPECT_EQ('"', *it); EXPECT_STREQ("abc", text); }
   EXPECT_EQ(size_t{3u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\"abc\" other stuff", &text, length)));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("abc", text); }
+  if (it) { EXPECT_EQ('"', *it); EXPECT_STREQ("abc", text); }
   EXPECT_EQ(size_t{3u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\"abc - def\\\nghi\\na\\\"a\"---", &text, length)));
-  if (it) { EXPECT_EQ('-', *it); EXPECT_STREQ("abc - def\nghi\na\"a", text); }
+  if (it) { EXPECT_EQ('"', *it); EXPECT_STREQ("abc - def\nghi\na\"a", text); }
   EXPECT_EQ(size_t{17u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("' simple quotes\\r\\t \"double allowed\"' ", &text, length)));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ(" simple quotes\r\t \"double allowed\"", text); }
+  if (it) { EXPECT_EQ('\'', *it); EXPECT_STREQ(" simple quotes\r\t \"double allowed\"", text); }
   EXPECT_EQ(size_t{33u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\"\\\"''\\\"\"", &text, length)));
-  if (it) { EXPECT_EQ((char)0, *it); EXPECT_STREQ("\"''\"", text); }
+  if (it) { EXPECT_EQ('"', *it); EXPECT_STREQ("\"''\"", text); }
   EXPECT_EQ(size_t{4u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("'very-long-012345678901234567890123456789012345678901234567890123456789' ", &text, length)));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("very-long-012345678901234567890123456789012345678901234567890123456789", text); }
+  if (it) { EXPECT_EQ('\'', *it); EXPECT_STREQ("very-long-012345678901234567890123456789012345678901234567890123456789", text); }
   EXPECT_EQ(size_t{70u}, length);
   if (text) { free(text); text = nullptr; }
 }
@@ -447,22 +451,22 @@ TEST_F(_KeyValueSerializerCommonTest, readTextWithEndSymbolTest) {
   
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("abc$ ", &text, length, false, '$')));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("abc", text); }
+  if (it) { EXPECT_EQ('$', *it); EXPECT_STREQ("abc", text); }
   EXPECT_EQ(size_t{3u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("$abc$ ", &text, length, true, '$')));
-  if (it) { EXPECT_EQ('a', *it); }
+  if (it) { EXPECT_EQ('$', *it); }
   EXPECT_EQ(size_t{0u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("abc$ ", &text, length, false, '$', ' ')));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("abc", text); }
+  if (it) { EXPECT_EQ('$', *it); EXPECT_STREQ("abc", text); }
   EXPECT_EQ(size_t{3u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("abc$ ", &text, length, true, ' ', '$')));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("abc", text); }
+  if (it) { EXPECT_EQ('$', *it); EXPECT_STREQ("abc", text); }
   EXPECT_EQ(size_t{3u}, length);
   if (text) { free(text); text = nullptr; }
   
@@ -473,22 +477,22 @@ TEST_F(_KeyValueSerializerCommonTest, readTextWithEndSymbolTest) {
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\\$abc$", &text, length, false, ' ', ' ', '$')));
-  if (it) { EXPECT_EQ((char)0, *it); EXPECT_STREQ("$abc", text); }
+  if (it) { EXPECT_EQ('$', *it); EXPECT_STREQ("$abc", text); }
   EXPECT_EQ(size_t{4u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("\"abc\" other stuff$", &text, length, false, '$')));
-  if (it) { EXPECT_EQ((char)0, *it); EXPECT_STREQ("\"abc\" other stuff", text); }
+  if (it) { EXPECT_EQ('$', *it); EXPECT_STREQ("\"abc\" other stuff", text); }
   EXPECT_EQ(size_t{17u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("abc { def\\\nghi\\na\\\"a\"- -", &text, length, true, '$', '-')));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("abc { def\nghi\na\"a\"", text); }
+  if (it) { EXPECT_EQ('-', *it); EXPECT_STREQ("abc { def\nghi\na\"a\"", text); }
   EXPECT_EQ(size_t{18u}, length);
   if (text) { free(text); text = nullptr; }
   length = 0;
   EXPECT_NE(nullptr, (it = _readText("very-long-012345678901234567890123456789012345678901234567890123456' ", &text, length, true, '\'', '"')));
-  if (it) { EXPECT_EQ(' ', *it); EXPECT_STREQ("very-long-012345678901234567890123456789012345678901234567890123456", text); }
+  if (it) { EXPECT_EQ('\'', *it); EXPECT_STREQ("very-long-012345678901234567890123456789012345678901234567890123456", text); }
   EXPECT_EQ(size_t{67u}, length);
   if (text) { free(text); text = nullptr; }
 }
