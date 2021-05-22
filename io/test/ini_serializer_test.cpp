@@ -132,7 +132,111 @@ TEST_F(IniSerializerTest, toIniBaseTypesTest) {
 }
 
 TEST_F(IniSerializerTest, toIniBaseTypesCommentsTest) {
-  
+  SerializableValue::Object root;
+  IniSerializer serializer;
+
+  root["val"] = SerializableValue(0);
+  root.at("val").setComment("comment 1");
+  auto result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=0 ;comment 1\n"), result);
+  root["val"] = SerializableValue(-42);
+  root.at("val").setComment(" other comment #;! ");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=-42 ; other comment #;! \n"), result);
+
+  root["val"] = SerializableValue(-76.127);
+  root.at("val").setComment("[comment]");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=-76.127"), result.substr(0, 11));
+  EXPECT_EQ(std::string("[comment]\n"), result.substr(result.size()-10u));
+  EXPECT_EQ('\n', result.back());
+
+  root["val"] = SerializableValue(true);
+  root.at("val").setComment("comment\nwith\nlines\n");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=true ;comment\n;with\n;lines\n\n"), result);
+  root["val"] = SerializableValue(false);
+  root.at("val").setComment(nullptr);
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=false\n"), result);
+
+  root["val"] = SerializableValue("simple text");
+  root.at("val").setComment(";comment");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=\"simple text\" ;;comment\n"), result);
+  root["val"] = SerializableValue("\ttext value\nwith lines...\r\n");
+  root.at("val").setComment(" ");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=\"\ttext value\\nwith lines...\\r\\n\" ; \n"), result);
+  root["val"] = SerializableValue(std::string("string text"));
+  root.at("val").setComment("\"abc\"");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("val=\"string text\" ;\"abc\"\n"), result);
+
+  root["val"] = SerializableValue(SerializableValue::Array{});
+  root.at("val").setComment("'abc'");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string(";'abc'\n"), result);
+  root["val"] = SerializableValue(SerializableValue::Array{ SerializableValue(7) });
+  root.at("val").setComment("text\nwith\nlines");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string(";text\n;with\n;lines\nval[]=7\n"), result);
+
+  root["val"] = SerializableValue(SerializableValue::Object{});
+  root.at("val").setComment("text\nwith\nlines");
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("[val]\n;text\n;with\n;lines\n"), result);
+
+  root = {};
+  root["int 1"] = SerializableValue(0);
+  root.at("int 1").setComment(" ");
+  root["<object;>"] = SerializableValue(SerializableValue::Object{});
+  root.at("<object;>").setComment("comment !;");
+  root["str=base"] = SerializableValue("simple text");
+  root["str=empty"] = SerializableValue("");
+  root.at("str=empty").setComment("[comment]");
+  root["bool;"] = SerializableValue(true);
+  root.at("bool;").setComment("= val");
+  root["int2 "] = SerializableValue(-42);
+  root.at("int2 ").setComment("multiple\nlines");
+  root["str#lines "] = SerializableValue("\ttext value\nwith lines...\n");
+  root.at("str#lines ").setComment(" OK ");
+  SerializableValue arrayVal(7);
+  arrayVal.setComment("inlined !");
+  root["<array>"] = SerializableValue(SerializableValue::Array{ std::move(arrayVal) });
+  root.at("<array>").setComment("single line ");
+  root[" my [string] !"] = SerializableValue(std::string("string text"));
+  result = serializer.toString(root);
+
+  std::set<std::string> expectedLines{
+    "int 1=0 ; ",
+    "str\\=base=\"simple text\"",
+    "str\\=empty=\"\" ;[comment]",
+    "bool\\;=true ;= val",
+    "int2=-42 ;multiple",
+    ";lines",
+    "str\\#lines=\"\ttext value\\nwith lines...\\n\" ; OK ",
+    ";single line ",
+    "<array>[]=7 ;inlined !",
+    "my \\[string\\] !=\"string text\"",
+    "[<object\\;>]",
+    ";comment !;"
+  };
+  size_t start = 0, end = 0, count = 0;
+  while ((end = result.find_first_of('\n', start)) != std::string::npos) {
+    std::string part = result.substr(start, end - start);
+    if (!part.empty()) {
+      bool isFound = expectedLines.find(part) != expectedLines.end();
+      EXPECT_TRUE(isFound);
+      if (isFound)
+        printf("FOUND: %s\n", part.c_str());
+      else
+        printf("NOT FOUND: %s\n", part.c_str());
+      ++count;
+    }
+    start = end + 1;
+  }
+  EXPECT_EQ(expectedLines.size(), count);
 }
 
 TEST_F(IniSerializerTest, toIniObjectsTest) {

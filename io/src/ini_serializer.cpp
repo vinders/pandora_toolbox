@@ -116,8 +116,10 @@ void IniSerializer::_toObject(const SerializableValue::Object* object, bool isRo
           case SerializableValue::Type::text:    outBuffer += currentKey; outBuffer += '='; _copyEscapedTextInQuotes(it.second.getText(), outBuffer); break;
           // array values -> add comment before list
           case SerializableValue::Type::arrays:
-            if (it.second.comment() != nullptr)
+            if (it.second.comment() != nullptr) {
               _copyComment(it.second.comment(), false, ";", "", outBuffer);
+              outBuffer += '\n';
+            }
             IniSerializer::_toArray(it.second.getArray(), currentKey, outBuffer); 
             break;
           default: break;
