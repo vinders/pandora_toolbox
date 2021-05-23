@@ -2,7 +2,6 @@ ignore:
   - "bin/"
   - "_bin/"
   - "build/"
-  - "_build/"
   - "_cmake/"
   - "_coverage/"
   - "addons/"
