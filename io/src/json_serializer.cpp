@@ -275,8 +275,6 @@ const char* JsonSerializer::_readArray(const char* serialized, SerializableValue
 
 // parse JSON object data
 const char* JsonSerializer::_readObject(const char* serialized, SerializableValue::Object& outObject) {
-  bool isBracketless = (*serialized != '{');
-  
   __KeyState lastKeyState = __KeyState::none;
   std::string lastKey;
   while (*serialized) {
@@ -391,7 +389,7 @@ const char* JsonSerializer::_readObject(const char* serialized, SerializableValu
       }
     }
   }
-  return isBracketless ? serialized : nullptr;
+  return nullptr;
 }
 
 // ---
@@ -406,8 +404,11 @@ SerializableValue::Object JsonSerializer::fromString(const char* serialized) con
       ++serialized;
     if (*serialized == '/') // skip comments
       serialized = __skipJsonComment(serialized);
-    else if (*serialized != '{') // not a comment after white-spaces -> must be bracket (or bracketless mode)
-      break;
+    else if (*serialized != '{') { // not a comment after white-spaces -> must be bracket (or end of data)
+      if (*serialized)
+        throw std::invalid_argument("JsonSerializer: invalid JSON format: missing root bracket '{'");
+      return SerializableValue::Object{};
+    }
   }
   
   SerializableValue::Object rootMap;

@@ -26,13 +26,18 @@ TEST_F(JsonSerializerTest, toJsonEmptyStringTest) {
 TEST_F(JsonSerializerTest, toJsonBaseTypesTest) {
   SerializableValue::Object root;
   JsonSerializer serializer(size_t{ 2u });
+  JsonSerializer serializerI4(size_t{ 4u });
 
   root["val"] = SerializableValue(0);
   auto result = serializer.toString(root);
   EXPECT_EQ(std::string("{\n  \"val\": 0\n}\n"), result);
+  result = serializerI4.toString(root);
+  EXPECT_EQ(std::string("{\n    \"val\": 0\n}\n"), result);
   root["val"] = SerializableValue(-42);
   result = serializer.toString(root);
   EXPECT_EQ(std::string("{\n  \"val\": -42\n}\n"), result);
+  result = serializerI4.toString(root);
+  EXPECT_EQ(std::string("{\n    \"val\": -42\n}\n"), result);
 
   root["val"] = SerializableValue(-76.127);
   result = serializer.toString(root);
@@ -62,6 +67,8 @@ TEST_F(JsonSerializerTest, toJsonBaseTypesTest) {
   root["val"] = SerializableValue(SerializableValue::Array{ SerializableValue(7) });
   result = serializer.toString(root);
   EXPECT_EQ(std::string("{\n  \"val\": [\n    7\n  ]\n}\n"), result);
+  result = serializerI4.toString(root);
+  EXPECT_EQ(std::string("{\n    \"val\": [\n        7\n    ]\n}\n"), result);
 
   root["val"] = SerializableValue(SerializableValue::Object{});
   result = serializer.toString(root);
@@ -446,25 +453,204 @@ TEST_F(JsonSerializerTest, fromJsonEmptyStringTest) {
 }
 
 TEST_F(JsonSerializerTest, fromJsonInvalidTest) {
-  
+  JsonSerializer serializer;
+  const char* raw1 = "{\n  \"val\": 0, \"val2\": 1\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw1));
+  const char* raw2 = "{\n  \"val\": 0 \"val2\": 1\n}\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw2));
+  const char* raw3 = "{\n  \"val\": [ 0, \"val2\": 1\n}\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw3));
+  const char* raw4 = "{\n  \"val\": 0, val2: 1\n}\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw4));
+  const char* raw5 = "{\n  \"val\"= 0, \"val2\"= 1\n}\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw5));
+  const char* raw6 = "\"val\": 0,\n\"val2\": 1\n";
+  EXPECT_ANY_THROW(serializer.fromString(raw6));
 }
 
-TEST_F(JsonSerializerTest, fromJsonTypesCommObjectsTest) {
-  const char* raw = "{  \"bool\": true // always true\n}\n";
+TEST_F(JsonSerializerTest, fromJsonCommentAtEndTest) {
+  JsonSerializer serializer;
+
+  const char* raw1 = "{\n  \"bool\": true // always true\n}\n";
+  auto result = serializer.fromString(raw1);
+  EXPECT_EQ((size_t)1, result.size());
+  ASSERT_TRUE(result.find("bool") != result.end());
+  EXPECT_EQ(SerializableValue::Type::boolean, result.at("bool").type());
+  EXPECT_EQ(true, result.at("bool").getBoolean());
+
+  const char* raw2 = "{\n  \"bool\": true\n}// always true";
+  result = serializer.fromString(raw2);
+  EXPECT_EQ((size_t)1, result.size());
+  ASSERT_TRUE(result.find("bool") != result.end());
+  EXPECT_EQ(SerializableValue::Type::boolean, result.at("bool").type());
+  EXPECT_EQ(true, result.at("bool").getBoolean());
+}
+
+TEST_F(JsonSerializerTest, fromJsonTypesTest) {
+  const char* raw =
+    "{\n"
+    "  /* multi-line\n"
+    "     comment */\n"
+    "  \"int1\" : 0,\n"
+    "  \"int\\\"2\\\"\":-25, // comment\n"
+    "  \"nb 1\": 57.252,\n"
+    "  \" nb2 \": -0.5  , \n"
+    "  \"{nb_[3]}\": 0.0, \n"
+    "  \"bool:1\": true ,//comment\n"
+    "  \"-bool-2-\": false,\n"
+    "  \"MyString1\": 'test: \"string\"',\n"
+    "  \"My\\\"String\\\"2\": \"this is a \\\"string\\\"\\r\\nwith 'lines'...\" ,\n"
+    "  \"MyString:3\": \"\",//comment\n"
+    "  \"<array-empty>\": [],\r\n"
+    "  \"<array-empty2>\": [//comment\r\n"
+    "  ] , //comment\n"
+    "  \"<array1>\": [\n"
+    "    0,1,2,3\n"
+    "  ],//comment\n"
+    "  \"<array2>\": [\n"
+    "    \"0\",\n"
+    "    \"1\",\n"
+    "    {\"two\":\"2\"},\n"
+    "    \"3\",\n"
+    "  ],\n"
+    "  \"obj-empty1\":{} ,\n"
+    "  \"obj-empty2\" :{   },\n"
+    "  \"obj-empty3\":{\n"
+    "  },\n"
+    "  \"Obj1\":{\n"
+    "    \"abc\": \"\", \n"
+    "    \"def\": \"1\", \n"
+    "    \"ghi\": 1, \n"
+    "  } ,\n"
+    "  \"obj2\" : {\n"
+    "    \"zero-str\": \"0\", \n"
+    "    \"arr\": [ \n"
+    "      \"0\",  \n"
+    "    ],  \n"
+    "    // comment line\n"
+    "    \"zero\": 0 // comment -- // comment --\n"
+    "    // comment line\n"
+    "  }\n"
+    "}\n";
+
   JsonSerializer serializer;
   auto result = serializer.fromString(raw);
-}
 
-TEST_F(JsonSerializerTest, fromJsonBracketlessTest) {
-  
-}
+  EXPECT_EQ((size_t)19, result.size());
 
-TEST_F(JsonSerializerTest, fromJsonNoObjectTest) {
+  ASSERT_TRUE(result.find("int1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("int1").type());
+  EXPECT_EQ((int32_t)0, result.at("int1").getInteger());
+  ASSERT_TRUE(result.find("int\"2\"") != result.end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("int\"2\"").type());
+  EXPECT_EQ((int32_t)-25, result.at("int\"2\"").getInteger());
+  ASSERT_TRUE(result.find("nb 1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::number, result.at("nb 1").type());
+  EXPECT_EQ(57.252, result.at("nb 1").getNumber());
+  ASSERT_TRUE(result.find(" nb2 ") != result.end());
+  EXPECT_EQ(SerializableValue::Type::number, result.at(" nb2 ").type());
+  EXPECT_EQ(-0.5, result.at(" nb2 ").getNumber());
+  ASSERT_TRUE(result.find("{nb_[3]}") != result.end());
+  EXPECT_EQ(SerializableValue::Type::number, result.at("{nb_[3]}").type());
+  EXPECT_EQ(0.0, result.at("{nb_[3]}").getNumber());
+  ASSERT_TRUE(result.find("bool:1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::boolean, result.at("bool:1").type());
+  EXPECT_EQ(true, result.at("bool:1").getBoolean());
+  ASSERT_TRUE(result.find("-bool-2-") != result.end());
+  EXPECT_EQ(SerializableValue::Type::boolean, result.at("-bool-2-").type());
+  EXPECT_EQ(false, result.at("-bool-2-").getBoolean());
+  ASSERT_TRUE(result.find("MyString1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("MyString1").type());
+  EXPECT_STREQ("test: \"string\"", result.at("MyString1").getText());
+  ASSERT_TRUE(result.find("My\"String\"2") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("My\"String\"2").type());
+  EXPECT_STREQ("this is a \"string\"\r\nwith 'lines'...", result.at("My\"String\"2").getText());
+  ASSERT_TRUE(result.find("MyString:3") != result.end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("MyString:3").type());
+  EXPECT_EQ((size_t)0, result.at("MyString:3").size());
+  EXPECT_TRUE(result.at("MyString:3").getText() == nullptr);
 
-}
+  ASSERT_TRUE(result.find("<array-empty>") != result.end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("<array-empty>").type());
+  EXPECT_EQ((size_t)0, result.at("<array-empty>").size());
+  EXPECT_TRUE(result.at("<array-empty>").getArray() == nullptr);
+  ASSERT_TRUE(result.find("<array-empty2>") != result.end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("<array-empty2>").type());
+  EXPECT_EQ((size_t)0, result.at("<array-empty2>").size());
+  EXPECT_TRUE(result.at("<array-empty2>").getArray() == nullptr);
+  ASSERT_TRUE(result.find("obj-empty1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("obj-empty1").type());
+  EXPECT_EQ((size_t)0, result.at("obj-empty1").size());
+  EXPECT_TRUE(result.at("obj-empty1").getObject() == nullptr);
+  ASSERT_TRUE(result.find("obj-empty2") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("obj-empty2").type());
+  EXPECT_EQ((size_t)0, result.at("obj-empty2").size());
+  EXPECT_TRUE(result.at("obj-empty2").getObject() == nullptr);
+  ASSERT_TRUE(result.find("obj-empty3") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("obj-empty3").type());
+  EXPECT_EQ((size_t)0, result.at("obj-empty3").size());
+  EXPECT_TRUE(result.at("obj-empty3").getObject() == nullptr);
 
-TEST_F(JsonSerializerTest, fromJsonMainPropsAndObjectTest) {
+  ASSERT_TRUE(result.find("<array1>") != result.end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("<array1>").type());
+  EXPECT_EQ((size_t)4, result.at("<array1>").size());
+  EXPECT_TRUE(result.at("<array1>").getArray() != nullptr);
+  EXPECT_EQ(SerializableValue::Type::integer, (*result.at("<array1>").getArray())[0].type());
+  EXPECT_EQ((int32_t)0, (*result.at("<array1>").getArray())[0].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*result.at("<array1>").getArray())[1].type());
+  EXPECT_EQ((int32_t)1, (*result.at("<array1>").getArray())[1].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*result.at("<array1>").getArray())[2].type());
+  EXPECT_EQ((int32_t)2, (*result.at("<array1>").getArray())[2].getInteger());
+  EXPECT_EQ(SerializableValue::Type::integer, (*result.at("<array1>").getArray())[3].type());
+  EXPECT_EQ((int32_t)3, (*result.at("<array1>").getArray())[3].getInteger());
 
+  ASSERT_TRUE(result.find("<array2>") != result.end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("<array2>").type());
+  EXPECT_EQ((size_t)4, result.at("<array2>").size());
+  EXPECT_TRUE(result.at("<array2>").getArray() != nullptr);
+  EXPECT_EQ(SerializableValue::Type::text, (*result.at("<array2>").getArray())[0].type());
+  EXPECT_STREQ("0", (*result.at("<array2>").getArray())[0].getText());
+  EXPECT_EQ(SerializableValue::Type::text, (*result.at("<array2>").getArray())[1].type());
+  EXPECT_STREQ("1", (*result.at("<array2>").getArray())[1].getText());
+  EXPECT_EQ(SerializableValue::Type::object, (*result.at("<array2>").getArray())[2].type());
+  EXPECT_EQ((size_t)1u, (*result.at("<array2>").getArray())[2].size());
+  ASSERT_TRUE((*result.at("<array2>").getArray())[2].getObject() != nullptr);
+  ASSERT_TRUE((*result.at("<array2>").getArray())[2].getObject()->find("two") != (*result.at("<array2>").getArray())[2].getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::text, (*result.at("<array2>").getArray())[2].getObject()->at("two").type());
+  EXPECT_STREQ("2", (*result.at("<array2>").getArray())[2].getObject()->at("two").getText());
+  EXPECT_EQ(SerializableValue::Type::text, (*result.at("<array2>").getArray())[3].type());
+  EXPECT_STREQ("3", (*result.at("<array2>").getArray())[3].getText());
+
+  ASSERT_TRUE(result.find("Obj1") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("Obj1").type());
+  EXPECT_EQ((size_t)3, result.at("Obj1").size());
+  EXPECT_TRUE(result.at("Obj1").getObject() != nullptr);
+  ASSERT_TRUE(result.at("Obj1").getObject()->find("abc") != result.at("Obj1").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("Obj1").getObject()->at("abc").type());
+  EXPECT_TRUE(result.at("Obj1").getObject()->at("abc").getText() == nullptr);
+  ASSERT_TRUE(result.at("Obj1").getObject()->find("def") != result.at("Obj1").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("Obj1").getObject()->at("def").type());
+  EXPECT_STREQ("1", result.at("Obj1").getObject()->at("def").getText());
+  ASSERT_TRUE(result.at("Obj1").getObject()->find("ghi") != result.at("Obj1").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("Obj1").getObject()->at("ghi").type());
+  EXPECT_EQ((int32_t)1, result.at("Obj1").getObject()->at("ghi").getInteger());
+
+  ASSERT_TRUE(result.find("obj2") != result.end());
+  EXPECT_EQ(SerializableValue::Type::object, result.at("obj2").type());
+  EXPECT_EQ((size_t)3, result.at("obj2").size());
+  EXPECT_TRUE(result.at("obj2").getObject() != nullptr);
+  ASSERT_TRUE(result.at("obj2").getObject()->find("zero-str") != result.at("obj2").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("obj2").getObject()->at("zero-str").type());
+  EXPECT_STREQ("0", result.at("obj2").getObject()->at("zero-str").getText());
+  ASSERT_TRUE(result.at("obj2").getObject()->find("arr") != result.at("obj2").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::arrays, result.at("obj2").getObject()->at("arr").type());
+  EXPECT_EQ((size_t)1u, result.at("obj2").getObject()->at("arr").size());
+  ASSERT_TRUE(result.at("obj2").getObject()->at("arr").getArray() != nullptr);
+  EXPECT_EQ(SerializableValue::Type::text, (*result.at("obj2").getObject()->at("arr").getArray())[0].type());
+  EXPECT_STREQ("0", (*result.at("obj2").getObject()->at("arr").getArray())[0].getText());
+  ASSERT_TRUE(result.at("obj2").getObject()->find("zero") != result.at("obj2").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::integer, result.at("obj2").getObject()->at("zero").type());
+  EXPECT_EQ((int32_t)0, result.at("obj2").getObject()->at("zero").getInteger());
 }
 
 
