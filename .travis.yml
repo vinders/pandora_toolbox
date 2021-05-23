@@ -422,5 +422,5 @@ script:
 # ---- coverage ----
 after_success: |
   if [ "$ENABLE_COVERAGE" = "ON" ]; then
-    bash <(curl -s https://codecov.io/bash) -R . || echo "Codecov did not collect coverage reports"
+    bash <(curl -s https://codecov.io/bash) -R "${TRAVIS_BUILD_DIR}/" || echo "Codecov did not collect coverage reports"
   fi
