@@ -70,6 +70,8 @@ namespace pandora {
       
       inline Type type() const noexcept { return this->_valueType; } ///< Get inner value type
       inline size_t size() const noexcept { return this->_length; }  ///< Get size: number of sub-values / text length / array size
+      inline bool empty() const noexcept { return (this->_length == size_t{0}); } ///< Verify if value is an empty text/array/object (NULL value)
+      inline operator bool() const noexcept { return (this->_length != size_t{0}); }
       
       inline const char* comment() const noexcept { return (const char*)this->_comment; } ///< Get comment currently associated with the value
       void setComment(const char* comment); ///< Add a comment to associate with the value (for serialization)
