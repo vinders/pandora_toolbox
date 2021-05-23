@@ -19,7 +19,7 @@ for dir in *; do
   if [ -d "$dir" ] && [ -d "./${dir}/include" ] && [ -d "./${dir}/test" ]; then
     echo "code coverage: library ${dir} found."
     (cd $OUTPUT_DIR && mkdir $dir)
-    sh ./_scripts/_coverage_project.sh "./${dir}/test" "_build/linux/${dir}/CMakeFiles/project.dir/test" "$(pwd)/${OUTPUT_DIR}/${dir}" "test"
+    sh ./_scripts/ci/_coverage_project.sh "./${dir}/test" "_build/linux/${dir}/CMakeFiles/project.dir/test" "$(pwd)/${OUTPUT_DIR}/${dir}" "test"
     echo $(ls -lA "${OUTPUT_DIR}/${dir}" | wc -l)
   fi
 done

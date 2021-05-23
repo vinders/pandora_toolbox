@@ -422,7 +422,5 @@ script:
 # ---- coverage ----
 after_success: |
   if [ "$ENABLE_COVERAGE" = "ON" ]; then
-    sudo sh ./_scripts/ci/coverage.sh $COVERAGE_DIR
-    bash <(curl -s https://codecov.io/bash) -f "${COVERAGE_DIR}/*" || echo "Codecov did not collect coverage reports"
-    sudo rm -rf $COVERAGE_DIR
+    bash <(curl -s https://codecov.io/bash) -R . || echo "Codecov did not collect coverage reports"
   fi
