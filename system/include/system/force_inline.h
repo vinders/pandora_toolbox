@@ -13,7 +13,7 @@ Constants : __forceinline
 #   endif
 
 # elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__) || defined(__MINGW32__)
-#   define __forceinline __attribute__((always_inline))
+#   define __forceinline __attribute__((always_inline)) inline
 
 # else
 #   define __forceinline inline
