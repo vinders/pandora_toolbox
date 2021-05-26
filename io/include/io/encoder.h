@@ -8,6 +8,9 @@ License :     MIT
 #include <string>
 #include <memory>
 
+#define _P_UTF8_MAX_CODE_SIZE  4
+#define _P_UTF16_MAX_CODE_SIZE 2
+
 namespace pandora {
   namespace io {
     ///< Unicode character encoding mode
@@ -31,13 +34,13 @@ namespace pandora {
         static const char* byteOrderMark() noexcept { return "\xEF\xBB\xBF"; } ///< UTF-8 byte-order-mark
         
         /// @brief Encode unicode character code (outBuffer must not be NULL)
-        /// @warning - 'outBuffer' must be at least 4 bytes long!
+        /// @warning - 'outBuffer' must be at least 4 bytes long -> use _P_UTF8_MAX_CODE_SIZE for buffer length
         ///          - The buffer is filled with the character bytes, but no NULL/zero character is appended -> do not use it as a string
         /// @returns Buffer indexes used (single-byte: 1 / multi-byte: 2-4)
-        static size_t encode(uint32_t charCode, char outBuffer[4]) noexcept;
+        static size_t encode(uint32_t charCode, char outBuffer[_P_UTF8_MAX_CODE_SIZE]) noexcept;
         /// @brief Decode unicode character code (value must not be NULL)
         /// @returns Unicode character code
-        static uint32_t decode(const char value[4]) noexcept;
+        static uint32_t decode(const char value[_P_UTF8_MAX_CODE_SIZE]) noexcept;
         
         /// @brief Convert file data (from specified encoding) to UTF-8 string (+ remove byte-order-mark)
         static std::string fromFile(const char* fileData, size_t length, Encoding fileEncoding = Encoding::any);
@@ -57,13 +60,13 @@ namespace pandora {
         static const char* byteOrderMarkLE() noexcept { return "\xFF\xFE"; } ///< UTF-16 little-endian byte-order-mark
         
         /// @brief Encode unicode character code (outBuffer must not be NULL)
-        /// @warning - 'outBuffer' must be at least 2 words long (4 bytes)!
+        /// @warning - 'outBuffer' must be at least 2 words long (4 bytes) -> use _P_UTF16_MAX_CODE_SIZE for buffer length
         ///          - The buffer is filled with the character words, but no NULL/zero character is appended -> do not use it as a string
         /// @returns Buffer indexes used (single-word: 1 / multi-word: 2)
-        static size_t encode(uint32_t charCode, char16_t outBuffer[2]) noexcept;
+        static size_t encode(uint32_t charCode, char16_t outBuffer[_P_UTF16_MAX_CODE_SIZE]) noexcept;
         /// @brief Decode unicode character code (value must not be NULL)
         /// @returns Unicode character code
-        static uint32_t decode(const char16_t value[2]) noexcept;
+        static uint32_t decode(const char16_t value[_P_UTF16_MAX_CODE_SIZE]) noexcept;
         
         /// @brief Convert file data (from specified encoding) to UTF-16 string (+ remove byte-order-mark)
         static std::u16string fromFile(const char* fileData, size_t length, Encoding fileEncoding = Encoding::any);

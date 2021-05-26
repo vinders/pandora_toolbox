@@ -29,12 +29,14 @@ namespace pandora {
       ///                                 myValue1,
       ///                                 myValue2
       ///                               ],
+      /// @warning Keys and text values should be ASCII or UTF-8 strings.
       /// @throws exception if allocation failure
       std::string toString(const SerializableValue::Object& keyValueList) const override;
       
       /// @brief Deserialize list of key-value pairs from JSON-formatted data string
       /// @remarks - Not permissive for syntax errors: any invalid syntax will result in an exception.
       ///          - Comments are not parsed (SerializableValue.comment() is only meant for 'toString').
+      ///          - 'serialized' should be an ASCII or UTF-8 string.
       /// @returns Deserialized objet, or empty object if empty string
       /// @throws exception if allocation failure / if invalid JSON string
       SerializableValue::Object fromString(const char* serialized) const override;

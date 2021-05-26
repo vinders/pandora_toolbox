@@ -231,13 +231,13 @@ static std::string __utf16LE_toUtf8(const char* data, size_t length) {
 // ---
 
 // Encode unicode character code (outBuffer must not be NULL)
-size_t Encoder::Utf8::encode(uint32_t charCode, char outBuffer[4]) noexcept {
+size_t Encoder::Utf8::encode(uint32_t charCode, char outBuffer[_P_UTF8_MAX_CODE_SIZE]) noexcept {
   return __encodeUtf8(charCode, (char*)outBuffer);
 }
 // Decode unicode character code (value must not be NULL)
-uint32_t Encoder::Utf8::decode(const char value[4]) noexcept {
+uint32_t Encoder::Utf8::decode(const char value[_P_UTF8_MAX_CODE_SIZE]) noexcept {
   size_t length = 0;
-  return __decodeUtf8((const char*)value, size_t{3u}, length);
+  return __decodeUtf8((const char*)value, size_t{_P_UTF8_MAX_CODE_SIZE - 1}, length);
 }
 
 // ---
@@ -353,11 +353,11 @@ static std::u16string __utf8_toUtf16(const char* data, size_t length) {
 // ---
 
 // Encode unicode character code (outBuffer must not be NULL)
-size_t Encoder::Utf16::encode(uint32_t charCode, char16_t outBuffer[2]) noexcept {
+size_t Encoder::Utf16::encode(uint32_t charCode, char16_t outBuffer[_P_UTF16_MAX_CODE_SIZE]) noexcept {
   return __encodeUtf16(charCode, (char16_t*)outBuffer);
 }
 // Decode unicode character code (value must not be NULL)
-uint32_t Encoder::Utf16::decode(const char16_t value[2]) noexcept {
+uint32_t Encoder::Utf16::decode(const char16_t value[_P_UTF16_MAX_CODE_SIZE]) noexcept {
   size_t length = 0;
   return __decodeUtf16((uint32_t)value[0] & 0xFFFF, (uint32_t)value[1] & 0xFFFF, length);
 }

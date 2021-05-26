@@ -28,12 +28,14 @@ namespace pandora {
       /// @warning - INI format does not allow nested objets (objects in sections, objects in arrays) nor arrays in arrays!
       ///            To serialize a hierarchy of objects, consider using JSON/XML/YAML instead.
       ///          - INI format does not allow empty keys (or only made of spaces)
+      ///          - Keys and text values should be ASCII or UTF-8 strings.
       /// @throws exception if allocation failure / if contains nested objects
       std::string toString(const SerializableValue::Object& keyValueList) const override;
       
       /// @brief Deserialize list of key-value pairs from INI-formatted data string
       /// @remarks - Permissive parsing: invalid lines are just ignored.
       ///          - Comments are not parsed (SerializableValue.comment() is only meant for 'toString').
+      ///          - 'serialized' should be an ASCII or UTF-8 string.
       /// @warning - Section IDs (such as [myKey]) must be unique.
       ///          - Sections will be added as object properties of the top-level object (root object).
       /// @returns Deserialized objet, or empty object if invalid or empty string

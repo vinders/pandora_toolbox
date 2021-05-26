@@ -496,3 +496,435 @@ TEST_F(_KeyValueSerializerCommonTest, readTextWithEndSymbolTest) {
   EXPECT_EQ(size_t{67u}, length);
   if (text) { free(text); text = nullptr; }
 }
+
+TEST_F(_KeyValueSerializerCommonTest, readTextInvalidUnicodeChars) {
+  char* text = nullptr;
+  const char* it = nullptr;
+  size_t length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("x", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\xRT", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("xRT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x000ab", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("\nb", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x10a0b", &text, length, true, '"')));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_EQ('b', text[length - 1]);
+  if (text != nullptr)
+    text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("u", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\uRT", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("uRT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\uA", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("uA", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u180", &text, length, true, '"')));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("u180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u10a0b", &text, length, true, '"')));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_EQ('b', text[length - 1]);
+  if (text != nullptr)
+    text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("U", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\URT", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("URT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\UA", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("UA", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U10A0", &text, length, true, '"')));
+  ASSERT_EQ(size_t{5u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("U10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U000010A0", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\U000010A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U000010A0b", &text, length, true, '"')));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_EQ('b', text[length - 1]);
+  text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\U000010A0", text);
+  if (text) { free(text); text = nullptr; }
+}
+
+TEST_F(_KeyValueSerializerCommonTest, readTextInvalidUnicodeInQuotes) {
+  char* text = nullptr;
+  const char* it = nullptr;
+  size_t length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("x", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\xRT\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("xRT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x000ab\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("\nb", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x10a0b\"", &text, length)));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_EQ('b', text[length - 1]);
+  if (text != nullptr)
+    text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("u", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\uRT\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("uRT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\uA\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("uA", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u180\"", &text, length)));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("u180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u10a0b\"", &text, length)));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_EQ('b', text[length - 1]);
+  if (text != nullptr)
+    text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("U", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\URT\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("URT", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\UA\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("UA", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U10A0\"", &text, length)));
+  ASSERT_EQ(size_t{5u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("U10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U000010A0\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\U000010A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U000010A0b\"", &text, length)));
+  ASSERT_EQ(size_t{4u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_EQ('b', text[length - 1]);
+  text[length - 1] = (char)0;
+  EXPECT_STREQ(u8"\U000010A0", text);
+  if (text) { free(text); text = nullptr; }
+}
+
+TEST_F(_KeyValueSerializerCommonTest, readTextWithUnicodeChars) {
+  char* text = nullptr;
+  const char* it = nullptr;
+  size_t length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\xA", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x0a", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u000a", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U0000000A", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x25", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x025", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u0025", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U00000025", &text, length, true, '"')));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x180", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x0180", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u0180", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U00000180", &text, length, true, '"')));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\x10a0", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\u10A0", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\\U000010A0", &text, length, true, '"')));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("This \\xa is escaped,\\nand \\u018f too, and \\U000010A0 as well...", &text, length, true, '"')));
+  ASSERT_TRUE(length > size_t{0u});
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"This \u000A is escaped,\nand \u018F too, and \U000010A0 as well...", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("Another escape sequence: \\U0000000A, \\x25, \\x10bF, \\u0099", &text, length, true, '"')));
+  ASSERT_TRUE(length > size_t{0u});
+  EXPECT_EQ((char)0, *it);
+  EXPECT_STREQ(u8"Another escape sequence: \U0000000A, \u0025, \u10BF, \u0099", text);
+  if (text) { free(text); text = nullptr; }
+}
+
+TEST_F(_KeyValueSerializerCommonTest, readTextWithUnicodeInQuotes) {
+  char* text = nullptr;
+  const char* it = nullptr;
+  size_t length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\xA\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x0a\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u000a\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U0000000A\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("\n", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x25\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x025\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u0025\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U00000025\"", &text, length)));
+  ASSERT_EQ(size_t{1u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ("%", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x180\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x0180\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("'\\u0180'", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('\'', *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U00000180\"", &text, length)));
+  ASSERT_EQ(size_t{2u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u0180", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\x10a0\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\u10A0\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"\\U000010A0\"", &text, length)));
+  ASSERT_EQ(size_t{3u}, length);
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"\u10A0", text);
+  if (text) { free(text); text = nullptr; }
+  
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"This \\xA is escaped,\\nand \\u018F too, and \\U000010a0 as well...\"", &text, length)));
+  ASSERT_TRUE(length > size_t{0u});
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"This \u000A is escaped,\nand \u018F too, and \U000010A0 as well...", text);
+  if (text) { free(text); text = nullptr; }
+  length = 0;
+  ASSERT_NE(nullptr, (it = _readText("\"Another escape sequence: \\U0000000A, \\x25, \\x10Bf, \\u0099\\n\"", &text, length)));
+  ASSERT_TRUE(length > size_t{0u});
+  EXPECT_EQ('"', *it);
+  EXPECT_STREQ(u8"Another escape sequence: \U0000000A, \u0025, \u10BF, \u0099\n", text);
+  if (text) { free(text); text = nullptr; }
+}

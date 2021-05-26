@@ -5,6 +5,7 @@ License :     MIT
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
+#include "io/encoder.h"
 #include "io/_private/_key_value_serializer_common.h"
 
 
@@ -74,7 +75,7 @@ void pandora::io::_copyComment(const char* comment, bool isInline, const char* c
 }
 
 
-// -- deserialization helpers -- -----------------------------------------------
+// -- number/bool deserialization helpers -- -----------------------------------
 
 // read boolean value from serialized data
 const char* pandora::io::_readBoolean(const char* serialized, bool& outValue) noexcept {
@@ -140,6 +141,48 @@ const char* pandora::io::_readNumber(const char* serialized, __Number& outValue,
   return (it > serialized) ? --it : serialized;
 }
 
+
+// -- text deserialization helpers -- ------------------------------------------
+
+// read escaped unicode character + encode it (UTF-8)
+static const char* __readUnicodeCharacter(const char* serialized, size_t minDigits, size_t maxDigits, 
+                                          char** buffer, size_t& inOutCurrentSize) {
+  // get character code
+  size_t codeLength = 0;
+  uint32_t charCode = 0;
+  for (const char* it = serialized + 1; codeLength < maxDigits; ++it, ++codeLength) {
+    if (*it >= '0' && *it <= '9') {
+      charCode <<= 4;
+      charCode |= static_cast<uint32_t>(*it - '0');
+    }
+    else if (*it >= 'A' && *it <= 'F') {
+      charCode <<= 4;
+      charCode |= static_cast<uint32_t>(*it + 10 - 'A');
+    }
+    else if (*it >= 'a' && *it <= 'f') {
+      charCode <<= 4;
+      charCode |= static_cast<uint32_t>(*it + 10 - 'a');
+    }
+    else // not hex code character
+      break;
+  }
+
+  // invalid character code -> just copy initial character and do not affect position
+  if (codeLength < minDigits) {
+    *(*buffer) = *serialized;
+    return serialized;
+  }
+  
+  // convert char code to encoded data
+  size_t charLength = pandora::io::Encoder::Utf8::encode(charCode, *buffer);
+  assert(charLength > 0);
+  --charLength; // compensate the fact that 'buffer' and 'inOutCurrentSize' will be incremented by caller
+  
+  *buffer += charLength;
+  inOutCurrentSize += charLength;
+  return serialized + codeLength;
+}
+
 // ---
 
 // read text between quotes + restore escaped characters -- text values/keys
@@ -185,8 +228,9 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
         case 'b': *bufferIt = '\b'; break;
         case 'a': *bufferIt = '\a'; break;
         case '0': *bufferIt = '\0'; break;
-        //case 'x': TODO unicode; break;
-        //case 'u': TODO unicode; break;
+        case 'x': serialized = __readUnicodeCharacter(serialized, size_t{1u},size_t{4u}, &bufferIt, currentSize); break;
+        case 'u': serialized = __readUnicodeCharacter(serialized, size_t{4u},size_t{4u}, &bufferIt, currentSize); break;
+        case 'U': serialized = __readUnicodeCharacter(serialized, size_t{8u},size_t{8u}, &bufferIt, currentSize); break;
         default: *bufferIt = *serialized; break;
       }
     }
@@ -196,7 +240,7 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
     
     // adjust buffer size if needed
     ++currentSize;
-    if (currentSize + 1u >= bufferSize) {
+    if (currentSize + _P_UTF8_MAX_CODE_SIZE >= bufferSize) { // enough slots for next iteration: char / ending / UTF-8 code
       bufferSize = bufferSize << 1;
       char* newBuffer = (char*)realloc(buffer, bufferSize);
       if (newBuffer == nullptr) {
@@ -254,8 +298,9 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
         case 'b': *bufferIt = '\b'; break;
         case 'a': *bufferIt = '\a'; break;
         case '0': *bufferIt = '\0'; break;
-        //case 'x': TODO unicode; break;
-        //case 'u': TODO unicode; break;
+        case 'x': serialized = __readUnicodeCharacter(serialized, size_t{1u},size_t{4u}, &bufferIt, currentSize); break;
+        case 'u': serialized = __readUnicodeCharacter(serialized, size_t{4u},size_t{4u}, &bufferIt, currentSize); break;
+        case 'U': serialized = __readUnicodeCharacter(serialized, size_t{8u},size_t{8u}, &bufferIt, currentSize); break;
         default: *bufferIt = *serialized; break;
       }
     }
@@ -265,7 +310,7 @@ const char* pandora::io::_readText(const char* serialized, char** outValue, size
     
     // adjust buffer size if needed
     ++currentSize;
-    if (currentSize + 1u >= bufferSize) {
+    if (currentSize + _P_UTF8_MAX_CODE_SIZE >= bufferSize) { // enough slots for next iteration: char / ending / UTF-8 code
       bufferSize = bufferSize << 1;
       char* newBuffer = (char*)realloc(buffer, bufferSize);
       if (newBuffer == nullptr) {
