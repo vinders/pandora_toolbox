@@ -14,7 +14,7 @@ License :     MIT
 
 
 #if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE // iOS
-  bool pandora::video::disableScreenSaver(void*) noexcept { 
+  bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept { 
     if ([UIApplication sharedApplication]) {
       [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
       return true;
@@ -29,7 +29,7 @@ License :     MIT
     return false;
   }
   
-  void pandora::video::notifyScreenActivity(void*) noexcept {
+  void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
     if ([UIApplication sharedApplication]) {
       [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
       [[UIApplication sharedApplication] setIdleTimerDisabled: NO];
@@ -41,7 +41,7 @@ License :     MIT
   static IOPMAssertionID g_noSleepAssertionId = 0;
   static bool g_isSleepDisabled = false;
 
-  bool pandora::video::disableScreenSaver(void*) noexcept {
+  bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept {
     if (g_isSleepDisabled)
       return true;
     
@@ -67,7 +67,7 @@ License :     MIT
     return true; 
   }
   
-  void pandora::video::notifyScreenActivity(void*) noexcept {
+  void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
     IOPMAssertionID assertionId = 0;
     IOReturn success = IOPMAssertionDeclareUserActivity(CFSTR("Game/video activity"), kIOPMUserActiveLocal, &assertionId);
     if (success == kIOReturnSuccess)

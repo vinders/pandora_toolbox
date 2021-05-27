@@ -18,7 +18,7 @@ License :     MIT
 
 
 # if defined _WINDOWS
-    bool pandora::video::disableScreenSaver(void*) noexcept {
+    bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept {
       SetLastError(0);
       return (SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED | ES_CONTINUOUS) != 0 || GetLastError() == 0);
     }
@@ -27,7 +27,7 @@ License :     MIT
       return (SetThreadExecutionState(ES_CONTINUOUS) != 0 || GetLastError() == 0);
     }
 
-    void pandora::video::notifyScreenActivity(void*) noexcept {
+    void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
       SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
     }
 
@@ -35,7 +35,7 @@ License :     MIT
 # elif defined(__ANDROID__)
 #   define FLAG_KEEP_SCREEN_ON 0x00000080
 
-    bool pandora::video::disableScreenSaver(void*) noexcept {
+    bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept {
       try {
         pandora::hardware::AndroidJavaSession jenv;
         pandora::hardware::AndroidBindings& bindings = pandora::hardware::AndroidBindings::globalInstance();
@@ -72,7 +72,7 @@ License :     MIT
       return false;
     }
     
-    void pandora::video::notifyScreenActivity(void*) noexcept {
+    void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
       try {
         pandora::hardware::AndroidJavaSession jenv;
         pandora::hardware::AndroidBindings& bindings = pandora::hardware::AndroidBindings::globalInstance();
@@ -95,7 +95,7 @@ License :     MIT
 # elif defined(_P_ENABLE_LINUX_WAYLAND)
     static struct zwp_idle_inhibitor_v1* idleInhibitor = nullptr;
 
-    bool pandora::video::disableScreenSaver(void* surface) noexcept {
+    bool pandora::video::disableScreenSaver(pandora::video::WindowHandle surface) noexcept {
       try {
         if (idleInhibitor != nullptr)
           return true;
@@ -121,14 +121,14 @@ License :     MIT
       return false;
     }
     
-    void pandora::video::notifyScreenActivity(void* surface) noexcept {
+    void pandora::video::notifyScreenActivity(pandora::video::WindowHandle surface) noexcept {
       if (disableScreenSaver(surface))
         restoreScreenSaver();
     }
 
 
 # elif (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
-    bool pandora::video::disableScreenSaver(void*) noexcept {
+    bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept {
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
         if (libs.xss.isAvailable) {
@@ -151,7 +151,7 @@ License :     MIT
       return false;
     }
     
-    void pandora::video::notifyScreenActivity(void*) noexcept {
+    void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
         if (libs.xlib.ResetScreenSaver_)
