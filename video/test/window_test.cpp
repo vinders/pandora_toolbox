@@ -347,15 +347,19 @@ uint32_t WindowTest::_lastSizeY = 0;
     EXPECT_EQ(params.resizeMode, window->resizeMode());
     auto finalClientArea = window->getClientArea();
     if (!params.hasParent) {
-      if (params.clientArea.x != Window::Builder::defaultPosition() && params.clientArea.x != Window::Builder::centeredPosition())
+      if (params.clientArea.x != Window::Builder::defaultPosition() && params.clientArea.x != Window::Builder::centeredPosition()) {
         EXPECT_EQ(params.clientArea.x + offsetX, finalClientArea.x);
-      if (params.clientArea.y != Window::Builder::defaultPosition() && params.clientArea.y != Window::Builder::centeredPosition())
+      }
+      if (params.clientArea.y != Window::Builder::defaultPosition() && params.clientArea.y != Window::Builder::centeredPosition()) {
         EXPECT_EQ(params.clientArea.y + offsetY, finalClientArea.y);
+      }
     }
-    if (params.clientArea.width != Window::Builder::defaultSize())
+    if (params.clientArea.width != Window::Builder::defaultSize()) {
       EXPECT_EQ(params.clientArea.width, finalClientArea.width);
-    if (params.clientArea.height != Window::Builder::defaultSize())
+    }
+    if (params.clientArea.height != Window::Builder::defaultSize()) {
       EXPECT_EQ(params.clientArea.height, finalClientArea.height);
+    }
     
     // window close event
     _isCloseAllowed = false;
