@@ -41,7 +41,7 @@ For more details, see [features and compatibility](./FEATURES.md).
 | *system*   | System specifications (OS, arch...), intrinsics, macros, code generators, logger, debugging tools...                 |
 | *thread*   | Thread pool, thread utils, spin-lock, semaphore, ordered lock...                                                     |
 | *time*     | Time management utils (stopwatch, timer, rates...), high-precision native system clocks...                           |
-| *video*    | Video rendering (shaders, camera, ...), video filtering/upscaling, display management utils...                       |
+| *video*    | Video rendering (shaders, camera, ...), video filtering/upscaling, window management/res/events...                   |
 
 ---
 

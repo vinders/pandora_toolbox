@@ -8,7 +8,7 @@ Functions : disableScreenSaver, restoreScreenSaver, notifyScreenActivity
 #ifndef __OBJC__
 # pragma once
 #endif
-#include "video/window_handle.h"
+#include "./window_handle.h"
 
 namespace pandora {
   namespace video {
