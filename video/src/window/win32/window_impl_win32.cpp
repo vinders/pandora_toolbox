@@ -302,7 +302,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     
     // fullscreen: adjust according to resolution (compared to desktop resolution)
     if (this->_mode == WindowType::fullscreen) {
-      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
       uint32_t windowHeight = this->_lastClientArea.height + (uint32_t)this->_decorationSizes.top 
                             + (uint32_t)this->_decorationSizes.bottom;
       
@@ -321,7 +320,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Adjust window visibility/size (first display)
   bool __WindowImpl::firstShow(int visibilityFlag) noexcept {
     bool isVisibilityCommandSet = false;
-    PixelSize clientSize = lastClientSize();
+    PixelSize expectedClientSize = lastClientSize();
     
     if (this->_mode == WindowType::fullscreen) { // fullscreen mode
       isVisibilityCommandSet = (visibilityFlag != SW_HIDE && visibilityFlag != SW_SHOWMINNOACTIVE);
@@ -337,9 +336,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (this->_menuHandle)
       DrawMenuBar(this->_handle);
     
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-    adjustVisibleClientSize(clientSize); // adjust size, based on actual window
-    
+    adjustVisibleClientSize(expectedClientSize); // adjust size, based on actual window
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
     if (isVisibilityCommandSet) {
       SetForegroundWindow(this->_handle);
@@ -431,14 +428,11 @@ Description : Window manager + builder - Win32 implementation (Windows)
       }
     }
     
-    {// lock scope -> copy params after success
-      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-      this->_decorationSizes = decorationSizes;
-      this->_lastClientArea = clientArea;
-      this->_clientAreaRatio = (double)this->_lastClientArea.width / (double)this->_lastClientArea.height;
-    }
+    this->_decorationSizes = decorationSizes;
+    this->_lastClientArea = clientArea;
+    this->_clientAreaRatio = (double)clientArea.width / (double)clientArea.height;
+
     // adjust size, based on actual window
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     adjustVisibleClientSize(PixelSize{ clientArea.width, clientArea.height });
     if (isScrollable())
       adjustScrollbarPageSize(clientArea, true);
@@ -455,16 +449,14 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Replace window menu (or remove if null)
   bool __WindowImpl::setMenu(HMENU menuHandle) noexcept {
     if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) {
-      auto clientSize = lastClientSize();
+      auto expectedClientSize = lastClientSize();
       if (SetMenu(this->_handle, menuHandle) != FALSE || menuHandle == nullptr) {
         bool hasSizeChanged = ((menuHandle && !this->_menuHandle) || (this->_menuHandle && !menuHandle));
         this->_menuHandle = menuHandle;
         DrawMenuBar(this->_handle);
 
-        if (hasSizeChanged) {
-          std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-          adjustVisibleClientSize(clientSize);
-        }
+        if (hasSizeChanged)
+          adjustVisibleClientSize(expectedClientSize);
         return true;
       }
     }
@@ -643,7 +635,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (ClientToScreen(this->_handle, &pos) != FALSE)
         return (SetCursorPos(pos.x, pos.y) != FALSE);
 
-      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
       pos.x = this->_lastClientArea.x + x; // on failure, use client area to convert value manually
       pos.x = this->_lastClientArea.y + y;
       return (SetCursorPos(pos.x, pos.y) != FALSE);
@@ -684,10 +675,10 @@ Description : Window manager + builder - Win32 implementation (Windows)
       return false;
     
     BOOL repaint;
-    PixelSize clientSize;
+    PixelSize expectedClientSize;
     if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) {
       repaint = TRUE;
-      clientSize = lastClientSize();
+      expectedClientSize = lastClientSize();
     }
     else
       repaint = FALSE;
@@ -721,7 +712,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, repaint);
     }
     if (repaint)
-      adjustVisibleClientSize(clientSize);
+      adjustVisibleClientSize(expectedClientSize);
     return true;
   }
   
@@ -1024,7 +1015,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (this->_mode == WindowType::fullscreen)
       return false;
     
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     DisplayArea windowPos, clientArea = this->_lastClientArea;
     computeUserPosition(x, y, this->_decorationSizes, clientArea, windowPos);
 
@@ -1043,7 +1033,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (this->_mode == WindowType::fullscreen)
       return false;
     
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     DisplayArea clientSize, windowSize;
     computeUserSize(width, height, this->_decorationSizes, clientSize, windowSize);
     
@@ -1069,7 +1058,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (this->_mode == WindowType::fullscreen)
       return false;
     
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
     DisplayArea clientArea, windowArea;
     computeUserArea(this->_mode, this->_behavior, userArea, this->_decorationSizes, clientArea, windowArea);
 
@@ -1117,7 +1105,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Refresh client-area + returns: 0(error) / 1(no changes) / 2 (changed)
   __forceinline int __WindowImplEventProc::refreshClientArea(__WindowImpl& window, DisplayArea& outArea) noexcept {
     if (window.readVisibleClientArea(outArea)) {
-      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
       if (window._lastClientArea.x != outArea.x || window._lastClientArea.width != outArea.width
         || window._lastClientArea.y != outArea.y || window._lastClientArea.height != outArea.height) {
 
@@ -1133,7 +1120,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
   // On maximize/restore event, refresh client-area + decorations + force homothety
   void __WindowImplEventProc::refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     if (__WindowImplEventProc::refreshClientArea(window, outArea) > 0) {
       window.readVisibleWindowDecorations(outArea, window._decorationSizes);
     }
@@ -1165,7 +1151,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
   // force homothety + clamp (screen edges) when window is resized
   __forceinline void __WindowImplEventProc::resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     const DisplayArea& screenArea = window._monitor->attributes().screenArea;
 
     switch (movedBorder) {
@@ -1239,7 +1224,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // refresh scroll position during scroll event
   __forceinline void __WindowImplEventProc::refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
                                                                   uint32_t& outX, uint32_t& outY) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     if (message == WM_HSCROLL)
       window._lastScrollPosition.x = (int32_t)HIWORD(wParam);
     else
@@ -1250,7 +1234,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // move scroll position during scroll event
   void __WindowImplEventProc::moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, 
                                                                uint32_t& outX, uint32_t& outY) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     if (message == WM_HSCROLL) {
       window._lastScrollPosition.x += add;
       if (window._lastScrollPosition.x < 0)
@@ -1271,7 +1254,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // move scroll position to top/bottom during scroll event
   __forceinline void __WindowImplEventProc::setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
                                                                  uint32_t& outX, uint32_t& outY) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
     if (message == WM_HSCROLL)
       window._lastScrollPosition.x = isMin ? 0 : (int32_t)window._maxScrollPosition.width;
     else
@@ -1365,7 +1347,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if (!SetCursorPos((int)centerPos.x, (int)centerPos.y)) { // recenter cursor
         POINT cursorPos;
         if (GetCursorPos(&cursorPos)) {
-          auto clientArea = window.lastClientArea();
+          auto& clientArea = window.lastClientArea();
           window._lastCursorPosition.x = static_cast<int32_t>( ((double)cursorPos.x - (double)clientArea.x) * (double)__P_RAW_ABSOLUTE_MAX_COORD / (double)clientArea.width + 0.5);
           window._lastCursorPosition.y = static_cast<int32_t>( ((double)cursorPos.y - (double)clientArea.y) * (double)__P_RAW_ABSOLUTE_MAX_COORD / (double)clientArea.height + 0.5);
         }
@@ -1376,7 +1358,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   __forceinline void __WindowImplEventProc::clipCursor(__WindowImpl& window) noexcept {
     POINT cursorPos;
     if (GetCursorPos(&cursorPos)) {
-      std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
       if (cursorPos.x < (int)window._lastClientArea.x)
         cursorPos.x = (int)window._lastClientArea.x + 1;
       else if (cursorPos.x >= (int)window._lastClientArea.x + (int)window._lastClientArea.width)
@@ -1434,8 +1415,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Try to keep same client-area after DPI change (adapt to new decorations)
   __forceinline void __WindowImplEventProc::adjustWindowSizeOnDpiChange(__WindowImpl& window, const RECT& suggestedArea, 
                                                                         WindowDecorationSize& outDecorationSizes) noexcept {
-    std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
-    
     DisplayArea newClientArea;
     if (window.readVisibleClientArea(newClientArea)) {
       window.readVisibleWindowDecorations(newClientArea, outDecorationSizes);
@@ -1658,7 +1637,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
       int32_t deltaX = 0, deltaY = 0;
       if (rawData.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
-        std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
         deltaX = rawData.data.mouse.lLastX - window._lastCursorPosition.x;
         deltaY = rawData.data.mouse.lLastY - window._lastCursorPosition.y;
 
@@ -1669,7 +1647,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
         }
       }
       else { // relative
-        std::lock_guard<pandora::thread::RecursiveSpinLock> guard(window._sizePositionLock);
         deltaX = rawData.data.mouse.lLastX;
         deltaY = rawData.data.mouse.lLastY;
         __WindowImplEventProc::centerCursor(window);
@@ -1761,10 +1738,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
         }
         case WM_MOVE: { // window currently moving / moved by command
           if (window->_onPositionEvent) {
-            PixelSize clientSize = window->lastClientSize();
             window->_onPositionEvent(&window->_container, (window->_statusFlags & __P_FLAG_RESIZED_MOVED)
                                      ? PositionEvent::sizePositionTrack : PositionEvent::sizePositionChanged, // user move tracking / system move
-                                     GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clientSize.width, clientSize.height);
+                                     GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), window->_lastClientArea.width, window->_lastClientArea.height);
           }
           // adapt constraints if mouse captured
           if (window->_statusFlags & __P_FLAG_CURSOR_IS_CAPTURED) {

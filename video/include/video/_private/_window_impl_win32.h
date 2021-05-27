@@ -9,7 +9,6 @@ License :     MIT
 # include <cstddef>
 # include <memory>
 # include <mutex>
-# include <thread/recursive_spin_lock.h>
 # include <system/api/windows_api.h>
 # include "video/window.h"
 
@@ -135,16 +134,16 @@ namespace pandora {
       
       float contentScale() const noexcept;
       inline pandora::hardware::DisplayArea lastWindowArea() const noexcept;
-      inline pandora::hardware::DisplayArea lastClientArea() const noexcept;
+      inline const pandora::hardware::DisplayArea& lastClientArea() const noexcept { return this->_lastClientArea; }
       inline void lastAbsoluteClientRect(RECT& outRect) const noexcept;
       inline void lastRelativeClientRect(RECT& outRect) const noexcept;
       inline PixelPosition lastAbsoluteClientCenter() const noexcept;
       inline PixelPosition lastClientPosition() const noexcept;
       inline PixelSize lastClientSize() const noexcept;
       
-      inline PixelPosition lastScrollPosition() const noexcept;
-      inline int32_t lastScrollPositionH() const noexcept;
-      inline int32_t lastScrollPositionV() const noexcept;
+      inline const PixelPosition& lastScrollPosition() const noexcept { return this->_lastScrollPosition; }
+      inline int32_t lastScrollPositionH() const noexcept { return this->_lastScrollPosition.x; }
+      inline int32_t lastScrollPositionV() const noexcept { return this->_lastScrollPosition.y; }
       
       // -- style flag conversions --
       
@@ -251,7 +250,6 @@ namespace pandora {
       PixelSize     _maxScrollPosition{ 0,0 };    // scroll range limits
       double        _clientAreaRatio = 4.0/3.0;   // ratio used for homothety
       uint32_t      _scrollUnit = 1;              // number of pixels per scroll unit
-      mutable pandora::thread::RecursiveSpinLock _sizePositionLock;
     
       // window properties
       __P_FLAGS_TYPE _statusFlags = 0;
@@ -273,57 +271,33 @@ inline pandora::video::Window::VisibleState pandora::video::__WindowImpl::getVis
 }
 
 inline pandora::hardware::DisplayArea pandora::video::__WindowImpl::lastWindowArea() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   return pandora::hardware::DisplayArea{ this->_lastClientArea.x - this->_decorationSizes.left, 
                                          this->_lastClientArea.y - this->_decorationSizes.top, 
                                          this->_lastClientArea.width + this->_decorationSizes.left + this->_decorationSizes.right, 
                                          this->_lastClientArea.height + this->_decorationSizes.top + this->_decorationSizes.bottom };
 }
 
-//not a reference: make a copy -> lock can be freed
-inline pandora::hardware::DisplayArea pandora::video::__WindowImpl::lastClientArea() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-  return this->_lastClientArea;
-}
 inline void pandora::video::__WindowImpl::lastAbsoluteClientRect(RECT& outRect) const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   outRect.left = (int)this->_lastClientArea.x;
   outRect.top = (int)this->_lastClientArea.y;
   outRect.right = (int)this->_lastClientArea.x + (int)this->_lastClientArea.width;
   outRect.bottom = (int)this->_lastClientArea.y + (int)this->_lastClientArea.height;
 }
 inline void pandora::video::__WindowImpl::lastRelativeClientRect(RECT& outRect) const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   outRect.left = 0;
   outRect.top = 0;
   outRect.right = (int)this->_lastClientArea.width;
   outRect.bottom = (int)this->_lastClientArea.height;
 }
 inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastAbsoluteClientCenter() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   return pandora::video::PixelPosition{ this->_lastClientArea.x + (int32_t)(this->_lastClientArea.width>>1), 
                                         this->_lastClientArea.y + (int32_t)(this->_lastClientArea.height>>1) };
 }
 inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastClientPosition() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   return pandora::video::PixelPosition{ this->_lastClientArea.x, this->_lastClientArea.y };
 }
 inline pandora::video::PixelSize pandora::video::__WindowImpl::lastClientSize() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
   return pandora::video::PixelSize{ this->_lastClientArea.width, this->_lastClientArea.height };
-}
-
-inline pandora::video::PixelPosition pandora::video::__WindowImpl::lastScrollPosition() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-  return pandora::video::PixelPosition{ this->_lastScrollPosition.x, this->_lastScrollPosition.y };
-}
-inline int32_t pandora::video::__WindowImpl::lastScrollPositionH() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-  return this->_lastScrollPosition.x;
-}
-inline int32_t pandora::video::__WindowImpl::lastScrollPositionV() const noexcept {
-  std::lock_guard<pandora::thread::RecursiveSpinLock> guard(_sizePositionLock);
-  return this->_lastScrollPosition.y;
 }
 
 #endif
