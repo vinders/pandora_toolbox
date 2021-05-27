@@ -1,6 +1,23 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.80.2.502
+2021-05-27 - 316f77782f0e0bb156ec8e332bceb276450cd5ec
+### features
+vinders (5):
+* io: serialization value tree (multi-type value/array/object) + key-value serializer/deserializer interface
+* io: INI config format serializer/deserializer
+* io: JSON format serializer/deserializer
+* io: encoder/decoder/converter/detection (UTF-8/UTF-16BE/UTF-16LE)
+* io: INI/JSON deserializers: support unicode characters (\\x<hex*1-4>, \\u<hex*4>, \\U<hex*8>)
+### fixes
+vinders (3):
+* video: window manager + builder for Windows: fix client area when adding scrollbars
+* video: window manager + builder for Windows: remove useless mutex to improve efficiency
+* video: screen-saver disable/restore/ping: use window handle as argument + fix handle type on Wayland
+
+---
+
 ## 0.75.2.475
 2021-05-18 - e9cea0a89a0f7c997083daf2fe246865f2aac6e6
 ### features
