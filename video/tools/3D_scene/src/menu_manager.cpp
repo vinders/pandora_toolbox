@@ -95,12 +95,12 @@ License :     MIT
     }
   }
 #else
-  static inline void* __createMenu(bool) noexcept {}
+  static inline void* __createMenu(bool) noexcept { return nullptr; }
   static inline void __addMenuItem(void*, uint32_t, const char*, bool) noexcept {}
   static inline void __addSubMenu(void*, void*, const char*) noexcept {}
   static inline void __addSeparator(void*, bool) noexcept {}
-  static void __selectMenuItem(void* menu, uint32_t id) noexcept {}
-  static void __selectMenuItem(void* menu, uint32_t id, uint32_t minVal, uint32_t maxVal) noexcept {}
+  static void __selectMenuItem(void*, uint32_t, bool) noexcept {}
+  static void __selectMenuItem(void*, uint32_t, uint32_t, uint32_t) noexcept {}
 #endif
 
 // ---
