@@ -10,6 +10,7 @@ License :     MIT
 #include <memory>
 #include <stdexcept>
 #include <video/message_box.h>
+#include <video/window_keycodes.h>
 #include <video/window.h>
 #include "window_builder.h"
 #include "menu_manager.h"
@@ -88,7 +89,14 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
 }
 
 // keyboard event handler
-bool onKeyboardEvent(Window*, KeyboardEvent, uint32_t, uint32_t) {
+bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t) {
+  switch (event) {
+    case KeyboardEvent::keyDown:
+      if (keyCode == _P_VK_ESC)
+        Window::sendCloseEvent(sender->handle());
+      break;
+    default: break;
+  }
   return false;
 }
 
