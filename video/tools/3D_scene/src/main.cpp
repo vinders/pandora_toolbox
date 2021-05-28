@@ -34,44 +34,14 @@ struct {
 
 // -- command handlers -- ------------------------------------------------------
 
-void onMouseSensivityChange(int32_t level) { g_windowState.settings.mouseSensitivity = level; }
-
-void onApiChange(scene::RenderingApi api) {
-  if (api != g_windowState.settings.api) {
-    g_windowState.settings.api = api;
-    //...
-  }
+void onApiChange() {
+  //...
 }
-
-void onAaChange(scene::AntiAliasing mode) {
-  if (mode != g_windowState.settings.aa) {
-    g_windowState.settings.aa = mode;
-    //...
-  }
+void onVsyncChange(bool useVsync) {
+  //...
 }
-void onFxChange(scene::VisualEffect mode) {
-  if (mode != g_windowState.settings.fx) {
-    g_windowState.settings.fx = mode;
-    //...
-  }
-}
-void onScreenFilter(scene::Interpolation mode) {
-  if (mode != g_windowState.settings.scnFilter) {
-    g_windowState.settings.scnFilter = mode;
-    //...
-  }
-}
-void onTextureFilter(scene::Interpolation mode) {
-  if (mode != g_windowState.settings.texFilter) {
-    g_windowState.settings.texFilter = mode;
-    //...
-  }
-}
-void onSpriteFilter(scene::Interpolation mode) {
-  if (mode != g_windowState.settings.sprFilter) {
-    g_windowState.settings.sprFilter = mode;
-    //...
-  }
+void onFilterChange() {
+  //...
 }
 
 
@@ -101,12 +71,16 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t status, int32_t posX, in
 bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
     case PositionEvent::sizePositionChanged: 
+      g_windowState.screenSize.width = sizeX;
+      g_windowState.screenSize.height = sizeY;
+      scene::updateWindowCaption(*sender, sizeX, sizeY, g_windowState.frequency);
+
+      //resize render view: ...
+      break;
     case PositionEvent::sizePositionTrack: 
       g_windowState.screenSize.width = sizeX;
       g_windowState.screenSize.height = sizeY;
       scene::updateWindowCaption(*sender, sizeX, sizeY, g_windowState.frequency);
-      
-      //resize render view: ...
       break;
     default: break;
   }
@@ -154,12 +128,8 @@ int main() {
   try {
     g_windowState.menuManager = std::unique_ptr<scene::MenuManager>(new scene::MenuManager(g_windowState.settings));
     g_windowState.menuManager->apiChangeHandler = &onApiChange;
-    g_windowState.menuManager->mouseSensivHandler = &onMouseSensivityChange;
-    g_windowState.menuManager->aaChangeHandler = &onAaChange;
-    g_windowState.menuManager->fxChangeHandler = &onFxChange;
-    g_windowState.menuManager->screenFilterHandler = &onScreenFilter;
-    g_windowState.menuManager->textureFilterHandler = &onTextureFilter;
-    g_windowState.menuManager->spriteFilterHandler = &onSpriteFilter;
+    g_windowState.menuManager->vsyncChangeHandler = &onVsyncChange;
+    g_windowState.menuManager->filterChangeHandler = &onFilterChange;
     
     g_windowState.window = scene::createWindow(g_windowState.menuManager->resource());
     g_windowState.window->setWindowHandler(&onWindowEvent);
@@ -173,6 +143,7 @@ int main() {
     while (Window::pollEvents()) {
       //...
       
+      // calculate refresh frequency
       if (++loopCount >= ((uint32_t)__P_FREQUENCY)) {
         loopCount = 0;
         auto newTime = std::chrono::steady_clock::now();
@@ -180,7 +151,11 @@ int main() {
         timePoint = newTime;
         scene::updateWindowCaption(*g_windowState.window, g_windowState.screenSize.width, g_windowState.screenSize.height, g_windowState.frequency);
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(950LL/(int64_t)__P_FREQUENCY)); // 60Hz (NB: 950 = 1000ms - estimated iteration time)
+      // vsync / sleep
+      if (g_windowState.settings.useVsync)
+        /*TMP*/std::this_thread::sleep_for(std::chrono::milliseconds(10LL));
+      else
+        std::this_thread::sleep_for(std::chrono::milliseconds(950LL/(int64_t)__P_FREQUENCY)); // 60Hz (NB: 950 = 1000ms - average processing time)
     }
   }
   catch (const std::exception& exc) {

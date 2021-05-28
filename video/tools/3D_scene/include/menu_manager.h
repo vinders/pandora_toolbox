@@ -7,7 +7,7 @@ License :     MIT
 #include <cstdint>
 #include <memory>
 #include <video/window_resource.h>
-#include "option_types.h"
+#include "options.h"
 
 namespace scene {
   // menu builder + manager
@@ -23,15 +23,12 @@ namespace scene {
     void onMenuCommand(int32_t id);
     
     // register event handlers (after menu changes)
-    void (*apiChangeHandler)(RenderingApi) = nullptr;
-    void (*mouseSensivHandler)(int32_t) = nullptr;
-    void (*aaChangeHandler)(AntiAliasing) = nullptr;
-    void (*fxChangeHandler)(VisualEffect) = nullptr;
-    void (*screenFilterHandler)(Interpolation) = nullptr;
-    void (*textureFilterHandler)(Interpolation) = nullptr;
-    void (*spriteFilterHandler)(Interpolation) = nullptr;
+    void (*apiChangeHandler)() = nullptr;
+    void (*vsyncChangeHandler)(bool) = nullptr;
+    void (*filterChangeHandler)() = nullptr;
     
   private:
     std::shared_ptr<pandora::video::WindowResource> _resource = nullptr;
+    Options& _settings;
   };
 }

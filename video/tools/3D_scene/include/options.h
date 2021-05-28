@@ -10,9 +10,10 @@ License :     MIT
 
 namespace scene {
   enum class RenderingApi : uint32_t {
-    openGL4 = 0,
-    openGLES3 = 1,
-    d3d11 = 2
+    none = 0,
+    openGL4 = 1,
+    openGLES3 = 2,
+    d3d11 = 3
   };
   enum class AntiAliasing : uint32_t {
     none = 0
@@ -23,9 +24,16 @@ namespace scene {
   enum class Interpolation : uint32_t {
     nearest = 0,
     bilinear = 1,
-    bicubic = 2,
-    gauss = 3,
-    lanczos = 4
+    gauss = 2,
+    bessel = 3,
+    lanczos = 4,
+    spline16 = 5
+  };
+  enum class Upscaling : uint32_t {
+    none = 0
+  };
+  enum class Mapping : uint32_t {
+    none = 0
   };
 
   // ---
@@ -37,6 +45,10 @@ namespace scene {
     Interpolation scnFilter = Interpolation::bilinear;
     Interpolation texFilter = Interpolation::bilinear;
     Interpolation sprFilter = Interpolation::bilinear;
+    Upscaling texUpscale = Upscaling::none;
+    Upscaling sprUpscale = Upscaling::none;
+    Mapping texMapping = Mapping::none;
     int32_t mouseSensitivity = 1;
+    bool useVsync = false;
   };
 }
