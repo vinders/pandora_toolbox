@@ -157,10 +157,10 @@ License :     MIT
   
 #else
   // create main menu-bar
-  scene::MenuManager::MenuManager() {
+  scene::MenuManager::MenuManager(scene::Options& outSettings) {
   }
 
   // Menu handlers
-  void scene::MenuManager::onMenuCommand(int32_t id) noexcept {
+  void scene::MenuManager::onMenuCommand(int32_t id) {
   }
 #endif
