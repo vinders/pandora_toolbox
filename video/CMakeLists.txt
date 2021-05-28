@@ -191,8 +191,13 @@ else()
     cwork_set_test_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_common")
 endif()
 
+set(_VIDEO_TOOLS "tools/window_viewer")
+if(NOT IOS AND NOT ANDROID)
+    set(_VIDEO_TOOLS ${_VIDEO_TOOLS} "tools/3D_scene")
+endif()
+
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
-                     "include" "src" "test" "tools/window_viewer")
+                     "include" "src" "test" ${_VIDEO_TOOLS})
 
 # rendering api config - feedback messages
 message(" ") # new line

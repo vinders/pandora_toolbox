@@ -119,7 +119,7 @@ std::shared_ptr<WindowResource> buildWindowCursor(bool usePackage) {
 #   ifdef _WINDOWS
       return WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR));
 #   else
-    return WindowResource::buildCursorFromPackage("base_cur.png");
+      return WindowResource::buildCursorFromPackage("base_cur.png");
 #   endif
   }
   else
@@ -135,7 +135,7 @@ std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource:
   std::shared_ptr<WindowResource> mainIcon = buildWindowIcon(true);
   std::shared_ptr<WindowResource> cursor = nullptr;
   if (params.hasCustomCursor)
-      cursor = buildWindowCursor(true);
+    cursor = buildWindowCursor(true);
   int32_t position = params.isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
   
   Window::Builder builder;
