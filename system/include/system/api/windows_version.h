@@ -29,14 +29,14 @@ Description : Microsoft Windows feature version constants
 #   define _WIN32_IE _WIN32_IE_IE110
 #   define NTDDI_VERSION NTDDI_WIN10_RS2
 
-# elif defined(_P_MIN_WINDOWS_VERSION) && _P_MIN_WINDOWS_VERSION == 8 // Windows 8.1/10+
+# elif !defined(_P_MIN_WINDOWS_VERSION) || _P_MIN_WINDOWS_VERSION == 8 // Windows 8.1/10+
 #   define WINVER _WIN32_WINNT_WINBLUE
 #   define _WIN32_WINNT _WIN32_WINNT_WINBLUE
 #   define _WIN32_WINDOWS _WIN32_WINNT_WINBLUE
 #   define _WIN32_IE _WIN32_IE_IE90
 #   define NTDDI_VERSION NTDDI_WINBLUE
 
-# elif !defined(_P_MIN_WINDOWS_VERSION) || _P_MIN_WINDOWS_VERSION == 7 // Windows 7/8/10+
+# elif defined(_P_MIN_WINDOWS_VERSION) && _P_MIN_WINDOWS_VERSION == 7 // Windows 7/8/10+
 #   define WINVER _WIN32_WINNT_WIN7
 #   define _WIN32_WINNT _WIN32_WINNT_WIN7
 #   define _WIN32_WINDOWS _WIN32_WINNT_WIN7

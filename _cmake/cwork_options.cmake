@@ -26,7 +26,15 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     endif()
     if(NOT DEFINED CWORK_WINDOWS_VERSION)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            set(CWORK_WINDOWS_VERSION "7" CACHE STRING "minimum Windows version (vista.SP1, 7, 8.1, 10.RS2)") # support versions of Windows older than Windows 10
+            if(${CMAKE_SYSTEM_VERSION} EQUAL 6.1 OR ${CMAKE_SYSTEM_VERSION} EQUAL 6.2)
+                set(_DEFAULT_MIN_WINDOWS_VERSION "7")
+            elseif(${CMAKE_SYSTEM_VERSION} EQUAL 6.0)
+                set(_DEFAULT_MIN_WINDOWS_VERSION "6")
+            else()
+                set(_DEFAULT_MIN_WINDOWS_VERSION "8")
+            endif()
+        
+            set(CWORK_WINDOWS_VERSION ${_DEFAULT_MIN_WINDOWS_VERSION} CACHE STRING "minimum Windows version (6(vista.SP1), 7, 8(8.1), 10(10.RS2))") # support versions of Windows older than Windows 10
             set_property(CACHE CWORK_WINDOWS_VERSION PROPERTY STRINGS "10" "8" "7" "6") # possible values for GUI
         endif()
     endif()
