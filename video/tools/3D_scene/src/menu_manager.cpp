@@ -12,7 +12,7 @@ License :     MIT
 # define _P_MENU_LABEL(wstr,str) str
 #endif
 
-#define __MENU_API_VSYNC      190
+#define __MENU_API_VSYNC         190
 
 #define __MENU_API_NONE       200
 #define __MENU_API_OPENGL4    201
@@ -59,6 +59,12 @@ License :     MIT
 #define __MENU_SPR_FLT_SPLINE16 805
 #define __MENU_SPR_FLT_MIN __MENU_SPR_FLT_NEAREST
 #define __MENU_SPR_FLT_MAX __MENU_SPR_FLT_SPLINE16
+
+#define __MENU_RENDER_NONE       900
+#define __MENU_RENDER_WIREFRAME  901
+#define __MENU_RENDER_AO         902
+#define __MENU_RENDER_MIN __MENU_RENDER_NONE
+#define __MENU_RENDER_MAX __MENU_RENDER_AO
 
 #define __MENU_TEX_UP_NONE      1000
 #define __MENU_TEX_UP_MIN __MENU_TEX_UP_NONE
@@ -143,6 +149,11 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_AVG, _SYSTEM_STR("Average sensitivity"), true);
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_HIGH, _SYSTEM_STR("High sensitivity"), false);
 
+  outSettings.renderMode = RenderingMode::normal;
+  __addSeparator(viewerPopup, true);
+  __addMenuItem(viewerPopup, __MENU_RENDER_NONE, _SYSTEM_STR("Standard"), true);
+  __addMenuItem(viewerPopup, __MENU_RENDER_WIREFRAME, _SYSTEM_STR("Wireframe"), false);
+  __addMenuItem(viewerPopup, __MENU_RENDER_AO, _SYSTEM_STR("Ambient occlusion"), false);
   outSettings.useVsync = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_API_VSYNC, _SYSTEM_STR("Vsync"), false);
@@ -223,6 +234,13 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.mouseSensitivity != (id - __MENU_MOUSE_SENSIV_MIN)) {
         this->_settings.mouseSensitivity = (id - __MENU_MOUSE_SENSIV_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_MOUSE_SENSIV_MIN, __MENU_MOUSE_SENSIV_MAX);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_RENDER_NONE/100:
+      if (this->_settings.renderMode != (scene::RenderingMode)(id - __MENU_RENDER_MIN)) {
+        this->_settings.renderMode = (scene::RenderingMode)(id - __MENU_RENDER_MIN);
+        __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_RENDER_MIN, __MENU_RENDER_MAX);
         filterChangeHandler();
       }
       break;
