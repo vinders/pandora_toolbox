@@ -19,8 +19,11 @@ endif()
 find_package(Python3 COMPONENTS Interpreter Development)
 
 set(_EXTERN_LIBS window_libs)
-if(CWORK_VIDEO_OPENGL4) # openGL 4.1+/ES3+
+if(CWORK_VIDEO_OPENGL4) # openGL 4.1+
     set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" opengl_libs libglew_static)
+endif()
+if(CWORK_VIDEO_OPENGLES3) # openGLES 3+
+    set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" opengles_libs)
 endif()
 if(CWORK_VIDEO_D3D11) # direct3D 11+
     set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" direct3d11)
@@ -28,7 +31,7 @@ endif()
 if(CWORK_VIDEO_VULKAN) # vulkan 1.2+
     set(_EXTERN_LIBS ${_EXTERN_LIBS} "public" vulkan_libs)
 endif()
-if(CWORK_VIDEO_OPENGL4 OR CWORK_VIDEO_VULKAN) # common
+if(CWORK_VIDEO_OPENGL4 OR CWORK_VIDEO_OPENGLES3 OR CWORK_VIDEO_VULKAN) # common
     set(_EXTERN_LIBS ${_EXTERN_LIBS} glm)
 endif()
 
@@ -169,6 +172,10 @@ if(CWORK_VIDEO_OPENGL4)
     set(_INCLUDE_FILES ${_INCLUDE_FILES} ${_INCLUDE_DIR}/api/opengl.h)
     pandora_video_autodetect_files(openGL4)
 endif()
+if(CWORK_VIDEO_OPENGLES3)
+    set(_INCLUDE_FILES ${_INCLUDE_FILES} ${_INCLUDE_DIR}/api/opengl.h)
+    pandora_video_autodetect_files(openGLES3)
+endif()
 if(CWORK_VIDEO_D3D11)
     pandora_video_autodetect_files(d3d11)
 endif()
@@ -202,11 +209,10 @@ cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_
 # rendering api config - feedback messages
 message(" ") # new line
 if(CWORK_VIDEO_OPENGL4)
-    if(_VIDEO_OPENGL_ES3_VERSION_STRING)
-        message("-- OpenGL ES${_VIDEO_OPENGL_ES3_VERSION_STRING} features level --")
-    else()
-        message("-- OpenGL ${_VIDEO_OPENGL4_VERSION_STRING} feature level --")
-    endif()
+    message("-- OpenGL ${_VIDEO_OPENGL4_VERSION_STRING} feature level --")
+endif()
+if(CWORK_VIDEO_OPENGLES3)
+    message("-- OpenGLES ${_VIDEO_OPENGLES3_VERSION_STRING} feature level --")
 endif()
 if((WIN32 OR WIN64 OR _WIN32 OR _WIN64) AND DEFINED _VIDEO_D3D11_NOT_SUPPORTED AND _VIDEO_D3D11_NOT_SUPPORTED)
     message("> Windows SDK not installed or not supported by compiler -> direct3D disabled")
