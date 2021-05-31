@@ -10,6 +10,13 @@ License :     MIT
 #include "options.h"
 
 namespace scene {
+  enum class ApiChangeType : uint32_t {
+    rendererChange = 0,   // Direct3D/OpenGL/OpenGLES
+    vsyncChange = 1,      // set vsync on/off
+    splitScreenChange = 2,// single/multiple swap-chains
+    monitorChange = 3     // content scale change or HDR on/off
+  };
+
   // menu builder + manager
   class MenuManager final {
   public:
@@ -23,8 +30,7 @@ namespace scene {
     void onMenuCommand(int32_t id);
     
     // register event handlers (after menu changes)
-    void (*apiChangeHandler)(bool) = nullptr;
-    void (*vsyncChangeHandler)(bool) = nullptr;
+    void (*apiChangeHandler)(ApiChangeType) = nullptr;
     void (*filterChangeHandler)() = nullptr;
     
   private:

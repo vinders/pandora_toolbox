@@ -35,10 +35,7 @@ struct {
 
 // -- command handlers -- ------------------------------------------------------
 
-void onApiChange(bool isRendererChanged) {
-  //...
-}
-void onVsyncChange(bool useVsync) {
+void onApiChange(scene::ApiChangeType update) {
   //...
 }
 void onFilterChange() {
@@ -63,6 +60,7 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t status, int32_t posX, in
         g_windowState.menuManager->onMenuCommand(posX);
       break;
     }
+    case WindowEvent::monitorChanged: onApiChange(scene::ApiChangeType::monitorChange); break;
     default: break;
   }
   return false;
@@ -136,7 +134,6 @@ int main() {
   try {
     g_windowState.menuManager = std::unique_ptr<scene::MenuManager>(new scene::MenuManager(g_windowState.settings));
     g_windowState.menuManager->apiChangeHandler = &onApiChange;
-    g_windowState.menuManager->vsyncChangeHandler = &onVsyncChange;
     g_windowState.menuManager->filterChangeHandler = &onFilterChange;
     
     g_windowState.window = scene::createWindow(g_windowState.menuManager->resource());

@@ -262,7 +262,7 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_NONE + (uint32_t)this->_settings.api, false);
         this->_settings.api = (scene::RenderingApi)(id - __MENU_API_NONE);
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_NONE + (uint32_t)this->_settings.api, true);
-        apiChangeHandler(true);
+        apiChangeHandler(scene::ApiChangeType::rendererChange);
       }
       break;
     }
@@ -270,12 +270,12 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (id == __MENU_API_SPLIT) {
         this->_settings.splitScreen ^= true;
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_SPLIT, this->_settings.splitScreen);
-        apiChangeHandler(false);
+        apiChangeHandler(scene::ApiChangeType::splitScreenChange);
       }
       else {
         this->_settings.useVsync ^= true;
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_VSYNC, this->_settings.useVsync);
-        vsyncChangeHandler(this->_settings.useVsync);
+        apiChangeHandler(scene::ApiChangeType::vsyncChange);
       }
       break;
     }
