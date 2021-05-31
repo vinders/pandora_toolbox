@@ -139,6 +139,7 @@ uint32_t WindowTest::_lastSizeY = 0;
       EXPECT_EQ(params.behavior, window->behavior());
       EXPECT_EQ(params.resizeMode, window->resizeMode());
       EXPECT_EQ(params.hasParent, window->hasParent());
+      EXPECT_EQ(primaryMonitor->attributes().id, window->displayMonitor().attributes().id);
       EXPECT_TRUE((window->visibleState() & Window::VisibleState::visible) == true);
     }
     
@@ -209,7 +210,7 @@ uint32_t WindowTest::_lastSizeY = 0;
       EXPECT_EQ(30, window->getScrollPositionV());
     }
     
-    // ressources
+    // resources
 #   ifdef _WINDOWS
       EXPECT_TRUE(window->setCursor(WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR))));
 #   else
@@ -317,11 +318,14 @@ uint32_t WindowTest::_lastSizeY = 0;
     EXPECT_TRUE(window->pollCurrentWindowEvents());
     EXPECT_TRUE(window->getCursorPosition(Window::CursorPositionType::relative).x >= 0);
     EXPECT_TRUE(window->getCursorPosition(Window::CursorPositionType::relative).y >= 0);
+    EXPECT_EQ(Window::CursorMode::clipped, window->getCursorMode());
     
     window->setCursorMode(Window::CursorMode::hidden);
     EXPECT_TRUE(window->pollCurrentWindowEvents());
+    EXPECT_EQ(Window::CursorMode::hidden, window->getCursorMode());
     window->setCursorMode(Window::CursorMode::visible);
     EXPECT_TRUE(window->pollCurrentWindowEvents());
+    EXPECT_EQ(Window::CursorMode::visible, window->getCursorMode());
     
     // display mode
     WindowType mode = (params.mode != WindowType::window) ? WindowType::window : WindowType::dialog;

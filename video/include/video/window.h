@@ -127,7 +127,9 @@ namespace pandora {
       PixelSize getClientSize() const noexcept; ///< Get current size of the client area
       float contentScale() const noexcept;      ///< Read scale factor to use for content (based on DPI)
       
+      const pandora::hardware::DisplayMonitor& displayMonitor() const noexcept; ///< Get display monitor on which the window is located
       std::basic_string<window_char> getCaption() const; ///< Read current caption title
+      CursorMode getCursorMode() const noexcept;         ///< Get current cursor mode (visibility/capture)
       PixelPosition getCursorPosition(CursorPositionType mode) const noexcept;///< Get current mouse pointer position (-1 on error)
       PixelPosition getScrollPosition() const noexcept; ///< Read horizontal/vertical scroll box position (-1 on error)
       int32_t getScrollPositionV() const noexcept; ///< Read vertical scroll box position (-1 on error)
@@ -166,7 +168,7 @@ namespace pandora {
       
       bool setCursor(std::shared_ptr<WindowResource> cursor) noexcept; ///< Change mouse pointer image (won't change cursor visibility)
       bool setCursorPosition(int32_t x, int32_t y, CursorPositionType mode) noexcept; ///< Change mouse pointer position (won't change cursor visibility)
-      void setCursorMode(CursorMode cursorMode) noexcept; ///< Change mouse pointer visibility/limits/events
+      void setCursorMode(CursorMode cursorMode) noexcept; ///< Change mouse pointer visibility/limits/events (cursor must NEVER be clipped/raw when displaying a message box -> reset it first)
       
       bool setCaption(const window_char* caption) noexcept; ///< Change title in window caption
       bool setMenu(std::shared_ptr<WindowResource> menu) noexcept; ///< Add/replace native menu bar (use NULL to remove current menu)

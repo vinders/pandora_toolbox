@@ -141,6 +141,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
   
   // ---
   
+  // Get display monitor on which the window is located
+  const pandora::hardware::DisplayMonitor& Window::displayMonitor() const noexcept { return this->_impl->displayMonitor(); }
+  
   // Read current caption title
   std::basic_string<window_char> Window::getCaption() const {
     WCHAR buffer[128]{ 0 };
@@ -149,6 +152,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
       return std::basic_string<window_char>(buffer, length); 
     return L""; 
   }
+  
+  // Get current cursor mode (visibility/capture)
+  Window::CursorMode Window::getCursorMode() const noexcept { return this->_impl->getCursorMode(); }
   
   // Get current mouse pointer position
   PixelPosition Window::getCursorPosition(Window::CursorPositionType mode) const noexcept {

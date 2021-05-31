@@ -177,13 +177,18 @@ struct {
 } g_events;
 
 // window/hardware event handler
-bool onWindowEvent(Window*, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
+bool onWindowEvent(Window* sender, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
   switch (event) {
     case WindowEvent::windowClosed: {
+      auto cursorMode = sender->getCursorMode();
+      sender->setCursorMode(Window::CursorMode::visible);
+
       auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
                                     MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
-      if (reply == MessageBox::Result::action2) // "no" button
+      if (reply == MessageBox::Result::action2) { // "no" button
+        sender->setCursorMode(cursorMode);
         return true; // cancel close event
+      }
       break;
     }
     default: break;

@@ -115,8 +115,14 @@ Description : Window manager + builder - JNI implementation (Android)
   
   // ---
   
+  // Get display monitor on which the window is located
+  const pandora::hardware::DisplayMonitor& Window::displayMonitor() const noexcept { throw std::runtime_error("not implemented"); }
+  
   // Read current caption title
   std::basic_string<window_char> Window::getCaption() const { return ""; }
+  
+  // Get current cursor mode (visibility/capture)
+  Window::CursorMode Window::getCursorMode() const noexcept { return Window::CursorMode::visible; }
   
   // Get current mouse pointer position
   PixelPosition Window::getCursorPosition(Window::CursorPositionType mode) const noexcept {

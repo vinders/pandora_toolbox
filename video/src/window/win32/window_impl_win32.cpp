@@ -662,8 +662,11 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     if (this->_statusFlags & __P_FLAG_CURSOR_IS_HOVER)
       __WindowImplEventProc::setCursorOnHover(this->_statusFlags);
-    if (this->_statusFlags & __P_FLAG_WINDOW_ACTIVE)
+    if (this->_statusFlags & __P_FLAG_WINDOW_ACTIVE) {
       __WindowImplEventProc::activateCursor(*this);
+      SetForegroundWindow(this->_handle);
+      SetFocus(this->_handle);
+    }
   }
   
   // ---
@@ -1327,6 +1330,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   }
   // Cursor unactivated: remove cursor constraints
   void __WindowImplEventProc::unactivateCursor(__WindowImpl& window) noexcept {
+    ClipCursor(nullptr);
     if ((window._statusFlags & (__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_IS_CAPTURED)) == (__P_FLAG_CURSOR_HIDE|__P_FLAG_CURSOR_IS_CAPTURED)) {
       if (window._statusFlags & __P_FLAG_CURSOR_RAW) {
         const RAWINPUTDEVICE device = { 0x01, 0x02, RIDEV_REMOVE, nullptr };
@@ -1334,7 +1338,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       }
       ShowCursor(true); // show cursor
     }
-    ClipCursor(nullptr);
     __P_REMOVE_FLAG(window._statusFlags, __P_FLAG_CURSOR_IS_CAPTURED);
   }
   
@@ -1734,6 +1737,17 @@ Description : Window manager + builder - Win32 implementation (Windows)
           if (__WindowImplEventProc::refreshClientArea(*window, newClientArea) == 2 && window->_onPositionEvent)
             window->_onPositionEvent(&window->_container, PositionEvent::sizePositionChanged, 
                                      newClientArea.x, newClientArea.y, newClientArea.width, newClientArea.height);
+
+          // verify if monitor has changed
+          if (window->_mode != WindowType::fullscreen && window->_mode != WindowType::borderless 
+          && (window->_statusFlags & (__P_FLAG_FULLSCREEN_ON|__P_FLAG_WINDOW_VISIBLE)) == __P_FLAG_WINDOW_VISIBLE) {
+            RECT clientBounds;
+            window->lastAbsoluteClientRect(clientBounds);
+            if (__WindowImplEventProc::findWindowMonitor(*window, clientBounds)) {
+              window->_onWindowEvent(&window->_container, WindowEvent::monitorChanged, static_cast<uint32_t>(window->contentScale()*100.0f),
+                window->_lastClientArea.width, window->_lastClientArea.height, (void*)window->_monitor->handle());
+            }
+          }
           break;
         }
         case WM_MOVE: { // window currently moving / moved by command
@@ -1943,6 +1957,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
                 DisplayArea clientArea;
                 __WindowImplEventProc::refreshClientArea(*window, clientArea);
               }
+              if ((window->_statusFlags & (__P_FLAG_WINDOW_MINIMIZED|__P_FLAG_CURSOR_CLIP)) == (__P_FLAG_WINDOW_MINIMIZED|__P_FLAG_CURSOR_CLIP))
+                ShowWindow(window->_handle, SW_RESTORE);
               __WindowImplEventProc::activateCursor(*window);
             }
           }
@@ -2046,7 +2062,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
             if (window->_onWindowEvent) {
               int32_t adjustedClientWidth = static_cast<int32_t>(suggestedArea->right - suggestedArea->left - decorationSizes.left - decorationSizes.right);
               int32_t adjustedClientHeight = static_cast<int32_t>(suggestedArea->bottom - suggestedArea->top - decorationSizes.top - decorationSizes.bottom);
-              window->_onWindowEvent(&window->_container, WindowEvent::dpiChanged, static_cast<uint32_t>(window->contentScale()*100.0f),
+              window->_onWindowEvent(&window->_container, WindowEvent::monitorChanged, static_cast<uint32_t>(window->contentScale()*100.0f),
                                      adjustedClientWidth, adjustedClientHeight, isDifferentMonitor ? (void*)window->_monitor->handle() : nullptr);
             }
             return 0;

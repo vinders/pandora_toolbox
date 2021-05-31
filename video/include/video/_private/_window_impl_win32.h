@@ -112,6 +112,7 @@ namespace pandora {
       static int32_t getWindowInstanceCount() noexcept;
       
       inline WindowType displayMode() const noexcept { return this->_mode; }
+      inline const pandora::hardware::DisplayMonitor& displayMonitor() const noexcept { return *(this->_monitor); }
       inline bool isFullscreen() const noexcept { return (this->_mode == WindowType::fullscreen); }
       inline bool hasMenu() const noexcept { return (this->_menuHandle != nullptr); }
       inline bool hasParent() const noexcept { return (this->_parent != nullptr); }
@@ -141,6 +142,7 @@ namespace pandora {
       inline PixelPosition lastClientPosition() const noexcept;
       inline PixelSize lastClientSize() const noexcept;
       
+      inline Window::CursorMode getCursorMode() const noexcept { return this->_cursorMode; }
       inline const PixelPosition& lastScrollPosition() const noexcept { return this->_lastScrollPosition; }
       inline int32_t lastScrollPositionH() const noexcept { return this->_lastScrollPosition.x; }
       inline int32_t lastScrollPositionV() const noexcept { return this->_lastScrollPosition.y; }
