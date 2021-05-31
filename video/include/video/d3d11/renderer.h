@@ -16,10 +16,7 @@ License :     MIT
         using Device = void*;        // ID3D11Device*
         using DeviceContext = void*; // ID3D11DeviceContext*
         
-        /// @brief Minimum required Direct3D feature level
-        /// @remarks The system tries to use the highest available level (based on Cmake/cwork options).
-        ///          -> if some feature level is not available, the level below is used (and so on).
-        ///          -> this enum specifies the minimum level allowed.
+        /// @brief Direct3D feature level
         enum class RendererDeviceLevel : uint32_t {
           direct3D_11_0 = 0, ///< 11.0
           direct3D_11_1 = 1  ///< 11.1+
@@ -37,11 +34,11 @@ License :     MIT
         class Renderer final {
         public:
           /// @brief Create Direct3D device and context
+          /// @param minLevel  The system tries to use the highest available device level (based on Cmake/cwork options).
+          ///                  If some feature level is not available, the level below is used (and so on).
+          ///                  Argument 'minLevel' specifies the minimum level allowed.
           /// @throws exception on failure
-          Renderer(bool isFullscreen, RendererDeviceLevel minLevel = RendererDeviceLevel::direct3D_11_0)
-          : _isFullscreen(isFullscreen) {
-            createDeviceResources((uint32_t)minLevel);
-          }
+          Renderer(RendererDeviceLevel minLevel = RendererDeviceLevel::direct3D_11_0) { createDeviceResources((uint32_t)minLevel); }
           /// @brief Destroy device and context resources
           ~Renderer() noexcept;
           
@@ -71,7 +68,6 @@ License :     MIT
           DxgiFactory _dxgiFactory = nullptr; // IDXGIFactory1*
           RendererDeviceLevel _deviceLevel = RendererDeviceLevel::direct3D_11_1;
           uint32_t _dxgiLevel = 1;
-          bool _isFullscreen = false;
         };
       }
     }
