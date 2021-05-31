@@ -56,5 +56,6 @@ namespace scene {
     Mapping texMapping = Mapping::none;
     int32_t mouseSensitivity = 1;
     bool useVsync = false;
+    bool splitScreen = false;
   };
 }

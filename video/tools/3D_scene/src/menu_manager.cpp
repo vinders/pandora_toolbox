@@ -13,6 +13,7 @@ License :     MIT
 #endif
 
 #define __MENU_API_VSYNC         190
+#define __MENU_API_SPLIT         191
 
 #define __MENU_API_NONE       200
 #define __MENU_API_OPENGL4    201
@@ -154,6 +155,9 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(viewerPopup, __MENU_RENDER_NONE, _SYSTEM_STR("Standard"), true);
   __addMenuItem(viewerPopup, __MENU_RENDER_WIREFRAME, _SYSTEM_STR("Wireframe"), false);
   __addMenuItem(viewerPopup, __MENU_RENDER_AO, _SYSTEM_STR("Ambient occlusion"), false);
+  outSettings.splitScreen = false;
+  __addSeparator(viewerPopup, true);
+  __addMenuItem(viewerPopup, __MENU_API_SPLIT, _SYSTEM_STR("Split screen"), false);
   outSettings.useVsync = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_API_VSYNC, _SYSTEM_STR("Vsync"), false);
@@ -220,14 +224,21 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_NONE + (uint32_t)this->_settings.api, false);
         this->_settings.api = (scene::RenderingApi)(id - __MENU_API_NONE);
         __selectMenuItem((void*)this->_resource->handle(), __MENU_API_NONE + (uint32_t)this->_settings.api, true);
-        apiChangeHandler();
+        apiChangeHandler(true);
       }
       break;
     }
     case __MENU_API_VSYNC/100: {
-      this->_settings.useVsync ^= true;
-      __selectMenuItem((void*)this->_resource->handle(), __MENU_API_VSYNC, this->_settings.useVsync);
-      vsyncChangeHandler(this->_settings.useVsync);
+      if (id == __MENU_API_SPLIT) {
+        this->_settings.splitScreen ^= true;
+        __selectMenuItem((void*)this->_resource->handle(), __MENU_API_SPLIT, this->_settings.splitScreen);
+        apiChangeHandler(false);
+      }
+      else {
+        this->_settings.useVsync ^= true;
+        __selectMenuItem((void*)this->_resource->handle(), __MENU_API_VSYNC, this->_settings.useVsync);
+        vsyncChangeHandler(this->_settings.useVsync);
+      }
       break;
     }
     case __MENU_MOUSE_SENSIV_MIN/100:

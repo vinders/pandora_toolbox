@@ -35,7 +35,7 @@ struct {
 
 // -- command handlers -- ------------------------------------------------------
 
-void onApiChange() {
+void onApiChange(bool isRendererChanged) {
   //...
 }
 void onVsyncChange(bool useVsync) {

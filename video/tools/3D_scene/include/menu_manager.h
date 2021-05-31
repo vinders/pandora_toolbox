@@ -23,7 +23,7 @@ namespace scene {
     void onMenuCommand(int32_t id);
     
     // register event handlers (after menu changes)
-    void (*apiChangeHandler)() = nullptr;
+    void (*apiChangeHandler)(bool) = nullptr;
     void (*vsyncChangeHandler)(bool) = nullptr;
     void (*filterChangeHandler)() = nullptr;
     
