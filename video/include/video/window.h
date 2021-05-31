@@ -148,7 +148,9 @@ namespace pandora {
       bool resize(const pandora::hardware::DisplayArea& clientArea) noexcept; ///< Change window size and position (not allowed in fullscreen: use setDisplayMode)
       
       /// @brief Change window type and behavior + position and size/resolution
-      /// @warning If the instance has a parent window, only WindowType::dialog is allowed
+      /// @warning - If the instance has a parent window, only WindowType::dialog is allowed
+      ///          - This command is useful if the window is an "update" of an existing window, or if the window can't be closed/recreated.
+      ///            In most other cases, it's more reliable to destroy and recreate the window with the desired mode.
       bool setDisplayMode(WindowType type, WindowBehavior components, ResizeMode resizeMode, 
                           const pandora::hardware::DisplayArea& clientArea, uint32_t rate = 0);
       bool setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept; ///< Define minimum size limits for the user (ignored if not resizable)
