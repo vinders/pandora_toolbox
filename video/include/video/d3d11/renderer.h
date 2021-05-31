@@ -7,6 +7,7 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <vector>
+# include <hardware/display_monitor.h>
 # include "../window_handle.h"
 
   namespace pandora {
@@ -54,9 +55,9 @@ License :     MIT
 
           // -- feature support --
           
-          /// @brief Verify if HDR functionalities are supported (flip swap effects)
-          /// @warning That doesn't mean that the display supports it!
-          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
+          /// @brief Verify if all HDR functionalities are supported
+          /// @warning That doesn't mean that the display supports it (verify 'isMonitorHdrCapable' for that)
+          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel > 5u); }
           /// @brief Verify if buffer "flip" swap mode is supported (more efficient)
           inline bool isFlipAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Verify if screen tearing is supported
@@ -64,6 +65,12 @@ License :     MIT
           /// @brief Verify if a multisample mode is supported
           /// @param sampleCount  Number of samples: 1, 2, 4 or 8
           bool isMultisampleSupported(uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept;
+          
+          /// @brief Verify if a display monitor can display HDR colors
+          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
+          /// @brief Read device adapter VRAM size
+          /// @returns Read success
+          bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
 
         private:
           void createDeviceResources(uint32_t minLevel);

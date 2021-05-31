@@ -56,6 +56,7 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
         endif()
         find_library(D3D11_LIBRARY NAMES d3d11.lib HINTS "${_D3D_LIB_PATH}/um/${_D3D11_ARCH}" "${_D3D_LIB_PATH}/${_D3D11_ARCH}")  
         find_library(DXGI_LIBRARY  NAMES dxgi.lib  HINTS "${_D3D_LIB_PATH}/um/${_D3D11_ARCH}" "${_D3D_LIB_PATH}/${_D3D11_ARCH}")  
+        find_library(DXGI_LIBRARY  NAMES dxguid.lib  HINTS "${_D3D_LIB_PATH}/um/${_D3D11_ARCH}" "${_D3D_LIB_PATH}/${_D3D11_ARCH}")  
         find_library(D3DCOMPILER_LIBRARY NAMES d3dcompiler.lib HINTS "${_D3D_LIB_PATH}/um/${_D3D11_ARCH}" "${_D3D_LIB_PATH}/${_D3D11_ARCH}")  
         set(D3D11_LIBRARIES ${D3D11_LIBRARY} ${DXGI_LIBRARY} ${D3DCOMPILER_LIBRARY} CACHE STRING "D3D11_LIBRARIES")
 
@@ -69,7 +70,7 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
         message("-- Found Direct3D11: ${direct3d11__LINKED}")
         
     elseif(MSVC)
-        set(direct3d11__LINKED d3d11 dxgi d3dcompiler) # not found -> rely on MSVC API includes
+        set(direct3d11__LINKED d3d11 dxgi dxguid d3dcompiler) # not found -> rely on MSVC API includes
     else()
         message(FATAL_ERROR "-- Finddirect3d11: Windows SDK was not found on current system.")
     endif()

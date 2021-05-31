@@ -18,13 +18,8 @@ License :     MIT
 
 # if defined(_VIDEO_D3D11_VERSION) && _VIDEO_D3D11_VERSION >= 114
 #   include <d3d11_4.h>
-#   define _D3D_FEATURE_LEVEL_11_4  (D3D_FEATURE_LEVEL)0xb400
-#   define _D3D_FEATURE_LEVEL_11_3  (D3D_FEATURE_LEVEL)0xb300
-#   define _D3D_FEATURE_LEVEL_11_2  (D3D_FEATURE_LEVEL)0xb200
 # elif defined(_VIDEO_D3D11_VERSION) && _VIDEO_D3D11_VERSION == 113
 #   include <d3d11_3.h>
-#   define _D3D_FEATURE_LEVEL_11_3  (D3D_FEATURE_LEVEL)0xb300
-#   define _D3D_FEATURE_LEVEL_11_2  (D3D_FEATURE_LEVEL)0xb200
 # elif defined(_VIDEO_D3D11_VERSION) && _VIDEO_D3D11_VERSION == 110
 #   include <d3d11.h>
 # else
@@ -39,6 +34,7 @@ License :     MIT
 #   include <dxgi1_2.h>
 # endif
 # ifdef _DEBUG
+#   include <initguid.h>
 #   include <dxgidebug.h>
 # endif
 # include <DirectXMath.h>
@@ -80,11 +76,14 @@ License :     MIT
   }
   
   // Move instance
-  Renderer::Renderer(Renderer&& rhs) noexcept : _device(rhs._device), _context(rhs._context), _dxgiFactory(rhs._dxgiFactory) { 
+  Renderer::Renderer(Renderer&& rhs) noexcept 
+    : _device(rhs._device), _context(rhs._context), _dxgiFactory(rhs._dxgiFactory), 
+      _deviceLevel(rhs._deviceLevel), _dxgiLevel(rhs._dxgiLevel) { 
     rhs._device = rhs._context = rhs._dxgiFactory = nullptr; 
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _device = rhs._device; _context = rhs._context; _dxgiFactory = rhs._dxgiFactory;
+    _deviceLevel = rhs._deviceLevel; _dxgiLevel = rhs._dxgiLevel;
     rhs._device = rhs._context = rhs._dxgiFactory = nullptr;
     return *this;
   }
@@ -214,6 +213,7 @@ License :     MIT
           if (SUCCEEDED(adapter->GetDesc1(&description)) && (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0)
             break; // hardware adapter found -> exit loop
           adapter->Release(); // don't select Basic Render Driver -> release
+          adapter = nullptr;
         }
         
         factory6->Release();
@@ -227,6 +227,7 @@ License :     MIT
       if (SUCCEEDED(adapter->GetDesc1(&description)) && (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0)
         break; // hardware adapter found -> exit loop
       adapter->Release(); // don't select Basic Render Driver -> release
+      adapter = nullptr;
     }
     return adapter;
   }
@@ -243,14 +244,6 @@ License :     MIT
 
     // list supported feature levels
     const D3D_FEATURE_LEVEL featureLevels[] = {
-#     if defined(_VIDEO_D3D11_VERSION) && _VIDEO_D3D11_VERSION >= 114
-        _D3D_FEATURE_LEVEL_11_4,
-        _D3D_FEATURE_LEVEL_11_3,
-        _D3D_FEATURE_LEVEL_11_2,
-#     elif defined(_VIDEO_D3D11_VERSION) && _VIDEO_D3D11_VERSION == 113
-        _D3D_FEATURE_LEVEL_11_3,
-        _D3D_FEATURE_LEVEL_11_2,
-#     endif
 #     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
         D3D_FEATURE_LEVEL_11_1,
 #     endif
@@ -271,8 +264,8 @@ License :     MIT
 
     // create rendering device + context
     D3D_FEATURE_LEVEL deviceLevel;
-    auto result = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_HARDWARE, nullptr, runtimeLayers, 
-                                    featureLevels, featureLevelCount, D3D11_SDK_VERSION, 
+    auto result = D3D11CreateDevice(adapter, (adapter != nullptr) ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, 
+                                    nullptr, runtimeLayers, featureLevels, featureLevelCount, D3D11_SDK_VERSION, 
                                     (ID3D11Device**)&(this->_device), &deviceLevel, 
                                     (ID3D11DeviceContext**)&(this->_context));
     if (adapter != nullptr)
@@ -306,12 +299,75 @@ License :     MIT
 
   // Verify if a multisample mode is supported
   bool Renderer::isMultisampleSupported(uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept {
-    UINT qualityLevel = 0;
-    if (SUCCEEDED(((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, sampleCount, &qualityLevel))) {
-      outMaxQualityLevel = qualityLevel;
-      return (qualityLevel > 0);
+    try {
+      UINT qualityLevel = 0;
+      if (SUCCEEDED(((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, sampleCount, &qualityLevel))) {
+        outMaxQualityLevel = qualityLevel;
+        return (qualityLevel > 0);
+      }
     }
+    catch (...) {}
     return false;
+  }
+  
+  // Verify if a monitor can display HDR colors
+# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
+      bool isHdrCompatible = false;
+      try {
+        IDXGIDevice* dxgiDevice = nullptr;
+        if (SUCCEEDED(((ID3D11Device*)this->_device)->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice))) && dxgiDevice != nullptr) {
+          IDXGIAdapter* adapter = nullptr;
+          if (SUCCEEDED(dxgiDevice->GetAdapter(&adapter)) && adapter != nullptr) {
+            bool isFound = false;
+            IDXGIOutput* output = nullptr;
+            for (UINT index = 0; !isFound && adapter->EnumOutputs(index, &output) == S_OK; ++index) {
+              IDXGIOutput6* outputV6 = nullptr;
+              if (SUCCEEDED(output->QueryInterface(__uuidof(IDXGIOutput6), reinterpret_cast<void**>(&outputV6))) && outputV6 != nullptr) {
+                
+                DXGI_OUTPUT_DESC1 monitorDescription;
+                if (outputV6->GetDesc1(&monitorDescription) == S_OK && target.attributes().id == monitorDescription.DeviceName) {
+                  isHdrCompatible = (monitorDescription.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+                  isFound = true;
+                }
+                outputV6->Release();
+              }
+              output->Release();
+              output = nullptr;
+            }
+            adapter->Release();
+          }
+          dxgiDevice->Release();
+        }
+      }
+      catch (...) {}
+      return isHdrCompatible;
+    }
+# else
+    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
+# endif
+  
+  // Read device adapter VRAM size
+  bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
+    bool isSuccess = false;
+    try {
+      IDXGIDevice* dxgiDevice = nullptr;
+      if (SUCCEEDED(((ID3D11Device*)this->_device)->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice))) && dxgiDevice != nullptr) {
+        IDXGIAdapter* adapter = nullptr;
+        if (SUCCEEDED(dxgiDevice->GetAdapter(&adapter)) && adapter != nullptr) {
+          DXGI_ADAPTER_DESC adapterInfo;
+          if (adapter->GetDesc(&adapterInfo) == S_OK) {
+            outDedicatedRam = (size_t)adapterInfo.DedicatedVideoMemory;
+            outSharedRam = (size_t)adapterInfo.SharedSystemMemory;
+            isSuccess = true;
+          }
+          adapter->Release();
+        }
+        dxgiDevice->Release();
+      }
+    }
+    catch (...) {}
+    return isSuccess;
   }
 
 #endif
