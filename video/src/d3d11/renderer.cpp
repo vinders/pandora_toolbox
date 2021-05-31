@@ -78,6 +78,16 @@ License :     MIT
     }
     catch (...) {}
   }
+  
+  // Move instance
+  Renderer::Renderer(Renderer&& rhs) noexcept : _device(rhs._device), _context(rhs._context), _dxgiFactory(rhs._dxgiFactory) { 
+    rhs._device = rhs._context = rhs._dxgiFactory = nullptr; 
+  }
+  Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
+    _device = rhs._device; _context = rhs._context; _dxgiFactory = rhs._dxgiFactory;
+    rhs._device = rhs._context = rhs._dxgiFactory = nullptr;
+    return *this;
+  }
 
   // ---
 

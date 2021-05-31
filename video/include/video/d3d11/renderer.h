@@ -42,6 +42,11 @@ License :     MIT
           /// @brief Destroy device and context resources
           ~Renderer() noexcept;
           
+          Renderer(const Renderer&) = delete;
+          Renderer(Renderer&& rhs) noexcept;
+          Renderer& operator=(const Renderer&) = delete;
+          Renderer& operator=(Renderer&&) noexcept;
+          
           inline Device device() const noexcept { return this->_device; }          ///< Get Direct3D rendering device (cast to 'ID3D11Device*')
           inline DeviceContext context() const noexcept { return this->_context; } ///< Get Direct3D device context (cast to 'ID3D11DeviceContext*')
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; }  ///< Get available level of DXGI on current system (1-6)
@@ -49,14 +54,15 @@ License :     MIT
 
           // -- feature support --
           
-          /// @brief Verify if HDR is supported (flip swap effects)
+          /// @brief Verify if HDR functionalities are supported (flip swap effects)
+          /// @warning That doesn't mean that the display supports it!
           inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
-          /// @brief Verify if buffer "flip swap mode" is supported
+          /// @brief Verify if buffer "flip" swap mode is supported (more efficient)
           inline bool isFlipAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Verify if screen tearing is supported
           inline bool isTearingAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
-          /// @brief Verify if a multisample mode is supported (anti-aliasing)
-          /// @param sampleCount  Number of samples: 1, 4 or 8
+          /// @brief Verify if a multisample mode is supported
+          /// @param sampleCount  Number of samples: 1, 2, 4 or 8
           bool isMultisampleSupported(uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept;
 
         private:
