@@ -21,10 +21,29 @@ namespace scene {
     ambientOcclusion = 2
   };
   enum class AntiAliasing : uint32_t {
-    none = 0
+    none = 0,
+    fxaa = 1,
+    smaa2x = 2,
+    smaa4x = 3,
+    smaa8x = 4,
+    msaa2x = 5,
+    msaa4x = 6,
+    msaa8x = 7
   };
   enum class VisualEffect : uint32_t {
-    none = 0
+    none = 0,
+    colorFilter = 1,
+    crtVision = 2,
+    fog = 3,
+    bloom = 4,
+    lumaSharpen = 5,
+    brokenGlass = 6,
+    storyBook = 7,
+    pencil = 8,
+    neon = 9,
+    cartoon = 10,
+    median = 11,
+    unsharpMasking = 12
   };
   enum class Interpolation : uint32_t {
     nearest = 0,

@@ -26,13 +26,32 @@ License :     MIT
 #define __MENU_MOUSE_SENSIV_MIN __MENU_MOUSE_SENSIV_LOW
 #define __MENU_MOUSE_SENSIV_MAX __MENU_MOUSE_SENSIV_HIGH
 
-#define __MENU_SCN_AA_OFF   400
+#define __MENU_SCN_AA_OFF    400
+#define __MENU_SCN_AA_FXAA   401
+#define __MENU_SCN_AA_SMAA2  402
+#define __MENU_SCN_AA_SMAA4  403
+#define __MENU_SCN_AA_SMAA8  404
+#define __MENU_SCN_AA_MSAA2  405
+#define __MENU_SCN_AA_MSAA4  406
+#define __MENU_SCN_AA_MSAA8  407
 #define __MENU_SCN_AA_MIN __MENU_SCN_AA_OFF
-#define __MENU_SCN_AA_MAX __MENU_SCN_AA_OFF
+#define __MENU_SCN_AA_MAX __MENU_SCN_AA_MSAA8
 
-#define __MENU_SCN_FX_OFF   500
+#define __MENU_SCN_FX_OFF         500
+#define __MENU_SCN_FX_COLOR       501
+#define __MENU_SCN_FX_CRTVISION   502
+#define __MENU_SCN_FX_FOG         503
+#define __MENU_SCN_FX_BLOOM       504
+#define __MENU_SCN_FX_LUMASHARPEN 505
+#define __MENU_SCN_FX_BROKENGLASS 506
+#define __MENU_SCN_FX_STORYBOOK   507
+#define __MENU_SCN_FX_PENCIL      508
+#define __MENU_SCN_FX_NEON        509
+#define __MENU_SCN_FX_CARTOON     510
+#define __MENU_SCN_FX_MEDIAN      511
+#define __MENU_SCN_FX_UNSHARPMASK 512
 #define __MENU_SCN_FX_MIN __MENU_SCN_FX_OFF
-#define __MENU_SCN_FX_MAX __MENU_SCN_FX_OFF
+#define __MENU_SCN_FX_MAX __MENU_SCN_FX_UNSHARPMASK
 
 #define __MENU_SCN_FLT_NEAREST   600
 #define __MENU_SCN_FLT_BILINEAR  601
@@ -173,10 +192,29 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   outSettings.aa = scene::AntiAliasing::none;
   __addSeparator(screenFilterPopup, true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_OFF, _SYSTEM_STR("No AA"), true);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_FXAA, _SYSTEM_STR("FXAA (fast/blur)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA4, _SYSTEM_STR("SMAA 4x (morph.)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA8, _SYSTEM_STR("SMAA 8x (morph.)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA2, _SYSTEM_STR("MSAA 2x (multisample)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA4, _SYSTEM_STR("MSAA 4x (multisample)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), false);
 
   outSettings.fx = scene::VisualEffect::none;
   __addSeparator(screenFilterPopup, true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_OFF, _SYSTEM_STR("No effect"), true);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_COLOR, _SYSTEM_STR("Color blending"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CRTVISION, _SYSTEM_STR("CRT colors/scan-lines"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_FOG, _SYSTEM_STR("Fog effect"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_BLOOM, _SYSTEM_STR("Bloom effect"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_LUMASHARPEN, _SYSTEM_STR("Luma sharpen effect"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_BROKENGLASS, _SYSTEM_STR("Broken glass"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_STORYBOOK, _SYSTEM_STR("Storybook mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_PENCIL, _SYSTEM_STR("Pencil mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_NEON, _SYSTEM_STR("Neon mode (edges)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CARTOON, _SYSTEM_STR("Cartoon mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_MEDIAN, _SYSTEM_STR("Median filter"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_UNSHARPMASK, _SYSTEM_STR("Unsharp masking"), false);
 
   outSettings.texFilter = scene::Interpolation::bilinear;
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_NEAREST,  _SYSTEM_STR("Nearest"), false);
