@@ -43,8 +43,7 @@
 
     size_t dedicatedRam = 0, sharedRam = 0;
     EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
-    EXPECT_TRUE(dedicatedRam > 0);
-    EXPECT_TRUE(sharedRam > 0);
+    EXPECT_TRUE(sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
 
     printf("Direct3D context:\n > DXGI level: %u\n > Feature level: 11.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
            " > MSAA 1x quality: %u\n > MSAA 2x quality: %u\n > MSAA 4x quality: %u\n > MSAA 8x quality: %u\n"
