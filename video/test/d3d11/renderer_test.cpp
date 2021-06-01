@@ -29,7 +29,7 @@
     EXPECT_TRUE((uint32_t)renderer.featureLevel() >= (uint32_t)RendererDeviceLevel::direct3D_11_0);
 
     EXPECT_TRUE((int)renderer.isHdrAvailable() <= (int)renderer.isTearingAvailable());
-    EXPECT_TRUE((int)renderer.isFlipAvailable() >= (int)renderer.isTearingAvailable());
+    EXPECT_TRUE((int)renderer.isFlipSwapAvailable() >= (int)renderer.isTearingAvailable());
 
     uint32_t qualityMSAA1 = 0, qualityMSAA2 = 0, qualityMSAA4 = 0, qualityMSAA8 = 0, qualityInvalid = 0;
     if (renderer.isMultisampleSupported(1, qualityMSAA1)) { EXPECT_NE((uint32_t)0, qualityMSAA1); }
@@ -47,12 +47,13 @@
 
     printf("Direct3D context:\n > DXGI level: %u\n > Feature level: 11.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
            " > MSAA 1x quality: %u\n > MSAA 2x quality: %u\n > MSAA 4x quality: %u\n > MSAA 8x quality: %u\n"
-           " > HDR available: %s\n > Flip swap available: %s\n > Tearing available: %s\n", 
+           " > HDR available: %s\n > Flip swap available: %s\n > Tearing available: %s\n > Local display limit available: %s\n", 
            renderer.dxgiLevel(), (uint32_t)renderer.featureLevel(), (float)dedicatedRam/1000000.0, (float)sharedRam/1000000.0,
            qualityMSAA1, qualityMSAA2, qualityMSAA4, qualityMSAA8,
            renderer.isHdrAvailable() ? "true" : "false",
-           renderer.isFlipAvailable() ? "true" : "false",
-           renderer.isTearingAvailable() ? "true" : "false");
+           renderer.isFlipSwapAvailable() ? "true" : "false",
+           renderer.isTearingAvailable() ? "true" : "false",
+           renderer.isLocalOnlyOutputAvailable() ? "true" : "false");
 
     auto handle = renderer.device();
     auto dxgiLevel = renderer.dxgiLevel();

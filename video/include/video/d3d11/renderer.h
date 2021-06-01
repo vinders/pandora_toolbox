@@ -6,23 +6,24 @@ License :     MIT
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
-# include <vector>
 # include <hardware/display_monitor.h>
-# include "../window_handle.h"
+# include "../swap_chain_params.h"
+# include "./swap_chain.h"
 
   namespace pandora {
     namespace video {
       namespace d3d11 {
-        using DxgiFactory = void*;   // IDXGIFactory1*
-        using Device = void*;        // ID3D11Device*
-        using DeviceContext = void*; // ID3D11DeviceContext*
+        using DxgiFactory = void*;     // IDXGIFactory1*
+        using Device = void*;          // ID3D11Device*
+        using DeviceContext = void*;   // ID3D11DeviceContext*
+        using RenderTargetView = void*;// ID3D11RenderTargetView*
         
         /// @brief Direct3D feature level
         enum class RendererDeviceLevel : uint32_t {
           direct3D_11_0 = 0, ///< 11.0
           direct3D_11_1 = 1  ///< 11.1+
         };
-        
+
         // ---
         
         /// @class Renderer
@@ -39,7 +40,7 @@ License :     MIT
           ///                  If some feature level is not available, the level below is used (and so on).
           ///                  Argument 'minLevel' specifies the minimum level allowed.
           /// @throws exception on failure
-          Renderer(RendererDeviceLevel minLevel = RendererDeviceLevel::direct3D_11_0) { createDeviceResources((uint32_t)minLevel); }
+          Renderer(RendererDeviceLevel minLevel = RendererDeviceLevel::direct3D_11_0) { _createDeviceResources((uint32_t)minLevel); }
           /// @brief Destroy device and context resources
           ~Renderer() noexcept;
           
@@ -59,9 +60,11 @@ License :     MIT
           /// @warning That doesn't mean that the display supports it (verify 'isMonitorHdrCapable' for that)
           inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel > 5u); }
           /// @brief Verify if buffer "flip" swap mode is supported (more efficient)
-          inline bool isFlipAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          /// @brief Verify if screen tearing is supported
+          inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
+          /// @brief Verify if screen tearing is supported (for variable refresh rate)
           inline bool isTearingAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
+          /// @brief Verify if output can be restricted to local displays
+          inline bool isLocalOnlyOutputAvailable() const noexcept { return (this->_dxgiLevel >= 3u); }
           /// @brief Verify if a multisample mode is supported
           /// @param sampleCount  Number of samples: 1, 2, 4 or 8
           bool isMultisampleSupported(uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept;
@@ -71,9 +74,15 @@ License :     MIT
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
+          
+          // -- swap-chain creation --
+          
+          /// @brief Create new rendering swap-chain for current device
+          /// @throws exception on failure
+          SwapChain createSwapChain(const pandora::video::SwapChainParams& params, WindowHandle window, uint32_t width, uint32_t height);
 
         private:
-          void createDeviceResources(uint32_t minLevel);
+          void _createDeviceResources(uint32_t minLevel);
         
         private:
           Device _device = nullptr;           // ID3D11Device*
@@ -85,4 +94,5 @@ License :     MIT
       }
     }
   }
+  
 #endif

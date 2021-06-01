@@ -14,7 +14,7 @@ namespace pandora {
     ///          - For HDR rendering on SDR devices, shaders will need to convert color values (or they'll be clipped when displayed).
     /// @warning Block-compression types (bc*) are not available for OpenGL.
     enum class ComponentFormat : int32_t {
-      unknown = 0, ///< GL_UNKNOWN - DXGI_FORMAT_UNKNOWN - VK_FORMAT_UNDEFINED
+      custom = 0, ///< Use custom/native value
       
       // HDR - 32 bit
       rgba32_any = 1,///< GL_RGBA32UI - DXGI_FORMAT_R32G32B32A32_TYPELESS - VK_FORMAT_R32G32B32A32_UINT
@@ -102,12 +102,12 @@ namespace pandora {
       
       // depth/stencil
       d32_f = 40,     ///< GL_DEPTH_COMPONENT32F - DXGI_FORMAT_D32_FLOAT - VK_FORMAT_D32_SFLOAT
-      d24_unorm = 46, ///< GL_DEPTH_COMPONENT24 - DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+      d24_unorm = 46, ///< GL_DEPTH_COMPONENT24 - DXGI_FORMAT_R24_UNORM_X8_TYPELESS - VK_FORMAT_D24_UNORM
       d16_unorm = 55, ///< GL_DEPTH_COMPONENT16 - DXGI_FORMAT_D16_UNORM - VK_FORMAT_D16_UNORM
       
-      d32_f_s8_ui = 20,   ///< GL_DEPTH32F_STENCIL8 - DXGI_FORMAT_D32_FLOAT_S8X24_UINT - VK_FORMAT_D32_SFLOAT_S8_UINT
-      d24_unorm_s8_ui= 45,///< GL_DEPTH24_STENCIL8 - DXGI_FORMAT_D24_UNORM_S8_UINT - VK_FORMAT_D24_UNORM_S8_UINT
-      s8_ui = 47,         ///< GL_STENCIL_INDEX8 - DXGI_FORMAT_X24_TYPELESS_G8_UINT - VK_FORMAT_S8_UINT
+      d32_f_s8_ui = 20,    ///< GL_DEPTH32F_STENCIL8 - DXGI_FORMAT_D32_FLOAT_S8X24_UINT - VK_FORMAT_D32_SFLOAT_S8_UINT
+      d24_unorm_s8_ui = 45,///< GL_DEPTH24_STENCIL8 - DXGI_FORMAT_D24_UNORM_S8_UINT - VK_FORMAT_D24_UNORM_S8_UINT
+      s8_ui = 47,          ///< GL_STENCIL_INDEX8 - DXGI_FORMAT_X24_TYPELESS_G8_UINT - VK_FORMAT_S8_UINT
 
       // block-compression (not supported in OpenGL)
       bc6h_uf = 95, ///< DXGI_FORMAT_BC6H_UF16 - VK_FORMAT_BC6H_UFLOAT_BLOCK
