@@ -9,8 +9,8 @@ License :     MIT
 namespace pandora {
   namespace video {
     /// @brief Color/depth/stencil component formats bindings for drawing buffers
-    /// @remarks - For HDR rendering and color space, use RGB(A) components between 9 and 32 bits ('rgba16_f_hdr_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
-    ///          - For SDR rendering and color space, use RGB(A) components between 4 and 8 bits ('rgba8_sRGB' or 'rgba8_unorm' recommended).
+    /// @remarks - For HDR rendering and color space, use RGB(A) components between 10 and 32 bits ('rgba16_f_hdr_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
+    ///          - For SDR rendering and color space, use RGB(A) components between 4 and 9 bits ('rgba8_sRGB' or 'rgba8_unorm' recommended).
     ///          - For HDR rendering on SDR devices, shaders will need to convert color values (or they'll be clipped when displayed).
     /// @warning Block-compression types (bc*) are not available for OpenGL.
     enum class ComponentFormat : int32_t {

@@ -137,7 +137,7 @@ pandora::video::SwapChainParams::setDepthBufferFormat(pandora::video::ComponentF
 }
 inline pandora::video::SwapChainParams&
 pandora::video::SwapChainParams::setCustomDepthBufferFormat(int32_t format) noexcept { 
-  this->_backBufferFormat = pandora::video::ComponentFormat::custom;
+  this->_depthBufferFormat = pandora::video::ComponentFormat::custom;
   this->_customDepthBufferFormat = format;
   return *this; 
 }
@@ -165,6 +165,6 @@ pandora::video::SwapChainParams::setRefreshRate(uint32_t rateMilliHz) noexcept {
 inline pandora::video::SwapChainParams&
 pandora::video::SwapChainParams::setRefreshRate(uint32_t rateNumerator, uint32_t rateDenominator) noexcept { 
   this->_rateNumerator = rateNumerator;
-  this->_rateDenominator = rateDenominator; 
+  this->_rateDenominator = (rateDenominator) ? rateDenominator : 1u; 
   return *this; 
 }
