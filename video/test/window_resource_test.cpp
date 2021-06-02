@@ -39,6 +39,7 @@ TEST_F(WindowResourceTest, buildSystemIconRes) {
   _validateResource(WindowResource::buildIcon(SystemIcon::error), WindowResource::Category::icon);
   _validateResource(WindowResource::buildIcon(SystemIcon::security), WindowResource::Category::icon);
   _validateResource(WindowResource::buildIcon(SystemIcon::system), WindowResource::Category::icon);
+  EXPECT_TRUE(WindowResource::buildIcon((SystemIcon)999999) == nullptr);
 }
 
 TEST_F(WindowResourceTest, buildFileIconRes) {
@@ -75,6 +76,7 @@ TEST_F(WindowResourceTest, buildSystemCursorRes) {
   _validateResource(WindowResource::buildCursor(SystemCursor::doubleArrow_NE_SW), WindowResource::Category::cursor);
   _validateResource(WindowResource::buildCursor(SystemCursor::doubleArrow_NW_SE), WindowResource::Category::cursor);
   _validateResource(WindowResource::buildCursor(SystemCursor::fourPointArrow), WindowResource::Category::cursor);
+  EXPECT_TRUE(WindowResource::buildCursor((SystemCursor)999999) == nullptr);
 }
 
 TEST_F(WindowResourceTest, buildFileCursorRes) {

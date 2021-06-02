@@ -571,7 +571,8 @@ uint32_t WindowTest::_lastSizeY = 0;
 
 #else
   TEST_F(WindowTest, windowNotImplemented) {
-    Window::Builder builder;
-    EXPECT_ANY_THROW(builder.create(_STR("WINDOW0"), _STR("")));
+    EXPECT_ANY_THROW(Window::Builder{}.create(nullptr, nullptr));
+    EXPECT_ANY_THROW(Window::Builder{}.create(_STR("WINDOW0"), _STR("")));
+    EXPECT_ANY_THROW(Window::Builder{}.update(nullptr));
   }
 #endif
