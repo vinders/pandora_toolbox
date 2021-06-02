@@ -103,22 +103,22 @@ jobs:
             - libgl1-mesa-dev
             - libglu1-mesa-dev
             - python3.5
-    # linux/X11 - gcc9 - x86_64 (coverage)
+    # linux/X11 - gcc - x86_64 (coverage)
     - &Linux-gcc9-cov
       branches:
         only:
           - develop
       if: branch = develop AND fork = false
       os: linux
-      dist: bionic
+      dist: xenial
       name: "Linux-Xorg: gcc (coverage)"
       services:
         - xvfb
       language: cpp
       compiler: gcc
       env:
-        - CC=gcc-9
-        - CXX=g++-9
+        - CC=gcc-7
+        - CXX=g++-7
         - PLATFORM_NAME=linux-gcc
         - BUILD_TYPE=Debug
         - ENABLE_COVERAGE=ON
@@ -131,8 +131,8 @@ jobs:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-9
-            - g++-9
+            - gcc-7
+            - g++-7
             - libasound2-dev
             - libxrandr-dev
             - libxinerama-dev
@@ -422,11 +422,5 @@ script:
 # ---- coverage ----
 after_success: |
   if [ "$ENABLE_COVERAGE" = "ON" ]; then
-    wget http://downloads.sourceforge.net/ltp/lcov-1.14.tar.gz
-    tar zvxf lcov-1.14.tar.gz
-    export PATH=lcov-1.14/bin/:${PATH}
-    lcov --capture --directory . --output-file coverage.info
-    lcov --remove coverage.info '_libs/*' '/usr/*' '*gmock*' --output-file coverage.info
-    lcov --list coverage.info
-    bash <(curl -s https://codecov.io/bash) -f coverage.info -t $CODECOV_TOKEN || echo "Codecov did not collect coverage reports"
+    bash <(curl -s https://codecov.io/bash) -R . -t $CODECOV_TOKEN || echo "Codecov did not collect coverage reports"
   fi
