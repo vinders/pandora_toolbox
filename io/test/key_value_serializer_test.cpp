@@ -77,6 +77,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(integer3.empty());
   EXPECT_TRUE(integer3);
   EXPECT_TRUE(integer3.comment() == nullptr);
+  EXPECT_TRUE(integer2 == integer2);
+  EXPECT_TRUE(integer2 != integer3);
   
   SerializableValue number(0.0);
   EXPECT_EQ(SerializableValue::Type::number, number.type());
@@ -106,6 +108,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(numberF.empty());
   EXPECT_TRUE(numberF);
   EXPECT_TRUE(numberF.comment() == nullptr);
+  EXPECT_TRUE(number2 == number2);
+  EXPECT_TRUE(number2 != number3);
   
   SerializableValue bool1(true);
   EXPECT_EQ(SerializableValue::Type::boolean, bool1.type());
@@ -121,6 +125,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(bool2.empty());
   EXPECT_TRUE(bool2);
   EXPECT_TRUE(bool2.comment() == nullptr);
+  EXPECT_TRUE(bool2 == bool2);
+  EXPECT_TRUE(bool1 != bool2);
   
   SerializableValue str1(nullptr);
   EXPECT_EQ(SerializableValue::Type::text, str1.type());
@@ -150,6 +156,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(str4.empty());
   EXPECT_TRUE(str4);
   EXPECT_TRUE(str4.comment() == nullptr);
+  EXPECT_TRUE(str3 == str3);
+  EXPECT_TRUE(str3 != str4);
   
   SerializableValue str5(std::string{});
   EXPECT_EQ(SerializableValue::Type::text, str5.type());
@@ -219,6 +227,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(arr4.empty());
   EXPECT_TRUE(arr4);
   EXPECT_TRUE(arr4.comment() == nullptr);
+  EXPECT_TRUE(arr4 == arr4);
+  EXPECT_TRUE(arr3 != arr4);
   
   SerializableValue::Object sourceObj;
   SerializableValue obj1(std::move(sourceObj));
@@ -256,6 +266,8 @@ TEST_F(KeyValueSerializerTest, typedValueTest) {
   EXPECT_FALSE(obj3.empty());
   EXPECT_TRUE(obj3);
   EXPECT_TRUE(obj3.comment() == nullptr);
+  EXPECT_TRUE(obj2 == obj2);
+  EXPECT_TRUE(obj2 != obj3);
 }
 
 TEST_F(KeyValueSerializerTest, movedValueTest) {

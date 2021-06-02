@@ -199,6 +199,7 @@ TEST_F(EncoderTest, utf8Decode) {
   for (auto& it : utf8Codes) {
     EXPECT_EQ(it.first, Encoder::Utf8::decode(it.second.c_str()));
   }
+  EXPECT_EQ((uint32_t)0xFFFDu, Encoder::Utf8::decode("\xFF"));
 }
 TEST_F(EncoderTest, utf8EncodeDecode) {
   char buffer[4]{ 0 };
@@ -233,6 +234,8 @@ TEST_F(EncoderTest, utf16Decode) {
   for (auto& it : utf16Codes) {
     EXPECT_EQ((uint32_t)it.first, Encoder::Utf16::decode(it.second.c_str()));
   }
+  char16_t invalid[3]{ u'\xD800', u'\xD800', u'\0' };
+  EXPECT_EQ((uint32_t)0xFFFDu, Encoder::Utf16::decode(&invalid[0]));
 }
 TEST_F(EncoderTest, utf16EncodeDecode) {
   char16_t buffer[2]{ 0 };

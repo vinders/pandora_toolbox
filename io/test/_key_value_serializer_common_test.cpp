@@ -597,7 +597,8 @@ TEST_F(_KeyValueSerializerCommonTest, readTextInvalidUnicodeChars) {
   ASSERT_EQ(size_t{4u}, length);
   EXPECT_EQ((char)0, *it);
   EXPECT_EQ('b', text[length - 1]);
-  text[length - 1] = (char)0;
+  if (text != nullptr)
+    text[length - 1] = (char)0;
   EXPECT_STREQ(u8"\U000010A0", text);
   if (text) { free(text); text = nullptr; }
 }
@@ -702,7 +703,8 @@ TEST_F(_KeyValueSerializerCommonTest, readTextInvalidUnicodeInQuotes) {
   ASSERT_EQ(size_t{4u}, length);
   EXPECT_EQ('"', *it);
   EXPECT_EQ('b', text[length - 1]);
-  text[length - 1] = (char)0;
+  if (text != nullptr)
+    text[length - 1] = (char)0;
   EXPECT_STREQ(u8"\U000010A0", text);
   if (text) { free(text); text = nullptr; }
 }
