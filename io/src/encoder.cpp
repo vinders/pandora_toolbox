@@ -276,7 +276,7 @@ std::string Encoder::Utf8::fromFile(const char* fileData, size_t length, Encodin
         }
       }
     }
-    else // single character
+    else if (length == size_t{1u}) // single character
       return std::string(size_t{1u}, *fileData);
   }
   return std::string{}; // NULL fileData

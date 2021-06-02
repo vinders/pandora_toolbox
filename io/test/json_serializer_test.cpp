@@ -57,9 +57,9 @@ TEST_F(JsonSerializerTest, toJsonBaseTypesTest) {
   root["val"] = SerializableValue("\ttext value\nwith lines...\r\n");
   result = serializer.toString(root);
   EXPECT_EQ(std::string("{\n  \"val\": \"\ttext value\\nwith lines...\\r\\n\"\n}\n"), result);
-  root["val"] = SerializableValue(std::string("string text"));
+  root["val"] = SerializableValue(std::string("string\a\b text"));
   result = serializer.toString(root);
-  EXPECT_EQ(std::string("{\n  \"val\": \"string text\"\n}\n"), result);
+  EXPECT_EQ(std::string("{\n  \"val\": \"string\\a text\"\n}\n"), result);
 
   root["val"] = SerializableValue(SerializableValue::Array{});
   result = serializer.toString(root);
@@ -69,6 +69,9 @@ TEST_F(JsonSerializerTest, toJsonBaseTypesTest) {
   EXPECT_EQ(std::string("{\n  \"val\": [\n    7\n  ]\n}\n"), result);
   result = serializerI4.toString(root);
   EXPECT_EQ(std::string("{\n    \"val\": [\n        7\n    ]\n}\n"), result);
+  root["val"] = SerializableValue(SerializableValue::Array{ SerializableValue(7.5) });
+  result = serializer.toString(root);
+  EXPECT_EQ(std::string("{\n  \"val\": [\n    7.5"), result.substr(0,20));
 
   root["val"] = SerializableValue(SerializableValue::Object{});
   result = serializer.toString(root);
@@ -313,7 +316,10 @@ TEST_F(JsonSerializerTest, toJsonAllTypesTest) {
   subObj2["Tele"] = SerializableValue(52);
   subObj2["Strat"] = SerializableValue(57);
   subObj2["SG"] = SerializableValue(61);
-  subObj2["other"] = SerializableValue(SerializableValue::Array{ SerializableValue("LP"), SerializableValue("Flying-V"), SerializableValue("Explorer") });
+  SerializableValue::Object otherSubObj;
+  otherSubObj["a"] = SerializableValue("a");
+  otherSubObj["b"] = SerializableValue("b");
+  subObj2["other"] = SerializableValue(SerializableValue::Array{ SerializableValue("LP"), SerializableValue("Flying-V"), SerializableValue("Explorer"), std::move(otherSubObj) });
   section4["object2"] = std::move(subObj2);
   root["sec-4{}"] = std::move(section4);
 
@@ -395,6 +401,10 @@ TEST_F(JsonSerializerTest, toJsonAllTypesTest) {
     "        \"LP\"",
     "        \"Flying-V\"",
     "        \"Explorer\"",
+    "        {",
+    "          \"a\": \"a\"",
+    "          \"b\": \"b\"",
+    "        }",
     "      ]",
     "    }",
     "  }"
@@ -415,7 +425,8 @@ TEST_F(JsonSerializerTest, toJsonAllTypesTest) {
         && (part.size() < 5 || part[4] != '/') && (part.size() < 7 || part[6] != '/')
         && result[end + 1] != '}' && result[end + 3] != '}' && result[end + 3] != ']' && result[end + 3] != '/'
         && (end + 5 >= result.size() || (result[end + 5] != '}' && result[end + 5] != ']')) 
-        && (end + 7 >= result.size() || (result[end + 7] != '}' && result[end + 7] != ']'))) {
+        && (end + 7 >= result.size() || (result[end + 7] != '}' && result[end + 7] != ']'))
+        && (end + 9 >= result.size() || (result[end + 9] != '}' && result[end + 9] != ']'))) {
           EXPECT_TRUE(commaPos != std::string::npos);
           size_t commentPos = part.find_first_of('/', 0);
           if (commentPos != std::string::npos) {
@@ -523,7 +534,7 @@ TEST_F(JsonSerializerTest, fromJsonTypesTest) {
     "    \"ghi\": 1, \n"
     "  } ,\n"
     "  \"obj2\" : {\n"
-    "    \"zero-str\": \"0\", \n"
+    "    \"zero-str\\a\": \"0\", \n"
     "    \"arr\": [ \n"
     "      \"0\",  \n"
     "    ],  \n"
@@ -639,9 +650,9 @@ TEST_F(JsonSerializerTest, fromJsonTypesTest) {
   EXPECT_EQ(SerializableValue::Type::object, result.at("obj2").type());
   EXPECT_EQ((size_t)3, result.at("obj2").size());
   EXPECT_TRUE(result.at("obj2").getObject() != nullptr);
-  ASSERT_TRUE(result.at("obj2").getObject()->find("zero-str") != result.at("obj2").getObject()->end());
-  EXPECT_EQ(SerializableValue::Type::text, result.at("obj2").getObject()->at("zero-str").type());
-  EXPECT_STREQ("0", result.at("obj2").getObject()->at("zero-str").getText());
+  ASSERT_TRUE(result.at("obj2").getObject()->find("zero-str\a") != result.at("obj2").getObject()->end());
+  EXPECT_EQ(SerializableValue::Type::text, result.at("obj2").getObject()->at("zero-str\a").type());
+  EXPECT_STREQ("0", result.at("obj2").getObject()->at("zero-str\a").getText());
   ASSERT_TRUE(result.at("obj2").getObject()->find("arr") != result.at("obj2").getObject()->end());
   EXPECT_EQ(SerializableValue::Type::arrays, result.at("obj2").getObject()->at("arr").type());
   EXPECT_EQ((size_t)1u, result.at("obj2").getObject()->at("arr").size());

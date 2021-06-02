@@ -379,7 +379,7 @@ TEST_F(IniSerializerTest, fromIniTypesCommSectionsTest) {
     "apos-text = 'this is \\'not\\' a text' ;comment\n"
     "single-quote = \"bl@ bl@ !\n"
     "single-apos = \'bla bla ! ;comment\n"
-    "not-a-number=027-is-not-a-real-number ;yeah!\n"
+    "not-a-number=027-is-not-a-real\\a\\b-number\\t ;yeah!\n"
     "multi-sep= 125 = 126 = 127\n"
     "esc-str= \\\"abc\"\n"
     "\n"
@@ -512,7 +512,7 @@ TEST_F(IniSerializerTest, fromIniTypesCommSectionsTest) {
   EXPECT_STREQ("'bla bla !", s4->at("single-apos").getText());
   ASSERT_TRUE(s4->find("not-a-number") != s4->end());
   EXPECT_EQ(SerializableValue::Type::text, s4->at("not-a-number").type());
-  EXPECT_STREQ("027-is-not-a-real-number", s4->at("not-a-number").getText());
+  EXPECT_STREQ("027-is-not-a-real\a\b-number", s4->at("not-a-number").getText());
   ASSERT_TRUE(s4->find("multi-sep") != s4->end());
   EXPECT_EQ(SerializableValue::Type::text, s4->at("multi-sep").type());
   EXPECT_STREQ("125 = 126 = 127", s4->at("multi-sep").getText());

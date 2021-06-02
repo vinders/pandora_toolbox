@@ -277,6 +277,9 @@ TEST_F(EncoderTest, utf8ToUtf16) {
 // -- file reader UTF-8 --
 
 TEST_F(EncoderTest, fromFileEncodingKnownUtf8) {
+  EXPECT_EQ(std::string{}, Encoder::Utf8::fromFile(nullptr, (size_t)0, Encoding::utf8));
+  EXPECT_EQ(std::string{}, Encoder::Utf8::fromFile("", (size_t)0, Encoding::utf8));
+  EXPECT_EQ(std::string("a"), Encoder::Utf8::fromFile("a", (size_t)1u, Encoding::utf8));
   EXPECT_EQ(std::string(g_asciiU8), Encoder::Utf8::fromFile(asciiU8Bom(), strlen(asciiU8Bom()), Encoding::utf8));
   EXPECT_EQ(std::string(g_asciiU8), Encoder::Utf8::fromFile(g_asciiU8, strlen(g_asciiU8), Encoding::utf8));
   EXPECT_EQ(std::string(g_specialU8), Encoder::Utf8::fromFile(specialU8Bom(), strlen(specialU8Bom()), Encoding::utf8));
@@ -430,6 +433,9 @@ TEST_F(EncoderTest, fromFileEncodingKnownUtf16LE) {
 }
 
 TEST_F(EncoderTest, fromFileEncodingInvalidUtf16) {
+  EXPECT_NO_THROW(Encoder::Utf16::fromFile(nullptr, (size_t)0, Encoding::utf16BE)); // empty
+  EXPECT_NO_THROW(Encoder::Utf16::fromFile("", (size_t)0, Encoding::utf16BE)); // empty
+  EXPECT_NO_THROW(Encoder::Utf16::fromFile("a", (size_t)1u, Encoding::utf16BE)); // too short
   EXPECT_NO_THROW(Encoder::Utf16::fromFile(g_asciiU8, strlen(g_asciiU8), Encoding::utf16BE)); // incorrect encoding
   EXPECT_NO_THROW(Encoder::Utf16::fromFile(g_asciiU8, strlen(g_asciiU8), Encoding::utf16LE)); // incorrect encoding
   EXPECT_NO_THROW(Encoder::Utf16::fromFile(asciiU8Bom(), strlen(asciiU8Bom()), Encoding::utf16BE)); // incorrect encoding
