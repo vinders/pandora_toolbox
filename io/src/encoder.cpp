@@ -260,7 +260,7 @@ std::string Encoder::Utf8::fromFile(const char* fileData, size_t length, Encodin
         }
         // UTF-16BE -> re-encode
         case Encoding::utf16BE: {
-          if (*fileData == static_cast<char>(0x00FE) && *(fileData + 1) == static_cast<char>(0x00FF)) {
+          if (*fileData == '\xFE' && *(fileData + 1) == '\xFF') {
             fileData += 2; // skip BOM
             length -= 2u;
           }
@@ -268,7 +268,7 @@ std::string Encoder::Utf8::fromFile(const char* fileData, size_t length, Encodin
         }
         // UTF-16LE -> re-encode
         default: {
-          if (*fileData == static_cast<char>(0x00FF) && *(fileData + 1) == static_cast<char>(0x00FE)) { // reversed
+          if (*fileData == '\xFF' && *(fileData + 1) == '\xFE') { // reversed
             fileData += 2; // skip BOM
             length -= 2u;
           }

@@ -89,7 +89,7 @@ static std::unique_ptr<char[]> __toUtf16BE(const char16_t* value, size_t& outLen
     outLength += 2u;
   auto bigEndianValue = std::unique_ptr<char[]>(new char[outLength + 4u]);
   memset((void*)&(bigEndianValue.get()[outLength]), 0, 4*sizeof(char));
-  if (addBom) { bigEndianValue.get()[0] = static_cast<char>(0x00FE); bigEndianValue.get()[1] = static_cast<char>(0x00FF); }
+  if (addBom) { bigEndianValue.get()[0] = '\xFE'; bigEndianValue.get()[1] = '\xFF'; }
   
   if (__isBigEndian()) {
     memcpy(addBom ? (void*)&(bigEndianValue.get()[2]) : (void*)bigEndianValue.get(), (void*)value, outLength*sizeof(char));
@@ -111,7 +111,7 @@ static std::unique_ptr<char[]> __toUtf16LE(const char16_t* value, size_t& outLen
     outLength += 2u;
   auto ltEndianValue = std::unique_ptr<char[]>(new char[outLength + 4u]);
   memset((void*)&(ltEndianValue.get()[outLength]), 0, 4*sizeof(char));
-  if (addBom) { ltEndianValue.get()[0] = static_cast<char>(0x00FF); ltEndianValue.get()[1] = static_cast<char>(0x00FE); }
+  if (addBom) { ltEndianValue.get()[0] = '\xFF'; ltEndianValue.get()[1] = '\xFE'; }
 
   if (!__isBigEndian()) {
     memcpy(addBom ? (void*)&(ltEndianValue.get()[2]) : (void*)ltEndianValue.get(), (void*)value, outLength*sizeof(char));
