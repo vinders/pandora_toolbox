@@ -169,18 +169,15 @@ endif()
 # │  File detection - renderer-specific files                        │
 # └──────────────────────────────────────────────────────────────────┘
 if(CWORK_VIDEO_OPENGL4)
-    set(_INCLUDE_FILES ${_INCLUDE_FILES} ${_INCLUDE_DIR}/api/opengl.h)
     pandora_video_autodetect_files(openGL4)
 endif()
 if(CWORK_VIDEO_OPENGLES3)
-    set(_INCLUDE_FILES ${_INCLUDE_FILES} ${_INCLUDE_DIR}/api/opengl.h)
     pandora_video_autodetect_files(openGLES3)
 endif()
 if(CWORK_VIDEO_D3D11)
     pandora_video_autodetect_files(d3d11)
 endif()
 if(CWORK_VIDEO_VULKAN)
-    set(_INCLUDE_FILES ${_INCLUDE_FILES} ${_INCLUDE_DIR}/api/vulkan.h)
     pandora_video_autodetect_files(vulkan)
 endif()
 
