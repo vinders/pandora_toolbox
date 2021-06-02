@@ -115,7 +115,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         set(_VIDEO_VULKAN_NOT_SUPPORTED ON CACHE STRING "")
     else()
         if(NOT DEFINED CWORK_VIDEO_VULKAN)
-            option(CWORK_VIDEO_VULKAN "enable Vulkan 1.2 features" ON)
+            option(CWORK_VIDEO_VULKAN "enable Vulkan 1.2 features" OFF)
         endif()
     endif()
     
