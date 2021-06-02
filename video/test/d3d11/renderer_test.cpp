@@ -28,7 +28,7 @@
     EXPECT_TRUE(renderer.dxgiLevel() >= (uint32_t)1u);
     EXPECT_TRUE((uint32_t)renderer.featureLevel() >= (uint32_t)RendererDeviceLevel::direct3D_11_0);
 
-    EXPECT_TRUE((int)renderer.isHdrAvailable() <= (int)renderer.isTearingAvailable());
+    EXPECT_TRUE((int)renderer.isHdrAvailable() >= (int)renderer.isTearingAvailable());
     EXPECT_TRUE((int)renderer.isFlipSwapAvailable() >= (int)renderer.isTearingAvailable());
 
     uint32_t qualityMSAA1 = 0, qualityMSAA2 = 0, qualityMSAA4 = 0, qualityMSAA8 = 0, qualityInvalid = 0;

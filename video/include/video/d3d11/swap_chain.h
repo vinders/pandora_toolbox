@@ -54,6 +54,7 @@ License :     MIT
           
         private:
           Config _settings{ 0,0,0,0,0, 1,1,2, SwapChainOutputFlag::none,false };
+          Renderer* _device = nullptr;
           Handle _swapChain = nullptr;
           bool _isSwapChain11_1 = false;
         };

@@ -27,12 +27,12 @@ License :     MIT
         // ---
         
         /// @class Renderer
-        /// @brief Direct3D rendering device and swap-chain
+        /// @brief Direct3D rendering device and context
         /// @remarks - The renderer should be instanced before any other Direct3D resource, and kept alive while the window exists.
-        ///          - Before trying to display anything, a swap-chain must be created (by calling 'addSwapChain')
+        ///          - Before trying to display anything, a swap-chain must be created (by calling 'createSwapChain')
         ///          - Additional swap-chains can be created, when using multiple render targets (car games with rear/side mirrors, split-screen...)
-        /// @warning - The renderer/swap-chain destruction closes Direct3D context -> it should be done at the end of the program.
-        ///          - Accessors to D3D11 resources should only be called to use of special features (not accessible in the class)
+        /// @warning - The renderer destruction closes Direct3D context -> it should be done at the end of the program.
+        ///          - Accessors to native D3D11 resources should be reserved for internal usage or advanced features.
         class Renderer final {
         public:
           /// @brief Create Direct3D device and context
@@ -58,7 +58,7 @@ License :     MIT
           
           /// @brief Verify if all HDR functionalities are supported
           /// @warning That doesn't mean that the display supports it (verify 'isMonitorHdrCapable' for that)
-          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel > 5u); }
+          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Verify if buffer "flip" swap mode is supported (more efficient)
           inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Verify if screen tearing is supported (for variable refresh rate)
