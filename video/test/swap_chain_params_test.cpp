@@ -26,6 +26,7 @@ TEST_F(SwapChainParamsTest, gettersSettersTest) {
   EXPECT_EQ(RenderTargetMode::uniqueOutput, params.renderTargetMode());
   EXPECT_EQ(SwapChainOutputFlag::none, params.outputFlags());
   EXPECT_EQ(AlphaBlending::standard, params.alphaBlending());
+  EXPECT_EQ(StretchingMode::stretch, params.stretchingMode());
   EXPECT_EQ((uint32_t)1u, params.multisampleCount());
   EXPECT_EQ((uint32_t)60u, params.rateNumerator());
   EXPECT_EQ((uint32_t)1u, params.rateDenominator());
@@ -38,12 +39,14 @@ TEST_F(SwapChainParamsTest, gettersSettersTest) {
   EXPECT_EQ((uint32_t)1u, params.drawingBufferCount());
   params.setDrawingBufferNumber(0);
   EXPECT_NE((uint32_t)0, params.drawingBufferCount());
-  params.setRenderTargetMode(RenderTargetMode::none);
-  EXPECT_EQ(RenderTargetMode::none, params.renderTargetMode());
+  params.setRenderTargetMode(RenderTargetMode::partialOutput);
+  EXPECT_EQ(RenderTargetMode::partialOutput, params.renderTargetMode());
   params.setOutputFlags(SwapChainOutputFlag::localOutput | SwapChainOutputFlag::shaderInput);
   EXPECT_EQ((SwapChainOutputFlag::localOutput | SwapChainOutputFlag::shaderInput), params.outputFlags());
   params.setAlphaBlending(AlphaBlending::preMultiplied);
   EXPECT_EQ(AlphaBlending::preMultiplied, params.alphaBlending());
+  params.setStretchingMode(StretchingMode::stretchRatio);
+  EXPECT_EQ(StretchingMode::stretchRatio, params.stretchingMode());
   params.setMultisample(4u);
   EXPECT_EQ((uint32_t)4u, params.multisampleCount());
   params.setRefreshRate(60000u, 1001u);

@@ -338,41 +338,42 @@ License :     MIT
                                   : params.customDepthBufferFormat();
     outConfig.drawingBufferNumber = params.drawingBufferCount();
     
+    // multisample mode
+    if (params.multisampleCount() > 1u && renderer.isMultisampleSupported(params.multisampleCount(), outConfig.msaaQualityLevel))
+      outConfig.msaaSampleNumber = params.multisampleCount();
+    else {
+      outConfig.msaaSampleNumber = 1u;
+      outConfig.msaaQualityLevel = 1u;
+    }
+    
     // verify flip-swap support/constraints
     outConfig.useFlipSwap = (renderer.isFlipSwapAvailable() 
-                        && (renderer.isTearingAvailable() || (params.outputFlags() & SwapChainOutputFlag::variableRefresh) == SwapChainOutputFlag::none)
-                        && (params.renderTargetMode() == RenderTargetMode::uniqueOutput 
-                          || params.renderTargetMode() == RenderTargetMode::uniqueRatioOutput));
+                        && outConfig.msaaSampleNumber <= 1u // MSAA not allowed in flip-swap mode
+                        && (renderer.isTearingAvailable()   // tearing OFF or supported by flip-swap
+                           || (params.outputFlags() & SwapChainOutputFlag::variableRefresh) == SwapChainOutputFlag::none)
+                        && params.renderTargetMode() == RenderTargetMode::uniqueOutput); // only one render target view
     outSwapChainFormat = (outConfig.useFlipSwap) 
                        ? __verifyFlipSwap((DXGI_FORMAT)outConfig.backBufferFormat, outConfig.useFlipSwap) 
                        : (DXGI_FORMAT)outConfig.backBufferFormat;
     
     // buffer constraints
-    outConfig.bufferUsageMode = (params.renderTargetMode() != RenderTargetMode::none) ? (int32_t)DXGI_USAGE_RENDER_TARGET_OUTPUT : 0;
-    if ((params.outputFlags() & SwapChainOutputFlag::shaderInput) == true)
-      outConfig.bufferUsageMode |= (int32_t)DXGI_USAGE_SHADER_INPUT;
+    outConfig.bufferUsageMode = ((params.outputFlags() & SwapChainOutputFlag::shaderInput) == true)
+                              ? (int32_t)(DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT)
+                              : (int32_t)DXGI_USAGE_RENDER_TARGET_OUTPUT;
     outConfig.flags = params.outputFlags();
     if ((outConfig.flags & SwapChainOutputFlag::localOutput) == true && !renderer.isLocalOnlyOutputAvailable())
       outConfig.flags &= ~(SwapChainOutputFlag::localOutput);
     
     // buffer display
-    switch (params.renderTargetMode()) {
-      case RenderTargetMode::partialOutput:     outConfig.scalingMode = (int32_t)DXGI_SCALING_NONE; break;
-      case RenderTargetMode::uniqueRatioOutput: outConfig.scalingMode = (int32_t)DXGI_SCALING_ASPECT_RATIO_STRETCH; break;
+    switch (params.stretchingMode()) {
+      case StretchingMode::none:         outConfig.scalingMode = (int32_t)DXGI_SCALING_NONE; break;
+      case StretchingMode::stretchRatio: outConfig.scalingMode = (int32_t)DXGI_SCALING_ASPECT_RATIO_STRETCH; break;
       default: outConfig.scalingMode = (int32_t)DXGI_SCALING_STRETCH; break;
     }
     switch (params.alphaBlending()) {
       case AlphaBlending::ignored: outConfig.alphaBlending = (int32_t)DXGI_ALPHA_MODE_IGNORE; break;
       case AlphaBlending::preMultiplied: outConfig.alphaBlending = (int32_t)DXGI_ALPHA_MODE_PREMULTIPLIED; break;
       default: outConfig.alphaBlending = (int32_t)DXGI_ALPHA_MODE_STRAIGHT; break;
-    }
-    
-    // multisample mode
-    if (!outConfig.useFlipSwap && params.multisampleCount() > 1u && renderer.isMultisampleSupported(params.multisampleCount(), outConfig.msaaQualityLevel))
-      outConfig.msaaSampleNumber = params.multisampleCount();
-    else {
-      outConfig.msaaSampleNumber = 1u;
-      outConfig.msaaQualityLevel = 1u;
     }
   }
   
@@ -428,6 +429,8 @@ License :     MIT
         auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
         if (FAILED(result) || swapChain == nullptr)
           throwError(result, "Renderer: failed to create Direct3D 11.1 swap-chain");
+        if (!config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true)
+          ((IDXGISwapChain1*)swapChain)->SetFullscreenState(TRUE, nullptr); // without flip-swap, screen tearing requires fullscreen state
       }
       else
 #   endif
@@ -451,6 +454,8 @@ License :     MIT
       auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain((ID3D11Device*)this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
         throwError(result, "Renderer: failed to create Direct3D swap-chain");
+      if (!config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true)
+        ((IDXGISwapChain*)swapChain)->SetFullscreenState(TRUE, nullptr); // without flip-swap, screen tearing requires fullscreen state
     }
 
     ((IDXGIFactory1*)this->_dxgiFactory)->MakeWindowAssociation((HWND)window, DXGI_MWA_NO_ALT_ENTER); // prevent DXGI from responding to the ALT+ENTER shortcut

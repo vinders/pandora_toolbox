@@ -30,7 +30,8 @@ License :     MIT
         /// @brief Direct3D rendering device and context
         /// @remarks - The renderer should be instanced before any other Direct3D resource, and kept alive while the window exists.
         ///          - Before trying to display anything, a swap-chain must be created (by calling 'createSwapChain')
-        ///          - Additional swap-chains can be created, when using multiple render targets (car games with rear/side mirrors, split-screen...)
+        ///          - Additional swap-chains can be created (for example, for split-screen rendering with different params).
+        ///          - Note: for split-screen with the same params and effects, use different viewports instead.
         /// @warning - The renderer destruction closes Direct3D context -> it should be done at the end of the program.
         ///          - Accessors to native D3D11 resources should be reserved for internal usage or advanced features.
         class Renderer final {

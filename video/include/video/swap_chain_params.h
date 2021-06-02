@@ -12,11 +12,8 @@ namespace pandora {
   namespace video {
     /// @brief Render target output mode
     enum class RenderTargetMode : uint32_t {
-      none              = 0u, ///< Drawn graphics will only be used as an input (for a shader or a texture)
-      uniqueOutput      = 1u, ///< Unique display output: must be the only swap-chain of a rendering device (standard usage).
-      uniqueRatioOutput = 2u, ///< Unique display output, stretching has fixed aspect ratio (if the output target has a different size)
-                              ///  -> must be the only swap-chain of a rendering device.
-      partialOutput     = 3u  ///< Partial display output: multiple partial swap-chains used (split-screen, car mirrors, special views...), no stretching.
+      uniqueOutput      = 0u, ///< Unique display output: must be the only swap-chain of a rendering device (standard usage).
+      partialOutput     = 1u  ///< Partial display output: multiple partial swap-chains used (for example, for split-screen with different params).
     };
     /// @brief Advanced swap-chain output params (bit-mask flags)
     /// @warning Most of these features are not supported on old renderers (Direct3D 11.0, OpenGL 4.1...)
@@ -24,18 +21,24 @@ namespace pandora {
       none            = 0x0u, ///< No option
       variableRefresh = 0x1u, ///< Required for variable refresh rate display in fullscreen/borderless.
       localOutput     = 0x2u, ///< Restrict to local displays (prevent shared display, remote access, API access...)
-      shaderInput     = 0x4u, ///< Allow using swap-chain buffers as shader input data.
+      shaderInput     = 0x4u, ///< Allow using swap-chain output as shader input data.
       stereo          = 0x8u  ///< Stereo rendering mode, for 3D devices/glasses (only usable in fullscreen mode)
+    };
+    /// @brief Output stretching mode
+    enum class StretchingMode : uint32_t {
+      none         = 0u, ///< Output not stretched: centered/top-left (depending on API) with original buffer size.
+      stretch      = 1u, ///< Output stretched to fill render view.
+      stretchRatio = 2u  ///< Output stretched to fill one dimension of the render view (keep aspect ratio).
     };
     /// @brief Output buffer transparency mode
     enum class AlphaBlending : uint32_t {
       ignored       = 0u, ///< No transparency
       standard      = 1u, ///< Standard transparency: - rgba(255,0,0,255) == full saturation red, opaque.
-                          ///                         - rgba(128,0,0,128) == 50% saturation red, 50% transparent.
-                          ///                         - rgba(255,0,0,128) == full saturation red, 50% transparent.
+                          ///                         - rgba(127,0,0,127) == 50% saturation red, 50% transparent.
+                          ///                         - rgba(255,0,0,127) == full saturation red, 50% transparent.
       preMultiplied = 2u  ///< Pre-multiplied transparency: - rgba(255,0,0,255) == full saturation red, opaque.
-                          ///                               - rgba(128,0,0,128) == full saturation red, 50% transparent.
-                          ///                               - rgba(255,0,0,128) == additive blended red (200%), 50% transparent.
+                          ///                               - rgba(127,0,0,127) == full saturation red, 50% transparent.
+                          ///                               - rgba(255,0,0,127) == additive blended red, 50% transparent.
     };
     
     // ---
@@ -73,6 +76,8 @@ namespace pandora {
       inline SwapChainParams& setRenderTargetMode(RenderTargetMode mode) noexcept { this->_targetMode = mode; return *this; }
       /// @brief Set special swap-chain output settings
       inline SwapChainParams& setOutputFlags(SwapChainOutputFlag flags) noexcept { this->_outputFlags = flags; return *this; }
+      /// @brief Set output stretching mode
+      inline SwapChainParams& setStretchingMode(StretchingMode mode) noexcept { this->_stretchingMode = mode; return *this; }
       /// @brief Set transparency mode for rendering buffers
       inline SwapChainParams& setAlphaBlending(AlphaBlending mode) noexcept { this->_alphaBlending = mode; return *this; }
       /// @brief Set multi-sample anti-aliasing mode (1: disabled / 2-4-8: MSAA 2x-4x-8x)
@@ -93,6 +98,7 @@ namespace pandora {
 
       inline RenderTargetMode renderTargetMode() const noexcept { return _targetMode; }
       inline SwapChainOutputFlag outputFlags() const noexcept { return _outputFlags; }
+      inline StretchingMode stretchingMode() const noexcept { return _stretchingMode; }
       inline AlphaBlending alphaBlending() const noexcept { return _alphaBlending; }
       inline uint32_t multisampleCount() const noexcept { return _multiSampleCount; }
       inline uint32_t rateNumerator() const noexcept { return _rateNumerator; }
@@ -107,6 +113,7 @@ namespace pandora {
       
       RenderTargetMode _targetMode = RenderTargetMode::uniqueOutput;
       SwapChainOutputFlag _outputFlags = SwapChainOutputFlag::none;
+      StretchingMode _stretchingMode = StretchingMode::stretch;
       AlphaBlending _alphaBlending = AlphaBlending::standard;
       uint32_t _multiSampleCount = 1u;
       uint32_t _rateNumerator = 60u;
