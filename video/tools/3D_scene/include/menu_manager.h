@@ -14,7 +14,8 @@ namespace scene {
     rendererChange = 0,   // Direct3D/OpenGL/OpenGLES
     vsyncChange = 1,      // set vsync on/off
     splitScreenChange = 2,// single/multiple swap-chains
-    monitorChange = 3     // content scale change or HDR on/off
+    monitorChange = 3,    // content scale change or HDR on/off
+    specialChange = 4     // special feature on/off (fire, tv...)
   };
 
   // menu builder + manager

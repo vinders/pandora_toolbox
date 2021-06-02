@@ -16,9 +16,11 @@ namespace scene {
     d3d11 = 3
   };
   enum class RenderingMode : uint32_t {
-    normal = 0,
-    wireframe = 1,
-    ambientOcclusion = 2
+    shaded = 0,
+    textured = 1,
+    wireframe = 2,
+    splitWireframe = 3,
+    splitNoFx = 4
   };
   enum class AntiAliasing : uint32_t {
     none = 0,
@@ -59,12 +61,23 @@ namespace scene {
   enum class Mapping : uint32_t {
     none = 0
   };
+  enum class LightMode : uint32_t {
+    none = 0,
+    lights = 1,
+    ao = 2,
+    lightsAo = 3
+  };
+  enum class SpecialFeature : uint32_t {
+    none = 0,
+    tv = 1,
+    fire = 2
+  };
 
   // ---
 
   struct Options {
     RenderingApi api = RenderingApi::openGL4;
-    RenderingMode renderMode = RenderingMode::normal;
+    RenderingMode renderMode = RenderingMode::textured;
     AntiAliasing aa = AntiAliasing::none;
     VisualEffect fx = VisualEffect::none;
     Interpolation scnFilter = Interpolation::bilinear;
@@ -74,7 +87,8 @@ namespace scene {
     Upscaling sprUpscale = Upscaling::none;
     Mapping texMapping = Mapping::none;
     int32_t mouseSensitivity = 1;
+    LightMode light = LightMode::lights;
+    SpecialFeature special = SpecialFeature::none;
     bool useVsync = false;
-    bool splitScreen = false;
   };
 }

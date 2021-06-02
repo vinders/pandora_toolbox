@@ -13,7 +13,6 @@ License :     MIT
 #endif
 
 #define __MENU_API_VSYNC         190
-#define __MENU_API_SPLIT         191
 
 #define __MENU_API_NONE       200
 #define __MENU_API_OPENGL4    201
@@ -80,11 +79,13 @@ License :     MIT
 #define __MENU_SPR_FLT_MIN __MENU_SPR_FLT_NEAREST
 #define __MENU_SPR_FLT_MAX __MENU_SPR_FLT_SPLINE16
 
-#define __MENU_RENDER_NONE       900
-#define __MENU_RENDER_WIREFRAME  901
-#define __MENU_RENDER_AO         902
+#define __MENU_RENDER_NONE        900
+#define __MENU_RENDER_TEXTURE     901
+#define __MENU_RENDER_WIREFRAME   902
+#define __MENU_RENDER_SPLIT_WIRE  903
+#define __MENU_RENDER_SPLIT_NOFX  904
 #define __MENU_RENDER_MIN __MENU_RENDER_NONE
-#define __MENU_RENDER_MAX __MENU_RENDER_AO
+#define __MENU_RENDER_MAX __MENU_RENDER_SPLIT_NOFX
 
 #define __MENU_TEX_UP_NONE      1000
 #define __MENU_TEX_UP_MIN __MENU_TEX_UP_NONE
@@ -97,6 +98,19 @@ License :     MIT
 #define __MENU_SPR_UP_NONE      1200
 #define __MENU_SPR_UP_MIN __MENU_SPR_UP_NONE
 #define __MENU_SPR_UP_MAX __MENU_SPR_UP_NONE
+
+#define __MENU_SCN_LIGHT_NONE    1300
+#define __MENU_SCN_LIGHT_BASE    1301
+#define __MENU_SCN_LIGHT_AO      1302
+#define __MENU_SCN_LIGHT_AO_BASE 1303
+#define __MENU_SCN_LIGHT_MIN __MENU_SCN_LIGHT_NONE
+#define __MENU_SCN_LIGHT_MAX __MENU_SCN_LIGHT_AO_BASE
+
+#define __MENU_SPECIAL_NONE  1400
+#define __MENU_SPECIAL_TV_RENDER_TEXTURE  1401
+#define __MENU_SPECIAL_FIRE_PARTICLES  1402
+#define __MENU_SPECIAL_MIN __MENU_SPECIAL_NONE
+#define __MENU_SPECIAL_MAX __MENU_SPECIAL_FIRE_PARTICLES
 
 
 #if defined(_WINDOWS)
@@ -165,18 +179,28 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
 
   outSettings.mouseSensitivity = __MENU_MOUSE_SENSIV_AVG - __MENU_MOUSE_SENSIV_MIN;
   __addSeparator(viewerPopup, true);
-  __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_LOW, _SYSTEM_STR("Low sensitivity"), false);
-  __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_AVG, _SYSTEM_STR("Average sensitivity"), true);
+  __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_LOW,  _SYSTEM_STR("Low sensitivity"), false);
+  __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_AVG,  _SYSTEM_STR("Average sensitivity"), true);
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_HIGH, _SYSTEM_STR("High sensitivity"), false);
 
-  outSettings.renderMode = RenderingMode::normal;
+  outSettings.renderMode = scene::RenderingMode::textured;
   __addSeparator(viewerPopup, true);
-  __addMenuItem(viewerPopup, __MENU_RENDER_NONE, _SYSTEM_STR("Standard"), true);
-  __addMenuItem(viewerPopup, __MENU_RENDER_WIREFRAME, _SYSTEM_STR("Wireframe"), false);
-  __addMenuItem(viewerPopup, __MENU_RENDER_AO, _SYSTEM_STR("Ambient occlusion"), false);
-  outSettings.splitScreen = false;
+  __addMenuItem(viewerPopup, __MENU_RENDER_NONE,       _SYSTEM_STR("Shaded"), false);
+  __addMenuItem(viewerPopup, __MENU_RENDER_TEXTURE,    _SYSTEM_STR("Textured"), true);
+  __addMenuItem(viewerPopup, __MENU_RENDER_WIREFRAME,  _SYSTEM_STR("Wireframe"), false);
+  __addMenuItem(viewerPopup, __MENU_RENDER_SPLIT_WIRE, _SYSTEM_STR("Wireframe / textured"), false);
+  __addMenuItem(viewerPopup, __MENU_RENDER_SPLIT_NOFX, _SYSTEM_STR("Raw / effects"), false);
+  outSettings.light = scene::LightMode::lights;
   __addSeparator(viewerPopup, true);
-  __addMenuItem(viewerPopup, __MENU_API_SPLIT, _SYSTEM_STR("Split screen"), false);
+  __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_NONE,    _SYSTEM_STR("No lights"), false);
+  __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_BASE,    _SYSTEM_STR("Lighting"), true);
+  __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO,      _SYSTEM_STR("Ambient occlusion"), false);
+  __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO_BASE, _SYSTEM_STR("Lighting + AO"), false);
+  outSettings.special = scene::SpecialFeature::none;
+  __addSeparator(viewerPopup, true);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_NONE,    _SYSTEM_STR("No advanced feature"), true);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_TV_RENDER_TEXTURE,    _SYSTEM_STR("TV / render-view"), false);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_FIRE_PARTICLES,      _SYSTEM_STR("Fire / particles"), false);
   outSettings.useVsync = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_API_VSYNC, _SYSTEM_STR("Vsync"), false);
@@ -191,8 +215,8 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
 
   outSettings.aa = scene::AntiAliasing::none;
   __addSeparator(screenFilterPopup, true);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_OFF, _SYSTEM_STR("No AA"), true);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_FXAA, _SYSTEM_STR("FXAA (fast/blur)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_OFF,   _SYSTEM_STR("No AA"), true);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_AA_FXAA,  _SYSTEM_STR("FXAA (fast/blur)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA4, _SYSTEM_STR("SMAA 4x (morph.)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA8, _SYSTEM_STR("SMAA 8x (morph.)"), false);
@@ -202,18 +226,18 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
 
   outSettings.fx = scene::VisualEffect::none;
   __addSeparator(screenFilterPopup, true);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_OFF, _SYSTEM_STR("No effect"), true);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_COLOR, _SYSTEM_STR("Color blending"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CRTVISION, _SYSTEM_STR("CRT colors/scan-lines"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_FOG, _SYSTEM_STR("Fog effect"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_BLOOM, _SYSTEM_STR("Bloom effect"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_OFF,         _SYSTEM_STR("No effect"), true);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_COLOR,       _SYSTEM_STR("Color blending"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CRTVISION,   _SYSTEM_STR("CRT colors/scan-lines"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_FOG,         _SYSTEM_STR("Fog effect"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_BLOOM,       _SYSTEM_STR("Bloom effect"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_LUMASHARPEN, _SYSTEM_STR("Luma sharpen effect"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_BROKENGLASS, _SYSTEM_STR("Broken glass"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_STORYBOOK, _SYSTEM_STR("Storybook mode"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_PENCIL, _SYSTEM_STR("Pencil mode"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_NEON, _SYSTEM_STR("Neon mode (edges)"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CARTOON, _SYSTEM_STR("Cartoon mode"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_MEDIAN, _SYSTEM_STR("Median filter"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_STORYBOOK,   _SYSTEM_STR("Storybook mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_PENCIL,      _SYSTEM_STR("Pencil mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_NEON,        _SYSTEM_STR("Neon mode (edges)"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_CARTOON,     _SYSTEM_STR("Cartoon mode"), false);
+  __addMenuItem(screenFilterPopup, __MENU_SCN_FX_MEDIAN,      _SYSTEM_STR("Median filter"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_UNSHARPMASK, _SYSTEM_STR("Unsharp masking"), false);
 
   outSettings.texFilter = scene::Interpolation::bilinear;
@@ -267,16 +291,9 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       break;
     }
     case __MENU_API_VSYNC/100: {
-      if (id == __MENU_API_SPLIT) {
-        this->_settings.splitScreen ^= true;
-        __selectMenuItem((void*)this->_resource->handle(), __MENU_API_SPLIT, this->_settings.splitScreen);
-        apiChangeHandler(scene::ApiChangeType::splitScreenChange);
-      }
-      else {
-        this->_settings.useVsync ^= true;
-        __selectMenuItem((void*)this->_resource->handle(), __MENU_API_VSYNC, this->_settings.useVsync);
-        apiChangeHandler(scene::ApiChangeType::vsyncChange);
-      }
+      this->_settings.useVsync ^= true;
+      __selectMenuItem((void*)this->_resource->handle(), __MENU_API_VSYNC, this->_settings.useVsync);
+      apiChangeHandler(scene::ApiChangeType::vsyncChange);
       break;
     }
     case __MENU_MOUSE_SENSIV_MIN/100:
@@ -290,7 +307,14 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.renderMode != (scene::RenderingMode)(id - __MENU_RENDER_MIN)) {
         this->_settings.renderMode = (scene::RenderingMode)(id - __MENU_RENDER_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_RENDER_MIN, __MENU_RENDER_MAX);
-        filterChangeHandler();
+        apiChangeHandler(scene::ApiChangeType::splitScreenChange);
+      }
+      break;
+    case __MENU_SPECIAL_NONE/100:
+      if (this->_settings.special != (scene::SpecialFeature)(id - __MENU_SPECIAL_MIN)) {
+        this->_settings.special = (scene::SpecialFeature)(id - __MENU_SPECIAL_MIN);
+        __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SPECIAL_MIN, __MENU_SPECIAL_MAX);
+        apiChangeHandler(scene::ApiChangeType::specialChange);
       }
       break;
     case __MENU_SCN_AA_MIN/100:
@@ -346,6 +370,13 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.sprUpscale != (scene::Upscaling)(id - __MENU_SPR_UP_MIN)) {
         this->_settings.sprUpscale = (scene::Upscaling)(id - __MENU_SPR_UP_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SPR_UP_MIN, __MENU_SPR_UP_MAX);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_SCN_LIGHT_MIN/100:
+      if (this->_settings.light != (scene::LightMode)(id - __MENU_SCN_LIGHT_MIN)) {
+        this->_settings.light = (scene::LightMode)(id - __MENU_SCN_LIGHT_MIN);
+        __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SCN_LIGHT_MIN, __MENU_SCN_LIGHT_MAX);
         filterChangeHandler();
       }
       break;
