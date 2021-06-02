@@ -2,13 +2,13 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Description : Window input events & handlers - Cocoa implementation (Mac OS)
+Description : Window events & handlers - UIKit implementation (iOS)
 *******************************************************************************/
 #if !defined(_WINDOWS) && defined(__APPLE__)
 # include <TargetConditionals.h>
 #endif
-#if !defined(_WINDOWS) && defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE)
-# include "video/window_input.h"
+#if !defined(_WINDOWS) && defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+# include "video/window_events.h"
 
   
 // -- keyboard events -- ----------------------------------------------------------

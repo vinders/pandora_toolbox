@@ -2,10 +2,10 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Description : Window input events & handlers - JNI implementation (Android)
+Description : Window events & handlers - Wayland implementation (Linux)
 *******************************************************************************/
-#if !defined(_WINDOWS) && defined(__ANDROID__)
-# include "video/window_input.h"
+#if !defined(_WINDOWS) && !defined(__APPLE__) && !defined(__ANDROID__) && defined(_P_ENABLE_LINUX_WAYLAND) && (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
+# include "video/window_events.h"
 
   
 // -- keyboard events -- ----------------------------------------------------------

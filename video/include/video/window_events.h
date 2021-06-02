@@ -2,11 +2,11 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-description : window input events & handlers
-types : WindowEventHandler, KeyboardEventHandler, MouseEventHandler, TouchEventHandler
-enums : KeyboardEvent, KeyTransition, MouseEvent, MouseButton, TouchEvent
-methods : virtualKeyToChar, mouseWheelDelta, isMouseButtonPressed
-keycodes: see <video/window_keycodes.h>
+- description : window events & handlers (system/hardware/input events)
+- types : WindowEventHandler, KeyboardEventHandler, MouseEventHandler, TouchEventHandler
+- enums : KeyboardEvent, KeyTransition, MouseEvent, MouseButton, TouchEvent
+- functions : virtualKeyToChar, mouseWheelDelta, isMouseButtonPressed
+- keycodes: see <video/window_keycodes.h>
 *******************************************************************************/
 #pragma once
 

@@ -2,13 +2,13 @@
 Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
-Description : Window input events & handlers - Win32 implementation (Windows)
+Description : Window events & handlers - Win32 implementation (Windows)
 *******************************************************************************/
 #ifdef _WINDOWS
 # include <cassert>
 # include <cstdint>
 # include <system/api/windows_api.h>
-# include "video/window_input.h"
+# include "video/window_events.h"
 # include "video/window_keycodes.h"
 
   

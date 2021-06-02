@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <cstddef>
 #include <cstring>
-#include <video/window_input.h>
+#include <video/window_events.h>
 #include <video/window_keycodes.h>
 
 using namespace pandora::video;
 
-class WindowInputTest : public testing::Test {
+class WindowEventsTest : public testing::Test {
 public:
 protected:
   //static void SetUpTestCase() {}
@@ -19,7 +19,7 @@ protected:
 
 // -- event handler data --
 
-TEST_F(WindowInputTest, verifyKeyCodeValues) {
+TEST_F(WindowEventsTest, verifyKeyCodeValues) {
   // command keys
   EXPECT_EQ((uint32_t)0, (uint32_t)virtualKeyToChar(_P_VK_UNKNOWN));
   EXPECT_EQ((uint32_t)0, (uint32_t)virtualKeyToChar(_P_VK_L_ALT));
@@ -133,7 +133,7 @@ TEST_F(WindowInputTest, verifyKeyCodeValues) {
 # endif
 }
 
-TEST_F(WindowInputTest, mouseAccessors) {
+TEST_F(WindowEventsTest, mouseAccessors) {
   EXPECT_NE(0, mouseWheelDelta());
   EXPECT_FALSE(isMouseButtonPressed(0, MouseButton::left));
   EXPECT_FALSE(isMouseButtonPressed(0, MouseButton::middle));

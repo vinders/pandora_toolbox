@@ -12,7 +12,7 @@ License :     MIT
 #include <hardware/display_monitor.h>
 #include <system/preprocessor_tools.h>
 #include "video/window_handle.h"
-#include "video/window_input.h"
+#include "video/window_events.h"
 #include "video/window_resource.h"
 
 namespace pandora {
