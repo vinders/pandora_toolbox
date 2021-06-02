@@ -33,6 +33,10 @@ License :     MIT
 
   SwapChain::SwapChain(Renderer* device, const SwapChain::Config& settings, uint32_t width, uint32_t height, 
                        Handle swapChain, bool isSwapChain11_1) {
+    memcpy((void*)&_settings, (void*)&settings, sizeof(SwapChain::Config));
+    this->_swapChain = swapChain;
+    this->_isSwapChain11_1 = isSwapChain11_1;
+
     // TODO Renderer: store/remove render targets created/destroyed by SwapChain (+SwapChain destructor callback)
   }
   
@@ -40,7 +44,24 @@ License :     MIT
   
   // Destroy swap-chain + invalidate all associated buffers
   SwapChain::~SwapChain() noexcept {
-    
+    if (this->_swapChain != nullptr) {
+      if (this->_isSwapChain11_1)
+        ((IDXGISwapChain1*)this->_swapChain)->Release();
+      else
+        ((IDXGISwapChain*)this->_swapChain)->Release();
+    }
+  }
+
+  SwapChain::SwapChain(SwapChain&& rhs) noexcept : _swapChain(rhs._swapChain), _isSwapChain11_1(rhs._isSwapChain11_1) {
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(SwapChain::Config));
+    rhs._swapChain = nullptr;
+  }
+  SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(SwapChain::Config));
+    this->_swapChain = rhs._swapChain;
+    this->_isSwapChain11_1 = rhs._isSwapChain11_1;
+    rhs._swapChain = nullptr;
+    return *this;
   }
   
   // ---

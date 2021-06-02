@@ -406,38 +406,41 @@ License :     MIT
     // create swap-chain
     bool isSwapChain11_1 = false;
     SwapChain::Handle swapChain = nullptr;
-    
-    if (this->_dxgiLevel >= 2u) {
-      // Direct3D 11.1+
-      auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: failed to access DirectX 11.1 graphics infra");
-      auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface((ID3D11Device*)this->_device, "Renderer: failed to access DirectX 11.1 device");
-      isSwapChain11_1 = true;
-      
-      DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
-      fullscnDescriptor.Windowed = ((config.flags & SwapChainOutputFlag::stereo) == true) ? FALSE : TRUE;
-      DXGI_SWAP_CHAIN_DESC1 descriptor = {};
-      descriptor.Width = width;
-      descriptor.Height = height;
-      descriptor.Format = swapChainFormat;
-      descriptor.BufferCount = (UINT)config.drawingBufferNumber;
-      descriptor.BufferUsage = (DXGI_USAGE)config.bufferUsageMode;
-      descriptor.Scaling = (DXGI_SCALING)config.scalingMode;
-      descriptor.AlphaMode = (DXGI_ALPHA_MODE)config.alphaBlending;
-      fullscnDescriptor.RefreshRate.Numerator = (UINT)params.rateNumerator();
-      fullscnDescriptor.RefreshRate.Denominator = (UINT)params.rateDenominator();
-      descriptor.SwapEffect = (config.useFlipSwap) ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD;
-      descriptor.SampleDesc.Count = config.msaaSampleNumber;
-      descriptor.SampleDesc.Quality = config.msaaQualityLevel - 1;
-      descriptor.Stereo = ((config.flags & SwapChainOutputFlag::stereo) == true) ? TRUE : FALSE;
-      descriptor.Flags = (config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-      if ((config.flags & SwapChainOutputFlag::localOutput) == true)
-        descriptor.Flags |= DXGI_SWAP_CHAIN_FLAG_DISPLAY_ONLY;
 
-      auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
-      if (FAILED(result) || swapChain == nullptr)
-        throwError(result, "Renderer: failed to create Direct3D 11.1 swap-chain");
-    }
-    else {
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      if (this->_dxgiLevel >= 2u) {
+        // Direct3D 11.1+
+        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: failed to access DirectX 11.1 graphics infra");
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface((ID3D11Device*)this->_device, "Renderer: failed to access DirectX 11.1 device");
+        isSwapChain11_1 = true;
+        
+        DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
+        fullscnDescriptor.Windowed = ((config.flags & SwapChainOutputFlag::stereo) == true) ? FALSE : TRUE;
+        DXGI_SWAP_CHAIN_DESC1 descriptor = {};
+        descriptor.Width = width;
+        descriptor.Height = height;
+        descriptor.Format = swapChainFormat;
+        descriptor.BufferCount = (UINT)config.drawingBufferNumber;
+        descriptor.BufferUsage = (DXGI_USAGE)config.bufferUsageMode;
+        descriptor.Scaling = (DXGI_SCALING)config.scalingMode;
+        descriptor.AlphaMode = (DXGI_ALPHA_MODE)config.alphaBlending;
+        fullscnDescriptor.RefreshRate.Numerator = (UINT)params.rateNumerator();
+        fullscnDescriptor.RefreshRate.Denominator = (UINT)params.rateDenominator();
+        descriptor.SwapEffect = (config.useFlipSwap) ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD;
+        descriptor.SampleDesc.Count = config.msaaSampleNumber;
+        descriptor.SampleDesc.Quality = config.msaaQualityLevel - 1;
+        descriptor.Stereo = ((config.flags & SwapChainOutputFlag::stereo) == true) ? TRUE : FALSE;
+        descriptor.Flags = (config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+        if ((config.flags & SwapChainOutputFlag::localOutput) == true)
+          descriptor.Flags |= DXGI_SWAP_CHAIN_FLAG_DISPLAY_ONLY;
+
+        auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
+        if (FAILED(result) || swapChain == nullptr)
+          throwError(result, "Renderer: failed to create Direct3D 11.1 swap-chain");
+      }
+      else
+#   endif
+    {
       // Direct3D 11.0
       DXGI_SWAP_CHAIN_DESC descriptor = {};
       descriptor.BufferDesc.Width = width;

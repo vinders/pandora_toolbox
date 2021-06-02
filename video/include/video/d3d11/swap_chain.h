@@ -39,9 +39,9 @@ License :     MIT
           ~SwapChain() noexcept;
           
           SwapChain(const SwapChain&) = delete;
-          SwapChain(SwapChain&& rhs) noexcept = delete;
+          SwapChain(SwapChain&& rhs) noexcept;
           SwapChain& operator=(const SwapChain&) = delete;
-          SwapChain& operator=(SwapChain&&) noexcept = delete;
+          SwapChain& operator=(SwapChain&&) noexcept;
           
           /// @brief Change back-buffer(s) size + invalidate all associated buffers
           /// @throws exception on failure

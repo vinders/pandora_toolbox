@@ -5,7 +5,7 @@ License :     MIT
 #pragma once
 
 #include <cstdint>
-# include "./component_format.h"
+#include "./component_format.h"
 #include <system/preprocessor_tools.h>
 
 namespace pandora {
