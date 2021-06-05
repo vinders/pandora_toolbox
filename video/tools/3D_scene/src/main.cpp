@@ -14,6 +14,7 @@ License :     MIT
 #include <video/window.h>
 #include "window_builder.h"
 #include "menu_manager.h"
+#include "program.h"
 #if defined(_WINDOWS)
 # include <system/api/windows_api.h>
 # include <system/api/windows_app.h>
@@ -24,9 +25,9 @@ License :     MIT
 using namespace pandora::video;
 
 struct {
-  scene::Options settings;
-  std::unique_ptr<scene::MenuManager> menuManager = nullptr;
+  std::shared_ptr<scene::MenuManager> menuManager = nullptr;
   std::unique_ptr<Window> window = nullptr;
+  std::unique_ptr<scene::Program> program = nullptr;
   PixelSize screenSize{ 0,0 };
   float frequency = (float)__P_FREQUENCY;
   bool isMouseLeftDown = false;
@@ -36,10 +37,26 @@ struct {
 // -- command handlers -- ------------------------------------------------------
 
 void onApiChange(scene::ApiChangeType update) {
-  //...
+  switch (update) {
+    case scene::ApiChangeType::rendererChange:
+      g_windowState.program.reset();
+      g_windowState.program = scene::Program::createProgram(g_windowState.menuManager, *g_windowState.window);
+      break;
+    case scene::ApiChangeType::viewportChange:
+      if (g_windowState.program)
+        g_windowState.program->onViewportChange();
+      break;
+    case scene::ApiChangeType::monitorChange: {
+      auto windowSize = g_windowState.window->getClientSize();
+      if (g_windowState.program)
+        g_windowState.program->onSizeChange(windowSize.width, windowSize.height);
+      break;
+    }
+  }
 }
 void onFilterChange() {
-  //...
+  if (g_windowState.program)
+    g_windowState.program->onFilterChange();
 }
 
 
@@ -53,6 +70,7 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t status, int32_t posX, in
                                     MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
       if (reply == MessageBox::Result::action2) // "no" button
         return true; // cancel close event
+      g_windowState.program.reset();
       break;
     }
     case WindowEvent::menuCommand: {
@@ -73,8 +91,8 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
       g_windowState.screenSize.width = sizeX;
       g_windowState.screenSize.height = sizeY;
       scene::updateWindowCaption(*sender, sizeX, sizeY, g_windowState.frequency);
-
-      //resize render view: ...
+      if (g_windowState.program)
+        g_windowState.program->onSizeChange(sizeX, sizeY);
       break;
     case PositionEvent::sizePositionTrack: 
       g_windowState.screenSize.width = sizeX;
@@ -114,8 +132,8 @@ bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_
       }
       break;
     case MouseEvent::rawMotion:
-      //rotate cam: (g_windowState.settings.mouseSensitivity+3)*x;
-      //rotate cam: (g_windowState.settings.mouseSensitivity+3)*y;
+      //rotate cam: (g_windowState.menuManager->settings.mouseSensitivity+3)*x;
+      //rotate cam: (g_windowState.menuManager->settings.mouseSensitivity+3)*y;
       break;
     default: break;
   }
@@ -132,7 +150,7 @@ bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_
 int main() {
 #endif
   try {
-    g_windowState.menuManager = std::unique_ptr<scene::MenuManager>(new scene::MenuManager(g_windowState.settings));
+    g_windowState.menuManager = std::make_shared<scene::MenuManager>();
     g_windowState.menuManager->apiChangeHandler = &onApiChange;
     g_windowState.menuManager->filterChangeHandler = &onFilterChange;
     
@@ -142,11 +160,14 @@ int main() {
     g_windowState.window->setKeyboardHandler(&onKeyboardEvent);
     g_windowState.window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible);
     g_windowState.window->show();
+
+    g_windowState.program = scene::Program::createProgram(g_windowState.menuManager, *g_windowState.window);
     
     uint32_t loopCount = 0;
     auto timePoint = std::chrono::steady_clock::now();
     while (Window::pollEvents()) {
-      //...
+      if (g_windowState.program)
+        g_windowState.program->renderFrame();
       
       // calculate refresh frequency
       if (++loopCount >= ((uint32_t)__P_FREQUENCY)) {
@@ -156,10 +177,8 @@ int main() {
         timePoint = newTime;
         scene::updateWindowCaption(*g_windowState.window, g_windowState.screenSize.width, g_windowState.screenSize.height, g_windowState.frequency);
       }
-      // vsync / sleep
-      if (g_windowState.settings.useVsync)
-        /*TMP*/std::this_thread::sleep_for(std::chrono::milliseconds(10LL));
-      else
+      // sleep (if no vsync)
+      if (!g_windowState.menuManager->settings().useVsync || g_windowState.program == nullptr)
         std::this_thread::sleep_for(std::chrono::milliseconds(950LL/(int64_t)__P_FREQUENCY)); // 60Hz (NB: 950 = 1000ms - average processing time)
     }
   }

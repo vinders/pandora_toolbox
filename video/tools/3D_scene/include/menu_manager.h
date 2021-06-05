@@ -11,21 +11,21 @@ License :     MIT
 
 namespace scene {
   enum class ApiChangeType : uint32_t {
-    rendererChange = 0,   // Direct3D/OpenGL/OpenGLES
-    vsyncChange = 1,      // set vsync on/off
-    splitScreenChange = 2,// single/multiple swap-chains
-    monitorChange = 3,    // content scale change or HDR on/off
-    specialChange = 4     // special feature on/off (fire, tv...)
+    rendererChange = 0, // Direct3D/OpenGL/OpenGLES
+    vsyncChange = 1,    // set vsync on/off
+    viewportChange = 2, // single/multiple swap-chains
+    monitorChange = 3   // content scale change or HDR on/off
   };
 
   // menu builder + manager
   class MenuManager final {
   public:
     // create menu-bar
-    MenuManager(Options& outSettings);
+    MenuManager();
     ~MenuManager() = default;
     
     std::shared_ptr<pandora::video::WindowResource> resource() noexcept { return _resource; }
+    const Options& settings() const noexcept { return _settings; }
     
     // menu event management
     void onMenuCommand(int32_t id);
@@ -36,6 +36,6 @@ namespace scene {
     
   private:
     std::shared_ptr<pandora::video::WindowResource> _resource = nullptr;
-    Options& _settings;
+    Options _settings;
   };
 }

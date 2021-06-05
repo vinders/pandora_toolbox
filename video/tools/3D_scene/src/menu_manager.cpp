@@ -144,14 +144,14 @@ License :     MIT
 // ---
 
 // create main menu-bar
-scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSettings) {
+scene::MenuManager::MenuManager() {
   auto viewerPopup = __createMenu(true);
   auto screenFilterPopup = __createMenu(true);
   auto textureFilterPopup = __createMenu(true);
   auto spriteFilterPopup = __createMenu(true);
 
 # if defined(_VIDEO_D3D11_SUPPORT)
-    outSettings.api = scene::RenderingApi::d3d11;
+    this->_settings.api = scene::RenderingApi::d3d11;
     __addMenuItem(viewerPopup, __MENU_API_D3D11, _SYSTEM_STR("Direct3D 11"), true);
 #   if defined(_VIDEO_OPENGL4_SUPPORT)
       __addMenuItem(viewerPopup, __MENU_API_OPENGL4, _SYSTEM_STR("OpenGL 4"), false);
@@ -161,51 +161,51 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
 #   endif
 
 # elif defined(_VIDEO_OPENGL4_SUPPORT)
-    outSettings.api = scene::RenderingApi::openGL4;
+    this->_settings.api = scene::RenderingApi::openGL4;
     __addMenuItem(viewerPopup, __MENU_API_OPENGL4, _SYSTEM_STR("OpenGL 4"), true);
 #   if defined(_VIDEO_OPENGLES3_SUPPORT)
       __addMenuItem(viewerPopup, __MENU_API_OPENGL4, _SYSTEM_STR("OpenGLES 3"), false);
 #   endif
 
 # elif defined(_VIDEO_OPENGLES3_SUPPORT)
-    outSettings.api = scene::RenderingApi::openGLES3;
+    this->_settings.api = scene::RenderingApi::openGLES3;
     __addMenuItem(viewerPopup, __MENU_API_OPENGLES3, _SYSTEM_STR("OpenGLES 3"), true);
 # else
-    outSettings.api = scene::RenderingApi::none;
+    this->_settings.api = scene::RenderingApi::none;
     __addMenuItem(viewerPopup, __MENU_API_NONE, _SYSTEM_STR("No renderer"), true);
 # endif
 
-  outSettings.mouseSensitivity = __MENU_MOUSE_SENSIV_AVG - __MENU_MOUSE_SENSIV_MIN;
+  this->_settings.mouseSensitivity = __MENU_MOUSE_SENSIV_AVG - __MENU_MOUSE_SENSIV_MIN;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_LOW,  _SYSTEM_STR("Low sensitivity"), false);
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_AVG,  _SYSTEM_STR("Average sensitivity"), true);
   __addMenuItem(viewerPopup, __MENU_MOUSE_SENSIV_HIGH, _SYSTEM_STR("High sensitivity"), false);
 
-  outSettings.renderMode = scene::RenderingMode::textured;
+  this->_settings.renderMode = scene::RenderingMode::textured;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_RENDER_NONE,       _SYSTEM_STR("Shaded"), false);
   __addMenuItem(viewerPopup, __MENU_RENDER_TEXTURE,    _SYSTEM_STR("Textured"), true);
   __addMenuItem(viewerPopup, __MENU_RENDER_WIREFRAME,  _SYSTEM_STR("Wireframe"), false);
   __addMenuItem(viewerPopup, __MENU_RENDER_SPLIT_WIRE, _SYSTEM_STR("Wireframe / textured"), false);
   __addMenuItem(viewerPopup, __MENU_RENDER_SPLIT_NOFX, _SYSTEM_STR("Raw / effects"), false);
-  outSettings.light = scene::LightMode::lights;
+  this->_settings.light = scene::LightMode::lights;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_NONE,    _SYSTEM_STR("No lights"), false);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_BASE,    _SYSTEM_STR("Lighting"), true);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO,      _SYSTEM_STR("Ambient occlusion"), false);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO_BASE, _SYSTEM_STR("Lighting + AO"), false);
-  outSettings.useMiniMap = false;
-  outSettings.useParticles = false;
-  outSettings.useRefraction = false;
+  this->_settings.useMiniMap = false;
+  this->_settings.useParticles = false;
+  this->_settings.useRefraction = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_SPECIAL_MAP_RENDER_TEXTURE, _SYSTEM_STR("Mini-map view"), false);
   __addMenuItem(viewerPopup, __MENU_SPECIAL_FIRE_PARTICLES,     _SYSTEM_STR("Fire / particles"), false);
   __addMenuItem(viewerPopup, __MENU_SPECIAL_REFRACTION_SHPERE,  _SYSTEM_STR("Refraction globe"), false);
-  outSettings.useVsync = false;
+  this->_settings.useVsync = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_API_VSYNC, _SYSTEM_STR("Vsync"), false);
 
-  outSettings.aa = scene::AntiAliasing::none;
+  this->_settings.aa = scene::AntiAliasing::none;
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_OFF,   _SYSTEM_STR("No AA"), true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_FXAA,  _SYSTEM_STR("FXAA (fast/blur)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), false);
@@ -214,7 +214,7 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA2, _SYSTEM_STR("MSAA 2x (multisample)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA4, _SYSTEM_STR("MSAA 4x (multisample)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), false);
-  outSettings.fx = scene::VisualEffect::none;
+  this->_settings.fx = scene::VisualEffect::none;
   __addSeparator(screenFilterPopup, true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_OFF,         _SYSTEM_STR("No effect"), true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_COLOR,       _SYSTEM_STR("Color blending"), false);
@@ -230,29 +230,29 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_MEDIAN,      _SYSTEM_STR("Median filter"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_UNSHARPMASK, _SYSTEM_STR("Unsharp masking"), false);
 
-  outSettings.texFilter = scene::Interpolation::bilinear;
+  this->_settings.texFilter = scene::Interpolation::bilinear;
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_NEAREST,  _SYSTEM_STR("Nearest"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_BILINEAR, _SYSTEM_STR("Bilinear"), true);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_GAUSS,    _SYSTEM_STR("Gauss"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_BESSEL,   _SYSTEM_STR("Bessel"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_SPLINE16, _SYSTEM_STR("Spline16"), false);
-  outSettings.texUpscale = Upscaling::none;
+  this->_settings.texUpscale = Upscaling::none;
   __addSeparator(textureFilterPopup, true);
   __addMenuItem(textureFilterPopup, __MENU_TEX_UP_NONE, _SYSTEM_STR("1x"), true);
-  outSettings.texMapping = Mapping::none;
+  this->_settings.texMapping = Mapping::none;
   __addSeparator(textureFilterPopup, true);
   __addMenuItem(textureFilterPopup, __MENU_TEX_MAP_NONE, _SYSTEM_STR("No mapping"), true);
 
 
-  outSettings.sprFilter = scene::Interpolation::bilinear;
+  this->_settings.sprFilter = scene::Interpolation::bilinear;
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_NEAREST,  _SYSTEM_STR("Nearest"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_BILINEAR, _SYSTEM_STR("Bilinear"), true);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_GAUSS,    _SYSTEM_STR("Gauss"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_BESSEL,   _SYSTEM_STR("Bessel"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_SPLINE16, _SYSTEM_STR("Spline16"), false);
-  outSettings.sprUpscale = Upscaling::none;
+  this->_settings.sprUpscale = Upscaling::none;
   __addSeparator(spriteFilterPopup, true);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_UP_NONE, _SYSTEM_STR("1x"), true);
 
@@ -294,14 +294,14 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.renderMode != (scene::RenderingMode)(id - __MENU_RENDER_MIN)) {
         this->_settings.renderMode = (scene::RenderingMode)(id - __MENU_RENDER_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_RENDER_MIN, __MENU_RENDER_MAX);
-        apiChangeHandler(scene::ApiChangeType::splitScreenChange);
+        apiChangeHandler(scene::ApiChangeType::viewportChange);
       }
       break;
     case __MENU_SCN_AA_MIN/100:
       if (this->_settings.aa != (scene::AntiAliasing)(id - __MENU_SCN_AA_MIN)) {
         this->_settings.aa = (scene::AntiAliasing)(id - __MENU_SCN_AA_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SCN_AA_MIN, __MENU_SCN_AA_MAX);
-        filterChangeHandler();
+        apiChangeHandler(scene::ApiChangeType::viewportChange);
       }
       break;
     case __MENU_SCN_FX_MIN/100:
@@ -362,7 +362,7 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         default: break;
       }
       __selectMenuItem((void*)this->_resource->handle(), id, value);
-      apiChangeHandler(scene::ApiChangeType::specialChange);
+      filterChangeHandler();
       break;
     }
     default: break;
