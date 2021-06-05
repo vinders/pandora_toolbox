@@ -26,6 +26,7 @@ codecov:
   max_report_age: off
 
 coverage:
+  range: 50..100
   round: down
   status:
     project:
