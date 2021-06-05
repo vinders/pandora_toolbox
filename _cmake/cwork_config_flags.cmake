@@ -57,7 +57,7 @@ if(MSVC)
 
 else() # GCC / Clang
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        add_compile_options(-Wall -Wno-missing-braces -Wmissing-field-initializers)
+        add_compile_options(-Wall -Wno-missing-braces -Wmissing-field-initializers -Wno-misleading-indentation)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
         set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline")
