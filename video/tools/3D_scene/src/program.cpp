@@ -6,6 +6,10 @@ License :     MIT
 #include "program.h"
 #if defined(_WINDOWS)
 # include <video/d3d11/renderer.h>
+#else
+# include <video/component_format.h>
+# include <video/render_options.h>
+# include <video/swap_chain_params.h>
 #endif
 
 using namespace pandora::video;
