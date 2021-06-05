@@ -70,7 +70,7 @@ Examples:
 | Generate code documentation (doxygen) for the built solution.<br><sub>*Default: OFF*</sub>   | CWORK_DOCS                 | ON<br>OFF     | all desktop systems           |
 | Include special tools related to projects in the built solution.<br><sub>*Default: ON*</sub> | CWORK_TOOLS                | ON<br>OFF     | all systems                   |
 | Generate debugging headers to allow code coverage.<br><sub>*Default: OFF*</sub>              | CWORK_COVERAGE             | ON<br>OFF     | only linux/unix systems       |
-| Minimum Windows version support (vista/7/8.1/10.rs2).<br><sub>*Default: "8" on Win8.1/10+, otherwise "6"/"7"*</sub>       | CWORK_WINDOWS_VERSION  | "10" "8"<br>"7" "6"  | only windows systems   |
+| Minimum Windows version support (7/8.1/10.RS2).<br><sub>*Default: "8" on Win8.1/10+, otherwise "7"*</sub>       | CWORK_WINDOWS_VERSION  | "10" "8"<br>"7"  | only windows systems   |
 | Use Linux Wayland display server (instead of X.org).<br><sub>*Default: OFF*</sub>            | CWORK_LINUX_WAYLAND        | ON<br>OFF     | only linux systems            |
 | Enable OpenGL 4 features.<br><sub>*Default: ON on desktop systems*</sub>                     | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all desktop systems    |
 | Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems    |
