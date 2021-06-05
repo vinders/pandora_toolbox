@@ -132,7 +132,38 @@
   }
 
   TEST_F(SwapChainTest, createSwapChainResized) {
+    auto window = pandora::video::Window::Builder{}
+                    .setDisplayMode(pandora::video::WindowType::window, pandora::video::WindowBehavior::globalContext, 
+                                    pandora::video::ResizeMode::fixed)
+                    .setSize(600,400)
+                    .create(L"_SWAPCHAIN_TEST1", L"Test");
 
+    pandora::hardware::DisplayMonitor monitor;
+    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+
+    pandora::video::SwapChainParams params{};
+    SwapChain chain1(renderer, params, window->handle(), 600, 400);
+    EXPECT_TRUE(chain1.handle() != nullptr);
+    EXPECT_TRUE(chain1.handleLevel1() == nullptr || chain1.handleLevel1() == chain1.handle());
+    EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
+    EXPECT_FALSE(chain1.isHdrEnabled());
+    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    EXPECT_NO_THROW(chain1.swapBuffers(false));
+    EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
+    EXPECT_NO_THROW(chain1.swapBuffers(true));
+
+    window->resize(640, 480);
+    chain1.resize(640, 480);
+    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+
+    EXPECT_TRUE(chain1.handle() != nullptr);
+    EXPECT_TRUE(chain1.handleLevel1() == nullptr || chain1.handleLevel1() == chain1.handle());
+    EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
+    EXPECT_FALSE(chain1.isHdrEnabled());
+    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    EXPECT_NO_THROW(chain1.swapBuffers(false));
+    EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
+    EXPECT_NO_THROW(chain1.swapBuffers(true));
   }
 
 #endif

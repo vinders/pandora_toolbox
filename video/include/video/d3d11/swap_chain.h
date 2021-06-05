@@ -71,7 +71,6 @@ License :     MIT
           // -- operations --
           
           /// @brief Change back-buffer(s) size + refresh color space
-          /// @param frameBufferNumber  The number of frame-buffers (front-buffer + back-buffers) can be changed. Use 0 to keep current number.
           /// @remarks Must be called when the window size changes, or when the display monitor is different.
           /// @warning - Invalidates all associated buffers -> they should be created again.
           ///          - A new depth buffer with the same size must be created.
@@ -80,7 +79,7 @@ License :     MIT
           /// @throws - invalid_argument: if width/height is 0 -> retry with valid arguments.
           ///         - domain_error: if new monitor uses a different adapter -> a new Renderer (with a new SwapChain) must be created (using current may crash).
           ///         - runtime_error: resize failure -> a new SwapChain must be created (using current swap-chain again may crash).
-          bool resize(uint32_t width, uint32_t height, uint32_t frameBufferNumber = 0);
+          bool resize(uint32_t width, uint32_t height);
           
           /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen
           /// @param useVsync  Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).

@@ -277,7 +277,7 @@ License :     MIT
 // -- operations -- ------------------------------------------------------------
 
   // Change back-buffer(s) size + refresh color space
-  bool SwapChain::resize(uint32_t width, uint32_t height, uint32_t frameBufferNumber) { // throws
+  bool SwapChain::resize(uint32_t width, uint32_t height) { // throws
     bool isResized = (width != this->_settings.width || height != this->_settings.height);
     if (isResized) {
       if (width == 0 || height == 0)
@@ -295,8 +295,6 @@ License :     MIT
       // resize swap-chain
       DXGI_SWAP_CHAIN_FLAG flags = (this->_settings.useFlipSwap && (this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) 
                                  ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : (DXGI_SWAP_CHAIN_FLAG)0;
-      if (frameBufferNumber)
-        this->_settings.frameBufferCount = frameBufferNumber;
       auto result = ((IDXGISwapChain*)this->_swapChain)->ResizeBuffers((UINT)this->_settings.frameBufferCount, (UINT)width, (UINT)height, 
                                                                        (DXGI_FORMAT)this->_settings.swapChainFormat, flags);
       if (FAILED(result)) {
