@@ -9,21 +9,7 @@ License :     MIT
     namespace video {
       namespace d3d11 {
         // Throw native error message (or default if no message available)
-        static void throwError(HRESULT result, const char* defaultMessage) {
-          if (FAILED(result)) {
-            if (FACILITY_WINDOWS == HRESULT_FACILITY(result)) 
-              result = HRESULT_CODE(result);
-            
-            char* buffer; 
-            if(FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, 
-                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr) != 0) { 
-              std::string error = buffer;
-              LocalFree(buffer); 
-              throw std::runtime_error(std::move(error));
-            } 
-          }
-          throw std::runtime_error(defaultMessage);
-        }
+        void throwError(HRESULT result, const char* messageContent);
         
         // ---
         
@@ -77,7 +63,7 @@ License :     MIT
           inline bool hasValue() const noexcept { return (_value != nullptr); } ///< Verify validity
           inline T& value() const noexcept { return _value; } ///< Read value (no verification -> call hasValue() first!)
           inline T* get() noexcept { return _value; }         ///< Get value pointer
-          inline T** address() noexcept { return &_value; }   ///< Get value address (for assignment)
+          inline T** address() noexcept { destroy(); return &_value; } ///< Free previous value + get value address (for assignment)
           
           // -- builders --
           

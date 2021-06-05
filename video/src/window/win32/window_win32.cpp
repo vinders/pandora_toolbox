@@ -117,7 +117,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 // -- accessors -- -------------------------------------------------------------
   
   // Get native window handle
-  WindowHandle Window::handle() const noexcept { return this->_impl->handle(); }
+  WindowHandle Window::handle() const noexcept { return (WindowHandle)this->_impl->handle(); }
   // Get window type (fullscreen/borderless/window/...)
   WindowType Window::displayMode() const noexcept { return this->_impl->displayMode(); }
   // Get window type (fullscreen/borderless/window/...)

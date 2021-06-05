@@ -7,93 +7,193 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <hardware/display_monitor.h>
-# include "../swap_chain_params.h"
-# include "./swap_chain.h"
+# include "./_private/_swap_chain_config.h"
+# include "../component_format.h"
+# include "../render_options.h"
+# include "../window_handle.h"
+# include "./renderer_state.h"
 
   namespace pandora {
     namespace video {
       namespace d3d11 {
-        using DxgiFactory = void*;     // IDXGIFactory1*
-        using Device = void*;          // ID3D11Device*
-        using DeviceContext = void*;   // ID3D11DeviceContext*
-        using RenderTargetView = void*;// ID3D11RenderTargetView*
-        
-        /// @brief Direct3D feature level
-        enum class RendererDeviceLevel : uint32_t {
-          direct3D_11_0 = 0, ///< 11.0
-          direct3D_11_1 = 1  ///< 11.1+
-        };
-
-        // ---
+        class SwapChain;
         
         /// @class Renderer
-        /// @brief Direct3D rendering device and context
-        /// @remarks - The renderer should be instanced before any other Direct3D resource, and kept alive while the window exists.
-        ///          - Before trying to display anything, a swap-chain must be created (by calling 'createSwapChain')
-        ///          - Additional swap-chains can be created (for example, for split-screen rendering with different params).
-        ///          - Note: for split-screen with the same params and effects, use different viewports instead.
-        /// @warning - The renderer destruction closes Direct3D context -> it should be done at the end of the program.
-        ///          - Accessors to native D3D11 resources should be reserved for internal usage or advanced features.
+        /// @brief Direct3D rendering device and context (specific to adapter)
+        /// @warning - Renderer is the main Direct3D resource, and should be kept alive while the program runs.
+        ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer must be created.
+        ///          - Accessors to native D3D11 resources should be reserved for internal usage or for advanced features.
+        /// @remarks - To render on display output, create a SwapChain + setActiveRenderTarget with it and a depth buffer.
+        ///          - To render to a texture, create a TextureBuffer + setActiveRenderTarget with it and a depth buffer.
+        ///          - Multiple active targets can be used simultaneously, to render the same image on multiple outputs/textures.
+        ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
+        ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.
+        ///          - Split-screen rendering (same window): alternate between different Viewport instances on the same SwapChain.
         class Renderer final {
         public:
-          /// @brief Create Direct3D device and context
-          /// @param minLevel  The system tries to use the highest available device level (based on Cmake/cwork options).
+          using DeviceHandle = void*;    // ID3D11Device*
+          using DeviceContext = void*;   // ID3D11DeviceContext*
+          using Texture2dHandle = void*; // ID3D11Texture2D*
+          using RenderTargetViewHandle = void*;// ID3D11RenderTargetView*
+          using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
+          using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
+          using RasterizerState = pandora::video::d3d11::RasterizerState;
+          using FilterStates = pandora::video::d3d11::FilterStates;
+          
+          /// @brief Direct3D feature level
+          enum class DeviceLevel : uint32_t {
+            direct3D_11_0 = 0, ///< 11.0
+#           if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+              direct3D_11_1 = 1  ///< 11.1/11.3/11.4
+#           endif
+          };
+          
+          // ---
+        
+          /// @brief Create Direct3D rendering device and context
+          /// @param monitor   Target display monitor for the renderer: used to determine the adapter to choose.
+          /// @param minLevel  The system uses the highest available device level (based on Cmake/cwork option _DEFAULT_D3D11_MAX_VERSION).
           ///                  If some feature level is not available, the level below is used (and so on).
-          ///                  Argument 'minLevel' specifies the minimum level allowed.
-          /// @throws exception on failure
-          Renderer(RendererDeviceLevel minLevel = RendererDeviceLevel::direct3D_11_0) { _createDeviceResources((uint32_t)minLevel); }
+          ///                  Argument 'minLevel' specifies the minimum level allowed (-> exception if higher than available levels).
+          /// @throws - out_of_range: if minLevel is too high.
+          ///         - runtime_error: creation failure.
+          Renderer(const pandora::hardware::DisplayMonitor& monitor, DeviceLevel minLevel = DeviceLevel::direct3D_11_0);
           /// @brief Destroy device and context resources
-          ~Renderer() noexcept;
+          ~Renderer() noexcept { _destroy(); }
           
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
-          Renderer& operator=(Renderer&&) noexcept;
+          Renderer& operator=(Renderer&& rhs) noexcept;
           
-          inline Device device() const noexcept { return this->_device; }          ///< Get Direct3D rendering device (cast to 'ID3D11Device*')
+          // -- accessors --
+          
+          inline DeviceHandle device() const noexcept { return this->_device; } ///< Get Direct3D rendering device (cast to 'ID3D11Device*')
           inline DeviceContext context() const noexcept { return this->_context; } ///< Get Direct3D device context (cast to 'ID3D11DeviceContext*')
-          inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; }  ///< Get available level of DXGI on current system (1-6)
-          inline RendererDeviceLevel featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1)
-
-          // -- feature support --
           
-          /// @brief Verify if all HDR functionalities are supported
-          /// @warning That doesn't mean that the display supports it (verify 'isMonitorHdrCapable' for that)
-          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          /// @brief Verify if buffer "flip" swap mode is supported (more efficient)
-          inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          /// @brief Verify if screen tearing is supported (for variable refresh rate)
-          inline bool isTearingAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
-          /// @brief Verify if output can be restricted to local displays
-          inline bool isLocalOnlyOutputAvailable() const noexcept { return (this->_dxgiLevel >= 3u); }
-          /// @brief Verify if a multisample mode is supported
-          /// @param sampleCount  Number of samples: 1, 2, 4 or 8
-          bool isMultisampleSupported(uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept;
+          inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; } ///< Get available DXGI level on current system (1-6)
+          inline DeviceLevel featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
+          static size_t maxSimultaneousRenderViews() noexcept; ///< Max number of simultaneous render views (swap-chains, texture targets...)
           
-          /// @brief Verify if a display monitor can display HDR colors
-          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
           
-          // -- swap-chain creation --
+          // -- feature support --
           
-          /// @brief Create new rendering swap-chain for current device
-          /// @throws exception on failure
-          SwapChain createSwapChain(const pandora::video::SwapChainParams& params, WindowHandle window, uint32_t width, uint32_t height);
+          /// @brief Verify if all HDR functionalities are supported
+          /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
+          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
+          /// @brief Verify if a display monitor can display HDR colors
+          /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
+          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
+          
+          /// @brief Verify if a multisample mode is supported (MSAA) + get max quality level
+          /// @param componentFormat Color/component format (example: pandora::video::ComponentFormat::rgba8_sRGB)
+          /// @param sampleCount     Number of samples: 1, 2, 4 or 8
+          inline bool isMultisampleSupported(uint32_t sampleCount, pandora::video::ComponentFormat format) const noexcept {
+            uint32_t qualityLevel = 1;
+            return _isMultisampleSupported(sampleCount, _toDxgiFormat(format), qualityLevel);
+          }
+          
+          /// @brief Screen tearing supported (variable refresh rate display)
+          inline bool isTearingAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
+          /// @brief "Flip" swap mode supported -> for internal usage
+          inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
+          /// @brief Restricting to local displays supported (no screen sharing or printing)
+          inline bool isLocalDisplayRestrictionAvailable() const noexcept { return (this->_dxgiLevel >= 3u); }
+          
+          // -- resource builder --
+          
+          /// @brief Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
+          RasterizerState createRasterizerState(pandora::video::CullMode culling, bool isFrontClockwise, 
+                                                const pandora::video::DepthBias& depth, bool useMsaa = false,
+                                                bool scissorClipping = false); // throws
+          /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+          /// @param index              Insert position in outStateContainer (-1 to append)
+          /// @param outStateContainer  RAII container in which to insert/append new state item
+          void createFilterState(FilterStates& outStateContainer, int32_t index = -1); // throws
+          /// @brief Max array size for sample filters
+          size_t maxFilterStates() const noexcept;
+          
+          // -- status operations --
 
-        private:
-          void _createDeviceResources(uint32_t minLevel);
+          /// @brief Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
+          /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
+          ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
+          void setRasterizerState(const RasterizerState& state) noexcept;
+          
+          /// @brief Set array of sampler filters to the fragment/pixel shader stage
+          /// @remarks To remove some filters, use NULL values at their index
+          void setFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Reset all sampler filters
+          void clearFilterStates() noexcept;
+          
+          // -- render target operations --
+          
+          /// @brief Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
+          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
+          void clear(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          /// @brief Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
+          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
+          void clear(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          
+          /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
+          /// @warning Binding multiple targets simultaneously is only possible if:
+          ///          - their width/height is the same;
+          ///          - their number of frame-buffers is the same;
+          ///          - their component format is the same;
+          ///          - their MSAA options are the same.
+          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
+          ///          - It should be called before the first iteration of the program loop.
+          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
+          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
+          ///          - Multiple render-targets can be used simultaneously: pass an array as 'views' and its size as 'numberViews'.
+          ///          - Calling it with 0 views (or a NULL view) disables active render-targets.
+          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
+                                      DepthStencilViewHandle depthBuffer = nullptr) noexcept;
+          /// @brief Bind/replace active render-target in Renderer (single target)
+          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
+          ///          - It should be called before the first iteration of the program loop.
+          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
+          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
+          ///          - Calling it with a NULL view disables active render-targets.
+          inline void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer = nullptr) noexcept {
+            setActiveRenderTargets(&view, size_t{1u}, depthBuffer);
+          }
+          
+          /// @brief Bind/replace active render-target(s) in Renderer (multi-target) + clear render-targets/buffer
+          /// @remarks If the render-targets contain new buffers (or resized), this is the recommended method (to reset them before using them).
+          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                                      const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          /// @brief Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
+          /// @remarks If the render-target is a new buffer (or resized), this is the recommended method (to reset it before using it).
+          void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          
         
         private:
-          Device _device = nullptr;           // ID3D11Device*
-          DeviceContext _context = nullptr;   // ID3D11DeviceContext*
-          DxgiFactory _dxgiFactory = nullptr; // IDXGIFactory1*
-          RendererDeviceLevel _deviceLevel = RendererDeviceLevel::direct3D_11_1;
+          void _destroy() noexcept;
+          void _refreshDxgiFactory(); // throws
+          static int32_t _toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
+          bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
+          void* _createSwapChain(const _SwapChainConfig& config, WindowHandle window,
+                                 uint32_t rateNumerator, uint32_t rateDenominator, 
+                                 DeviceLevel& outSwapChainLevel); // throws
+          friend class SwapChain;
+          
+        private:
+          void* _dxgiFactory = nullptr;     // IDXGIFactory1*
+          DeviceHandle _device = nullptr;   // ID3D11Device*
+          DeviceContext _context = nullptr; // ID3D11DeviceContext*
+          DeviceLevel _deviceLevel = DeviceLevel::direct3D_11_1;
           uint32_t _dxgiLevel = 1;
         };
       }
     }
   }
-  
+
+# include "./swap_chain.h"
 #endif
