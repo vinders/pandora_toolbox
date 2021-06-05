@@ -29,8 +29,12 @@ if not "%1" == "" (
     if "%1" == "vs2017-64" cmake -G "Visual Studio 15 2017" -A x64 -S . -B "./_build/%1" -DCWORK_CPP_REVISION="14"
     if "%1" == "vs2019-T2017-32" cmake -G "Visual Studio 16 2019" -A Win32 -T v141 -S . -B "./_build/%1"
     if "%1" == "vs2019-T2017-64" cmake -G "Visual Studio 16 2019" -A x64 -T v141 -S . -B "./_build/%1"
+    if "%1" == "vs2019-T2017-32-win7" cmake -G "Visual Studio 16 2019" -A Win32 -T v141 -S . -B "./_build/%1" -DCWORK_WINDOWS_VERSION="7" -DCWORK_OPENGL4_VERSION="45" -DCWORK_D3D11_VERSION="110"
+    if "%1" == "vs2019-T2017-64-win7" cmake -G "Visual Studio 16 2019" -A x64 -T v141 -S . -B "./_build/%1" -DCWORK_WINDOWS_VERSION="7" -DCWORK_OPENGL4_VERSION="45" -DCWORK_D3D11_VERSION="110"
     if "%1" == "vs2019-32" cmake -G "Visual Studio 16 2019" -A Win32 -S . -B "./_build/%1"
     if "%1" == "vs2019-64" cmake -G "Visual Studio 16 2019" -A x64 -S . -B "./_build/%1"
+    if "%1" == "vs2019-32-win10" cmake -G "Visual Studio 16 2019" -A Win32 -S . -B "./_build/%1" -DCWORK_WINDOWS_VERSION="10" -DCWORK_OPENGL4_VERSION="46" -DCWORK_D3D11_VERSION="114"
+    if "%1" == "vs2019-64-win10" cmake -G "Visual Studio 16 2019" -A x64 -S . -B "./_build/%1" -DCWORK_WINDOWS_VERSION="10" -DCWORK_OPENGL4_VERSION="46" -DCWORK_D3D11_VERSION="114"
     if "%1" == "vs2019-clangcl32" cmake -G "Visual Studio 16 2019" -A Win32 -T ClangCL -S . -B "./_build/%1" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m32"
     if "%1" == "vs2019-clangcl64" cmake -G "Visual Studio 16 2019" -A x64 -T ClangCL -S . -B "./_build/%1" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_FLAGS="-m64"
     shift
