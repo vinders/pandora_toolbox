@@ -106,11 +106,9 @@ License :     MIT
 #define __MENU_SCN_LIGHT_MIN __MENU_SCN_LIGHT_NONE
 #define __MENU_SCN_LIGHT_MAX __MENU_SCN_LIGHT_AO_BASE
 
-#define __MENU_SPECIAL_NONE  1400
-#define __MENU_SPECIAL_TV_RENDER_TEXTURE  1401
-#define __MENU_SPECIAL_FIRE_PARTICLES  1402
-#define __MENU_SPECIAL_MIN __MENU_SPECIAL_NONE
-#define __MENU_SPECIAL_MAX __MENU_SPECIAL_FIRE_PARTICLES
+#define __MENU_SPECIAL_MAP_RENDER_TEXTURE 1401
+#define __MENU_SPECIAL_FIRE_PARTICLES     1402
+#define __MENU_SPECIAL_REFRACTION_SHPERE  1403
 
 
 #if defined(_WINDOWS)
@@ -196,25 +194,18 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_BASE,    _SYSTEM_STR("Lighting"), true);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO,      _SYSTEM_STR("Ambient occlusion"), false);
   __addMenuItem(viewerPopup, __MENU_SCN_LIGHT_AO_BASE, _SYSTEM_STR("Lighting + AO"), false);
-  outSettings.special = scene::SpecialFeature::none;
+  outSettings.useMiniMap = false;
+  outSettings.useParticles = false;
+  outSettings.useRefraction = false;
   __addSeparator(viewerPopup, true);
-  __addMenuItem(viewerPopup, __MENU_SPECIAL_NONE,    _SYSTEM_STR("No advanced feature"), true);
-  __addMenuItem(viewerPopup, __MENU_SPECIAL_TV_RENDER_TEXTURE,    _SYSTEM_STR("TV / render-view"), false);
-  __addMenuItem(viewerPopup, __MENU_SPECIAL_FIRE_PARTICLES,      _SYSTEM_STR("Fire / particles"), false);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_MAP_RENDER_TEXTURE, _SYSTEM_STR("Mini-map view"), false);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_FIRE_PARTICLES,     _SYSTEM_STR("Fire / particles"), false);
+  __addMenuItem(viewerPopup, __MENU_SPECIAL_REFRACTION_SHPERE,  _SYSTEM_STR("Refraction globe"), false);
   outSettings.useVsync = false;
   __addSeparator(viewerPopup, true);
   __addMenuItem(viewerPopup, __MENU_API_VSYNC, _SYSTEM_STR("Vsync"), false);
 
-  outSettings.scnFilter = scene::Interpolation::bilinear;
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_NEAREST,  _SYSTEM_STR("Nearest"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_BILINEAR, _SYSTEM_STR("Bilinear"), true);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_GAUSS,    _SYSTEM_STR("Gauss"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_BESSEL,   _SYSTEM_STR("Bessel"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), false);
-  __addMenuItem(screenFilterPopup, __MENU_SCN_FLT_SPLINE16, _SYSTEM_STR("Spline16"), false);
-
   outSettings.aa = scene::AntiAliasing::none;
-  __addSeparator(screenFilterPopup, true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_OFF,   _SYSTEM_STR("No AA"), true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_FXAA,  _SYSTEM_STR("FXAA (fast/blur)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), false);
@@ -223,7 +214,6 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA2, _SYSTEM_STR("MSAA 2x (multisample)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA4, _SYSTEM_STR("MSAA 4x (multisample)"), false);
   __addMenuItem(screenFilterPopup, __MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), false);
-
   outSettings.fx = scene::VisualEffect::none;
   __addSeparator(screenFilterPopup, true);
   __addMenuItem(screenFilterPopup, __MENU_SCN_FX_OFF,         _SYSTEM_STR("No effect"), true);
@@ -247,11 +237,9 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_BESSEL,   _SYSTEM_STR("Bessel"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), false);
   __addMenuItem(textureFilterPopup, __MENU_TEX_FLT_SPLINE16, _SYSTEM_STR("Spline16"), false);
-
   outSettings.texUpscale = Upscaling::none;
   __addSeparator(textureFilterPopup, true);
   __addMenuItem(textureFilterPopup, __MENU_TEX_UP_NONE, _SYSTEM_STR("1x"), true);
-
   outSettings.texMapping = Mapping::none;
   __addSeparator(textureFilterPopup, true);
   __addMenuItem(textureFilterPopup, __MENU_TEX_MAP_NONE, _SYSTEM_STR("No mapping"), true);
@@ -264,7 +252,6 @@ scene::MenuManager::MenuManager(scene::Options& outSettings) : _settings(outSett
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_BESSEL,   _SYSTEM_STR("Bessel"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), false);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_FLT_SPLINE16, _SYSTEM_STR("Spline16"), false);
-
   outSettings.sprUpscale = Upscaling::none;
   __addSeparator(spriteFilterPopup, true);
   __addMenuItem(spriteFilterPopup, __MENU_SPR_UP_NONE, _SYSTEM_STR("1x"), true);
@@ -310,13 +297,6 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         apiChangeHandler(scene::ApiChangeType::splitScreenChange);
       }
       break;
-    case __MENU_SPECIAL_NONE/100:
-      if (this->_settings.special != (scene::SpecialFeature)(id - __MENU_SPECIAL_MIN)) {
-        this->_settings.special = (scene::SpecialFeature)(id - __MENU_SPECIAL_MIN);
-        __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SPECIAL_MIN, __MENU_SPECIAL_MAX);
-        apiChangeHandler(scene::ApiChangeType::specialChange);
-      }
-      break;
     case __MENU_SCN_AA_MIN/100:
       if (this->_settings.aa != (scene::AntiAliasing)(id - __MENU_SCN_AA_MIN)) {
         this->_settings.aa = (scene::AntiAliasing)(id - __MENU_SCN_AA_MIN);
@@ -328,13 +308,6 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.fx != (scene::VisualEffect)(id - __MENU_SCN_FX_MIN)) {
         this->_settings.fx = (scene::VisualEffect)(id - __MENU_SCN_FX_MIN);
         __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SCN_FX_MIN, __MENU_SCN_FX_MAX);
-        filterChangeHandler();
-      }
-      break;
-    case __MENU_SCN_FLT_MIN/100:
-      if (this->_settings.scnFilter != (scene::Interpolation)(id - __MENU_SCN_FLT_MIN)) {
-        this->_settings.scnFilter = (scene::Interpolation)(id - __MENU_SCN_FLT_MIN);
-        __selectMenuItem((void*)this->_resource->handle(), (uint32_t)id, __MENU_SCN_FLT_MIN, __MENU_SCN_FLT_MAX);
         filterChangeHandler();
       }
       break;
@@ -380,6 +353,18 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         filterChangeHandler();
       }
       break;
+    case __MENU_SPECIAL_MAP_RENDER_TEXTURE/100: {
+      bool value = false;
+      switch (id) {
+        case __MENU_SPECIAL_MAP_RENDER_TEXTURE: this->_settings.useMiniMap ^= true; value = this->_settings.useMiniMap; break;
+        case __MENU_SPECIAL_FIRE_PARTICLES:     this->_settings.useParticles ^= true; value = this->_settings.useParticles; break;
+        case __MENU_SPECIAL_REFRACTION_SHPERE:  this->_settings.useRefraction ^= true; value = this->_settings.useRefraction; break;
+        default: break;
+      }
+      __selectMenuItem((void*)this->_resource->handle(), id, value);
+      apiChangeHandler(scene::ApiChangeType::specialChange);
+      break;
+    }
     default: break;
   }
 }

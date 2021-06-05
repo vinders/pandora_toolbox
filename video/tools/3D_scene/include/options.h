@@ -67,11 +67,6 @@ namespace scene {
     ao = 2,
     lightsAo = 3
   };
-  enum class SpecialFeature : uint32_t {
-    none = 0,
-    tv = 1,
-    fire = 2
-  };
 
   // ---
 
@@ -80,7 +75,6 @@ namespace scene {
     RenderingMode renderMode = RenderingMode::textured;
     AntiAliasing aa = AntiAliasing::none;
     VisualEffect fx = VisualEffect::none;
-    Interpolation scnFilter = Interpolation::bilinear;
     Interpolation texFilter = Interpolation::bilinear;
     Interpolation sprFilter = Interpolation::bilinear;
     Upscaling texUpscale = Upscaling::none;
@@ -88,7 +82,9 @@ namespace scene {
     Mapping texMapping = Mapping::none;
     int32_t mouseSensitivity = 1;
     LightMode light = LightMode::lights;
-    SpecialFeature special = SpecialFeature::none;
     bool useVsync = false;
+    bool useMiniMap = false;
+    bool useParticles = false;
+    bool useRefraction = false;
   };
 }
