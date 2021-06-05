@@ -52,7 +52,7 @@ environment:
     APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     APPVEYOR_JOB_NAME: msvc-vs2019-64
     BUILD_TYPE: Release
-    CMAKE_ARGS: -A x64
+    CMAKE_ARGS: -A x64 -DCWORK_WINDOWS_VERSION="10" -DCWORK_OPENGL4_VERSION="46" -DCWORK_D3D11_VERSION="114"
     GENERATOR: Visual Studio 16 2019
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
@@ -75,7 +75,7 @@ environment:
     APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     APPVEYOR_JOB_NAME: msvc-vs2017-64
     BUILD_TYPE: Debug
-    CMAKE_ARGS: -A x64 -DCWORK_CPP_REVISION="14"
+    CMAKE_ARGS: -A x64 -DCWORK_CPP_REVISION="14" -DCWORK_WINDOWS_VERSION="7" -DCWORK_OPENGL4_VERSION="41" -DCWORK_D3D11_VERSION="110"
     GENERATOR: Visual Studio 15 2017
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
