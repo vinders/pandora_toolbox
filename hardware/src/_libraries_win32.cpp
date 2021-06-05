@@ -21,7 +21,13 @@ License :     MIT
     // verify Windows version on running system
     static inline bool _isWindowsVersionGreaterOrEqual(__win32_RtlVerifyVersionInfo verifyCommand, DWORD major, DWORD minor, DWORD build) noexcept {
       if (verifyCommand != nullptr) {
-        OSVERSIONINFOEXW versionInfo = { sizeof(versionInfo), major, minor, build };
+        OSVERSIONINFOEXW versionInfo{};
+        ZeroMemory(&versionInfo, sizeof(versionInfo));
+        versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
+        versionInfo.dwMajorVersion = major;
+        versionInfo.dwMinorVersion = minor;
+        versionInfo.dwBuildNumber = build;
+        
         DWORD mask = VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER;
         ULONGLONG check = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
         check = VerSetConditionMask(check, VER_MINORVERSION, VER_GREATER_EQUAL);
