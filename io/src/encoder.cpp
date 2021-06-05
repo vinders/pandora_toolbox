@@ -381,7 +381,7 @@ std::u16string Encoder::Utf16::fromFile(const char* fileData, size_t length, Enc
       }
       // UTF-16BE -> copy (fix byte order)
       case Encoding::utf16BE: {
-        if (*fileData == static_cast<char>(0x00FE) && *(fileData + 1) == static_cast<char>(0x00FF)) {
+        if (*fileData == '\xFE' && *(fileData + 1) == '\xFF') {
           fileData += 2; // skip BOM
           length -= 2u;
         }
@@ -398,7 +398,7 @@ std::u16string Encoder::Utf16::fromFile(const char* fileData, size_t length, Enc
       }
       // UTF-16LE -> copy (fix byte order)
       default: {
-        if (*fileData == static_cast<char>(0x00FF) && *(fileData + 1) == static_cast<char>(0x00FE)) { // reversed
+        if (*fileData == '\xFF' && *(fileData + 1) == '\xFE') { // reversed
           fileData += 2; // skip BOM
           length -= 2u;
         }
