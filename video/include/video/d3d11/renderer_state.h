@@ -72,12 +72,7 @@ License :     MIT
           inline State* get() noexcept { return this->_states; }
           inline const State* get() const noexcept { return this->_states; }
           
-          inline State at(uint32_t index) {
-            if (index >= this->_length)
-              throw std::out_of_range("FilterState: index out of range");
-            return this->_states[index];
-          }
-          inline const State at(uint32_t index) const {
+          inline State at(uint32_t index) const {
             if (index >= this->_length)
               throw std::out_of_range("FilterState: index out of range");
             return this->_states[index];

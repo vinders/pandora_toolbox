@@ -6,7 +6,7 @@ License :     MIT
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
-# include "../render_options.h"
+# include "video/render_options.h"
 
   namespace pandora {
     namespace video {

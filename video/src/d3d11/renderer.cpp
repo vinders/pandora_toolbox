@@ -248,7 +248,7 @@ License :     MIT
         this->_dxgiLevel = 1u;
       }
 #   else
-      this->_deviceLevel = RendererDeviceLevel::direct3D_11_0;
+      this->_deviceLevel = Renderer::DeviceLevel::direct3D_11_0;
       this->_dxgiLevel = 1u;
 #   endif
     this->_dxgiFactory = (void*)dxgiFactory.extract();
@@ -331,8 +331,8 @@ License :     MIT
 // -- feature support -- -------------------------------------------------------
 
   // Verify if a display monitor can display HDR colors
-  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
-#   if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
       try {
         auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface((ID3D11Device*)this->_device);
         if (dxgiDevice) {
@@ -354,10 +354,10 @@ License :     MIT
         }
       } catch (...) {}
       return false; // not found
-#   else
-      return false;
-#   endif
-  }
+    }
+# else
+    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
+# endif
   
   // Verify if a multisample mode is supported (MSAA) + get max quality level
   bool Renderer::_isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept {
@@ -567,7 +567,7 @@ License :     MIT
 // -- swap-chain creation -- ---------------------------------------------------
 
   // Create DXGI swap-chain resource
-  void* Renderer::_createSwapChain(const _SwapChainConfig& config, WindowHandle window,
+  void* Renderer::_createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                    uint32_t rateNumerator, uint32_t rateDenominator, 
                                    DeviceLevel& outSwapChainLevel) { // throws
     void* swapChain = nullptr;

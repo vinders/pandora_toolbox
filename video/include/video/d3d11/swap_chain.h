@@ -35,7 +35,7 @@ License :     MIT
           /// @throws - invalid_argument: if renderer/window/width/height is 0/NULL.
           ///         - runtime_error: creation failure.
           SwapChain(std::shared_ptr<Renderer> renderer, const pandora::video::SwapChainParams& params, 
-                    WindowHandle window, uint32_t width, uint32_t height);
+                    pandora::video::WindowHandle window, uint32_t width, uint32_t height);
           /// @brief Destroy swap-chain
           /// @warning - Invalidates all associated buffers -> they should be destroyed too.
           ///          - Disables all active render-targets of Renderer.

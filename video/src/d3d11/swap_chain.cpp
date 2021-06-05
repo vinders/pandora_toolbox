@@ -31,9 +31,9 @@ License :     MIT
 
 // -- color management -- ------------------------------------------------------
 
-  // Find color space for a buffer format
-  static inline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
-#   if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+    // Find color space for a buffer format
+    static inline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
       switch (backBufferFormat) {
         case DXGI_FORMAT_R10G10B10A2_UNORM:
         case DXGI_FORMAT_R10G10B10A2_UINT:
@@ -61,9 +61,9 @@ License :     MIT
           return DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709; // HDR-scRGB
         default: break;
       }
-#   endif
-    return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
-  }
+      return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
+    }
+# endif
   
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
@@ -168,7 +168,7 @@ License :     MIT
 
   // Create rendering swap-chain for existing renderer
   SwapChain::SwapChain(std::shared_ptr<Renderer> renderer, const pandora::video::SwapChainParams& params, 
-                       WindowHandle window, uint32_t width, uint32_t height)
+                       pandora::video::WindowHandle window, uint32_t width, uint32_t height)
     : _renderer(std::move(renderer)) { // throws
     if (this->_renderer == nullptr)
       throw std::invalid_argument("SwapChain: renderer must not be NULL");

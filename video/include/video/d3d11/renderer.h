@@ -43,9 +43,7 @@ License :     MIT
           /// @brief Direct3D feature level
           enum class DeviceLevel : uint32_t {
             direct3D_11_0 = 0, ///< 11.0
-#           if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-              direct3D_11_1 = 1  ///< 11.1/11.3/11.4
-#           endif
+            direct3D_11_1 = 1  ///< 11.1/11.3/11.4
           };
           
           // ---
@@ -179,10 +177,10 @@ License :     MIT
           void _refreshDxgiFactory(); // throws
           static int32_t _toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
           bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
-          void* _createSwapChain(const _SwapChainConfig& config, WindowHandle window,
+          void* _createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                  uint32_t rateNumerator, uint32_t rateDenominator, 
                                  DeviceLevel& outSwapChainLevel); // throws
-          friend class SwapChain;
+          friend class pandora::video::d3d11::SwapChain;
           
         private:
           void* _dxgiFactory = nullptr;     // IDXGIFactory1*

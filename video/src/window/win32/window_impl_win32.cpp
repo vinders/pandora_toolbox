@@ -2032,7 +2032,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
           // external change -> verify if not just another fullscreen window
           else if (window->_mode != WindowType::fullscreen && (window->_statusFlags &__P_FLAG_FULLSCREEN_ON) == 0) {
             RECT fgArea;
-            MONITORINFO monitorInfo = { 0 };
+            MONITORINFO monitorInfo{};
+            ZeroMemory(&monitorInfo, sizeof(monitorInfo));
             monitorInfo.cbSize = sizeof(MONITORINFO);
             HWND fgWindow = GetForegroundWindow();
             if (!fgWindow || !GetMonitorInfo(MonitorFromWindow((HWND)window->_handle, MONITOR_DEFAULTTOPRIMARY), &monitorInfo)
