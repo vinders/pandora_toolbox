@@ -52,6 +52,7 @@ void onApiChange(scene::ApiChangeType update) {
         g_windowState.program->onSizeChange(windowSize.width, windowSize.height);
       break;
     }
+    default: break;
   }
 }
 void onFilterChange() {
