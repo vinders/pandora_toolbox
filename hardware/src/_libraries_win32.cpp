@@ -3,8 +3,10 @@ Author  :     Romain Vinders
 License :     MIT
 *******************************************************************************/
 #ifdef _WINDOWS
-# pragma warning(push)
-# pragma warning(disable : 26812)
+# ifndef __MINGW32__
+#   pragma warning(push)
+#   pragma warning(disable : 26812)
+# endif
 # include "hardware/_private/_libraries_win32.h"
 
 # if !defined(NTDDI_VERSION) || (NTDDI_VERSION < NTDDI_WIN10_RS2) || defined(__MINGW32__) || !defined(_MSC_VER) || (_MSC_VER < 1920)
@@ -116,5 +118,7 @@ License :     MIT
       this->_isInit = false;
     }
 # endif
-# pragma warning(pop)
+# ifndef __MINGW32__
+#   pragma warning(pop)
+# endif
 #endif

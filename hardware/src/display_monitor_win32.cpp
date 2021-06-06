@@ -5,8 +5,10 @@ License :     MIT
 Description : Display monitor - Win32 implementation (Windows)
 *******************************************************************************/
 #ifdef _WINDOWS
-# pragma warning(push)
-# pragma warning(disable : 26812)
+# ifndef __MINGW32__
+#   pragma warning(push)
+#   pragma warning(disable : 26812)
+# endif
 # include <cstdint>
 # include <string>
 # include <stdexcept>
@@ -559,5 +561,7 @@ Description : Display monitor - Win32 implementation (Windows)
       return _calculateWindowArea(clientArea, styleFlags, styleExtendedFlags, hasMenu, static_cast<int32_t>(dpiX), static_cast<int32_t>(dpiY));
   }
 
-# pragma warning(pop)
+# ifndef __MINGW32__
+#   pragma warning(pop)
+# endif
 #endif
