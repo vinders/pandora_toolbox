@@ -48,8 +48,10 @@ void onApiChange(scene::ApiChangeType update) {
       break;
     case scene::ApiChangeType::monitorChange: {
       auto windowSize = g_windowState.window->getClientSize();
-      if (g_windowState.program)
-        g_windowState.program->onSizeChange(windowSize.width, windowSize.height);
+      if (g_windowState.program) {
+        try { g_windowState.program->onSizeChange(windowSize.width, windowSize.height); }
+        catch (...) { onApiChange(scene::ApiChangeType::rendererChange); }
+      }
       break;
     }
     default: break;
@@ -92,8 +94,10 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
       g_windowState.screenSize.width = sizeX;
       g_windowState.screenSize.height = sizeY;
       scene::updateWindowCaption(*sender, sizeX, sizeY, g_windowState.frequency);
-      if (g_windowState.program)
-        g_windowState.program->onSizeChange(sizeX, sizeY);
+      if (g_windowState.program) {
+        try { g_windowState.program->onSizeChange(sizeX, sizeY); }
+        catch (...) { onApiChange(scene::ApiChangeType::rendererChange); }
+      }
       break;
     case PositionEvent::sizePositionTrack: 
       g_windowState.screenSize.width = sizeX;
@@ -133,8 +137,8 @@ bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_
       }
       break;
     case MouseEvent::rawMotion:
-      //rotate cam: (g_windowState.menuManager->settings.mouseSensitivity+3)*x;
-      //rotate cam: (g_windowState.menuManager->settings.mouseSensitivity+3)*y;
+      //rotate cam: angleX += (g_windowState.menuManager->settings.mouseSensitivity+3)*x;
+      //rotate cam: angleY += (g_windowState.menuManager->settings.mouseSensitivity+3)*y;
       break;
     default: break;
   }
@@ -174,13 +178,15 @@ int main() {
       if (++loopCount >= ((uint32_t)__P_FREQUENCY)) {
         loopCount = 0;
         auto newTime = std::chrono::steady_clock::now();
-        g_windowState.frequency = static_cast<float>(__P_FREQUENCY*1000000000.0 / (double)((newTime - timePoint).count()));
-        timePoint = newTime;
-        scene::updateWindowCaption(*g_windowState.window, g_windowState.screenSize.width, g_windowState.screenSize.height, g_windowState.frequency);
+        if ((newTime - timePoint).count() != 0) {
+          g_windowState.frequency = static_cast<float>(__P_FREQUENCY*1000000000.0 / (double)((newTime - timePoint).count()));
+          timePoint = newTime;
+          scene::updateWindowCaption(*g_windowState.window, g_windowState.screenSize.width, g_windowState.screenSize.height, g_windowState.frequency);
+        }
       }
       // sleep (if no vsync)
       if (!g_windowState.menuManager->settings().useVsync || g_windowState.program == nullptr)
-        std::this_thread::sleep_for(std::chrono::milliseconds(950LL/(int64_t)__P_FREQUENCY)); // 60Hz (NB: 950 = 1000ms - average processing time)
+        std::this_thread::sleep_for(std::chrono::milliseconds(950LL/(int64_t)__P_FREQUENCY)); // ~60Hz
     }
   }
   catch (const std::exception& exc) {

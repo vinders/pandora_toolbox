@@ -4,7 +4,7 @@ License :     MIT
 *******************************************************************************/
 #include <cassert>
 #include "program.h"
-#if defined(_WINDOWS)
+#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/renderer.h>
 #else
 # include <video/component_format.h>
@@ -29,7 +29,7 @@ static inline void __renderFrame(_Renderer& renderer, typename _Renderer::SwapCh
 // -- renderer classes --
 
 namespace scene {
-# if defined(_WINDOWS)
+# if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
     class D3d11Program final : scene::Program {
     public:
       D3d11Program(std::shared_ptr<d3d11::Renderer> renderer, SwapChainParams& params,
@@ -70,7 +70,7 @@ std::unique_ptr<scene::Program> scene::Program::createProgram(std::shared_ptr<sc
   }
 
   switch (menu->settings().api) {
-#   if defined(_WINDOWS)
+#   if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
       case scene::RenderingApi::d3d11:
         return std::unique_ptr<scene::Program>((scene::Program*)new scene::D3d11Program(std::make_shared<d3d11::Renderer>(primaryMonitor), params, menu, window));
 #   endif
