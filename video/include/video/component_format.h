@@ -9,7 +9,7 @@ License :     MIT
 namespace pandora {
   namespace video {
     /// @brief Component vector structure - 4 * 32-bit (position/color container)
-#   ifdef _WINDOWS
+#   if defined(_WINDOWS) && !defined(__MINGW32__)
     __declspec(align(16))
 #   endif
     struct ComponentVector128 {
