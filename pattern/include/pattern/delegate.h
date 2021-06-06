@@ -66,8 +66,9 @@ namespace pandora {
       std::unique_ptr<Contract> registerFunction(function_type_move function) noexcept {
         std::unique_ptr<Contract> contract = this->_contractProvider.createContract();
         assert(contract != nullptr && contract->isValid());
-        if (function != nullptr)
+        if (function != nullptr) {
           this->_functions->create(*contract, std::move(function));
+        }
 #       if defined(_CPP_REVISION) && _CPP_REVISION == 14
           return std::move(contract);
 #       else

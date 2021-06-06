@@ -66,8 +66,9 @@ namespace pandora {
       std::unique_ptr<Contract> addObserver(std::shared_ptr<observer_type> observer) {
         std::unique_ptr<Contract> contract = this->_contractProvider.createContract();
         assert(contract != nullptr && contract->isValid());
-        if (observer != nullptr)
+        if (observer != nullptr) {
           this->_observers->create(*contract, std::move(observer));
+        }
 #       if defined(_CPP_REVISION) && _CPP_REVISION == 14
           return std::move(contract);
 #       else
