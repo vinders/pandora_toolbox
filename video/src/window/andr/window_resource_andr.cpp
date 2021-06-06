@@ -131,11 +131,11 @@ Description : WindowResource - JNI implementation (Android)
   }
 
   // add menu command item
-  bool WindowMenu::insertItem(uint32_t id, const wchar_t* label, WindowMenu::ItemType type, bool isEnabled) noexcept {
+  bool WindowMenu::insertItem(uint32_t id, const char* label, WindowMenu::ItemType type, bool isEnabled) noexcept {
     return true;
   }
   // add sub-menu
-  bool WindowMenu::insertSubMenu(WindowMenu&& item, const wchar_t* label) noexcept {
+  bool WindowMenu::insertSubMenu(WindowMenu&& item, const char* label) noexcept {
     return (item.isSubMenu() && item._handle);
   }
   // insert item separator (vertical separator in sub-menus, horizontal separator in main menu)
