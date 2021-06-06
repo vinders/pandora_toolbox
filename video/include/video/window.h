@@ -119,6 +119,7 @@ namespace pandora {
       WindowType displayMode() const noexcept;  ///< Get window type (fullscreen/borderless/window/...)
       WindowBehavior behavior() const noexcept; ///< Get window type (fullscreen/borderless/window/...)
       ResizeMode resizeMode() const noexcept;   ///< Get current resizing mode (resizable X/Y, homothety)
+      MenuHandle menuHandle() const noexcept;   ///< Get native menubar handle
       bool hasParent() const noexcept;          ///< Verify if current window has a parent window
 
       VisibleState visibleState() const noexcept; ///< Get current window visibility state

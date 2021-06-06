@@ -98,6 +98,8 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   WindowBehavior Window::behavior() const noexcept { /*...*/return WindowBehavior::none; }
   // Get current resizing mode (resizable X/Y, homothety)
   ResizeMode Window::resizeMode() const noexcept { /*...*/return ResizeMode::fixed; }
+  // Get native menubar handle
+  MenuHandle Window::menuHandle() const noexcept { /*...*/return (MenuHandle)0; }
   // Verify if current window has a parent window
   bool Window::hasParent() const noexcept { /*...*/return false; }
   

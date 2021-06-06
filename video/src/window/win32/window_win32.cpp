@@ -124,6 +124,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
   WindowBehavior Window::behavior() const noexcept { return this->_impl->behavior(); }
   // Get current resizing mode (resizable X/Y, homothety)
   ResizeMode Window::resizeMode() const noexcept { return this->_impl->resizeMode(); }
+  // Get native menubar handle
+  MenuHandle Window::menuHandle() const noexcept { return (MenuHandle)this->_impl->menuHandle(); }
   // Verify if current window has a parent window
   bool Window::hasParent() const noexcept { return this->_impl->hasParent(); }
   

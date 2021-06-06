@@ -115,6 +115,7 @@ namespace pandora {
       inline const pandora::hardware::DisplayMonitor& displayMonitor() const noexcept { return *(this->_monitor); }
       inline bool isFullscreen() const noexcept { return (this->_mode == WindowType::fullscreen); }
       inline bool hasMenu() const noexcept { return (this->_menuHandle != nullptr); }
+      inline HMENU menuHandle() const noexcept { return this->_menuHandle; }
       inline bool hasParent() const noexcept { return (this->_parent != nullptr); }
       static inline bool isFullscreen(WindowType mode) noexcept { return (mode == WindowType::fullscreen); }
       
