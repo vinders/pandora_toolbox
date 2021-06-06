@@ -11,8 +11,6 @@ Description : WindowResource - UIKit implementation (iOS)
 # include <cstdint>
 # include <cstdlib>
 # include <cstring>
-# include <system/api/windows_api.h>
-# include <system/api/windows_app.h>
 # include "video/window_resource.h"
 
 # define __P_MAKE_SHARED_RES(handle, categ) \
@@ -149,11 +147,11 @@ Description : WindowResource - UIKit implementation (iOS)
   // ---
 
   // change state of a checkbox/radio-button
-  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t id, bool isChecked, bool isEnabled) noexcept {}
+  void WindowMenu::changeCheckItemState(pandora::video::MenuHandle menu, uint32_t id, bool isChecked, bool isEnabled) noexcept {}
   // change checkboxes/radio-buttons selection
-  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t checkId, uint32_t uncheckId, bool isUncheckedEnabled) noexcept {}
+  void WindowMenu::changeCheckItemState(pandora::video::MenuHandle menu, uint32_t checkId, uint32_t uncheckId, bool isUncheckedEnabled) noexcept {}
   // change state of any other item type
-  void WindowMenu::changeItemState(MenuHandle menu, uint32_t id, bool isEnabled) noexcept {}
+  void WindowMenu::changeItemState(pandora::video::MenuHandle menu, uint32_t id, bool isEnabled) noexcept {}
 
   // ---
 
@@ -171,7 +169,7 @@ Description : WindowResource - UIKit implementation (iOS)
     return nullptr;
   }
   // native menu container
-  std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
+  std::shared_ptr<WindowResource> WindowResource::buildMenu(pandora::video::MenuHandle handle) {
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;
   }
   

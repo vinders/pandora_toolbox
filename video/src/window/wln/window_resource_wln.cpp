@@ -8,8 +8,6 @@ Description : WindowResource - Wayland implementation (Linux)
 # include <cstdint>
 # include <cstdlib>
 # include <cstring>
-# include <system/api/windows_api.h>
-# include <system/api/windows_app.h>
 # include "video/window_resource.h"
 
 # define __P_MAKE_SHARED_RES(handle, categ) \
