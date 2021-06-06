@@ -213,7 +213,7 @@ namespace pandora {
 #     ifdef _WINDOWS
         bool insertItem(uint32_t id, const wchar_t* label, ItemType type = ItemType::text, bool isEnabled = true) noexcept;
 #     else
-        bool insertItem(WindowMenu&& item, const char* label, ItemType type = ItemType::text, bool isEnabled = true) noexcept;
+        bool insertItem(uint32_t id, const char* label, ItemType type = ItemType::text, bool isEnabled = true) noexcept;
 #     endif
       /// @brief Add sub-menu
       /// @warning 'item' must be a sub-menu (isSubMenu==true).
