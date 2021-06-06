@@ -5,6 +5,9 @@
 # include <system/api/windows_api.h>
 # include <system/api/windows_app.h>
 # include "../../_img/test_win32/resources.h"
+# define _SYSTEM_STR(str) L"" str
+#else
+# define _SYSTEM_STR(str) str
 #endif
 
 using namespace pandora::video;
@@ -109,7 +112,57 @@ TEST_F(WindowResourceTest, buildColorBrushRes) {
 
 // -- Menu resources --
 
-TEST_F(WindowResourceTest, menuRes) {
+TEST_F(WindowResourceTest, portableMenuRes) {
+  WindowMenu menubar(false);
+  WindowMenu otherMenuBar(false);
+  WindowMenu subMenu1(true);
+  WindowMenu subMenu2(true);
+
+  EXPECT_FALSE(menubar.isSubMenu());
+  EXPECT_FALSE(otherMenuBar.isSubMenu());
+  EXPECT_TRUE(subMenu1.isSubMenu());
+  EXPECT_TRUE(subMenu2.isSubMenu());
+
+  EXPECT_TRUE(subMenu1.insertItem(201u, _SYSTEM_STR("Text ON"), WindowMenu::ItemType::text, true));
+  EXPECT_TRUE(subMenu1.insertItem(202u, _SYSTEM_STR("Text OFF"), WindowMenu::ItemType::text, false));
+  subMenu1.insertSeparator();
+  EXPECT_TRUE(subMenu1.insertItem(203u, _SYSTEM_STR("Check ON-ON"), WindowMenu::ItemType::checkboxOn, true));
+  EXPECT_TRUE(subMenu1.insertItem(204u, _SYSTEM_STR("Check OFF-ON"), WindowMenu::ItemType::checkboxOff, true));
+  EXPECT_TRUE(subMenu1.insertItem(205u, _SYSTEM_STR("Check OFF-OFF"), WindowMenu::ItemType::checkboxOff, false));
+  subMenu1.insertSeparator();
+  EXPECT_TRUE(subMenu1.insertItem(206u, _SYSTEM_STR("Check ON-OFF"), WindowMenu::ItemType::checkboxOn, false));
+
+  EXPECT_TRUE(subMenu2.insertItem(207u, _SYSTEM_STR("Radio ON-ON"), WindowMenu::ItemType::radioOn, true));
+  EXPECT_TRUE(subMenu2.insertItem(208u, _SYSTEM_STR("Radio OFF-ON"), WindowMenu::ItemType::radioOff, true));
+  EXPECT_TRUE(subMenu2.insertItem(209u, _SYSTEM_STR("Radio OFF-OFF"), WindowMenu::ItemType::radioOff, false));
+  subMenu2.insertSeparator();
+  EXPECT_TRUE(subMenu2.insertItem(210u, _SYSTEM_STR("Radio ON-OFF"), WindowMenu::ItemType::radioOn, false));
+
+  EXPECT_TRUE(menubar.insertSubMenu(std::move(subMenu1), _SYSTEM_STR("Test1")));
+  EXPECT_TRUE(menubar.insertSubMenu(std::move(subMenu2), _SYSTEM_STR("Test2")));
+  EXPECT_FALSE(menubar.insertSubMenu(std::move(otherMenuBar), _SYSTEM_STR("Test3")));
+  menubar.insertSeparator();
+  EXPECT_TRUE(menubar.insertItem(125u, _SYSTEM_STR("MainText"), WindowMenu::ItemType::text));
+  auto resource = WindowResource::buildMenu(std::move(menubar));
+  _validateResource(resource, WindowResource::Category::menu);
+
+  WindowMenu moved = std::move(otherMenuBar);
+  EXPECT_FALSE(moved.isSubMenu());
+  otherMenuBar = std::move(moved);
+  EXPECT_FALSE(otherMenuBar.isSubMenu());
+
+  WindowMenu::changeItemState(resource->handle(), 201u, false);
+  WindowMenu::changeItemState(resource->handle(), 202u, true);
+  WindowMenu::changeCheckItemState(resource->handle(), 203u, false, false);
+  WindowMenu::changeCheckItemState(resource->handle(), 204u, true, false);
+  WindowMenu::changeCheckItemState(resource->handle(), 205u, true, true);
+  WindowMenu::changeCheckItemState(resource->handle(), 206u, false, true);
+  WindowMenu::changeCheckItemState(resource->handle(), 208u, 207u, true);
+  WindowMenu::changeCheckItemState(resource->handle(), 209u, 208u, false);
+  WindowMenu::changeCheckItemState(resource->handle(), 210u, false, true);
+}
+
+TEST_F(WindowResourceTest, nativeMenuRes) {
 # ifdef _WINDOWS
     _validateResource(WindowResource::buildMenu(CreateMenu()), WindowResource::Category::menu);
 # else

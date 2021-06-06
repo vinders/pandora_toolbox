@@ -120,6 +120,53 @@ Description : WindowResource - X11 implementation (Linux/Unix/BSD)
 
 // -- Menu container builder -- ------------------------------------------------
 
+  // create main menubar (isSubMenu==false) or popup sub-menu (isSubMenu==true)
+  WindowMenu::WindowMenu(bool isSubMenu) 
+    : _handle(malloc(sizeof(uint32_t))), 
+      _isSubMenu(isSubMenu) {
+    if (this->_handle == nullptr)
+      throw std::runtime_error("WindowMenu: menu creation failed");
+  }
+  WindowMenu::~WindowMenu() noexcept {
+    if (this->_handle != nullptr)
+      free(this->_handle);
+  }
+
+  // add menu command item
+  bool WindowMenu::insertItem(uint32_t id, const wchar_t* label, WindowMenu::ItemType type, bool isEnabled) noexcept {
+    return true;
+  }
+  // add sub-menu
+  bool WindowMenu::insertSubMenu(WindowMenu&& item, const wchar_t* label) noexcept {
+    return (item.isSubMenu() && item._handle);
+  }
+  // insert item separator (vertical separator in sub-menus, horizontal separator in main menu)
+  void WindowMenu::insertSeparator() noexcept {}
+  
+  // ---
+
+  // change state of a checkbox/radio-button
+  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t id, bool isChecked, bool isEnabled) noexcept {}
+  // change checkboxes/radio-buttons selection
+  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t checkId, uint32_t uncheckId, bool isUncheckedEnabled) noexcept {}
+  // change state of any other item type
+  void WindowMenu::changeItemState(MenuHandle menu, uint32_t id, bool isEnabled) noexcept {}
+
+  // ---
+
+  // create portable window menu resource
+  std::shared_ptr<WindowResource> WindowResource::buildMenu(WindowMenu&& mainMenu) {
+    if (mainMenu._handle != nullptr && !mainMenu.isSubMenu()) {
+      auto resource = __P_MAKE_SHARED_RES(mainMenu._handle, WindowResource::Category::menu);
+      mainMenu._handle = nullptr;
+#     if defined(_CPP_REVISION) && _CPP_REVISION == 14
+        return std::move(resource);
+#     else
+        return resource;
+#     endif
+    }
+    return nullptr;
+  }
   // native menu container
   std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;

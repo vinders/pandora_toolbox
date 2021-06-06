@@ -504,17 +504,13 @@ void menuWindow(WindowType mode, const char* typeName) {
     }
 
     if (hasParent || isUpdate) { // create parent / original window
-#     ifdef _WINDOWS
-        HMENU menuBar = CreateMenu();
-        HMENU subMenu = CreatePopupMenu();
-        AppendMenuW(subMenu, MF_STRING, 161, L"&First item");
-        AppendMenuW(subMenu, MF_SEPARATOR, 0, nullptr);
-        AppendMenuW(subMenu, MF_STRING, 162, L"&Second item");
-        AppendMenuW(menuBar, MF_POPUP, (UINT_PTR)subMenu, L"&Menu");
-        std::shared_ptr<WindowResource> menu = WindowResource::buildMenu(menuBar);
-#     else
-        std::shared_ptr<WindowResource> menu = nullptr;
-#     endif
+      auto menuBar = WindowMenu(false);
+      auto subMenu = WindowMenu(true);
+      subMenu.insertItem(161u, _SYSTEM_STR("First item"));
+      subMenu.insertSeparator();
+      subMenu.insertItem(162u, _SYSTEM_STR("Second item"));
+      menuBar.insertSubMenu(std::move(subMenu), _SYSTEM_STR("Menu"));
+      std::shared_ptr<WindowResource> menu = WindowResource::buildMenu(std::move(menuBar));
     
       Window::Builder builder;
       parentWindow = builder.setDisplayMode(WindowType::window, WindowBehavior::none, ResizeMode::fixed)
@@ -522,9 +518,7 @@ void menuWindow(WindowType mode, const char* typeName) {
                      .setPosition(200, 200)
                      .setIcon(WindowResource::buildIcon(SystemIcon::info))
                      .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,120,160)))
-#                    ifdef _WINDOWS
-                       .setMenu(menu)
-#                    endif
+                     .setMenu(menu)
                      .create(_SYSTEM_STR("PARENT"), _SYSTEM_STR("Parent window"));
       parentWindow->show();
       

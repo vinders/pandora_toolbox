@@ -202,6 +202,106 @@ Description : WindowResource - Win32 implementation (Windows)
 
 // -- Menu container builder -- ------------------------------------------------
 
+  // create main menubar (isSubMenu==false) or popup sub-menu (isSubMenu==true)
+  WindowMenu::WindowMenu(bool isSubMenu) 
+    : _handle(isSubMenu ? (MenuHandle)CreatePopupMenu() : (MenuHandle)CreateMenu()), 
+      _isSubMenu(isSubMenu) {
+    if (this->_handle == nullptr)
+      throw std::runtime_error("WindowMenu: menu creation failed");
+  }
+  WindowMenu::~WindowMenu() noexcept {
+    if (this->_handle != nullptr)
+      DestroyMenu((HMENU)this->_handle);
+  }
+
+  // add menu command item
+  bool WindowMenu::insertItem(uint32_t id, const wchar_t* label, WindowMenu::ItemType type, bool isEnabled) noexcept {
+    UINT flags = isEnabled ? MF_ENABLED : MF_GRAYED;
+    switch (type) {
+      case WindowMenu::ItemType::radioOn:
+      case WindowMenu::ItemType::radioOff: {
+        MENUITEMINFOW menuItemInfo;
+        ZeroMemory(&menuItemInfo, sizeof(menuItemInfo));
+        menuItemInfo.cbSize = sizeof(menuItemInfo);
+        menuItemInfo.fMask = (MIIM_ID|MIIM_FTYPE|MIIM_STATE|MIIM_STRING);
+        menuItemInfo.fType = MFT_RADIOCHECK;
+        menuItemInfo.fState = isEnabled ? MFS_ENABLED : MFS_GRAYED;
+        menuItemInfo.fState |= (type == WindowMenu::ItemType::radioOn) ? MFS_CHECKED : MFS_UNCHECKED;
+        menuItemInfo.wID = (UINT)id;
+        menuItemInfo.dwTypeData = (LPWSTR)label;
+        menuItemInfo.cch = (UINT)wcslen(label);
+        return (InsertMenuItemW((HMENU)this->_handle, (UINT)-1, TRUE, &menuItemInfo) != FALSE);
+      }
+      case WindowMenu::ItemType::checkboxOn: flags |= (MF_STRING|MF_CHECKED); break;
+      case WindowMenu::ItemType::checkboxOff: flags |= (MF_STRING|MF_UNCHECKED); break;
+      default: flags |= MF_STRING; break;
+    }
+    return (AppendMenuW((HMENU)this->_handle, flags, (UINT)id, label) != FALSE);
+  }
+  // add sub-menu
+  bool WindowMenu::insertSubMenu(WindowMenu&& item, const wchar_t* label) noexcept {
+    if (item.isSubMenu() && item._handle != nullptr 
+    && AppendMenuW((HMENU)this->_handle, MF_POPUP, (UINT_PTR)item._handle, label) != FALSE) {
+      item._handle = nullptr;
+      return true;
+    }
+    return false;
+  }
+  // insert item separator (vertical separator in sub-menus, horizontal separator in main menu)
+  void WindowMenu::insertSeparator() noexcept {
+    AppendMenuW((HMENU)this->_handle, isSubMenu() ? MF_SEPARATOR : MF_MENUBARBREAK, 0, nullptr);
+  }
+
+  // ---
+
+  // change state of a checkbox/radio-button
+  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t id, bool isChecked, bool isEnabled) noexcept {
+    MENUITEMINFOW menuItemInfo;
+    ZeroMemory(&menuItemInfo, sizeof(menuItemInfo));
+    menuItemInfo.cbSize = sizeof(menuItemInfo);
+    menuItemInfo.fMask = MIIM_STATE;
+    menuItemInfo.fState = isEnabled ? MFS_ENABLED : MFS_GRAYED;
+    menuItemInfo.fState |= isChecked ? MFS_CHECKED : MFS_UNCHECKED;
+    SetMenuItemInfoW((HMENU)menu, (UINT)id, FALSE, &menuItemInfo);
+  }
+  // change checkboxes/radio-buttons selection
+  void WindowMenu::changeCheckItemState(MenuHandle menu, uint32_t checkId, uint32_t uncheckId, bool isUncheckedEnabled) noexcept {
+    MENUITEMINFOW menuItemInfo;
+    ZeroMemory(&menuItemInfo, sizeof(menuItemInfo));
+    menuItemInfo.cbSize = sizeof(menuItemInfo);
+    menuItemInfo.fMask = MIIM_STATE;
+    menuItemInfo.fState = MFS_CHECKED;
+    SetMenuItemInfoW((HMENU)menu, (UINT)checkId, FALSE, &menuItemInfo);
+    menuItemInfo.fMask = MIIM_STATE;
+    menuItemInfo.fState = isUncheckedEnabled ? MFS_UNCHECKED|MFS_ENABLED : MFS_UNCHECKED|MFS_GRAYED;
+    SetMenuItemInfoW((HMENU)menu, (UINT)uncheckId, FALSE, &menuItemInfo);
+  }
+  // change state of any other item type
+  void WindowMenu::changeItemState(MenuHandle menu, uint32_t id, bool isEnabled) noexcept {
+    MENUITEMINFOW menuItemInfo;
+    ZeroMemory(&menuItemInfo, sizeof(menuItemInfo));
+    menuItemInfo.cbSize = sizeof(menuItemInfo);
+    menuItemInfo.fMask = (MIIM_ID|MIIM_FTYPE|MIIM_STATE|MIIM_STRING);
+    menuItemInfo.fType = MFT_RADIOCHECK;
+    menuItemInfo.fState = isEnabled ? MFS_ENABLED : MFS_GRAYED;
+    SetMenuItemInfoW((HMENU)menu, (UINT)id, FALSE, &menuItemInfo);
+  }
+
+  // ---
+
+  // create portable window menu resource
+  std::shared_ptr<WindowResource> WindowResource::buildMenu(WindowMenu&& mainMenu) {
+    if (mainMenu._handle != nullptr && !mainMenu.isSubMenu()) {
+      auto resource = __P_MAKE_SHARED_RES(mainMenu._handle, WindowResource::Category::menu);
+      mainMenu._handle = nullptr;
+#     if defined(_CPP_REVISION) && _CPP_REVISION == 14
+        return std::move(resource);
+#     else
+        return resource;
+#     endif
+    }
+    return nullptr;
+  }
   // native menu container
   std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;

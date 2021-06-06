@@ -13,6 +13,8 @@ License :     MIT
 
 namespace pandora {
   namespace video {
+    class WindowMenu;
+
     /// @brief Standard system icons
     enum class SystemIcon : uint32_t {
       app        = 0u, ///< Default application icon
@@ -159,8 +161,12 @@ namespace pandora {
       
       
       // -- menu container builder --
-      
-      /// @brief Create native menu container (to guarantee destruction)
+
+      /// @brief Create window menu resource
+      /// @warning 'mainMenu' must be a menubar (WindowMenu.isSubMenu==false), not a sub-menu.
+      /// @returns On success: valid menu resource. On failure: nullptr.
+      static std::shared_ptr<WindowResource> buildMenu(WindowMenu&& mainMenu);
+      /// @brief Create native menu container (to guarantee destruction) -- native menu
       /// @returns On success: valid menu resource. On failure: nullptr.
       static std::shared_ptr<WindowResource> buildMenu(MenuHandle handle);
       
@@ -168,6 +174,72 @@ namespace pandora {
     private:
       WindowResourceHandle _handle { (WindowResourceHandle)0 };
       Category _type { Category::icon };
+    };
+
+    // ---
+
+    /// @class WindowMenu
+    /// @brief Window menubar/sub-menu builder
+    class WindowMenu final {
+    public:
+      /// @brief Menu item category
+      enum class ItemType : uint32_t {
+        text       = 0u,
+        checkboxOn = 1u,
+        checkboxOff= 2u,
+        radioOn    = 3u,
+        radioOff   = 4u
+      };
+
+      /// @brief Create main menubar (isSubMenu==false) or popup sub-menu (isSubMenu==true)
+      WindowMenu(bool isSubMenu);
+      WindowMenu(const WindowMenu&) = delete;
+      WindowMenu(WindowMenu&& rhs) noexcept : _handle(rhs._handle), _isSubMenu(rhs._isSubMenu) { rhs._handle = (MenuHandle)0; }
+      WindowMenu& operator=(const WindowMenu&) = delete;
+      WindowMenu& operator=(WindowMenu&& rhs) noexcept { 
+        _handle = rhs._handle; _isSubMenu = rhs._isSubMenu; rhs._handle = (MenuHandle)0; 
+        return *this; 
+      }
+      ~WindowMenu() noexcept;
+
+      inline bool isSubMenu() const noexcept { return this->_isSubMenu; } ///< Verify if instance is sub-menu (true) or main menu
+
+      /// @brief Add menu command item
+      /// @param id         Unique identifier of menu command (for menu event handler)
+      /// @param label      Text to display for menu item
+      /// @param isEnabled  Item can be selected (true) or is grayed (false)
+      /// @warning 'item' must be a sub-menu (isSubMenu==true).
+      /// @returns Success
+#     ifdef _WINDOWS
+        bool insertItem(uint32_t id, const wchar_t* label, ItemType type = ItemType::text, bool isEnabled = true) noexcept;
+#     else
+        bool insertItem(WindowMenu&& item, const char* label, ItemType type = ItemType::text, bool isEnabled = true) noexcept;
+#     endif
+      /// @brief Add sub-menu
+      /// @warning 'item' must be a sub-menu (isSubMenu==true).
+      /// @returns Success
+#     ifdef _WINDOWS
+        bool insertSubMenu(WindowMenu&& item, const wchar_t* label) noexcept;
+#     else
+        bool insertSubMenu(WindowMenu&& item, const char* label) noexcept;
+#     endif
+      /// @brief Insert item separator (vertical separator in sub-menus, horizontal separator in main menu)
+      void insertSeparator() noexcept;
+
+      // ---
+
+      /// @brief Change state of a checkbox/radio-button
+      static void changeCheckItemState(MenuHandle menu, uint32_t id, bool isChecked, bool isEnabled = true) noexcept;
+      /// @brief Change checkboxes/radio-buttons selection
+      /// @param isUncheckedEnabled  Unchecked item is still checkable (true) or is grayed (false)
+      static void changeCheckItemState(MenuHandle menu, uint32_t checkId, uint32_t uncheckId, bool isUncheckedEnabled = true) noexcept;
+      /// @brief Change state of any other item type
+      static void changeItemState(MenuHandle menu, uint32_t id, bool isEnabled) noexcept;
+
+    private:
+      friend class pandora::video::WindowResource;
+      MenuHandle _handle = (MenuHandle)0;
+      bool _isSubMenu = false;
     };
   }
 }
