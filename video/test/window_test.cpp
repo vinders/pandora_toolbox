@@ -277,6 +277,8 @@ uint32_t WindowTest::_lastSizeY = 0;
         EXPECT_EQ(actualClientArea.y, resizedClientArea.y);
         EXPECT_EQ((uint32_t)640, resizedClientArea.width);
         EXPECT_EQ((uint32_t)480, resizedClientArea.height);
+        EXPECT_EQ((uint32_t)640, _lastSizeX);
+        EXPECT_EQ((uint32_t)480, _lastSizeY);
       }
       
       if (params.mode != WindowType::fullscreen) {
