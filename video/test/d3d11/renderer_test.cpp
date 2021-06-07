@@ -114,14 +114,14 @@
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr);
     renderer.setActiveRenderTarget(nullptr, nullptr);
     renderer.setActiveRenderTarget(emptyView, nullptr);
-    renderer.setActiveRenderTargets(nullptr, 0, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.setActiveRenderTargets(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.setActiveRenderTarget(nullptr, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.setActiveRenderTarget(emptyView, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.clear(nullptr, 0, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.clear(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.clear(nullptr, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
-    renderer.clear(emptyView, nullptr, pandora::video::ComponentVector128{{ 0.f,0.f,0.f,0.f }});
+    renderer.setActiveRenderTargets(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.setActiveRenderTargets(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.setActiveRenderTarget(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.setActiveRenderTarget(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clear(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clear(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clear(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clear(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
   }
 
 #endif
