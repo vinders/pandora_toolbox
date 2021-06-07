@@ -129,26 +129,26 @@ License :     MIT
 
 # elif (defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix))
     bool pandora::video::disableScreenSaver(pandora::video::WindowHandle) noexcept {
+      bool isSuccess = false;
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
         if (libs.xss.isAvailable) {
           libs.xss.ScreenSaverSuspend_(libs.displayServer, True);
-          return true;
+          isSuccess = true;
         }
       }
-      catch (...) {}
-      return false;
+      catch (...) {} return isSuccess;
     }
     bool pandora::video::restoreScreenSaver() noexcept {
+      bool isSuccess = false;
       try {
         pandora::hardware::LibrariesX11& libs = pandora::hardware::LibrariesX11::instance();
         if (libs.xss.isAvailable) {
           libs.xss.ScreenSaverSuspend_(libs.displayServer, False);
-          return true;
+          isSuccess = true;
         }
       }
-      catch (...) {}
-      return false;
+      catch (...) {} return isSuccess;
     }
     
     void pandora::video::notifyScreenActivity(pandora::video::WindowHandle) noexcept {
