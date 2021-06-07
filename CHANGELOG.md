@@ -4,24 +4,7 @@ All notable changes will be documented in this file (generated).
 ## 0.80.2.502
 2021-05-27 - 316f77782f0e0bb156ec8e332bceb276450cd5ec
 ### features
-vinders (5):
-* io: serialization value tree (multi-type value/array/object) + key-value serializer/deserializer interface
-* io: INI config format serializer/deserializer
-* io: JSON format serializer/deserializer
-* io: encoder/decoder/converter/detection (UTF-8/UTF-16BE/UTF-16LE)
-* io: INI/JSON deserializers: support unicode characters (\\x<hex*1-4>, \\u<hex*4>, \\U<hex*8>)
-### fixes
-vinders (3):
-* video: window manager + builder for Windows: fix client area when adding scrollbars
-* video: window manager + builder for Windows: remove useless mutex to improve efficiency
-* video: screen-saver disable/restore/ping: use window handle as argument + fix handle type on Wayland
-
----
-
-## 0.75.2.475
-2021-05-18 - e9cea0a89a0f7c997083daf2fe246865f2aac6e6
-### features
-vinders (13):
+vinders (18):
 * video: modal message box (Win32/Cocoa impl for windows/macOS)
 * video: modal message box (UIKit impl for iOS)
 * video: modal message box (java/JNI impl for android)
@@ -35,10 +18,18 @@ vinders (13):
 * video: window manager + builder (Win32 impl for windows)
 * video: window manager + builder for Windows: add mouse capture + raw input mode
 * video: screen-saver: disable/restore + ping activity (reset idle timer)
+* io: serialization value tree (multi-type value/array/object) + key-value serializer/deserializer interface
+* io: INI config format serializer/deserializer
+* io: JSON format serializer/deserializer
+* io: encoder/decoder/converter/detection (UTF-8/UTF-16BE/UTF-16LE)
+* io: INI/JSON deserializers: support unicode characters (\\x<hex*1-4>, \\u<hex*4>, \\U<hex*8>)
 ### fixes
-vinders (2):
+vinders (5):
 * video: window manager + builder for Windows: refactor + fix fullscreen issues
 * video: window manager + builder for Windows: support parent window close + fix size calculations
+* video: window manager + builder for Windows: fix client area when adding scrollbars
+* video: window manager + builder for Windows: remove useless mutex to improve efficiency
+* video: screen-saver disable/restore/ping: use window handle as argument + fix handle type on Wayland
 
 ---
 
@@ -71,27 +62,7 @@ vinders (3):
 ## 0.48.1.207
 2020-11-19 - 0e2640d7f296932c306ffee2d1a5c3a3a1b728ec
 ### features
-vinders (5):
-* cwork: custom cmake framework: support custom/shader/resource files + test-only dependencies
-* cwork: custom cmake framework: add option: minimum supported windows version (Win32 API)
-* cwork/system: dynamic library import/export definitions
-* video: openGL/vulkan API includes
-* video: shader generation script (assemble modules + remove comments/white-spaces + vulkan spir-v compilation)
-### fixes
-vinders (6):
-* video: shader generation script: add D3D11 fxc shader compilation
-* video: shader generation script: add D3D12 dxc shader compilation
-* system: macros & code generators: add constexpr enum serializer
-* io: file IO/management/metadata: improve absolute path detection
-* cwork: custom cmake framework: replace global include dirs by target include dirs (to avoid file name conflicts)
-* cwork: custom cmake framework: allow different scopes when linking extern libs
-
----
-
-## 0.43.2.128
-2020-10-21 - c22d1e7bb91530b3584974bbb3b0a10e49288a7e
-### features
-vinders (12):
+vinders (17):
 * thread: thread scheduling priority setter
 * logic: general math algorithms: GCD, power of 2, near equality
 * logic: string manipulation: length, pad, trim...
@@ -104,10 +75,21 @@ vinders (12):
 * memory: fixed-size vector template (stack alloc)
 * memory: fixed-size string (stack alloc)
 * memory: preallocated memory pool (stack/heap)
+* cwork: custom cmake framework: support custom/shader/resource files + test-only dependencies
+* cwork: custom cmake framework: add option: minimum supported windows version (Win32 API)
+* cwork/system: dynamic library import/export definitions
+* video: openGL API includes/bindings
+* video: shader generation script (assemble modules + remove comments/white-spaces + vulkan spir-v compilation)
 ### fixes
-vinders (2):
+vinders (8):
 * hardware: CPU cores detection: support modern AMD
 * scripts: version release script (version/changelog/tag + merge): push changelog on develop
+* video: shader generation script: add D3D11 fxc shader compilation
+* video: shader generation script: add D3D12 dxc shader compilation
+* system: macros & code generators: add constexpr enum serializer
+* io: file IO/management/metadata: improve absolute path detection
+* cwork: custom cmake framework: replace global include dirs by target include dirs (to avoid file name conflicts)
+* cwork: custom cmake framework: allow different scopes when linking extern libs
 
 ---
 
@@ -152,7 +134,13 @@ vinders (1):
 ## 0.14.2.47
 2020-10-02 - f9c113579c80d6f2881096c7d395aa4102648c5d
 ### features
-vinders (8):
+vinders (14):
+* cwork: custom cmake framework
+* system: debug trace utility
+* system: preprocessor: macros & code generators (enum serializer, flag ops, foreach, code duplicator...)
+* system: CPU intrinsics API includes
+* system: CPU arch + operating system detection
+* system: logger utility + basic log formatter
 * thread: spin-lock + recursive spin-lock (real-time mutex using polling)
 * thread: semaphore utility (producer/consumer pattern)
 * thread: ordered lock (mutex with lock order)
@@ -162,24 +150,9 @@ vinders (8):
 * time: high-resolution stopwatch utility
 * time: synchronization timer (refresh/poll sync, frame limiter...)
 ### fixes
-vinders (2):
+vinders (3):
+* cwork: cmake modules: git utilities
 * cwork: git submodule utility: optionally permissive
 * cwork: custom cmake framework: regroup parent/child modules in common _libs directory
-
----
-
-## 0.6.1.31
-2020-10-01 - 83b7c88476372748865fdb82a186ffe7531659f5
-### features
-vinders (6):
-* cwork: custom cmake framework
-* system: debug trace utility
-* system: preprocessor: macros & code generators (enum serializer, flag ops, foreach, code duplicator...)
-* system: CPU intrinsics API includes
-* system: CPU arch + operating system detection
-* system: logger utility + basic log formatter
-### fixes
-vinders (1):
-* cwork: cmake modules: git utilities
 
 ---
