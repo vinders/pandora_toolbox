@@ -32,21 +32,6 @@ namespace scene {
     msaa4x = 6,
     msaa8x = 7
   };
-  enum class VisualEffect : uint32_t {
-    none = 0,
-    colorFilter = 1,
-    crtVision = 2,
-    fog = 3,
-    bloom = 4,
-    lumaSharpen = 5,
-    brokenGlass = 6,
-    storyBook = 7,
-    pencil = 8,
-    neon = 9,
-    cartoon = 10,
-    median = 11,
-    unsharpMasking = 12
-  };
   enum class Interpolation : uint32_t {
     nearest = 0,
     bilinear = 1,
@@ -59,13 +44,57 @@ namespace scene {
     none = 0
   };
   enum class Mapping : uint32_t {
-    none = 0
+    none = 0,
+    tangent = 1,
+    obj = 2,
+    world = 3
   };
   enum class LightMode : uint32_t {
     none = 0,
     lights = 1,
     ao = 2,
     lightsAo = 3
+  };
+  enum class ColorBlending : uint32_t {
+    none = 0,
+    gray = 1,
+    red = 2,
+    green = 3,
+    blue = 4
+  };
+  enum class FogFx : uint32_t {
+    none = 0,
+    light = 1,
+    dark = 2
+  };
+  enum class HdrFx : uint32_t {
+    none = 0,
+    bloom = 1,
+    luma = 2,
+    bloomLuma = 3
+  };
+  enum class SharpFx : uint32_t {
+    none = 0,
+    gauss = 1,
+    median = 2,
+    unsharpMasking = 3
+  };
+  enum class ArtFx : uint32_t {
+    none = 0,
+    pencil1 = 1,
+    pencil2 = 2,
+    cel1 = 3,
+    cel2 = 4,
+    sobel = 5,
+    prewitt = 6,
+    storyBook = 7,
+    brokenGlass = 8,
+    crt = 9
+  };
+  enum class NoiseFx : uint32_t {
+    none = 0,
+    photo = 1,
+    tv = 2
   };
 
   // ---
@@ -74,7 +103,6 @@ namespace scene {
     RenderingApi api = RenderingApi::openGL4;
     RenderingMode renderMode = RenderingMode::textured;
     AntiAliasing aa = AntiAliasing::none;
-    VisualEffect fx = VisualEffect::none;
     Interpolation texFilter = Interpolation::bilinear;
     Interpolation sprFilter = Interpolation::bilinear;
     Upscaling texUpscale = Upscaling::none;
@@ -86,5 +114,13 @@ namespace scene {
     bool useMiniMap = false;
     bool useParticles = false;
     bool useRefraction = false;
+    bool useMotionBlur = false;
+    int32_t gamma = 0;
+    ColorBlending colorBlend = ColorBlending::none;
+    FogFx fog = FogFx::none;
+    HdrFx hdrFx = HdrFx::none;
+    SharpFx sharpFx = SharpFx::none;
+    ArtFx artFx = ArtFx::none;
+    NoiseFx noise = NoiseFx::none;
   };
 }

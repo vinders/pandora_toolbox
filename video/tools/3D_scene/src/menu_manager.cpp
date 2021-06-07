@@ -31,61 +31,77 @@ License :     MIT
 #define __MENU_SCN_AA_MSAA4  406
 #define __MENU_SCN_AA_MSAA8  407
 
-#define __MENU_SCN_FX_OFF         500
-#define __MENU_SCN_FX_COLOR       501
-#define __MENU_SCN_FX_CRTVISION   502
-#define __MENU_SCN_FX_FOG         503
-#define __MENU_SCN_FX_BLOOM       504
-#define __MENU_SCN_FX_LUMASHARPEN 505
-#define __MENU_SCN_FX_BROKENGLASS 506
-#define __MENU_SCN_FX_STORYBOOK   507
-#define __MENU_SCN_FX_PENCIL      508
-#define __MENU_SCN_FX_NEON        509
-#define __MENU_SCN_FX_CARTOON     510
-#define __MENU_SCN_FX_MEDIAN      511
-#define __MENU_SCN_FX_UNSHARPMASK 512
+#define __MENU_RENDER_NONE        500
+#define __MENU_RENDER_TEXTURE     501
+#define __MENU_RENDER_WIREFRAME   502
+#define __MENU_RENDER_SPLIT_WIRE  503
+#define __MENU_RENDER_SPLIT_NOFX  504
 
-#define __MENU_SCN_FLT_NEAREST   600
-#define __MENU_SCN_FLT_BILINEAR  601
-#define __MENU_SCN_FLT_GAUSS     602
-#define __MENU_SCN_FLT_BESSEL    603
-#define __MENU_SCN_FLT_LANCZOS   604
-#define __MENU_SCN_FLT_SPLINE16  605
+#define __MENU_SCN_LIGHT_NONE    600
+#define __MENU_SCN_LIGHT_BASE    601
+#define __MENU_SCN_LIGHT_AO      602
+#define __MENU_SCN_LIGHT_AO_BASE 603
 
-#define __MENU_TEX_FLT_NEAREST  700
-#define __MENU_TEX_FLT_BILINEAR 701
-#define __MENU_TEX_FLT_GAUSS    702
-#define __MENU_TEX_FLT_BESSEL   703
-#define __MENU_TEX_FLT_LANCZOS  704
-#define __MENU_TEX_FLT_SPLINE16 705
+#define __MENU_SPECIAL_MAP_RENDER_TEXTURE 701
+#define __MENU_SPECIAL_FIRE_PARTICLES     702
+#define __MENU_SPECIAL_REFRACTION_SHPERE  703
+#define __MENU_SPECIAL_MOTION_BLUR        704
 
-#define __MENU_SPR_FLT_NEAREST  800
-#define __MENU_SPR_FLT_BILINEAR 801
-#define __MENU_SPR_FLT_GAUSS    802
-#define __MENU_SPR_FLT_BESSEL   803
-#define __MENU_SPR_FLT_LANCZOS  804
-#define __MENU_SPR_FLT_SPLINE16 805
+#define __MENU_TEX_FLT_NEAREST  800
+#define __MENU_TEX_FLT_BILINEAR 801
+#define __MENU_TEX_FLT_GAUSS    802
+#define __MENU_TEX_FLT_BESSEL   803
+#define __MENU_TEX_FLT_LANCZOS  804
+#define __MENU_TEX_FLT_SPLINE16 805
 
-#define __MENU_RENDER_NONE        900
-#define __MENU_RENDER_TEXTURE     901
-#define __MENU_RENDER_WIREFRAME   902
-#define __MENU_RENDER_SPLIT_WIRE  903
-#define __MENU_RENDER_SPLIT_NOFX  904
+#define __MENU_SPR_FLT_NEAREST  900
+#define __MENU_SPR_FLT_BILINEAR 901
+#define __MENU_SPR_FLT_GAUSS    902
+#define __MENU_SPR_FLT_BESSEL   903
+#define __MENU_SPR_FLT_LANCZOS  904
+#define __MENU_SPR_FLT_SPLINE16 905
 
 #define __MENU_TEX_UP_NONE      1000
 
-#define __MENU_TEX_MAP_NONE     1100
+#define __MENU_SPR_UP_NONE      1100
 
-#define __MENU_SPR_UP_NONE      1200
+#define __MENU_TEX_MAP_NONE  1200
+#define __MENU_TEX_MAP_TANG  1201
+#define __MENU_TEX_MAP_OBJ   1202
+#define __MENU_TEX_MAP_WORLD 1203
 
-#define __MENU_SCN_LIGHT_NONE    1300
-#define __MENU_SCN_LIGHT_BASE    1301
-#define __MENU_SCN_LIGHT_AO      1302
-#define __MENU_SCN_LIGHT_AO_BASE 1303
-
-#define __MENU_SPECIAL_MAP_RENDER_TEXTURE 1401
-#define __MENU_SPECIAL_FIRE_PARTICLES     1402
-#define __MENU_SPECIAL_REFRACTION_SHPERE  1403
+#define __MENU_SCN_GAMMA_LOWER   1300
+#define __MENU_SCN_GAMMA_CORRECT 1301
+#define __MENU_SCN_GAMMA_HIGHER  1302
+#define __MENU_SCN_BLEND_OFF   1400
+#define __MENU_SCN_BLEND_GRAY  1401
+#define __MENU_SCN_BLEND_RED   1402
+#define __MENU_SCN_BLEND_GREEN 1403
+#define __MENU_SCN_BLEND_BLUE  1404
+#define __MENU_SCN_FOG_OFF   1500
+#define __MENU_SCN_FOG_LIGHT 1501
+#define __MENU_SCN_FOG_DARK  1502
+#define __MENU_SCN_HDR_OFF        1600
+#define __MENU_SCN_HDR_BLOOM      1601
+#define __MENU_SCN_HDR_LUMA       1602
+#define __MENU_SCN_HDR_BLOOM_LUMA 1603
+#define __MENU_SCN_SHARP_OFF         1700
+#define __MENU_SCN_SHARP_GAUSS       1701
+#define __MENU_SCN_SHARP_MEDIAN      1702
+#define __MENU_SCN_SHARP_UNSHARPMASK 1703
+#define __MENU_SCN_ART_OFF         1800
+#define __MENU_SCN_ART_PENCIL1     1801
+#define __MENU_SCN_ART_PENCIL2     1802
+#define __MENU_SCN_ART_CEL1        1803
+#define __MENU_SCN_ART_CEL2        1804
+#define __MENU_SCN_ART_SOBEL       1805
+#define __MENU_SCN_ART_PREWITT     1806
+#define __MENU_SCN_ART_STORYBOOK   1807
+#define __MENU_SCN_ART_BROKENGLASS 1808
+#define __MENU_SCN_ART_CRT         1809
+#define __MENU_SCN_NOISE_OFF    1900
+#define __MENU_SCN_NOISE_PHOTO  1901
+#define __MENU_SCN_NOISE_TV     1902
 
 using namespace pandora::video;
 
@@ -118,63 +134,107 @@ scene::MenuManager::MenuManager() {
     this->_settings.api = scene::RenderingApi::none;
     viewerPopup.insertItem(__MENU_API_NONE, _SYSTEM_STR("No renderer"), WindowMenu::ItemType::radioOn);
 # endif
+  viewerPopup.insertSeparator();
 
   this->_settings.mouseSensitivity = __MENU_MOUSE_SENSIV_AVG - __MENU_MOUSE_SENSIV_LOW;
-  viewerPopup.insertSeparator();
-  viewerPopup.insertItem(__MENU_MOUSE_SENSIV_LOW,  _SYSTEM_STR("Low sensitivity"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_MOUSE_SENSIV_AVG,  _SYSTEM_STR("Average sensitivity"), WindowMenu::ItemType::radioOn);
-  viewerPopup.insertItem(__MENU_MOUSE_SENSIV_HIGH,  _SYSTEM_STR("High sensitivity"), WindowMenu::ItemType::radioOff);
+  auto mouseSensitivityPopup = WindowMenu(true);
+  mouseSensitivityPopup.insertItem(__MENU_MOUSE_SENSIV_LOW,  _SYSTEM_STR("Low"), WindowMenu::ItemType::radioOff);
+  mouseSensitivityPopup.insertItem(__MENU_MOUSE_SENSIV_AVG,  _SYSTEM_STR("Average"), WindowMenu::ItemType::radioOn);
+  mouseSensitivityPopup.insertItem(__MENU_MOUSE_SENSIV_HIGH, _SYSTEM_STR("High"), WindowMenu::ItemType::radioOff);
+  viewerPopup.insertSubMenu(std::move(mouseSensitivityPopup), _SYSTEM_STR("Mouse sensitivity"));
   this->_settings.renderMode = scene::RenderingMode::textured;
-  viewerPopup.insertSeparator();
-  viewerPopup.insertItem(__MENU_RENDER_NONE,       _SYSTEM_STR("Shaded"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_RENDER_TEXTURE,    _SYSTEM_STR("Textured"), WindowMenu::ItemType::radioOn);
-  viewerPopup.insertItem(__MENU_RENDER_WIREFRAME,  _SYSTEM_STR("Wireframe"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_RENDER_SPLIT_WIRE, _SYSTEM_STR("Wireframe / textured"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_RENDER_SPLIT_NOFX, _SYSTEM_STR("Raw / effects"), WindowMenu::ItemType::radioOff);
+  auto viewportsPopup = WindowMenu(true);
+  viewportsPopup.insertItem(__MENU_RENDER_NONE,       _SYSTEM_STR("Shaded"), WindowMenu::ItemType::radioOff);
+  viewportsPopup.insertItem(__MENU_RENDER_TEXTURE,    _SYSTEM_STR("Textured"), WindowMenu::ItemType::radioOn);
+  viewportsPopup.insertItem(__MENU_RENDER_WIREFRAME,  _SYSTEM_STR("Wireframe"), WindowMenu::ItemType::radioOff);
+  viewportsPopup.insertItem(__MENU_RENDER_SPLIT_WIRE, _SYSTEM_STR("Wireframe / textured"), WindowMenu::ItemType::radioOff);
+  viewportsPopup.insertItem(__MENU_RENDER_SPLIT_NOFX, _SYSTEM_STR("Raw / effects"), WindowMenu::ItemType::radioOff);
+  viewerPopup.insertSubMenu(std::move(viewportsPopup), _SYSTEM_STR("Viewport(s)"));
   this->_settings.light = scene::LightMode::lights;
-  viewerPopup.insertSeparator();
-  viewerPopup.insertItem(__MENU_SCN_LIGHT_NONE,    _SYSTEM_STR("No lights"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_SCN_LIGHT_BASE,    _SYSTEM_STR("Lighting"),  WindowMenu::ItemType::radioOn);
-  viewerPopup.insertItem(__MENU_SCN_LIGHT_AO,      _SYSTEM_STR("Ambient occlusion"), WindowMenu::ItemType::radioOff);
-  viewerPopup.insertItem(__MENU_SCN_LIGHT_AO_BASE, _SYSTEM_STR("Lighting + AO"), WindowMenu::ItemType::radioOff);
-  this->_settings.useMiniMap = this->_settings.useParticles =this->_settings.useRefraction = false;
+  auto lightsPopup = WindowMenu(true);
+  lightsPopup.insertItem(__MENU_SCN_LIGHT_NONE,    _SYSTEM_STR("No lights"), WindowMenu::ItemType::radioOff);
+  lightsPopup.insertItem(__MENU_SCN_LIGHT_BASE,    _SYSTEM_STR("Lighting"),  WindowMenu::ItemType::radioOn);
+  lightsPopup.insertItem(__MENU_SCN_LIGHT_AO,      _SYSTEM_STR("Ambient occlusion"), WindowMenu::ItemType::radioOff);
+  lightsPopup.insertItem(__MENU_SCN_LIGHT_AO_BASE, _SYSTEM_STR("Lighting + AO"), WindowMenu::ItemType::radioOff);
+  viewerPopup.insertSubMenu(std::move(lightsPopup), _SYSTEM_STR("Lighting"));
+  this->_settings.aa = scene::AntiAliasing::none;
+  auto aaPopup = WindowMenu(true);
+  aaPopup.insertItem(__MENU_SCN_AA_OFF,   _SYSTEM_STR("No AA"), WindowMenu::ItemType::radioOn);
+  aaPopup.insertItem(__MENU_SCN_AA_FXAA,  _SYSTEM_STR("FXAA (fast/blur)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_SMAA4, _SYSTEM_STR("SMAA 4x (morph.)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_SMAA8, _SYSTEM_STR("SMAA 8x (morph.)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_MSAA2, _SYSTEM_STR("MSAA 2x (multisample)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_MSAA4, _SYSTEM_STR("MSAA 4x (multisample)"), WindowMenu::ItemType::radioOff);
+  aaPopup.insertItem(__MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), WindowMenu::ItemType::radioOff);
+  viewerPopup.insertSubMenu(std::move(aaPopup), _SYSTEM_STR("Anti-aliasing"));
+
+  this->_settings.useMiniMap = this->_settings.useParticles = this->_settings.useRefraction = this->_settings.useMotionBlur = false;
   viewerPopup.insertSeparator();
   viewerPopup.insertItem(__MENU_SPECIAL_MAP_RENDER_TEXTURE, _SYSTEM_STR("Mini-map view"), WindowMenu::ItemType::checkboxOff);
   viewerPopup.insertItem(__MENU_SPECIAL_FIRE_PARTICLES,     _SYSTEM_STR("Fire / particles"), WindowMenu::ItemType::checkboxOff);
   viewerPopup.insertItem(__MENU_SPECIAL_REFRACTION_SHPERE,  _SYSTEM_STR("Refraction globe"), WindowMenu::ItemType::checkboxOff);
+  viewerPopup.insertItem(__MENU_SPECIAL_MOTION_BLUR,        _SYSTEM_STR("Motion blur"), WindowMenu::ItemType::checkboxOff);
   this->_settings.useVsync = false;
   viewerPopup.insertSeparator();
   viewerPopup.insertItem(__MENU_API_VSYNC, _SYSTEM_STR("Vsync"), WindowMenu::ItemType::checkboxOff);
 
   auto screenFilterPopup = WindowMenu(true);
-
-  this->_settings.aa = scene::AntiAliasing::none;
-  screenFilterPopup.insertItem(__MENU_SCN_AA_OFF,   _SYSTEM_STR("No AA"), WindowMenu::ItemType::radioOn);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_FXAA,  _SYSTEM_STR("FXAA (fast/blur)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_SMAA2, _SYSTEM_STR("SMAA 2x (morph.)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_SMAA4, _SYSTEM_STR("SMAA 4x (morph.)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_SMAA8, _SYSTEM_STR("SMAA 8x (morph.)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_MSAA2, _SYSTEM_STR("MSAA 2x (multisample)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_MSAA4, _SYSTEM_STR("MSAA 4x (multisample)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), WindowMenu::ItemType::radioOff);
-  this->_settings.fx = scene::VisualEffect::none;
-  screenFilterPopup.insertSeparator();
-  screenFilterPopup.insertItem(__MENU_SCN_FX_OFF,         _SYSTEM_STR("No effect"), WindowMenu::ItemType::radioOn);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_COLOR,       _SYSTEM_STR("Color blending"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_CRTVISION,   _SYSTEM_STR("CRT colors/scan-lines"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_FOG,         _SYSTEM_STR("Fog effect"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_BLOOM,       _SYSTEM_STR("Bloom effect"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_LUMASHARPEN, _SYSTEM_STR("Luma sharpen effect"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_BROKENGLASS, _SYSTEM_STR("Broken glass"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_STORYBOOK,   _SYSTEM_STR("Storybook mode"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_PENCIL,      _SYSTEM_STR("Pencil mode"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_NEON,        _SYSTEM_STR("Neon mode (edges)"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_CARTOON,     _SYSTEM_STR("Cartoon mode"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_MEDIAN,      _SYSTEM_STR("Median filter"), WindowMenu::ItemType::radioOff);
-  screenFilterPopup.insertItem(__MENU_SCN_FX_UNSHARPMASK, _SYSTEM_STR("Unsharp masking"), WindowMenu::ItemType::radioOff);
+  this->_settings.gamma = 0;
+  auto gammaPopup = WindowMenu(true);
+  gammaPopup.insertItem(__MENU_SCN_GAMMA_LOWER,   _SYSTEM_STR("Lower"), WindowMenu::ItemType::radioOff);
+  gammaPopup.insertItem(__MENU_SCN_GAMMA_CORRECT, _SYSTEM_STR("Gamma correct"), WindowMenu::ItemType::radioOn);
+  gammaPopup.insertItem(__MENU_SCN_GAMMA_HIGHER,  _SYSTEM_STR("Higher"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(gammaPopup), _SYSTEM_STR("Gamma correction"));
+  this->_settings.colorBlend = ColorBlending::none;
+  auto colorBlendPopup = WindowMenu(true);
+  colorBlendPopup.insertItem(__MENU_SCN_BLEND_OFF,   _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  colorBlendPopup.insertItem(__MENU_SCN_BLEND_GRAY,  _SYSTEM_STR("Grayscale"), WindowMenu::ItemType::radioOff);
+  colorBlendPopup.insertItem(__MENU_SCN_BLEND_RED,   _SYSTEM_STR("Red tinted"), WindowMenu::ItemType::radioOff);
+  colorBlendPopup.insertItem(__MENU_SCN_BLEND_GREEN, _SYSTEM_STR("Green tinted"), WindowMenu::ItemType::radioOff);
+  colorBlendPopup.insertItem(__MENU_SCN_BLEND_BLUE,  _SYSTEM_STR("Blue tinted"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(colorBlendPopup), _SYSTEM_STR("Color blending"));
+  this->_settings.fog = FogFx::none;
+  auto fogPopup = WindowMenu(true);
+  fogPopup.insertItem(__MENU_SCN_FOG_OFF,   _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  fogPopup.insertItem(__MENU_SCN_FOG_LIGHT, _SYSTEM_STR("Light fog"), WindowMenu::ItemType::radioOff);
+  fogPopup.insertItem(__MENU_SCN_FOG_DARK,  _SYSTEM_STR("Dark fog"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(fogPopup), _SYSTEM_STR("Fog effect"));
+  this->_settings.hdrFx = HdrFx::none;
+  auto hdrPopup = WindowMenu(true);
+  hdrPopup.insertItem(__MENU_SCN_HDR_OFF,       _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  hdrPopup.insertItem(__MENU_SCN_HDR_BLOOM,     _SYSTEM_STR("Bloom"), WindowMenu::ItemType::radioOff);
+  hdrPopup.insertItem(__MENU_SCN_HDR_LUMA,      _SYSTEM_STR("Luma sharpen"), WindowMenu::ItemType::radioOff);
+  hdrPopup.insertItem(__MENU_SCN_HDR_BLOOM_LUMA,_SYSTEM_STR("Bloom + Luma"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(hdrPopup), _SYSTEM_STR("HDR effects"));
+  this->_settings.sharpFx = SharpFx::none;
+  auto sharpPopup = WindowMenu(true);
+  sharpPopup.insertItem(__MENU_SCN_SHARP_OFF,        _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  sharpPopup.insertItem(__MENU_SCN_SHARP_GAUSS,      _SYSTEM_STR("Gaussian blur"), WindowMenu::ItemType::radioOff);
+  sharpPopup.insertItem(__MENU_SCN_SHARP_MEDIAN,     _SYSTEM_STR("Median filter"), WindowMenu::ItemType::radioOff);
+  sharpPopup.insertItem(__MENU_SCN_SHARP_UNSHARPMASK,_SYSTEM_STR("Unsharp masking"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(sharpPopup), _SYSTEM_STR("Sharpen/blur"));
+  this->_settings.artFx = ArtFx::none;
+  auto artPopup = WindowMenu(true);
+  artPopup.insertItem(__MENU_SCN_ART_OFF,        _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  artPopup.insertItem(__MENU_SCN_ART_PENCIL1,    _SYSTEM_STR("Pencil V1"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_PENCIL2,    _SYSTEM_STR("Pencil V2"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_CEL1,       _SYSTEM_STR("Cel-shading V1"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_CEL2,       _SYSTEM_STR("Cel-shading V2"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_SOBEL,      _SYSTEM_STR("Neon (Sobel)"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_PREWITT,    _SYSTEM_STR("Neon (Prewitt)"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_STORYBOOK,  _SYSTEM_STR("Storybook"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_BROKENGLASS,_SYSTEM_STR("Broken glass"), WindowMenu::ItemType::radioOff);
+  artPopup.insertItem(__MENU_SCN_ART_CRT,        _SYSTEM_STR("CRT vision"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(artPopup), _SYSTEM_STR("Artistic effects"));
+  this->_settings.noise = NoiseFx::none;
+  auto noisePopup = WindowMenu(true);
+  noisePopup.insertItem(__MENU_SCN_NOISE_OFF,   _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  noisePopup.insertItem(__MENU_SCN_NOISE_PHOTO, _SYSTEM_STR("Photographic"), WindowMenu::ItemType::radioOff);
+  noisePopup.insertItem(__MENU_SCN_NOISE_TV,    _SYSTEM_STR("TV / dynamic"), WindowMenu::ItemType::radioOff);
+  screenFilterPopup.insertSubMenu(std::move(noisePopup), _SYSTEM_STR("Noise effects"));
 
   auto textureFilterPopup = WindowMenu(true);
-
   this->_settings.texFilter = scene::Interpolation::bilinear;
   textureFilterPopup.insertItem(__MENU_TEX_FLT_NEAREST,  _SYSTEM_STR("Nearest"), WindowMenu::ItemType::radioOff);
   textureFilterPopup.insertItem(__MENU_TEX_FLT_BILINEAR, _SYSTEM_STR("Bilinear"), WindowMenu::ItemType::radioOn);
@@ -187,10 +247,14 @@ scene::MenuManager::MenuManager() {
   textureFilterPopup.insertItem(__MENU_TEX_UP_NONE, _SYSTEM_STR("1x"), WindowMenu::ItemType::radioOn);
   this->_settings.texMapping = Mapping::none;
   textureFilterPopup.insertSeparator();
-  textureFilterPopup.insertItem(__MENU_TEX_MAP_NONE, _SYSTEM_STR("No mapping"), WindowMenu::ItemType::radioOn);
+  auto mappingPopup = WindowMenu(true);
+  mappingPopup.insertItem(__MENU_TEX_MAP_NONE,  _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
+  mappingPopup.insertItem(__MENU_TEX_MAP_TANG,  _SYSTEM_STR("Tangent space"), WindowMenu::ItemType::radioOff);
+  mappingPopup.insertItem(__MENU_TEX_MAP_OBJ,   _SYSTEM_STR("Object space"), WindowMenu::ItemType::radioOff);
+  mappingPopup.insertItem(__MENU_TEX_MAP_WORLD, _SYSTEM_STR("World space"), WindowMenu::ItemType::radioOff);
+  textureFilterPopup.insertSubMenu(std::move(mappingPopup), _SYSTEM_STR("Normal mapping"));
   
   auto spriteFilterPopup = WindowMenu(true);
-
   this->_settings.sprFilter = scene::Interpolation::bilinear;
   spriteFilterPopup.insertItem(__MENU_SPR_FLT_NEAREST,  _SYSTEM_STR("Nearest"), WindowMenu::ItemType::radioOff);
   spriteFilterPopup.insertItem(__MENU_SPR_FLT_BILINEAR, _SYSTEM_STR("Bilinear"), WindowMenu::ItemType::radioOn);
@@ -235,13 +299,6 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         filterChangeHandler();
       }
       break;
-    case __MENU_RENDER_NONE/100:
-      if (this->_settings.renderMode != (scene::RenderingMode)(id - __MENU_RENDER_NONE)) {
-        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.renderMode + __MENU_RENDER_NONE);
-        this->_settings.renderMode = (scene::RenderingMode)(id - __MENU_RENDER_NONE);
-        apiChangeHandler(scene::ApiChangeType::viewportChange);
-      }
-      break;
     case __MENU_SCN_AA_OFF/100:
       if (this->_settings.aa != (scene::AntiAliasing)(id - __MENU_SCN_AA_OFF)) {
         WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.aa + __MENU_SCN_AA_OFF);
@@ -249,13 +306,33 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         apiChangeHandler(scene::ApiChangeType::viewportChange);
       }
       break;
-    case __MENU_SCN_FX_OFF/100:
-      if (this->_settings.fx != (scene::VisualEffect)(id - __MENU_SCN_FX_OFF)) {
-        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.fx + __MENU_SCN_FX_OFF);
-        this->_settings.fx = (scene::VisualEffect)(id - __MENU_SCN_FX_OFF);
+    case __MENU_RENDER_NONE/100:
+      if (this->_settings.renderMode != (scene::RenderingMode)(id - __MENU_RENDER_NONE)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.renderMode + __MENU_RENDER_NONE);
+        this->_settings.renderMode = (scene::RenderingMode)(id - __MENU_RENDER_NONE);
+        apiChangeHandler(scene::ApiChangeType::viewportChange);
+      }
+      break;
+    case __MENU_SCN_LIGHT_NONE/100:
+      if (this->_settings.light != (scene::LightMode)(id - __MENU_SCN_LIGHT_NONE)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.light + __MENU_SCN_LIGHT_NONE);
+        this->_settings.light = (scene::LightMode)(id - __MENU_SCN_LIGHT_NONE);
         filterChangeHandler();
       }
       break;
+    case __MENU_SPECIAL_MAP_RENDER_TEXTURE/100: {
+      bool value = false;
+      switch (id) {
+        case __MENU_SPECIAL_MAP_RENDER_TEXTURE: this->_settings.useMiniMap ^= true; value = this->_settings.useMiniMap; break;
+        case __MENU_SPECIAL_FIRE_PARTICLES:     this->_settings.useParticles ^= true; value = this->_settings.useParticles; break;
+        case __MENU_SPECIAL_REFRACTION_SHPERE:  this->_settings.useRefraction ^= true; value = this->_settings.useRefraction; break;
+        case __MENU_SPECIAL_MOTION_BLUR:        this->_settings.useMotionBlur ^= true; value = this->_settings.useMotionBlur; break;
+        default: break;
+      }
+      WindowMenu::changeCheckItemState(this->_resource->handle(), id, value);
+      filterChangeHandler();
+      break;
+    }
     case __MENU_TEX_FLT_NEAREST/100:
       if (this->_settings.texFilter != (scene::Interpolation)(id - __MENU_TEX_FLT_NEAREST)) {
         WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.texFilter + __MENU_TEX_FLT_NEAREST);
@@ -291,25 +368,55 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         filterChangeHandler();
       }
       break;
-    case __MENU_SCN_LIGHT_NONE/100:
-      if (this->_settings.light != (scene::LightMode)(id - __MENU_SCN_LIGHT_NONE)) {
-        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.light + __MENU_SCN_LIGHT_NONE);
-        this->_settings.light = (scene::LightMode)(id - __MENU_SCN_LIGHT_NONE);
+    case __MENU_SCN_GAMMA_LOWER/100:
+      if (this->_settings.gamma != (-1 + id - __MENU_SCN_GAMMA_LOWER)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, static_cast<uint32_t>(this->_settings.gamma + 1) + __MENU_SCN_GAMMA_LOWER);
+        this->_settings.gamma = -1 + id - __MENU_SCN_GAMMA_LOWER;
         filterChangeHandler();
       }
       break;
-    case __MENU_SPECIAL_MAP_RENDER_TEXTURE/100: {
-      bool value = false;
-      switch (id) {
-        case __MENU_SPECIAL_MAP_RENDER_TEXTURE: this->_settings.useMiniMap ^= true; value = this->_settings.useMiniMap; break;
-        case __MENU_SPECIAL_FIRE_PARTICLES:     this->_settings.useParticles ^= true; value = this->_settings.useParticles; break;
-        case __MENU_SPECIAL_REFRACTION_SHPERE:  this->_settings.useRefraction ^= true; value = this->_settings.useRefraction; break;
-        default: break;
+    case __MENU_SCN_BLEND_OFF/100:
+      if (this->_settings.colorBlend != (scene::ColorBlending)(id - __MENU_SCN_BLEND_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.colorBlend + __MENU_SCN_BLEND_OFF);
+        this->_settings.colorBlend = (scene::ColorBlending)(id - __MENU_SCN_BLEND_OFF);
+        filterChangeHandler();
       }
-      WindowMenu::changeCheckItemState(this->_resource->handle(), id, value);
-      filterChangeHandler();
       break;
-    }
+    case __MENU_SCN_FOG_OFF/100:
+      if (this->_settings.fog != (scene::FogFx)(id - __MENU_SCN_FOG_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.fog + __MENU_SCN_FOG_OFF);
+        this->_settings.fog = (scene::FogFx)(id - __MENU_SCN_FOG_OFF);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_SCN_HDR_OFF/100:
+      if (this->_settings.hdrFx != (scene::HdrFx)(id - __MENU_SCN_HDR_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.hdrFx + __MENU_SCN_HDR_OFF);
+        this->_settings.hdrFx = (scene::HdrFx)(id - __MENU_SCN_HDR_OFF);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_SCN_SHARP_OFF/100:
+      if (this->_settings.sharpFx != (scene::SharpFx)(id - __MENU_SCN_SHARP_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.sharpFx + __MENU_SCN_SHARP_OFF);
+        this->_settings.sharpFx = (scene::SharpFx)(id - __MENU_SCN_SHARP_OFF);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_SCN_ART_OFF/100:
+      if (this->_settings.artFx != (scene::ArtFx)(id - __MENU_SCN_ART_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.artFx + __MENU_SCN_ART_OFF);
+        this->_settings.artFx = (scene::ArtFx)(id - __MENU_SCN_ART_OFF);
+        filterChangeHandler();
+      }
+      break;
+    case __MENU_SCN_NOISE_OFF/100:
+      if (this->_settings.noise != (scene::NoiseFx)(id - __MENU_SCN_NOISE_OFF)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.noise + __MENU_SCN_NOISE_OFF);
+        this->_settings.noise = (scene::NoiseFx)(id - __MENU_SCN_NOISE_OFF);
+        filterChangeHandler();
+      }
+      break;
     default: break;
   }
 }
