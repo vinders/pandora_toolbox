@@ -96,7 +96,15 @@ vinders (8):
 ## 0.31.0.103
 2020-10-11 - ea4aba33ade990f10db821e3b72b606a90832d82
 ### features
-vinders (9):
+vinders (17):
+* pattern: custom type traits (copy/move/compare/iterator) + copy/move enablers
+* pattern: global singleton + locked singleton patterns
+* pattern: optional value pattern (pointer-like buffer, stack alloc)
+* pattern: locked object pattern (safe lifetime lock + simple ref lock)
+* pattern: pre/post operation guard pattern
+* pattern: iterator/iterable pattern + declaration helpers
+* pattern: RAII contract utility (for delegate,observer...) + contract registrar
+* pattern: observer + delegate patterns (direct/deferrable)
 * system: macros & code generators: enum serialization with buffer
 * system: date/time formatting + reading
 * io: CSV log output formatter
@@ -107,27 +115,10 @@ vinders (9):
 * hardware: CPU arch: cores detection
 * hardware: CPU specifications detection (x86/ARM)
 ### fixes
-vinders (2):
+vinders (3):
+* cwork: custom cmake framework: refactor parent/internal solution system
 * system: logger + basic formatter: enum serialization with buffer (no alloc)
 * system: logger + basic formatter: add current date/time
-
----
-
-## 0.22.1.59
-2020-10-04 - 0cc828d8a1f6187fb040ffec8690212627b5dc86
-### features
-vinders (8):
-* pattern: custom type traits (copy/move/compare/iterator) + copy/move enablers
-* pattern: global singleton + locked singleton patterns
-* pattern: optional value pattern (pointer-like buffer, stack alloc)
-* pattern: locked object pattern (safe lifetime lock + simple ref lock)
-* pattern: pre/post operation guard pattern
-* pattern: iterator/iterable pattern + declaration helpers
-* pattern: RAII contract utility (for delegate,observer...) + contract registrar
-* pattern: observer + delegate patterns (direct/deferrable)
-### fixes
-vinders (1):
-* cwork: custom cmake framework: refactor parent/internal solution system
 
 ---
 
