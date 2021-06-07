@@ -160,6 +160,9 @@ TEST_F(WindowResourceTest, portableMenuRes) {
   WindowMenu::changeCheckItemState(resource->handle(), 208u, 207u, true);
   WindowMenu::changeCheckItemState(resource->handle(), 209u, 208u, false);
   WindowMenu::changeCheckItemState(resource->handle(), 210u, false, true);
+
+  WindowMenu otherSubMenu(true);
+  EXPECT_TRUE(WindowResource::buildMenu(std::move(otherSubMenu)) == nullptr);
 }
 
 TEST_F(WindowResourceTest, nativeMenuRes) {
