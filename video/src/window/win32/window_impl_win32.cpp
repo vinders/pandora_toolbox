@@ -62,7 +62,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
         static __forceinline void adjustWindowSizeOnDpiChange(__WindowImpl& window, const RECT& suggestedArea, 
                                                               WindowDecorationSize& outDecorationSizes) noexcept;
         
-        static __forceinline void dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept;
+        static void dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept;
 
         static __forceinline bool processKeyboardEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
         static __forceinline bool processMouseEvent(__WindowImpl& window, UINT message, WPARAM wParam, LPARAM lParam);
@@ -1446,7 +1446,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // ---
   
   // Drop files (drag and drop operation)
-  __forceinline void __WindowImplEventProc::dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept {
+  void __WindowImplEventProc::dragDropFiles(__WindowImpl& window, HDROP dropHandle) noexcept {
     // allocate paths
     uint32_t count = (uint32_t)DragQueryFileW(dropHandle, 0xFFFFFFFF, nullptr, 0);
     wchar_t** paths = (wchar_t**)calloc(count, sizeof(wchar_t*));
