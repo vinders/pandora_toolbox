@@ -26,6 +26,39 @@ namespace pandora {
                           ///                               - rgba(127,0,0,127) == full saturation red, 50% transparent.
                           ///                               - rgba(255,0,0,127) == additive blended red, 50% transparent.
     };
+    /// @brief Texture addressing mode (out-of-bounds coords management)
+    enum class TextureAddressMode : uint32_t {
+      border        = 0u, ///< Coordinates outside of the textures are set to the configured border color (set in sampler descriptor or shader).
+      clamp         = 1u, ///< Coordinates outside of the textures are set to the edge color.
+      repeat        = 2u, ///< Texture is repeated at every junction.
+      repeatMirror  = 3u, ///< Texture is repeated and flipped at every junction.
+      mirrorClamp   = 4u  ///< Texture is mirrored once horizontally/vertically below '0' coords, then clamped to each side colors.
+    };
+    /// @brief Texture minification filter type
+    enum class MinificationFilter : uint32_t {
+      nearest            = 0,  ///< Use nearest point - no mip-map
+      linear             = 1u, ///< Bilinear downscaling - no mip-map
+      nearest_mipNearest = 2u, ///< Use nearest point - nearest mip-map
+      nearest_mipLinear  = 3u, ///< Use nearest point - linear mip-mapping
+      linear_mipNearest  = 4u, ///< Bilinear downscaling - nearest mip-map
+      linear_mipLinear   = 5u   ///< Bilinear downscaling - linear mip-mapping: trilinear filter
+    };
+    /// @brief Texture magnification filter type
+    enum class MagnificationFilter : uint32_t {
+      nearest = 0, ///< Use nearest point during upscaling
+      linear = 1u  ///< Bilinear interpolation during upscaling
+    };
+    /// @brief Depth comparison type for shadow samplers: new-source COMPARE existing-ref
+    enum class DepthComparison : uint32_t {
+      never        = 0u, ///< always fail
+      less         = 1u, ///< success: source < existing-ref
+      lessEqual    = 2u, ///< success: source <= existing-ref
+      equal        = 3u, ///< success: source == existing-ref
+      notEqual     = 4u, ///< success: source != existing-ref
+      greaterEqual = 5u, ///< success: source >= existing-ref
+      greater      = 6u, ///< success: source > existing-ref
+      always       = 7u  ///< always succeed (default value)
+    };
     
     /// @brief Renderer depth-bias settings (depth control, Z-order, clipping)
     struct DepthBias {

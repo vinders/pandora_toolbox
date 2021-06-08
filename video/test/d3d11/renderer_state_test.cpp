@@ -183,21 +183,30 @@
   TEST_F(RendererStateTest, filledFilterContainer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    
+    float borderColor[4] { 0.,0.,0.,1. };
+    pandora::video::TextureAddressMode addrModes[3] { 
+      pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat
+    };
 
     FilterStates values;
-    renderer.createFilterState(values);
+    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor);
     ASSERT_EQ((size_t)1, values.size());
     auto val1 = values.at(0);
-    renderer.createFilterState(values);
+    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor);
     ASSERT_EQ((size_t)2, values.size());
     EXPECT_EQ(val1, values.at(0));
     auto val2 = values.at(1);
-    renderer.createFilterState(values, 0);
+    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor, 0);
     ASSERT_EQ((size_t)3, values.size());
     EXPECT_EQ(val1, values.at(1));
     EXPECT_EQ(val2, values.at(2));
     auto val0 = values.at(0);
-    renderer.createFilterState(values, 1);
+    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor, 1);
     ASSERT_EQ((size_t)4, values.size());
     EXPECT_EQ(val0, values.at(0));
     EXPECT_EQ(val1, values.at(2));

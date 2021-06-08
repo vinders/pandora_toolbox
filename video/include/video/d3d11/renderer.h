@@ -50,12 +50,14 @@ License :     MIT
         
           /// @brief Create Direct3D rendering device and context
           /// @param monitor   Target display monitor for the renderer: used to determine the adapter to choose.
-          /// @param minLevel  The system uses the highest available device level (based on Cmake/cwork option _DEFAULT_D3D11_MAX_VERSION).
+          /// @param minLevel  The system uses the highest available device level (based on 'maxLevel' and Cmake/cwork option _DEFAULT_D3D11_MAX_VERSION).
           ///                  If some feature level is not available, the level below is used (and so on).
-          ///                  Argument 'minLevel' specifies the minimum level allowed (-> exception if higher than available levels).
+          ///                  Argument 'minLevel' specifies the minimum level allowed (-> exception if higher than max available level).
+          /// @param maxLevel  Maximum feature level: useful to target a specific feature level, lower than the highest supported level.
           /// @throws - out_of_range: if minLevel is too high.
           ///         - runtime_error: creation failure.
-          Renderer(const pandora::hardware::DisplayMonitor& monitor, DeviceLevel minLevel = DeviceLevel::direct3D_11_0);
+          Renderer(const pandora::hardware::DisplayMonitor& monitor, DeviceLevel minLevel = DeviceLevel::direct3D_11_0, 
+                   DeviceLevel maxLevel = DeviceLevel::direct3D_11_1);
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { _destroy(); }
           
@@ -72,10 +74,14 @@ License :     MIT
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; } ///< Get available DXGI level on current system (1-6)
           inline DeviceLevel featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
           static size_t maxSimultaneousRenderViews() noexcept; ///< Max number of simultaneous render views (swap-chains, texture targets...)
+          /// @brief Convert portable color/depth/component format to DXGI_FORMAT (cast result to DXGI_FORMAT)
+          /// @remarks Useful to fill input layout descriptions with portable format values (see "video/d3d11/shader.h").
+          static int32_t toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
           
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
+          
           
           // -- feature support --
           
@@ -91,7 +97,7 @@ License :     MIT
           /// @param sampleCount     Number of samples: 1, 2, 4 or 8
           inline bool isMultisampleSupported(uint32_t sampleCount, pandora::video::ComponentFormat format) const noexcept {
             uint32_t qualityLevel = 1;
-            return _isMultisampleSupported(sampleCount, _toDxgiFormat(format), qualityLevel);
+            return _isMultisampleSupported(sampleCount, Renderer::toDxgiFormat(format), qualityLevel);
           }
           
           /// @brief Screen tearing supported (variable refresh rate display)
@@ -101,18 +107,80 @@ License :     MIT
           /// @brief Restricting to local displays supported (no screen sharing or printing)
           inline bool isLocalDisplayRestrictionAvailable() const noexcept { return (this->_dxgiLevel >= 3u); }
           
+          
           // -- resource builder --
           
           /// @brief Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
           RasterizerState createRasterizerState(pandora::video::CullMode culling, bool isFrontClockwise, 
                                                 const pandora::video::DepthBias& depth, bool useMsaa = false,
-                                                bool scissorClipping = false); // throws
+                                                bool scissorClipping = false);
+
           /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-          /// @param index              Insert position in outStateContainer (-1 to append)
-          /// @param outStateContainer  RAII container in which to insert/append new state item
-          void createFilterState(FilterStates& outStateContainer, int32_t index = -1); // throws
-          /// @brief Max array size for sample filters
-          size_t maxFilterStates() const noexcept;
+          /// @param outStateContainer  RAII container in which to insert/append new state item.
+          /// @param minFilter          Filter to use for minification (downscaling).
+          /// @param magFilter          Filter to use for magnification (upscaling).
+          /// @param texAddressUVW      Texture out-of-range addressing modes (dimensions[3]: U/V/W).
+          /// @param borderColor        Border color for clamping (color[4]: R/G/B/A) - value range == [0.0;1.0].
+          /// @param lodMin             Minimum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodMax             Maximum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodBias            Offset from calculated mip-map level (added).
+          /// @param index              Insert position in outStateContainer (-1 to append).
+          /// @throws - out_of_range: full container or index out of range
+          ///         - runtime_error: creation failure.
+          void createFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter, 
+                            TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
+                            float lodBias = 0.0, float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+          /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+          /// @param outStateContainer  RAII container in which to insert/append new state item.
+          /// @param minFilter          Filter to use for minification (downscaling).
+          /// @param magFilter          Filter to use for magnification (upscaling).
+          /// @param texAddressUVW      Texture out-of-range addressing modes (dimensions[3]: U/V/W).
+          /// @param compare            Depth comparison mode with existing reference pixels.
+          /// @param borderColor        Border color for clamping (color[4]: R/G/B/A) - value range == [0.0;1.0].
+          /// @param lodMin             Minimum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodMax             Maximum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodBias            Offset from calculated mip-map level (added).
+          /// @param index              Insert position in outStateContainer (-1 to append).
+          /// @throws - out_of_range: full container or index out of range.
+          ///         - runtime_error: creation failure.
+          void createComparedFilter(FilterStates& outStateContainer, MinificationFilter minFilter, 
+                                    MagnificationFilter magFilter, TextureAddressMode texAddressUVW[3], 
+                                    DepthComparison compare, float lodMin = 0.0, float lodMax = 0.0, float lodBias = 0.0,
+                                    float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+          
+          /// @brief Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+          /// @param outStateContainer  RAII container in which to insert/append new state item.
+          /// @param maxAnisotropy      Clamping anisotropy value - range: [1;maxAnisotropy()].
+          /// @param texAddressUVW      Texture out-of-range addressing modes (dimensions[3]: U/V/W).
+          /// @param borderColor        Border color for clamping (color[4]: R/G/B/A) - value range == [0.0;1.0].
+          /// @param lodMin             Minimum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodMax             Maximum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodBias            Offset from calculated mip-map level (added).
+          /// @param index              Insert position in outStateContainer (-1 to append).
+          /// @throws - out_of_range: full container or index out of range.
+          ///         - runtime_error: creation failure.
+          void createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, 
+                                       TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
+                                       float lodBias = 0.0, float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+          /// @brief Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+          /// @param outStateCont  RAII container in which to insert/append new state item.
+          /// @param maxAniso      Clamping anisotropy value - range: [1;maxAnisotropy()].
+          /// @param txAddrUVW     Texture out-of-range addressing modes (dimensions[3]: U/V/W).
+          /// @param compare       Depth comparison mode with existing reference pixels.
+          /// @param borderColor   Border color for clamping (color[4]: R/G/B/A) - value range == [0.0;1.0].
+          /// @param lodMin             Minimum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodMax             Maximum level of detail (mip-map level): 0==highest / custom value: lowest to highest == [1;D3D11_FLOAT32_MAX].
+          /// @param lodBias       Offset from calculated mip-map level (added).
+          /// @param index         Insert position in outStateContainer (-1 to append).
+          /// @throws - out_of_range: full container or index out of range.
+          ///         - runtime_error: creation failure.
+          void createComparedAnisotropicFilter(FilterStates& outStateCont, uint32_t maxAniso, TextureAddressMode txAddrUVW[3], 
+                                               DepthComparison compare, float lodMin = 0.0, float lodMax = 0.0, float lodBias = 0.0, 
+                                               float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+          
+          uint32_t maxAnisotropy() const noexcept; ///< Max anisotropy value (usually 16)
+          size_t maxFilterStates() const noexcept; ///< Max array size for sample filters
+          
           
           // -- status operations --
 
@@ -126,6 +194,7 @@ License :     MIT
           void setFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Reset all sampler filters
           void clearFilterStates() noexcept;
+          
           
           // -- render target operations --
           
@@ -171,12 +240,11 @@ License :     MIT
           void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
                                      const pandora::video::ComponentVector128& clearColorRgba) noexcept;
           
-        
         private:
           void _destroy() noexcept;
           void _refreshDxgiFactory(); // throws
-          static int32_t _toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
           bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
+          static inline float* _blackFilterBorder() noexcept { float color[] = { 0.,0.,0.,1. }; return color; }
           void* _createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                  uint32_t rateNumerator, uint32_t rateDenominator, 
                                  DeviceLevel& outSwapChainLevel); // throws

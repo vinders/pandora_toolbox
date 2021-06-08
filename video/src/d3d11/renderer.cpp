@@ -199,7 +199,8 @@ License :     MIT
   // ---
 
   // Create Direct3D rendering device and context
-  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, DeviceLevel minLevel) { // throws
+  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, Renderer::DeviceLevel minLevel, 
+                     Renderer::DeviceLevel maxLevel) { // throws
     UINT runtimeLayers = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #   ifdef _DEBUG
       if (__isDebugSdkAvailable())
@@ -218,8 +219,16 @@ License :     MIT
       --featureLevelCount;
       minLevel = static_cast<DeviceLevel>((uint32_t)minLevel - 1u);
     }
-    if (featureLevelCount == 0)
+    if (featureLevelCount == 0 || (uint32_t)minLevel > (uint32_t)maxLevel)
       throw std::out_of_range("Renderer: minimum feature level requested is higher than max");
+    
+    const D3D_FEATURE_LEVEL* firstFeatLevel;
+    if (maxLevel != Renderer::DeviceLevel::direct3D_11_0 || featureLevels[0] == D3D_FEATURE_LEVEL_11_0)
+      firstFeatLevel = &featureLevels[0];
+    else {
+      firstFeatLevel = &featureLevels[1];
+      --featureLevelCount;
+    }
 
     // create DXGI factory + get primary adapter (if not found, default adapter will be used instead)
     D3dResource<IDXGIFactory1> dxgiFactory;
@@ -230,7 +239,7 @@ License :     MIT
     // create rendering device + context
     D3D_FEATURE_LEVEL deviceLevel;
     auto result = D3D11CreateDevice(adapter.get(), (adapter) ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, 
-                                    nullptr, runtimeLayers, featureLevels, featureLevelCount, D3D11_SDK_VERSION, 
+                                    nullptr, runtimeLayers, firstFeatLevel, featureLevelCount, D3D11_SDK_VERSION, 
                                     (ID3D11Device**)&(this->_device), &deviceLevel, 
                                     (ID3D11DeviceContext**)&(this->_context));
     if (FAILED(result) || this->_device == nullptr || this->_context == nullptr)
@@ -373,7 +382,7 @@ License :     MIT
   }
 
 
-// -- resource builder -- ------------------------------------------------------
+// -- resource builder - rasterizer -- -----------------------------------------
 
   // Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
   RasterizerState Renderer::createRasterizerState(CullMode culling, bool isFrontClockwise, 
@@ -406,30 +415,77 @@ License :     MIT
     return RasterizerState(stateData);
   }
 
-  // ---
 
-  // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createFilterState(FilterStates& outStateContainer, int32_t index) { // throws
+// -- resource builder - sampler -- --------------------------------------------
+  
+  // Convert portable filter types to Direct3D filter type
+  static D3D11_FILTER __toFilterType(pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter) {
+    bool isMagLinear = (magFilter == pandora::video::MagnificationFilter::linear);
+    switch (minFilter) {
+      case pandora::video::MinificationFilter::nearest_mipNearest:
+      case pandora::video::MinificationFilter::nearest: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_POINT;
+      case pandora::video::MinificationFilter::linear_mipNearest:
+      case pandora::video::MinificationFilter::linear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+      case pandora::video::MinificationFilter::nearest_mipLinear: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+      case pandora::video::MinificationFilter::linear_mipLinear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+      default: return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+    }
+  }
+  // Convert portable filter types to Direct3D filter type with comparison
+  static D3D11_FILTER __toFilterComparedType(pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter) {
+    bool isMagLinear = (magFilter == pandora::video::MagnificationFilter::linear);
+    switch (minFilter) {
+      case pandora::video::MinificationFilter::nearest_mipNearest:
+      case pandora::video::MinificationFilter::nearest:
+        return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+      case pandora::video::MinificationFilter::linear_mipNearest:
+      case pandora::video::MinificationFilter::linear:
+        return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT;
+      case pandora::video::MinificationFilter::nearest_mipLinear:
+        return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR;
+      case pandora::video::MinificationFilter::linear_mipLinear:
+        return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+      default: return D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    }
+  }
+  // Convert portable texture-addressing to Direct3D addressing enum
+  static D3D11_TEXTURE_ADDRESS_MODE __toFilterTextureAddress(pandora::video::TextureAddressMode mode) {
+    switch (mode) {
+      case pandora::video::TextureAddressMode::border: return D3D11_TEXTURE_ADDRESS_BORDER;
+      case pandora::video::TextureAddressMode::clamp:  return D3D11_TEXTURE_ADDRESS_CLAMP;
+      case pandora::video::TextureAddressMode::repeat: return D3D11_TEXTURE_ADDRESS_WRAP;
+      case pandora::video::TextureAddressMode::repeatMirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
+      case pandora::video::TextureAddressMode::mirrorClamp:  return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
+      default: return D3D11_TEXTURE_ADDRESS_WRAP;
+    }
+  }
+  // Convert portable comparison enum to Direct3D comparison enum
+  static D3D11_COMPARISON_FUNC __toFilterComparison(pandora::video::DepthComparison compare) {
+    switch (compare) {
+      case pandora::video::DepthComparison::never:        return D3D11_COMPARISON_NEVER;
+      case pandora::video::DepthComparison::less:         return D3D11_COMPARISON_LESS;
+      case pandora::video::DepthComparison::lessEqual:    return D3D11_COMPARISON_LESS_EQUAL;
+      case pandora::video::DepthComparison::equal:        return D3D11_COMPARISON_EQUAL;
+      case pandora::video::DepthComparison::notEqual:     return D3D11_COMPARISON_NOT_EQUAL;
+      case pandora::video::DepthComparison::greaterEqual: return D3D11_COMPARISON_GREATER_EQUAL;
+      case pandora::video::DepthComparison::greater:      return D3D11_COMPARISON_GREATER;
+      case pandora::video::DepthComparison::always:       return D3D11_COMPARISON_ALWAYS;
+      default: return D3D11_COMPARISON_ALWAYS;
+    }
+  }
+  
+  // Verify if filter container is already full
+  static inline void __verifyFilterContainerSize(FilterStates& outStateContainer) {
     if (outStateContainer.size() >= outStateContainer.maxSize())
       throw std::out_of_range("Renderer: sampler/filter state container is already full");
-
-    D3D11_SAMPLER_DESC samplerDesc = { }; // TODO: params to customize...
-    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
-    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.MipLODBias = 0;
-    samplerDesc.MaxAnisotropy = 8;
-    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-    samplerDesc.MinLOD = 0;
-    samplerDesc.MaxLOD = 0;
-
+  }
+  // Create sampler state from description + insert in filter container
+  static void __addFilterStateToContainer(ID3D11Device* device, D3D11_SAMPLER_DESC& samplerDesc, FilterStates& outStateContainer, int32_t index) {
     ID3D11SamplerState* stateData = nullptr;
-    auto result = ((ID3D11Device*)this->_device)->CreateSamplerState(&samplerDesc, &stateData);
+    auto result = device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create sampler/filter state");
-
+    
     bool isValidSlot = (index < 0)
                      ? outStateContainer.append((FilterStates::State)stateData)
                      : outStateContainer.insert(index, (FilterStates::State)stateData);
@@ -438,7 +494,92 @@ License :     MIT
       throw std::out_of_range("Renderer: sampler/filter state index out of range");
     }
   }
+  
+  // ---
 
+  // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+  void Renderer::createFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter, 
+                              pandora::video::TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+    __verifyFilterContainerSize(outStateContainer);
+    
+    D3D11_SAMPLER_DESC samplerDesc{};
+    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+    samplerDesc.Filter = __toFilterType(minFilter, magFilter);
+    samplerDesc.AddressU = __toFilterTextureAddress(texAddressUVW[0]);
+    samplerDesc.AddressV = __toFilterTextureAddress(texAddressUVW[1]);
+    samplerDesc.AddressW = __toFilterTextureAddress(texAddressUVW[2]);
+    samplerDesc.MipLODBias = lodBias;
+    samplerDesc.MinLOD = lodMin;
+    samplerDesc.MaxLOD = lodMax;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
+    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+  }
+  // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+  void Renderer::createComparedFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter,
+                                      pandora::video::TextureAddressMode texAddressUVW[3], pandora::video::DepthComparison compare, 
+                                      float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+    __verifyFilterContainerSize(outStateContainer);
+    
+    D3D11_SAMPLER_DESC samplerDesc{};
+    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+    samplerDesc.Filter = __toFilterComparedType(minFilter, magFilter);
+    samplerDesc.AddressU = __toFilterTextureAddress(texAddressUVW[0]);
+    samplerDesc.AddressV = __toFilterTextureAddress(texAddressUVW[1]);
+    samplerDesc.AddressW = __toFilterTextureAddress(texAddressUVW[2]);
+    samplerDesc.MipLODBias = lodBias;
+    samplerDesc.MinLOD = lodMin;
+    samplerDesc.MaxLOD = lodMax;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = __toFilterComparison(compare);
+    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
+    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+  }
+  
+  // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, pandora::video::TextureAddressMode texAddressUVW[3],
+                                         float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+    __verifyFilterContainerSize(outStateContainer);
+    
+    D3D11_SAMPLER_DESC samplerDesc{};
+    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+    samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.AddressU = __toFilterTextureAddress(texAddressUVW[0]);
+    samplerDesc.AddressV = __toFilterTextureAddress(texAddressUVW[1]);
+    samplerDesc.AddressW = __toFilterTextureAddress(texAddressUVW[2]);
+    samplerDesc.MipLODBias = lodBias;
+    samplerDesc.MinLOD = lodMin;
+    samplerDesc.MaxLOD = lodMax;
+    samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
+    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+  }
+  // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
+  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, pandora::video::TextureAddressMode texAddressUVW[3],
+                                                 pandora::video::DepthComparison compare, float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+    __verifyFilterContainerSize(outStateContainer);
+    
+    D3D11_SAMPLER_DESC samplerDesc{};
+    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+    samplerDesc.Filter = D3D11_FILTER_COMPARISON_ANISOTROPIC;
+    samplerDesc.AddressU = __toFilterTextureAddress(texAddressUVW[0]);
+    samplerDesc.AddressV = __toFilterTextureAddress(texAddressUVW[1]);
+    samplerDesc.AddressW = __toFilterTextureAddress(texAddressUVW[2]);
+    samplerDesc.MipLODBias = lodBias;
+    samplerDesc.MinLOD = lodMin;
+    samplerDesc.MaxLOD = lodMax;
+    samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
+    samplerDesc.ComparisonFunc = __toFilterComparison(compare);
+    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
+    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+  }
+  
+  // ---
+
+  // Max anisotropy value (usually 16)
+  uint32_t Renderer::maxAnisotropy() const noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
   // Max array size for sample filters
   size_t Renderer::maxFilterStates() const noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
 
@@ -712,7 +853,7 @@ License :     MIT
 // -- buffer format bindings -- ------------------------------------------------
 
   // Convert portable component format to DXGI_FORMAT
-  int32_t Renderer::_toDxgiFormat(ComponentFormat format) noexcept {
+  int32_t Renderer::toDxgiFormat(ComponentFormat format) noexcept {
     switch (format) {
       case ComponentFormat::rgba8_sRGB: return (int32_t)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
       case ComponentFormat::rgba8_unorm: return (int32_t)DXGI_FORMAT_R8G8B8A8_UNORM;

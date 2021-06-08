@@ -169,11 +169,12 @@ scene::MenuManager::MenuManager() {
   aaPopup.insertItem(__MENU_SCN_AA_MSAA8, _SYSTEM_STR("MSAA 8x (multisample)"), WindowMenu::ItemType::radioOff);
   viewerPopup.insertSubMenu(std::move(aaPopup), _SYSTEM_STR("Anti-aliasing"));
 
-  this->_settings.useMiniMap = this->_settings.useParticles = this->_settings.useRefraction = this->_settings.useMotionBlur = false;
+  this->_settings.useMiniMap = true;
+  this->_settings.useParticles = this->_settings.useRefraction = this->_settings.useMotionBlur = false;
   viewerPopup.insertSeparator();
-  viewerPopup.insertItem(__MENU_SPECIAL_MAP_RENDER_TEXTURE, _SYSTEM_STR("Mini-map view"), WindowMenu::ItemType::checkboxOff);
-  viewerPopup.insertItem(__MENU_SPECIAL_FIRE_PARTICLES,     _SYSTEM_STR("Fire / particles"), WindowMenu::ItemType::checkboxOff);
+  viewerPopup.insertItem(__MENU_SPECIAL_MAP_RENDER_TEXTURE, _SYSTEM_STR("Mini-map view"), WindowMenu::ItemType::checkboxOn);
   viewerPopup.insertItem(__MENU_SPECIAL_REFRACTION_SHPERE,  _SYSTEM_STR("Refraction globe"), WindowMenu::ItemType::checkboxOff);
+  viewerPopup.insertItem(__MENU_SPECIAL_FIRE_PARTICLES,     _SYSTEM_STR("Fire / particles"), WindowMenu::ItemType::checkboxOff);
   viewerPopup.insertItem(__MENU_SPECIAL_MOTION_BLUR,        _SYSTEM_STR("Motion blur"), WindowMenu::ItemType::checkboxOff);
   this->_settings.useVsync = false;
   viewerPopup.insertSeparator();
@@ -194,6 +195,7 @@ scene::MenuManager::MenuManager() {
   colorBlendPopup.insertItem(__MENU_SCN_BLEND_GREEN, _SYSTEM_STR("Green tinted"), WindowMenu::ItemType::radioOff);
   colorBlendPopup.insertItem(__MENU_SCN_BLEND_BLUE,  _SYSTEM_STR("Blue tinted"), WindowMenu::ItemType::radioOff);
   screenFilterPopup.insertSubMenu(std::move(colorBlendPopup), _SYSTEM_STR("Color blending"));
+  screenFilterPopup.insertSeparator();
   this->_settings.fog = FogFx::none;
   auto fogPopup = WindowMenu(true);
   fogPopup.insertItem(__MENU_SCN_FOG_OFF,   _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);

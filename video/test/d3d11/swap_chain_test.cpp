@@ -34,6 +34,9 @@
                     .create(L"_INVALID_TEST0", L"Test");
     window->show();
     EXPECT_ANY_THROW(SwapChain(renderer, pandora::video::SwapChainParams{}, window->handle(), 0, 0));
+    
+    SwapChain defaultInit;
+    EXPECT_TRUE(defaultInit.isEmpty());
   }
 
   TEST_F(SwapChainTest, createSwapChain) {
@@ -49,6 +52,7 @@
     pandora::video::SwapChainParams params{};
     {
       SwapChain chain1(renderer, params, window->handle(), 600, 400);
+      EXPECT_FALSE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() != nullptr);
       EXPECT_TRUE(chain1.handleLevel1() == nullptr || chain1.handleLevel1() == chain1.handle());
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
@@ -61,22 +65,26 @@
       auto target1 = chain1.getRenderTargetView();
 
       SwapChain moved(std::move(chain1));
+      EXPECT_FALSE(moved.isEmpty());
       EXPECT_TRUE(moved.handle() != nullptr);
       EXPECT_TRUE(moved.handleLevel1() == nullptr || moved.handleLevel1() == moved.handle());
       EXPECT_EQ(handle1, moved.handle());
       EXPECT_TRUE(moved.getRenderTargetView() != nullptr);
       EXPECT_EQ(target1, moved.getRenderTargetView());
       EXPECT_FALSE(moved.isHdrEnabled());
+      EXPECT_TRUE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() == nullptr);
       EXPECT_TRUE(chain1.getRenderTargetView() == nullptr);
 
       chain1 = std::move(moved);
+      EXPECT_FALSE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() != nullptr);
       EXPECT_TRUE(chain1.handleLevel1() == nullptr || chain1.handleLevel1() == chain1.handle());
       EXPECT_EQ(handle1, chain1.handle());
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
       EXPECT_EQ(target1, chain1.getRenderTargetView());
       EXPECT_FALSE(chain1.isHdrEnabled());
+      EXPECT_TRUE(moved.isEmpty());
       EXPECT_TRUE(moved.handle() == nullptr);
       EXPECT_TRUE(moved.getRenderTargetView() == nullptr);
       EXPECT_NO_THROW(chain1.swapBuffers(true));

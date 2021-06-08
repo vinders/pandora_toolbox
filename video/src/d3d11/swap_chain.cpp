@@ -130,7 +130,7 @@ License :     MIT
                                           _SwapChainConfig& outConfig) noexcept {
     // convert buffer formats
     outConfig.backBufferFormat = (params.backBufferFormat() != pandora::video::ComponentFormat::custom)
-                                 ? Renderer::_toDxgiFormat(params.backBufferFormat())
+                                 ? Renderer::toDxgiFormat(params.backBufferFormat())
                                  : params.customBackBufferFormat();
     outConfig.frameBufferCount = params.frameBufferCount();
     outConfig.isHdrPreferred = params.isHdrPreferred();
