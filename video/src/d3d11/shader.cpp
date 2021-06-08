@@ -160,30 +160,4 @@ License :     MIT
       ((ID3D11InputLayout*)this->_handle)->Release();
   }
 
-// ACTIVATION -> à placer dans Renderer
-/*
-void Shader::Use()
-{
-	m_Renderer->GetDeviceContext()->IASetInputLayout(m_VertexLayout);
-	m_Renderer->GetDeviceContext()->VSSetShader(m_VertexShader, nullptr, 0);
-	m_Renderer->GetDeviceContext()->PSSetShader(m_PixelShader, nullptr, 0);
-}
-void LightShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
-{
-	// Set the vertex input layout.
-	deviceContext->IASetInputLayout(m_layout);
-
-    // Set the vertex and pixel shaders that will be used to render this triangle.
-    deviceContext->VSSetShader(m_vertexShader, NULL, 0);
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
-
-	// Set the sampler state in the pixel shader.
-	deviceContext->PSSetSamplers(0, 1, &m_sampleState);
-
-	// Render the triangle.
-	deviceContext->DrawIndexed(indexCount, 0, 0);
-
-	return;
-}
-*/
 #endif
