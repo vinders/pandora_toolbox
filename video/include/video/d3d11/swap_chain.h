@@ -41,6 +41,7 @@ License :     MIT
           ///          - Disables all active render-targets of Renderer.
           ~SwapChain() noexcept { _destroy(); }
           
+          SwapChain() = default; ///< Empty swap-chain -- not usable (only useful to store variable not immediately initialized)
           SwapChain(const SwapChain&) = delete;
           SwapChain(SwapChain&& rhs) noexcept;
           SwapChain& operator=(const SwapChain&) = delete;
@@ -55,6 +56,7 @@ License :     MIT
           inline Handle handleLevel1() const noexcept { 
             return (this->_swapChainLevel != Renderer::DeviceLevel::direct3D_11_0) ? this->_swapChain : nullptr; 
           }
+          inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved (true)
           
           /// @brief Verify if HDR is enabled in current swap-chain (should be verified before using HDR shaders and data)
           /// @remarks HDR may be disabled even if it was enabled in creation params:
