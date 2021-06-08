@@ -63,7 +63,10 @@ License :     MIT
 
 #define __MENU_TEX_UP_NONE      1000
 
-#define __MENU_SPR_UP_NONE      1100
+#define __MENU_TEX_MIP_NONE      1100
+#define __MENU_TEX_MIP_NEAREST   1101
+#define __MENU_TEX_MIP_LINEAR    1102
+#define __MENU_TEX_MIP_ANISO     1103
 
 #define __MENU_TEX_MAP_NONE  1200
 #define __MENU_TEX_MAP_TANG  1201
@@ -249,6 +252,13 @@ scene::MenuManager::MenuManager() {
   textureFilterPopup.insertItem(__MENU_TEX_UP_NONE, _SYSTEM_STR("1x"), WindowMenu::ItemType::radioOn);
   this->_settings.texMapping = Mapping::none;
   textureFilterPopup.insertSeparator();
+  this->_settings.texMip = MipMap::linear;
+  auto mipmapPopup = WindowMenu(true);
+  mipmapPopup.insertItem(__MENU_TEX_MIP_NONE,    _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOff);
+  mipmapPopup.insertItem(__MENU_TEX_MIP_NEAREST, _SYSTEM_STR("Nearest"), WindowMenu::ItemType::radioOff);
+  mipmapPopup.insertItem(__MENU_TEX_MIP_LINEAR,  _SYSTEM_STR("Linear"), WindowMenu::ItemType::radioOn);
+  mipmapPopup.insertItem(__MENU_TEX_MIP_ANISO,   _SYSTEM_STR("Anisotropic"), WindowMenu::ItemType::radioOff);
+  textureFilterPopup.insertSubMenu(std::move(mipmapPopup), _SYSTEM_STR("Mip-mapping"));
   auto mappingPopup = WindowMenu(true);
   mappingPopup.insertItem(__MENU_TEX_MAP_NONE,  _SYSTEM_STR("OFF"), WindowMenu::ItemType::radioOn);
   mappingPopup.insertItem(__MENU_TEX_MAP_TANG,  _SYSTEM_STR("Tangent space"), WindowMenu::ItemType::radioOff);
@@ -264,9 +274,6 @@ scene::MenuManager::MenuManager() {
   spriteFilterPopup.insertItem(__MENU_SPR_FLT_BESSEL,   _SYSTEM_STR("Bessel"), WindowMenu::ItemType::radioOff);
   spriteFilterPopup.insertItem(__MENU_SPR_FLT_LANCZOS,  _SYSTEM_STR("Lanczos"), WindowMenu::ItemType::radioOff);
   spriteFilterPopup.insertItem(__MENU_SPR_FLT_SPLINE16, _SYSTEM_STR("Spline16"), WindowMenu::ItemType::radioOff);
-  this->_settings.sprUpscale = Upscaling::none;
-  spriteFilterPopup.insertSeparator();
-  spriteFilterPopup.insertItem(__MENU_SPR_UP_NONE, _SYSTEM_STR("1x"), WindowMenu::ItemType::radioOn);
 
   auto menuBar = WindowMenu(false);
   menuBar.insertSubMenu(std::move(viewerPopup), _P_MENU_LABEL(L"&Viewer", "Viewer"));
@@ -349,6 +356,13 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
         filterChangeHandler();
       }
       break;
+    case __MENU_TEX_MIP_NONE/100:
+      if (this->_settings.texMip != (scene::MipMap)(id - __MENU_TEX_MIP_NONE)) {
+        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.texMip + __MENU_TEX_MIP_NONE);
+        this->_settings.texMip = (scene::MipMap)(id - __MENU_TEX_MIP_NONE);
+        filterChangeHandler();
+      }
+      break;
     case __MENU_TEX_MAP_NONE/100:
       if (this->_settings.texMapping != (scene::Mapping)(id - __MENU_TEX_MAP_NONE)) {
         WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.texMapping + __MENU_TEX_MAP_NONE);
@@ -360,13 +374,6 @@ void scene::MenuManager::onMenuCommand(int32_t id) {
       if (this->_settings.sprFilter != (scene::Interpolation)(id - __MENU_SPR_FLT_NEAREST)) {
         WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.sprFilter + __MENU_SPR_FLT_NEAREST);
         this->_settings.sprFilter = (scene::Interpolation)(id - __MENU_SPR_FLT_NEAREST);
-        filterChangeHandler();
-      }
-      break;
-    case __MENU_SPR_UP_NONE/100:
-      if (this->_settings.sprUpscale != (scene::Upscaling)(id - __MENU_SPR_UP_NONE)) {
-        WindowMenu::changeCheckItemState(this->_resource->handle(), id, (uint32_t)this->_settings.sprUpscale + __MENU_SPR_UP_NONE);
-        this->_settings.sprUpscale = (scene::Upscaling)(id - __MENU_SPR_UP_NONE);
         filterChangeHandler();
       }
       break;

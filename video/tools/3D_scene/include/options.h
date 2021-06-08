@@ -43,6 +43,12 @@ namespace scene {
   enum class Upscaling : uint32_t {
     none = 0
   };
+  enum class MipMap : uint32_t {
+    none = 0,
+    nearest = 1,
+    linear = 2,
+    anisotropic = 3
+  };
   enum class Mapping : uint32_t {
     none = 0,
     tangent = 1,
@@ -106,7 +112,7 @@ namespace scene {
     Interpolation texFilter = Interpolation::bilinear;
     Interpolation sprFilter = Interpolation::bilinear;
     Upscaling texUpscale = Upscaling::none;
-    Upscaling sprUpscale = Upscaling::none;
+    MipMap texMip = MipMap::linear;
     Mapping texMapping = Mapping::none;
     int32_t mouseSensitivity = 1;
     LightMode light = LightMode::lights;
