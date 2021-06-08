@@ -99,11 +99,11 @@
     renderer.setRasterizerState(value4);
     
     FilterStates::State emptyFilter = nullptr;
-    renderer.setFilterStates(0, nullptr, 0);
-    renderer.setFilterStates(1, &emptyFilter, 1);
-    renderer.setFilterStates(2, &emptyFilter, 1);
-    renderer.setFilterStates(999999, &emptyFilter, 1);
-    renderer.clearFilterStates();
+    renderer.setFragmentFilterStates(0, nullptr, 0);
+    renderer.setFragmentFilterStates(1, &emptyFilter, 1);
+    renderer.setFragmentFilterStates(2, &emptyFilter, 1);
+    renderer.setFragmentFilterStates(999999, &emptyFilter, 1);
+    renderer.clearFragmentFilterStates();
     
     FilterStates valueContainer;
     pandora::video::TextureAddressMode addrModes[3] { 
@@ -111,8 +111,18 @@
     };
     renderer.createFilter(valueContainer, pandora::video::MinificationFilter::linear, 
                           pandora::video::MagnificationFilter::linear, addrModes, 0.,0.);
-    renderer.setFilterStates(1, &emptyFilter, 1);
-    renderer.clearFilterStates();
+    renderer.setFragmentFilterStates(1, valueContainer.get(), 1);
+    renderer.clearFragmentFilterStates();
+    renderer.setVertexFilterStates(1, valueContainer.get(), 1);
+    renderer.clearVertexFilterStates();
+    renderer.setGeometryFilterStates(1, valueContainer.get(), 1);
+    renderer.clearGeometryFilterStates();
+    renderer.setComputeFilterStates(1, valueContainer.get(), 1);
+    renderer.clearComputeFilterStates();
+    renderer.setTesselControlFilterStates(1, valueContainer.get(), 1);
+    renderer.clearTesselControlFilterStates();
+    renderer.setTesselEvalFilterStates(1, valueContainer.get(), 1);
+    renderer.clearTesselEvalFilterStates();
 
     Renderer::RenderTargetViewHandle emptyView = nullptr;
     renderer.setActiveRenderTargets(nullptr, 0, nullptr);

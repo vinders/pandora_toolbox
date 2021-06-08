@@ -12,6 +12,7 @@ License :     MIT
 # include "../render_options.h"
 # include "../window_handle.h"
 # include "./renderer_state.h"
+# include "./shader.h"
 
   namespace pandora {
     namespace video {
@@ -184,16 +185,64 @@ License :     MIT
           
           // -- status operations --
 
+          /// @brief Bind input-layout object to the input-assembler stage
+          /// @param inputLayout  Native handle (ShaderInputLayout.handle()) or NULL to disable input.
+          void bindInputLayout(ShaderInputLayout::Handle inputLayout) noexcept;
+          /// @brief Bind vertex shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove vertex shader.
+          void bindVertexShader(Shader::Handle shader) noexcept;
+          /// @brief Bind tessellation-control/hull shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove control/hull shader.
+          void bindTesselControlShader(Shader::Handle shader) noexcept;
+          /// @brief Bind tessellation-evaluation/domain shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove evaluation/domain shader.
+          void bindTesselEvalShader(Shader::Handle shader) noexcept;
+          /// @brief Bind geometry shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove geometry shader.
+          void bindGeometryShader(Shader::Handle shader) noexcept;
+          /// @brief Bind fragment/pixel shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove fragment/pixel shader.
+          void bindFragmentShader(Shader::Handle shader) noexcept;
+          /// @brief Bind compute shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to remove compute shader.
+          void bindComputeShader(Shader::Handle shader) noexcept;
+          
           /// @brief Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
           /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
           void setRasterizerState(const RasterizerState& state) noexcept;
           
-          /// @brief Set array of sampler filters to the fragment/pixel shader stage
-          /// @remarks To remove some filters, use NULL values at their index
-          void setFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
-          /// @brief Reset all sampler filters
-          void clearFilterStates() noexcept;
+          /// @brief Set array of sampler filters to the vertex shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void setVertexFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void setTesselControlFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void setTesselEvalFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Set array of sampler filters to the geometry shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void setGeometryFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
+          /// @remarks To remove some filters, use NULL value at their index
+          void setFragmentFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          /// @brief Set array of sampler filters to the compute shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void setComputeFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          
+          /// @brief Reset all sampler filters in vertex shader stage
+          void clearVertexFilterStates() noexcept;
+          /// @brief Reset all sampler filters in tessellation-control/hull shader stage
+          void clearTesselControlFilterStates() noexcept;
+          /// @brief Reset all sampler filters in tessellation-evaluation/domain shader stage
+          void clearTesselEvalFilterStates() noexcept;
+          /// @brief Reset all sampler filters in geometry shader stage
+          void clearGeometryFilterStates() noexcept;
+          /// @brief Reset all sampler filters in fragment/pixel shader stage (standard)
+          void clearFragmentFilterStates() noexcept;
+          /// @brief Reset all sampler filters in compute shader stage
+          void clearComputeFilterStates() noexcept;
           
           
           // -- render target operations --
@@ -244,7 +293,7 @@ License :     MIT
           void _destroy() noexcept;
           void _refreshDxgiFactory(); // throws
           bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
-          static inline float* _blackFilterBorder() noexcept { float color[] = { 0.,0.,0.,1. }; return color; }
+          static inline float* _blackFilterBorder() noexcept { static float color[] = { 0.,0.,0.,1. }; return color; }
           void* _createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                  uint32_t rateNumerator, uint32_t rateDenominator, 
                                  DeviceLevel& outSwapChainLevel); // throws

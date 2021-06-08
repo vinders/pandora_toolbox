@@ -585,31 +585,111 @@ License :     MIT
 
 
 // -- status operations -- -----------------------------------------------------
-
+  
+  // Bind input-layout object to the input-assembler stage
+  void Renderer::bindInputLayout(ShaderInputLayout::Handle inputLayout) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->IASetInputLayout((ID3D11InputLayout*)inputLayout);
+  }
+  // Bind vertex shader stage to the device
+  void Renderer::bindVertexShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
+  }
+  // Bind tessellation-control/hull shader stage to the device
+  void Renderer::bindTesselControlShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
+  }
+  // Bind tessellation-evaluation/domain shader stage to the device
+  void Renderer::bindTesselEvalShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
+  }
+  // Bind geometry shader stage to the device
+  void Renderer::bindGeometryShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
+  }
+  // Bind fragment/pixel shader stage to the device
+  void Renderer::bindFragmentShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
+  }
+  // Bind compute shader stage to the device
+  void Renderer::bindComputeShader(Shader::Handle shader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
+  }
+  
+  // ---
+  
   // Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
   void Renderer::setRasterizerState(const RasterizerState& state) noexcept {
     ((ID3D11DeviceContext*)this->_context)->RSSetState((ID3D11RasterizerState*)state.get());
   }
   
-  // Set array of sampler filters to the fragment/pixel shader stage
-  void Renderer::setFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (firstIndex >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT)
-      return;
-    UINT arraySize = (firstIndex + (uint32_t)length <= (uint32_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) 
-                   ? (UINT)length 
-                   : D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - firstIndex;
-
-    if (states != nullptr)
-      ((ID3D11DeviceContext*)this->_context)->PSSetSamplers((UINT)firstIndex, arraySize, (ID3D11SamplerState**)states);
-    else {
-      ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-      ((ID3D11DeviceContext*)this->_context)->PSSetSamplers((UINT)firstIndex, arraySize, &empty[0]);
+  // ---
+  
+  // Sample filters - verify slot index/length validity
+  static inline bool __verifyFilterStateSlots(uint32_t firstIndex, size_t& inOutLength) noexcept {
+    if (firstIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) {
+      if (firstIndex >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT)
+        return false;
+      inOutLength = (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - (size_t)firstIndex;
     }
+    return true;
   }
+  
+  // Set array of sampler filters to the fragment/pixel shader stage
+  void Renderer::setVertexFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->VSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  void Renderer::setTesselControlFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->HSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  void Renderer::setTesselEvalFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->DSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  void Renderer::setGeometryFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->GSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  void Renderer::setFragmentFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->PSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  void Renderer::setComputeFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->CSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+  }
+  
   // Reset all sampler filters
-  void Renderer::clearFilterStates() noexcept {
+  void Renderer::clearVertexFilterStates() noexcept {
+    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  }
+  void Renderer::clearTesselControlFilterStates() noexcept {
+    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  }
+  void Renderer::clearTesselEvalFilterStates() noexcept {
+    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  }
+  void Renderer::clearGeometryFilterStates() noexcept {
+    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  }
+  void Renderer::clearFragmentFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
     ((ID3D11DeviceContext*)this->_context)->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  }
+  void Renderer::clearComputeFilterStates() noexcept {
+    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->CSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   
 
