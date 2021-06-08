@@ -59,7 +59,7 @@ License :     MIT
 // -- create/compile shaders -- ------------------------------------------------
 
   // Create shader builder from byte-code buffer
-  Shader::Builder::Builder(ShaderType type, void* shaderBuffer)
+  Shader::Builder::Builder(pandora::video::ShaderType type, void* shaderBuffer)
     : _shaderBuffer(shaderBuffer),
       _data(static_cast<const uint8_t*>(((ID3DBlob*)_shaderBuffer)->GetBufferPointer())),
       _length(static_cast<size_t>(((ID3DBlob*)_shaderBuffer)->GetBufferSize())),
