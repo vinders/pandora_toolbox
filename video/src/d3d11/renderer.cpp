@@ -584,7 +584,7 @@ License :     MIT
   size_t Renderer::maxFilterStates() const noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
 
 
-// -- status operations -- -----------------------------------------------------
+// -- pipeline status operations -- --------------------------------------------
   
   // Bind input-layout object to the input-assembler stage
   void Renderer::bindInputLayout(ShaderInputLayout::Handle inputLayout) noexcept {
@@ -694,10 +694,45 @@ License :     MIT
   
 
 // -- render target operations -------------------------------------------------
+
+  // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+  void Renderer::setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept {
+    if (viewports != nullptr) {
+      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+      if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
+        numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+      ZeroMemory(&values[0], numberViewports*sizeof(D3D11_VIEWPORT));
+
+      D3D11_VIEWPORT* out = &values[0];
+      const pandora::video::Viewport* end = &viewports[numberViewports - 1u];
+      for (const pandora::video::Viewport* it = &viewports[0]; it <= end; ++it, ++out) {
+        out->TopLeftX = (float)it->x();
+        out->TopLeftY = (float)it->y();
+        out->Width = (float)it->width();
+        out->Height = (float)it->height();
+        out->MinDepth = (float)it->nearClipping();
+        out->MaxDepth = (float)it->farClipping();
+      }
+      ((ID3D11DeviceContext*)this->_context)->RSSetViewports((UINT)numberViewports, &values[0]);
+    }
+  }
+  // Replace rasterizer viewport (3D -> 2D projection rectangle)
+  void Renderer::setViewport(const pandora::video::Viewport& viewport) noexcept {
+    D3D11_VIEWPORT data{};
+    data.TopLeftX = (float)viewport.x();
+    data.TopLeftY = (float)viewport.y();
+    data.Width = (float)viewport.width();
+    data.Height = (float)viewport.height();
+    data.MinDepth = (float)viewport.nearClipping();
+    data.MaxDepth = (float)viewport.farClipping();
+    ((ID3D11DeviceContext*)this->_context)->RSSetViewports(1u, &data);
+  }
+  
+  // ---
   
   /// @brief Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clear(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                       const ComponentVector128& clearColorRgba) noexcept {
+  void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                            const ComponentVector128& clearColorRgba) noexcept {
     DirectX::XMVECTORF32 color;
     color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
       
@@ -711,7 +746,8 @@ License :     MIT
     ((ID3D11DeviceContext*)this->_context)->Flush();
   }
   /// @brief Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clear(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, const ComponentVector128& clearColorRgba) noexcept {
+  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                           const ComponentVector128& clearColorRgba) noexcept {
     DirectX::XMVECTORF32 color;
     color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
     

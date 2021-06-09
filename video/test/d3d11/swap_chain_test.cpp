@@ -172,6 +172,14 @@
     EXPECT_NO_THROW(chain1.swapBuffers(false));
     EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
     EXPECT_NO_THROW(chain1.swapBuffers(true));
+    
+    pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
+    renderer->setViewports(&viewport1, size_t{1u});
+    renderer->setViewport(viewport1);
+    pandora::video::Viewport viewports2[] = { pandora::video::Viewport(0,0, 320u,480u,0.,1.), pandora::video::Viewport(320,0, 320u,480u,0.,1.)};
+    renderer->setViewport(viewports2[0]);
+    renderer->setViewport(viewports2[1]);
+    renderer->setViewports(viewports2, size_t{1u});
   }
 
 #endif

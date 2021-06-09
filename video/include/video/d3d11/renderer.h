@@ -10,6 +10,7 @@ License :     MIT
 # include "./_private/_swap_chain_config.h"
 # include "../component_format.h"
 # include "../render_options.h"
+# include "../viewport.h"
 # include "../window_handle.h"
 # include "./renderer_state.h"
 # include "./shader.h"
@@ -38,6 +39,7 @@ License :     MIT
           using RenderTargetViewHandle = void*;// ID3D11RenderTargetView*
           using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
           using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
+          using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
           using RasterizerState = pandora::video::d3d11::RasterizerState;
           using FilterStates = pandora::video::d3d11::FilterStates;
           
@@ -183,7 +185,7 @@ License :     MIT
           size_t maxFilterStates() const noexcept; ///< Max array size for sample filters
           
           
-          // -- status operations --
+          // -- pipeline status operations --
 
           /// @brief Bind input-layout object to the input-assembler stage
           /// @param inputLayout  Native handle (ShaderInputLayout.handle()) or NULL to disable input.
@@ -247,14 +249,19 @@ License :     MIT
           
           // -- render target operations --
           
-          /// @brief Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
+          /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+          void setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept;
+          /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
+          void setViewport(const pandora::video::Viewport& viewport) noexcept;
+          
+          /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
-          void clear(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
-          /// @brief Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
+          void clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                                  const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          /// @brief Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
-          void clear(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          void clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                 const pandora::video::ComponentVector128& clearColorRgba) noexcept;
           
           /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
           /// @warning Binding multiple targets simultaneously is only possible if:

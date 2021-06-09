@@ -133,10 +133,14 @@
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
     renderer.setActiveRenderTarget(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
     renderer.setActiveRenderTarget(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
-    renderer.clear(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
-    renderer.clear(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
-    renderer.clear(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
-    renderer.clear(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clearViews(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clearViews(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clearView(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    renderer.clearView(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    
+    pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
+    renderer.setViewports(&viewport1, size_t{1u});
+    renderer.setViewport(viewport1);
   }
   
   TEST_F(RendererTest, createFilterStateParams) {
