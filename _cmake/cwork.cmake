@@ -682,7 +682,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
                         set(${CWORK_PROJECT_NAME}_TEST_FILES ${${CWORK_PROJECT_NAME}_TEST_FILES} ${CWORK_AUTODETECTED_FILES})
                         unset(CWORK_AUTODETECTED_FILES)
                     endif()
-                    add_definitions(-D_P_TEST_RESOURCE_DIR="${${CWORK_PROJECT_NAME}_TEST_EMBED_RESOURCE_DIR}")
+                    add_definitions(-D_P_TEST_EMBED_RESOURCE_DIR="${${CWORK_PROJECT_NAME}_TEST_EMBED_RESOURCE_DIR}")
                 endif()
                 # resources
                 if (${PROJECT_NAME}_TEST_RESOURCE_DIR)
