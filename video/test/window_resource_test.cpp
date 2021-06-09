@@ -47,7 +47,7 @@ TEST_F(WindowResourceTest, buildSystemIconRes) {
 
 TEST_F(WindowResourceTest, buildFileIconRes) {
 # ifdef _WINDOWS
-    _validateResource(WindowResource::buildIconFromFile(_P_TEST_RESOURCE_DIR "/logo.ico"), WindowResource::Category::icon);
+    _validateResource(WindowResource::buildIconFromFile(_P_TEST_EMBED_RESOURCE_DIR "/logo.ico"), WindowResource::Category::icon);
 # else
     _validateResource(WindowResource::buildIconFromFile(_P_TEST_RESOURCE_DIR "/logo.png"), WindowResource::Category::icon);
 # endif
@@ -84,7 +84,7 @@ TEST_F(WindowResourceTest, buildSystemCursorRes) {
 
 TEST_F(WindowResourceTest, buildFileCursorRes) {
 # ifdef _WINDOWS
-    _validateResource(WindowResource::buildCursorFromFile(_P_TEST_RESOURCE_DIR "/base.cur"), WindowResource::Category::cursor);
+    _validateResource(WindowResource::buildCursorFromFile(_P_TEST_EMBED_RESOURCE_DIR "/base.cur"), WindowResource::Category::cursor);
 # else
     _validateResource(WindowResource::buildCursorFromFile(_P_TEST_RESOURCE_DIR "/base_cur.png"), WindowResource::Category::cursor);
 # endif
