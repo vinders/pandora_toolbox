@@ -51,14 +51,15 @@ License :     MIT
           /// @brief Shader compiler and build (used to create shaders and input layouts).
           class Builder final {
           public:
-            /// @brief Initialize shader builder with already compiled shader data
+            /// @brief Initialize shader builder with already compiled shader data.
+            ///        To compile a shader from text, use 'Shader::Builder::compile' or 'Shader::Builder::compileFromFile' instead.
             /// @remarks - Typically used when reading binary FXC-compiled "*.cso" file.
             ///          - Can also be used with compiled shader data stored in memory.
             ///          - Will NOT work with HLSL text data: use 'Builder::compile' or 'Builder::compileFromFile' instead.
             /// @warning - 'binaryFileData' must remain available at least until the Builder is destroyed.
             ///          - 'binaryFileData' is NOT managed by the builder: if memory comes from a dynamic alloc, 
             ///            it won't be freed by the Builder -> needs to be freed manually (after destroying the Builder instance).
-            Builder(ShaderType type, const uint8_t* binaryFileData, size_t length)
+            Builder(pandora::video::ShaderType type, const uint8_t* binaryFileData, size_t length)
               : _shaderBuffer(nullptr), _data(binaryFileData), _length(length), _type(type) {}
             
             Builder(const Builder&) = delete;
