@@ -48,7 +48,7 @@ namespace pandora {
       nearest = 0, ///< Use nearest point during upscaling
       linear = 1u  ///< Bilinear interpolation during upscaling
     };
-    /// @brief Depth comparison type for shadow samplers: new-source COMPARE existing-ref
+    /// @brief Depth comparison type for depth/stencil states and shadow samplers
     enum class DepthComparison : uint32_t {
       never        = 0u, ///< always fail
       less         = 1u, ///< success: source < existing-ref

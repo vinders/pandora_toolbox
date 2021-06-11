@@ -617,6 +617,11 @@ License :     MIT
   
   // ---
   
+  // Change output merger depth/stencil state (depth and/or stencil testing)
+  void Renderer::setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->OMSetDepthStencilState((ID3D11DepthStencilState*)state.get(), (UINT)stencilRef);
+  }
+  
   // Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
   void Renderer::setRasterizerState(const RasterizerState& state) noexcept {
     ((ID3D11DeviceContext*)this->_context)->RSSetState((ID3D11RasterizerState*)state.get());
@@ -767,11 +772,13 @@ License :     MIT
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views, 
                                                                  (ID3D11DepthStencilView*)depthBuffer);
       ((ID3D11DeviceContext*)this->_context)->Flush();
+      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
       ((ID3D11DeviceContext*)this->_context)->Flush();
+      this->_activeTargetCount = size_t{0u};
     }
   }
   
@@ -792,11 +799,13 @@ License :     MIT
                                                                       D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views,
                                                                  (ID3D11DepthStencilView*)depthBuffer);
+      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
       ((ID3D11DeviceContext*)this->_context)->Flush();
+      this->_activeTargetCount = size_t{0u};
     }
   }
   // Bind/replace active render-target in Renderer (multi-target) + clear render-target/buffer
@@ -812,11 +821,13 @@ License :     MIT
                                                                       D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)1u, (ID3D11RenderTargetView**)&view,
                                                                  (ID3D11DepthStencilView*)depthBuffer);
+      this->_activeTargetCount = size_t{1u};
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
       ((ID3D11DeviceContext*)this->_context)->Flush();
+      this->_activeTargetCount = size_t{0u};
     }
   }
 
@@ -896,11 +907,95 @@ License :     MIT
   }
 
 
-// -- rasterizer state container -- --------------------------------------------
+// -- depth/stencil buffer creation -- -----------------------------------------
 
-  RasterizerState::~RasterizerState() noexcept {
-    if (this->_state != nullptr)
+  // Create depth/stencil buffer for existing renderer/render-target
+  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
+                                         uint32_t width, uint32_t height, uint32_t multisampleNumber, uint32_t multisampleLevel) { // throws
+    if (width == 0 || height == 0)
+      throw std::invalid_argument("DepthStencilBuffer: invalid width/height: values must not be 0");
+    
+    // create compatible depth/stencil buffer
+    D3D11_TEXTURE2D_DESC depthDescriptor;
+    ZeroMemory(&depthDescriptor, sizeof(depthDescriptor));
+    depthDescriptor.Width = (UINT)width;
+    depthDescriptor.Height = (UINT)height;
+    depthDescriptor.MipLevels = 1;
+    depthDescriptor.ArraySize = 1;
+    depthDescriptor.Format = (DXGI_FORMAT)Renderer::toDxgiFormat(format);
+    depthDescriptor.SampleDesc.Count = (UINT)multisampleNumber;
+    depthDescriptor.SampleDesc.Quality = (multisampleLevel != 0u) ? (UINT)multisampleLevel - 1 : 0;
+    depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
+    depthDescriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    
+    auto result = ((ID3D11Device*)renderer.device())->CreateTexture2D(&depthDescriptor, nullptr, (ID3D11Texture2D**)&(this->_depthStencilBuffer));
+    if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
+      throwError(result, "DepthStencilBuffer: could not create depth/stencil buffer"); return;
+    }
+    
+    // create depth/stencil view
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDescriptor;
+    ZeroMemory(&depthViewDescriptor, sizeof(depthViewDescriptor));
+    depthViewDescriptor.Format = depthDescriptor.Format;
+    depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthViewDescriptor.Texture2D.MipSlice = 0;
+    
+    result = ((ID3D11Device*)renderer.device())->CreateDepthStencilView((ID3D11Texture2D*)this->_depthStencilBuffer, &depthViewDescriptor, 
+                                                                    (ID3D11DepthStencilView**)&(this->_depthStencilView));
+    if (FAILED(result) || this->_depthStencilView == nullptr)
+      throwError(result, "DepthStencilBuffer: could not create depth/stencil view");
+    
+    this->_settings.width = width;
+    this->_settings.height = height;
+    this->_settings.format = format;
+    this->_settings.msaaSampleNumber = multisampleNumber;
+  }
+
+  // Destroy depth/stencil buffer
+  void DepthStencilBuffer::release() noexcept {
+    if (this->_depthStencilBuffer) {
+      try {
+        if (this->_depthStencilView) {
+          ((ID3D11DepthStencilView*)this->_depthStencilView)->Release();
+          this->_depthStencilView = nullptr;
+        }
+        ((ID3D11Texture2D*)this->_depthStencilBuffer)->Release();
+        this->_depthStencilBuffer = nullptr;
+      }
+      catch (...) {}
+    }
+  }
+  
+  DepthStencilBuffer::DepthStencilBuffer(DepthStencilBuffer&& rhs) noexcept 
+    : _depthStencilView(rhs._depthStencilView),
+      _depthStencilBuffer(rhs._depthStencilBuffer) {
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
+    rhs._depthStencilBuffer = rhs._depthStencilView = nullptr;
+  }
+  DepthStencilBuffer& DepthStencilBuffer::operator=(DepthStencilBuffer&& rhs) noexcept {
+    release();
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
+    this->_depthStencilBuffer = rhs._depthStencilBuffer;
+    this->_depthStencilView = rhs._depthStencilView;
+    rhs._depthStencilBuffer = rhs._depthStencilView = nullptr;
+    return *this;
+  }
+
+
+// -- single state containers -- -----------------------------------------------
+
+  void DepthStencilState::release() noexcept {
+    if (this->_state != nullptr) {
+      ((ID3D11DepthStencilState*)this->_state)->Release();
+      this->_state = nullptr;
+    }
+  }
+  
+  void RasterizerState::release() noexcept {
+    if (this->_state != nullptr) {
       ((ID3D11RasterizerState*)this->_state)->Release();
+      this->_state = nullptr;
+    }
   }
 
 

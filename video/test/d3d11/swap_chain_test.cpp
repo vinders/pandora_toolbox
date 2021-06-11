@@ -58,6 +58,7 @@
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
       EXPECT_FALSE(chain1.isHdrEnabled());
       renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+      EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
       EXPECT_NO_THROW(chain1.swapBuffers(false));
       EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
       EXPECT_NO_THROW(chain1.swapBuffers(true));
@@ -99,6 +100,7 @@
       EXPECT_TRUE(chain2.getRenderTargetView() != nullptr);
       EXPECT_TRUE(chain2.isHdrEnabled() || !renderer->isMonitorHdrCapable(monitor));
       renderer->setActiveRenderTarget(chain2.getRenderTargetView(), nullptr);
+      EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
       EXPECT_NO_THROW(chain2.swapBuffers(false));
       EXPECT_NO_THROW(chain2.swapBuffersDiscard(false, nullptr));
       EXPECT_NO_THROW(chain2.swapBuffers(true));
@@ -119,6 +121,7 @@
 
       Renderer::RenderTargetViewHandle views[]{ chain3.getRenderTargetView(), chain3B.getRenderTargetView() };
       renderer->setActiveRenderTargets(views, (size_t)2u, nullptr);
+      EXPECT_EQ(size_t{2u}, renderer->activeRenderViews());
       EXPECT_NO_THROW(chain3.swapBuffers(false));
       EXPECT_NO_THROW(chain3.swapBuffers(true));
       EXPECT_NO_THROW(chain3.swapBuffersDiscard(true, nullptr));
@@ -133,6 +136,7 @@
     EXPECT_TRUE(chain4.getRenderTargetView() != nullptr);
     EXPECT_FALSE(chain4.isHdrEnabled());
     renderer->setActiveRenderTarget(chain4.getRenderTargetView(), nullptr);
+    EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
     EXPECT_NO_THROW(chain4.swapBuffers(false));
     EXPECT_NO_THROW(chain4.swapBuffers(true));
     EXPECT_NO_THROW(chain4.swapBuffersDiscard(true, nullptr));
@@ -156,6 +160,7 @@
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
     EXPECT_FALSE(chain1.isHdrEnabled());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
     EXPECT_NO_THROW(chain1.swapBuffers(false));
     EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
     EXPECT_NO_THROW(chain1.swapBuffers(true));
@@ -163,12 +168,14 @@
     window->resize(640, 480);
     chain1.resize(640, 480);
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
 
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleLevel1() == nullptr || chain1.handleLevel1() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
     EXPECT_FALSE(chain1.isHdrEnabled());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    EXPECT_EQ(size_t{1u}, renderer->activeRenderViews());
     EXPECT_NO_THROW(chain1.swapBuffers(false));
     EXPECT_NO_THROW(chain1.swapBuffersDiscard(false, nullptr));
     EXPECT_NO_THROW(chain1.swapBuffers(true));

@@ -126,17 +126,29 @@
 
     Renderer::RenderTargetViewHandle emptyView = nullptr;
     renderer.setActiveRenderTargets(nullptr, 0, nullptr);
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr);
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTarget(nullptr, nullptr);
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTarget(emptyView, nullptr);
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTargets(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTarget(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.setActiveRenderTarget(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.clearViews(nullptr, 0, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.clearViews(&emptyView, 1, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.clearView(nullptr, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     renderer.clearView(emptyView, nullptr, pandora::video::ComponentVector128{{{ 0.f,0.f,0.f,0.f }}});
+    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
     
     pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
     renderer.setViewports(&viewport1, size_t{1u});

@@ -11,6 +11,29 @@ License :     MIT
   namespace pandora {
     namespace video {
       namespace d3d11 {
+        /// @class DepthStencilState
+        /// @brief Configured depth/stencil state resource - can be used with Renderer.setDepthStencilState
+        class DepthStencilState final {
+        public:
+          DepthStencilState() = default;
+          DepthStencilState(void* state) : _state(state) {}
+          DepthStencilState(const DepthStencilState&) = delete;
+          DepthStencilState(DepthStencilState&& rhs) noexcept : _state(rhs._state) { rhs._state = nullptr; }
+          DepthStencilState& operator=(const DepthStencilState&) = delete;
+          DepthStencilState& operator=(DepthStencilState&& rhs) noexcept { this->_state = rhs._state; rhs._state = nullptr; return *this; }
+          ~DepthStencilState() noexcept { release(); }
+          void release() noexcept;
+          
+          inline operator bool() const noexcept { return (this->_state != nullptr); }
+          inline bool isValid() const noexcept { return (this->_state != nullptr); } ///< Container has a value
+          inline void* get() const noexcept { return this->_state; } ///< Get container value
+          
+        private:
+          void* _state = nullptr; // ID3D11DepthStencilState*
+        };
+        
+        // ---
+        
         /// @class RasterizerState
         /// @brief Configured rasterizer state resource - can be used with Renderer.setRasterizerState
         class RasterizerState final {
@@ -21,7 +44,8 @@ License :     MIT
           RasterizerState(RasterizerState&& rhs) noexcept : _state(rhs._state) { rhs._state = nullptr; }
           RasterizerState& operator=(const RasterizerState&) = delete;
           RasterizerState& operator=(RasterizerState&& rhs) noexcept { this->_state = rhs._state; rhs._state = nullptr; return *this; }
-          ~RasterizerState() noexcept;
+          ~RasterizerState() noexcept { release(); }
+          void release() noexcept;
           
           inline operator bool() const noexcept { return (this->_state != nullptr); }
           inline bool isValid() const noexcept { return (this->_state != nullptr); } ///< Container has a value
@@ -34,7 +58,7 @@ License :     MIT
         // ---
         
         /// @class FilterStates
-        /// @brief Array of configured sampler filter state resources - can be used with Renderer.setFilterStates
+        /// @brief Array of configured sampler filter state resources - can be used with Renderer.set<...>FilterStates
         class FilterStates final {
         public:
           using State = void*;

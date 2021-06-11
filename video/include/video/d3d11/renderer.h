@@ -19,6 +19,7 @@ License :     MIT
     namespace video {
       namespace d3d11 {
         class SwapChain;
+        class DepthStencilBuffer;
         
         /// @class Renderer
         /// @brief Direct3D rendering device and context (specific to adapter)
@@ -40,6 +41,7 @@ License :     MIT
           using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
           using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
           using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
+          using DepthStencilState = pandora::video::d3d11::DepthStencilState;
           using RasterizerState = pandora::video::d3d11::RasterizerState;
           using FilterStates = pandora::video::d3d11::FilterStates;
           
@@ -77,13 +79,14 @@ License :     MIT
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; } ///< Get available DXGI level on current system (1-6)
           inline DeviceLevel featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
           static size_t maxSimultaneousRenderViews() noexcept; ///< Max number of simultaneous render views (swap-chains, texture targets...)
-          /// @brief Convert portable color/depth/component format to DXGI_FORMAT (cast result to DXGI_FORMAT)
-          /// @remarks Useful to fill input layout descriptions with portable format values (see "video/d3d11/shader.h").
-          static int32_t toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
+          size_t activeRenderViews() noexcept { return this->_activeTargetCount; } ///< Current number of render views (swap-chains, texture targets...)
           
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
+          /// @brief Convert portable color/depth/component format to DXGI_FORMAT (cast result to DXGI_FORMAT)
+          /// @remarks Useful to fill input layout descriptions with portable format values (see "video/d3d11/shader.h").
+          static int32_t toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
           
           
           // -- feature support --
@@ -209,6 +212,8 @@ License :     MIT
           /// @param shader  Native handle (Shader.handle()) or NULL to remove compute shader.
           void bindComputeShader(Shader::Handle shader) noexcept;
           
+          /// @brief Change output merger depth/stencil state (depth and/or stencil testing)
+          void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept;
           /// @brief Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
           /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
@@ -310,6 +315,7 @@ License :     MIT
           void* _dxgiFactory = nullptr;     // IDXGIFactory1*
           DeviceHandle _device = nullptr;   // ID3D11Device*
           DeviceContext _context = nullptr; // ID3D11DeviceContext*
+          size_t _activeTargetCount = 0;
           DeviceLevel _deviceLevel = DeviceLevel::direct3D_11_1;
           uint32_t _dxgiLevel = 1;
         };
@@ -317,5 +323,6 @@ License :     MIT
     }
   }
 
+# include "./depth_stencil_buffer.h"
 # include "./swap_chain.h"
 #endif
