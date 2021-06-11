@@ -382,6 +382,135 @@ License :     MIT
   }
 
 
+// -- resource builder - depth/stencil -- --------------------------------------
+
+  // Convert portable depth/stencil comparison enum to Direct3D comparison enum
+  static D3D11_COMPARISON_FUNC __toDepthComparison(pandora::video::DepthComparison compare) {
+    switch (compare) {
+      case pandora::video::DepthComparison::never:        return D3D11_COMPARISON_NEVER;
+      case pandora::video::DepthComparison::less:         return D3D11_COMPARISON_LESS;
+      case pandora::video::DepthComparison::lessEqual:    return D3D11_COMPARISON_LESS_EQUAL;
+      case pandora::video::DepthComparison::equal:        return D3D11_COMPARISON_EQUAL;
+      case pandora::video::DepthComparison::notEqual:     return D3D11_COMPARISON_NOT_EQUAL;
+      case pandora::video::DepthComparison::greaterEqual: return D3D11_COMPARISON_GREATER_EQUAL;
+      case pandora::video::DepthComparison::greater:      return D3D11_COMPARISON_GREATER;
+      case pandora::video::DepthComparison::always:       return D3D11_COMPARISON_ALWAYS;
+      default: return D3D11_COMPARISON_ALWAYS;
+    }
+  }
+  // Convert portable depth/stencil operation enum to Direct3D operation enum
+  static D3D11_STENCIL_OP __toDepthStencilOperation(pandora::video::DepthStencilOperation op) {
+    switch (op) {
+      case pandora::video::DepthStencilOperation::keep:           return D3D11_STENCIL_OP_KEEP;
+      case pandora::video::DepthStencilOperation::setZero:        return D3D11_STENCIL_OP_ZERO;
+      case pandora::video::DepthStencilOperation::replace:        return D3D11_STENCIL_OP_REPLACE;
+      case pandora::video::DepthStencilOperation::invert:         return D3D11_STENCIL_OP_INVERT;
+      case pandora::video::DepthStencilOperation::incrementClamp: return D3D11_STENCIL_OP_INCR_SAT;
+      case pandora::video::DepthStencilOperation::decrementClamp: return D3D11_STENCIL_OP_DECR_SAT;
+      case pandora::video::DepthStencilOperation::incrementWrap:  return D3D11_STENCIL_OP_INCR;
+      case pandora::video::DepthStencilOperation::decrementWrap:  return D3D11_STENCIL_OP_DECR;
+      default: return D3D11_STENCIL_OP_KEEP;
+    }
+  }
+  
+  // ---
+
+  // Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+  DepthStencilState Renderer::createDepthTestState(pandora::video::DepthOperationGroup frontFaceOp, 
+                                                   pandora::video::DepthOperationGroup backFaceOp,
+                                                   pandora::video::DepthComparison depthTest, bool writeMaskAll) { // throws
+    D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
+    ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
+    
+    // depth test
+    depthStDescriptor.DepthEnable = true;
+    depthStDescriptor.DepthWriteMask = writeMaskAll ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    depthStDescriptor.DepthFunc = __toDepthComparison(depthTest);
+    // stencil test
+    depthStDescriptor.StencilEnable = false;
+    depthStDescriptor.StencilReadMask = 0xFF;
+    depthStDescriptor.StencilWriteMask = 0xFF;
+    // front-facing/back-facing operations
+    depthStDescriptor.FrontFace.StencilFailOp = depthStDescriptor.FrontFace.StencilDepthFailOp = __toDepthStencilOperation(frontFaceOp.failureOp);
+    depthStDescriptor.FrontFace.StencilPassOp = __toDepthStencilOperation(frontFaceOp.passOp);
+    depthStDescriptor.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+    depthStDescriptor.BackFace.StencilFailOp = depthStDescriptor.BackFace.StencilDepthFailOp = __toDepthStencilOperation(backFaceOp.failureOp);
+    depthStDescriptor.BackFace.StencilPassOp = __toDepthStencilOperation(backFaceOp.passOp);
+    depthStDescriptor.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    ID3D11DepthStencilState* stateData;
+    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "Renderer: failed to create depth state");
+    return DepthStencilState((void*)stateData);
+  }
+  
+  // Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+  DepthStencilState Renderer::createStencilTestState(pandora::video::DepthStencilOperationGroup frontFaceOp, 
+                                                     pandora::video::DepthStencilOperationGroup backFaceOp, 
+                                                     uint8_t readMask, uint8_t writeMask) { // throws
+    D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
+    ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
+    
+    // depth test
+    depthStDescriptor.DepthEnable = false;
+    depthStDescriptor.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStDescriptor.DepthFunc = D3D11_COMPARISON_ALWAYS;
+    // stencil test
+    depthStDescriptor.StencilEnable = true;
+    depthStDescriptor.StencilReadMask = (UINT8)readMask;
+    depthStDescriptor.StencilWriteMask = (UINT8)writeMask;
+    // front-facing/back-facing operations
+    depthStDescriptor.FrontFace.StencilFailOp = __toDepthStencilOperation(frontFaceOp.failureOp);
+    depthStDescriptor.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    depthStDescriptor.FrontFace.StencilPassOp = __toDepthStencilOperation(frontFaceOp.passOp);
+    depthStDescriptor.FrontFace.StencilFunc = __toDepthComparison(frontFaceOp.stencilTest);
+    depthStDescriptor.BackFace.StencilFailOp = __toDepthStencilOperation(backFaceOp.failureOp);
+    depthStDescriptor.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    depthStDescriptor.BackFace.StencilPassOp = __toDepthStencilOperation(backFaceOp.passOp);
+    depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
+
+    ID3D11DepthStencilState* stateData;
+    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "Renderer: failed to create stencil state");
+    return DepthStencilState((void*)stateData);
+  }
+  
+  // Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+  DepthStencilState Renderer::createDepthStencilTestState(pandora::video::DepthStencilOperationGroup frontFaceOp, 
+                                                          pandora::video::DepthStencilOperationGroup backFaceOp, 
+                                                          pandora::video::DepthComparison depthTest, bool depthWriteMaskAll, 
+                                                          uint8_t stencilReadMask, uint8_t stencilWriteMask) { // throws
+    D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
+    ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
+    
+    // depth test
+    depthStDescriptor.DepthEnable = true;
+    depthStDescriptor.DepthWriteMask = depthWriteMaskAll ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    depthStDescriptor.DepthFunc = __toDepthComparison(depthTest);
+    // stencil test
+    depthStDescriptor.StencilEnable = true;
+    depthStDescriptor.StencilReadMask = (UINT8)stencilReadMask;
+    depthStDescriptor.StencilWriteMask = (UINT8)stencilWriteMask;
+    // front-facing/back-facing operations
+    depthStDescriptor.FrontFace.StencilFailOp = __toDepthStencilOperation(frontFaceOp.failureOp);
+    depthStDescriptor.FrontFace.StencilDepthFailOp = __toDepthStencilOperation(frontFaceOp.depthFailureOp);
+    depthStDescriptor.FrontFace.StencilPassOp = __toDepthStencilOperation(frontFaceOp.passOp);
+    depthStDescriptor.FrontFace.StencilFunc = __toDepthComparison(frontFaceOp.stencilTest);
+    depthStDescriptor.BackFace.StencilFailOp = __toDepthStencilOperation(backFaceOp.failureOp);
+    depthStDescriptor.BackFace.StencilDepthFailOp = __toDepthStencilOperation(backFaceOp.depthFailureOp);
+    depthStDescriptor.BackFace.StencilPassOp = __toDepthStencilOperation(backFaceOp.passOp);
+    depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
+
+    ID3D11DepthStencilState* stateData;
+    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "Renderer: failed to create depth/stencil state");
+    return DepthStencilState((void*)stateData);
+  }
+
+
 // -- resource builder - rasterizer -- -----------------------------------------
 
   // Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
@@ -412,7 +541,7 @@ License :     MIT
     auto result = ((ID3D11Device*)this->_device)->CreateRasterizerState(&rasterizerState, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create rasterizer state");
-    return RasterizerState(stateData);
+    return RasterizerState((void*)stateData);
   }
 
 
@@ -457,20 +586,6 @@ License :     MIT
       case pandora::video::TextureAddressMode::repeatMirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
       case pandora::video::TextureAddressMode::mirrorClamp:  return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
       default: return D3D11_TEXTURE_ADDRESS_WRAP;
-    }
-  }
-  // Convert portable comparison enum to Direct3D comparison enum
-  static D3D11_COMPARISON_FUNC __toFilterComparison(pandora::video::DepthComparison compare) {
-    switch (compare) {
-      case pandora::video::DepthComparison::never:        return D3D11_COMPARISON_NEVER;
-      case pandora::video::DepthComparison::less:         return D3D11_COMPARISON_LESS;
-      case pandora::video::DepthComparison::lessEqual:    return D3D11_COMPARISON_LESS_EQUAL;
-      case pandora::video::DepthComparison::equal:        return D3D11_COMPARISON_EQUAL;
-      case pandora::video::DepthComparison::notEqual:     return D3D11_COMPARISON_NOT_EQUAL;
-      case pandora::video::DepthComparison::greaterEqual: return D3D11_COMPARISON_GREATER_EQUAL;
-      case pandora::video::DepthComparison::greater:      return D3D11_COMPARISON_GREATER;
-      case pandora::video::DepthComparison::always:       return D3D11_COMPARISON_ALWAYS;
-      default: return D3D11_COMPARISON_ALWAYS;
     }
   }
   
@@ -532,7 +647,7 @@ License :     MIT
     samplerDesc.MinLOD = lodMin;
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = 1;
-    samplerDesc.ComparisonFunc = __toFilterComparison(compare);
+    samplerDesc.ComparisonFunc = __toDepthComparison(compare);
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
     __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
   }
@@ -571,7 +686,7 @@ License :     MIT
     samplerDesc.MinLOD = lodMin;
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
-    samplerDesc.ComparisonFunc = __toFilterComparison(compare);
+    samplerDesc.ComparisonFunc = __toDepthComparison(compare);
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
     __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
   }

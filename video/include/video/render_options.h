@@ -9,12 +9,21 @@ License :     MIT
 
 namespace pandora {
   namespace video {
+    // -- rasterizing --
+    
     /// @brief Renderer culling mode
     enum class CullMode : uint32_t {
       none      = 0u, ///< No culling / all polygons
       wireFrame = 1u, ///< No culling / only polygons edges
       cullBack  = 2u, ///< Back-face culling (hide 'back' polygons)
       cullFront = 3u  ///< Front-face culling (hide 'front' polygons)
+    };
+    /// @brief Renderer depth-bias settings (depth control, Z-order, clipping)
+    struct DepthBias {
+      int32_t depthBias = 0;
+      float depthBiasClamp = 0.0f;
+      float depthBiasSlopeScale = 0.0f;
+      bool isClipped = true;
     };
     /// @brief Buffer transparency mode
     enum class AlphaBlending : uint32_t {
@@ -26,6 +35,9 @@ namespace pandora {
                           ///                               - rgba(127,0,0,127) == full saturation red, 50% transparent.
                           ///                               - rgba(255,0,0,127) == additive blended red, 50% transparent.
     };
+    
+    // -- textures / filtering --
+    
     /// @brief Texture addressing mode (out-of-bounds coords management)
     enum class TextureAddressMode : uint32_t {
       border        = 0u, ///< Coordinates outside of the textures are set to the configured border color (set in sampler descriptor or shader).
@@ -48,7 +60,10 @@ namespace pandora {
       nearest = 0, ///< Use nearest point during upscaling
       linear = 1u  ///< Bilinear interpolation during upscaling
     };
-    /// @brief Depth comparison type for depth/stencil states and shadow samplers
+    
+    // -- depth / stencil tests --
+    
+    /// @brief Value comparison type for depth/stencil tests and shadow samplers
     enum class DepthComparison : uint32_t {
       never        = 0u, ///< always fail
       less         = 1u, ///< success: source < existing-ref
@@ -59,14 +74,34 @@ namespace pandora {
       greater      = 6u, ///< success: source > existing-ref
       always       = 7u  ///< always succeed (default value)
     };
-    
-    /// @brief Renderer depth-bias settings (depth control, Z-order, clipping)
-    struct DepthBias {
-      int32_t depthBias = 0;
-      float depthBiasClamp = 0.0f;
-      float depthBiasSlopeScale = 0.0f;
-      bool isClipped = true;
+    /// @brief Depth/stencil operation to perform on pixel/fragment
+    enum class DepthStencilOperation : uint32_t {
+      keep           = 0u, ///< Keep existing stencil value
+      setZero        = 1u, ///< Set stencil value to 0
+      replace        = 2u, ///< Replace stencil value with reference value
+      invert         = 3u, ///< Invert stencil value
+      incrementClamp = 4u, ///< Increment stencil value (clamp result)
+      decrementClamp = 5u, ///< Decrement stencil value (clamp result)
+      incrementWrap  = 6u, ///< Increment stencil value (wrap result)
+      decrementWrap  = 7u  ///< Decrement stencil value (wrap result)
     };
+    
+    /// @brief Operations to perform after a depth-test (no stencil-test)
+    /// @remarks Usually one instance per polygon orientation (facing/back)
+    struct DepthOperationGroup {
+      DepthStencilOperation failureOp; ///< Operation to perform on pixel when depth-test fails (example: incrementWrap (front) / decrementWrap (back))
+      DepthStencilOperation passOp;    ///< Operation to perform on pixel when depth-test passes (example: keep)
+    };
+    /// @brief Operations to perform after a depth/stencil-test + stencil-test type
+    /// @remarks Usually one instance per polygon orientation (facing/back)
+    struct DepthStencilOperationGroup {
+      DepthStencilOperation failureOp;     ///< Operation to perform on pixel when stencil-test fails
+      DepthStencilOperation depthFailureOp;///< Operation to perform on pixel when stencil-test passes / depth-test fails
+      DepthStencilOperation passOp;        ///< Operation to perform on pixel when all tests pass
+      DepthComparison stencilTest;         ///< Stencil-test comparison to perform
+    };
+    
+    // -- swap-chain behavior --
     
     /// @brief Swap-chain render target output mode
     enum class SwapChainTargetMode : uint32_t {

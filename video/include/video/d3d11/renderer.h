@@ -116,6 +116,17 @@ License :     MIT
           
           // -- resource builder --
           
+          /// @brief Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+          DepthStencilState createDepthTestState(DepthOperationGroup frontFaceResult, DepthOperationGroup backFaceResult,
+                                                 DepthComparison depthTest = DepthComparison::less, bool writeMaskAll = true);
+          /// @brief Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+          DepthStencilState createStencilTestState(DepthStencilOperationGroup frontFaceOp, DepthStencilOperationGroup backFaceOp, 
+                                                   uint8_t readMask = 0xFF, uint8_t writeMask = 0xFF);
+          /// @brief Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
+          DepthStencilState createDepthStencilTestState(DepthStencilOperationGroup frontFaceOp, DepthStencilOperationGroup backFaceOp, 
+                                                        DepthComparison depthTest = DepthComparison::less, bool depthWriteMaskAll = true, 
+                                                        uint8_t stencilReadMask = 0xFF, uint8_t stencilWriteMask = 0xFF);
+          
           /// @brief Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
           RasterizerState createRasterizerState(pandora::video::CullMode culling, bool isFrontClockwise, 
                                                 const pandora::video::DepthBias& depth, bool useMsaa = false,
