@@ -416,8 +416,8 @@ License :     MIT
   // ---
 
   // Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthTestState(pandora::video::DepthOperationGroup frontFaceOp, 
-                                                   pandora::video::DepthOperationGroup backFaceOp,
+  DepthStencilState Renderer::createDepthTestState(const pandora::video::DepthOperationGroup& frontFaceOp, 
+                                                   const pandora::video::DepthOperationGroup& backFaceOp,
                                                    pandora::video::DepthComparison depthTest, bool writeMaskAll) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
     ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -446,8 +446,8 @@ License :     MIT
   }
   
   // Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createStencilTestState(pandora::video::DepthStencilOperationGroup frontFaceOp, 
-                                                     pandora::video::DepthStencilOperationGroup backFaceOp, 
+  DepthStencilState Renderer::createStencilTestState(const pandora::video::DepthStencilOperationGroup& frontFaceOp, 
+                                                     const pandora::video::DepthStencilOperationGroup& backFaceOp, 
                                                      uint8_t readMask, uint8_t writeMask) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
     ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -478,8 +478,8 @@ License :     MIT
   }
   
   // Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthStencilTestState(pandora::video::DepthStencilOperationGroup frontFaceOp, 
-                                                          pandora::video::DepthStencilOperationGroup backFaceOp, 
+  DepthStencilState Renderer::createDepthStencilTestState(const pandora::video::DepthStencilOperationGroup& frontFaceOp, 
+                                                          const pandora::video::DepthStencilOperationGroup& backFaceOp, 
                                                           pandora::video::DepthComparison depthTest, bool depthWriteMaskAll, 
                                                           uint8_t stencilReadMask, uint8_t stencilWriteMask) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
@@ -614,7 +614,8 @@ License :     MIT
 
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
   void Renderer::createFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter, 
-                              pandora::video::TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+                              const pandora::video::TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, 
+                              const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
     D3D11_SAMPLER_DESC samplerDesc{};
@@ -633,8 +634,8 @@ License :     MIT
   }
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
   void Renderer::createComparedFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter,
-                                      pandora::video::TextureAddressMode texAddressUVW[3], pandora::video::DepthComparison compare, 
-                                      float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+                                      const pandora::video::TextureAddressMode texAddressUVW[3], pandora::video::DepthComparison compare, 
+                                      float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
     D3D11_SAMPLER_DESC samplerDesc{};
@@ -653,8 +654,8 @@ License :     MIT
   }
   
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, pandora::video::TextureAddressMode texAddressUVW[3],
-                                         float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const pandora::video::TextureAddressMode texAddressUVW[3],
+                                         float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
     D3D11_SAMPLER_DESC samplerDesc{};
@@ -672,8 +673,8 @@ License :     MIT
     __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
   }
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, pandora::video::TextureAddressMode texAddressUVW[3],
-                                                 pandora::video::DepthComparison compare, float lodMin, float lodMax, float lodBias, float borderColor[4], int32_t index) {
+  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const pandora::video::TextureAddressMode texAddressUVW[3],
+                                                 pandora::video::DepthComparison compare, float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
     D3D11_SAMPLER_DESC samplerDesc{};

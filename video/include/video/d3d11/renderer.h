@@ -117,13 +117,13 @@ License :     MIT
           // -- resource builder --
           
           /// @brief Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-          DepthStencilState createDepthTestState(DepthOperationGroup frontFaceResult, DepthOperationGroup backFaceResult,
+          DepthStencilState createDepthTestState(const DepthOperationGroup& frontFaceOp, const DepthOperationGroup& backFaceOp,
                                                  DepthComparison depthTest = DepthComparison::less, bool writeMaskAll = true);
           /// @brief Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-          DepthStencilState createStencilTestState(DepthStencilOperationGroup frontFaceOp, DepthStencilOperationGroup backFaceOp, 
+          DepthStencilState createStencilTestState(const DepthStencilOperationGroup& frontFaceOp, const DepthStencilOperationGroup& backFaceOp, 
                                                    uint8_t readMask = 0xFF, uint8_t writeMask = 0xFF);
           /// @brief Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-          DepthStencilState createDepthStencilTestState(DepthStencilOperationGroup frontFaceOp, DepthStencilOperationGroup backFaceOp, 
+          DepthStencilState createDepthStencilTestState(const DepthStencilOperationGroup& frontFaceOp, const DepthStencilOperationGroup& backFaceOp, 
                                                         DepthComparison depthTest = DepthComparison::less, bool depthWriteMaskAll = true, 
                                                         uint8_t stencilReadMask = 0xFF, uint8_t stencilWriteMask = 0xFF);
           
@@ -145,8 +145,8 @@ License :     MIT
           /// @throws - out_of_range: full container or index out of range
           ///         - runtime_error: creation failure.
           void createFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter, 
-                            TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
-                            float lodBias = 0.0, float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+                            const TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
+                            float lodBias = 0.0, const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
           /// @param outStateContainer  RAII container in which to insert/append new state item.
           /// @param minFilter          Filter to use for minification (downscaling).
@@ -161,9 +161,9 @@ License :     MIT
           /// @throws - out_of_range: full container or index out of range.
           ///         - runtime_error: creation failure.
           void createComparedFilter(FilterStates& outStateContainer, MinificationFilter minFilter, 
-                                    MagnificationFilter magFilter, TextureAddressMode texAddressUVW[3], 
+                                    MagnificationFilter magFilter, const TextureAddressMode texAddressUVW[3], 
                                     DepthComparison compare, float lodMin = 0.0, float lodMax = 0.0, float lodBias = 0.0,
-                                    float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+                                    const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           
           /// @brief Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
           /// @param outStateContainer  RAII container in which to insert/append new state item.
@@ -177,8 +177,8 @@ License :     MIT
           /// @throws - out_of_range: full container or index out of range.
           ///         - runtime_error: creation failure.
           void createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, 
-                                       TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
-                                       float lodBias = 0.0, float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+                                       const TextureAddressMode texAddressUVW[3], float lodMin = 0.0, float lodMax = 0.0, 
+                                       float lodBias = 0.0, const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           /// @brief Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
           /// @param outStateCont  RAII container in which to insert/append new state item.
           /// @param maxAniso      Clamping anisotropy value - range: [1;maxAnisotropy()].
@@ -191,9 +191,9 @@ License :     MIT
           /// @param index         Insert position in outStateContainer (-1 to append).
           /// @throws - out_of_range: full container or index out of range.
           ///         - runtime_error: creation failure.
-          void createComparedAnisotropicFilter(FilterStates& outStateCont, uint32_t maxAniso, TextureAddressMode txAddrUVW[3], 
+          void createComparedAnisotropicFilter(FilterStates& outStateCont, uint32_t maxAniso, const TextureAddressMode txAddrUVW[3], 
                                                DepthComparison compare, float lodMin = 0.0, float lodMax = 0.0, float lodBias = 0.0, 
-                                               float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
+                                               const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           
           uint32_t maxAnisotropy() const noexcept; ///< Max anisotropy value (usually 16)
           size_t maxFilterStates() const noexcept; ///< Max array size for sample filters
@@ -316,7 +316,7 @@ License :     MIT
           void _destroy() noexcept;
           void _refreshDxgiFactory(); // throws
           bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
-          static inline float* _blackFilterBorder() noexcept { static float color[] = { 0.,0.,0.,1. }; return color; }
+          static inline const float* _blackFilterBorder() noexcept { static float color[] = { 0.,0.,0.,1. }; return color; }
           void* _createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                  uint32_t rateNumerator, uint32_t rateDenominator, 
                                  DeviceLevel& outSwapChainLevel); // throws
