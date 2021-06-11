@@ -203,13 +203,13 @@ License :     MIT
 // -- swap-chain destruction/move -- -------------------------------------------
 
   // Destroy swap-chain
-  void SwapChain::_destroy() noexcept {
+  void SwapChain::release() noexcept {
     if (this->_swapChain != nullptr) {
       try {
         if (this->_renderTargetView) {
-          if (this->_renderer)
-            this->_renderer->setActiveRenderTarget(nullptr);
+          this->_renderer->setActiveRenderTarget(nullptr);
           ((ID3D11RenderTargetView*)this->_renderTargetView)->Release();
+          this->_renderTargetView = nullptr;
         }
         if (this->_renderTarget)
           ((ID3D11Texture2D*)this->_renderTarget)->Release();
@@ -227,6 +227,8 @@ License :     MIT
           ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(FALSE, nullptr); // fullscreen must be OFF, or Release will throw
           ((IDXGISwapChain*)this->_swapChain)->Release();
         }
+        this->_swapChain = nullptr;
+        this->_renderer = nullptr;
       } 
       catch (...) {}
     }
@@ -245,7 +247,7 @@ License :     MIT
     rhs._swapChain = rhs._renderTarget = rhs._renderTargetView = rhs._deviceContext11_1 = nullptr;
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
-    _destroy();
+    release();
     memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
     this->_renderer = std::move(rhs._renderer);
     this->_renderTarget = rhs._renderTarget;

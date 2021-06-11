@@ -32,7 +32,8 @@ License :     MIT
           Shader(Shader&& rhs) noexcept : _handle(rhs._handle), _type(rhs._type) { rhs._handle = nullptr; }
           Shader& operator=(const Shader&) = delete;
           Shader& operator=(Shader&& rhs) noexcept { this->_handle=rhs._handle; this->_type=rhs._type; rhs._handle=nullptr; return *this; }
-          ~Shader() noexcept;
+          ~Shader() noexcept { release(); }
+          void release() noexcept; ///< Destroy shader object
           
           
           // -- accessors --
@@ -42,7 +43,7 @@ License :     MIT
           ///                                            ID3D11ComputeShader*/ID3D11HullShader*/ID3D11DomainShader*.
           inline Handle handle() const noexcept { return this->_handle; }
           inline pandora::video::ShaderType type() const noexcept { return this->_type; }///< Get shader category/model type
-          inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved (true)
+          inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
 
 
           // -- create/compile shaders --

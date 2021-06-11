@@ -14,15 +14,13 @@ License :     MIT
   namespace pandora {
     namespace video {
       namespace d3d11 {
-        class Renderer;
-        
         /// @class SwapChain
         /// @brief Direct3D rendering swap-chain (framebuffers)
         /// @warning - SwapChain is the Direct3D display output tool, and should be kept alive while the window exists.
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleLevel1() should be reserved for internal usage or for advanced features.
-        /// @remarks - To render on display output, call setActiveRenderTarget on Renderer with targetView() and a depth buffer.
+        /// @remarks - To render on display output, call setActiveRenderTarget on Renderer with getRenderTargetView() and a depth buffer.
         ///          - Swap-chains are meant for display: to "render to texture", use TextureBuffer.
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
         ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.
@@ -37,9 +35,11 @@ License :     MIT
           SwapChain(std::shared_ptr<Renderer> renderer, const pandora::video::SwapChainParams& params, 
                     pandora::video::WindowHandle window, uint32_t width, uint32_t height);
           /// @brief Destroy swap-chain
-          /// @warning - Invalidates all associated buffers -> they should be destroyed too.
-          ///          - Disables all active render-targets of Renderer.
-          ~SwapChain() noexcept { _destroy(); }
+          /// @warning Disables all active render-targets of Renderer -> they need to be activated again! ('Renderer.setActiveRenderTargets')
+          ~SwapChain() noexcept { release(); }
+          /// @brief Destroy swap-chain
+          /// @warning Disables all active render-targets of Renderer -> they need to be activated again! ('Renderer.setActiveRenderTargets')
+          void release() noexcept;
           
           SwapChain() = default; ///< Empty swap-chain -- not usable (only useful to store variable not immediately initialized)
           SwapChain(const SwapChain&) = delete;
@@ -54,28 +54,36 @@ License :     MIT
           /// @brief Get native Direct3D 11.1+ swap-chain handle, if available (cast to IDXGISwapChain1*)
           /// @returns Handle for Direct3D 11.1+ devices (or NULL for Direct3D 11.0 devices).
           inline Handle handleLevel1() const noexcept { 
-            return (this->_swapChainLevel != Renderer::DeviceLevel::direct3D_11_0) ? this->_swapChain : nullptr; 
+            return (this->_swapChainLevel != Renderer::DeviceLevel::direct3D_11_0) ? this->_swapChain : nullptr;
           }
-          inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved (true)
-          
-          /// @brief Verify if HDR is enabled in current swap-chain (should be verified before using HDR shaders and data)
-          /// @remarks HDR may be disabled even if it was enabled in creation params:
-          ///          - if the adapter or monitor doesn't support it.
-          ///          - if the rendering API level is too old to support it
-          ///          - if the buffer color/component format isn't compatible with it.
-          bool isHdrEnabled() const noexcept;
+          inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           
           /// @brief Get render-target view of current SwapChain
           /// @remarks - This value should be used to call 'Renderer.setActiveRenderTargets'.
           ///          - Activating the render-target is necessary to draw into SwapChain back-buffers.
-          Renderer::RenderTargetViewHandle getRenderTargetView() const noexcept { return this->_renderTargetView; }
+          inline Renderer::RenderTargetViewHandle getRenderTargetView() const noexcept { return this->_renderTargetView; }
+          
+          inline uint32_t width() const noexcept  { return this->_settings.width; } ///< Get current swap-chain width
+          inline uint32_t height() const noexcept { return this->_settings.height; }///< Get current swap-chain height
+          /// @brief Verify actual multisample/anti-aliasing count of current swap-chain (useful to initialize DepthStencilBuffer)
+          /// @remarks MSAA might be disabled even if it was enabled in creation params:
+          ///          - if the adapter or monitor doesn't support it.
+          ///          - if the buffer color/component format isn't compatible with it.
+          inline uint32_t multisampleCount() const noexcept { return this->_settings.msaaSampleNumber; }
+          /// @brief Get multisample/anti-aliasing quality level of current swap-chain (useful to initialize DepthStencilBuffer)
+          inline uint32_t multisampleLevel() const noexcept { return this->_settings.msaaQualityLevel; }
+          /// @brief Verify if HDR is enabled in current swap-chain (should be verified before using HDR shaders and data)
+          /// @remarks HDR might be disabled even if it was enabled in creation params:
+          ///          - if the adapter or monitor doesn't support it.
+          ///          - if the rendering API level is too old to support it.
+          ///          - if the buffer color/component format isn't compatible with it.
+          bool isHdrEnabled() const noexcept;
 
           // -- operations --
           
           /// @brief Change back-buffer(s) size + refresh color space
           /// @remarks Must be called when the window size changes, or when the display monitor is different.
-          /// @warning - Invalidates all associated buffers -> they should be created again.
-          ///          - A new depth buffer with the same size must be created.
+          /// @warning - A new depth buffer (with the same size) should be created.
           ///          - Disables all active render-targets of Renderer -> they need to be activated again! ('Renderer.setActiveRenderTargets')
           /// @returns True if buffers/active-render-target must be reconfigured / false if only color-space has been updated.
           /// @throws - invalid_argument: if width/height is 0 -> retry with valid arguments.
@@ -102,11 +110,9 @@ License :     MIT
         
         
         private:
-          void _destroy() noexcept;
           void _createSwapChainTargetView(); // throws
           static void _convertSwapChainParams(const Renderer& renderer, const pandora::video::SwapChainParams& params, 
                                               _SwapChainConfig& outConfig) noexcept;
-          
         private:
           _SwapChainConfig _settings{};
           std::shared_ptr<Renderer> _renderer = nullptr;

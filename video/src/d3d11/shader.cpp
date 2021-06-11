@@ -41,7 +41,7 @@ License :     MIT
 
 // -- shader -- ----------------------------------------------------------------
 
-  Shader::~Shader() noexcept {
+  void Shader::release() noexcept {
     if (this->_handle != nullptr) {
       switch (this->_type) {
         case pandora::video::ShaderType::vertex:        ((ID3D11VertexShader*)this->_handle)->Release(); break;
