@@ -367,19 +367,6 @@ License :     MIT
 # else
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
 # endif
-  
-  // Verify if a multisample mode is supported (MSAA) + get max quality level
-  bool Renderer::_isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept {
-    try {
-      UINT qualityLevel = 0;
-      if (SUCCEEDED(((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels((DXGI_FORMAT)componentFormat, (UINT)sampleCount, &qualityLevel))) {
-        outMaxQualityLevel = (uint32_t)qualityLevel;
-        return (qualityLevel > 0);
-      }
-    }
-    catch (...) {}
-    return false;
-  }
 
 
 // -- resource builder - depth/stencil -- --------------------------------------
@@ -515,7 +502,7 @@ License :     MIT
 
   // Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
   RasterizerState Renderer::createRasterizerState(CullMode culling, bool isFrontClockwise, 
-                                                  const pandora::video::DepthBias& depth, bool useMsaa,
+                                                  const pandora::video::DepthBias& depth,
                                                   bool scissorClipping) { // throws
     D3D11_RASTERIZER_DESC rasterizerState;
     ZeroMemory(&rasterizerState, sizeof(D3D11_RASTERIZER_DESC));
@@ -533,8 +520,8 @@ License :     MIT
     rasterizerState.SlopeScaledDepthBias = (FLOAT)depth.depthBiasSlopeScale;
     rasterizerState.DepthClipEnable = depth.isClipped ? TRUE : FALSE;
 
-    rasterizerState.MultisampleEnable = useMsaa ? TRUE : FALSE;
-    rasterizerState.AntialiasedLineEnable = useMsaa ? TRUE : FALSE;
+    rasterizerState.MultisampleEnable = FALSE;
+    rasterizerState.AntialiasedLineEnable = FALSE;
     rasterizerState.ScissorEnable = scissorClipping ? TRUE : FALSE;
 
     ID3D11RasterizerState* stateData = nullptr;
@@ -738,7 +725,7 @@ License :     MIT
     ((ID3D11DeviceContext*)this->_context)->OMSetDepthStencilState((ID3D11DepthStencilState*)state.get(), (UINT)stencilRef);
   }
   
-  // Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
+  // Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
   void Renderer::setRasterizerState(const RasterizerState& state) noexcept {
     ((ID3D11DeviceContext*)this->_context)->RSSetState((ID3D11RasterizerState*)state.get());
   }
@@ -978,8 +965,8 @@ License :     MIT
         fullscnDescriptor.RefreshRate.Numerator = (UINT)rateNumerator;
         fullscnDescriptor.RefreshRate.Denominator = (UINT)rateDenominator;
         descriptor.SwapEffect = (config.useFlipSwap) ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD;
-        descriptor.SampleDesc.Count = config.msaaSampleNumber;
-        descriptor.SampleDesc.Quality = config.msaaQualityLevel - 1;
+        descriptor.SampleDesc.Count = 1;
+        descriptor.SampleDesc.Quality = 0;
         descriptor.Stereo = ((config.flags & SwapChainOutputFlag::stereo) == true) ? TRUE : FALSE;
         descriptor.Flags = (config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         if ((config.flags & SwapChainOutputFlag::localOutput) == true)
@@ -1007,8 +994,8 @@ License :     MIT
       descriptor.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
       descriptor.OutputWindow = (HWND)window;
       descriptor.Windowed = TRUE;
-      descriptor.SampleDesc.Count = config.msaaSampleNumber;
-      descriptor.SampleDesc.Quality = config.msaaQualityLevel - 1;
+      descriptor.SampleDesc.Count = 1;
+      descriptor.SampleDesc.Quality = 0;
 
       auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain((ID3D11Device*)this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
@@ -1027,7 +1014,7 @@ License :     MIT
 
   // Create depth/stencil buffer for existing renderer/render-target
   DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
-                                         uint32_t width, uint32_t height, uint32_t multisampleNumber, uint32_t multisampleLevel) { // throws
+                                         uint32_t width, uint32_t height) { // throws
     if (width == 0 || height == 0)
       throw std::invalid_argument("DepthStencilBuffer: invalid width/height: values must not be 0");
     
@@ -1039,8 +1026,8 @@ License :     MIT
     depthDescriptor.MipLevels = 1;
     depthDescriptor.ArraySize = 1;
     depthDescriptor.Format = (DXGI_FORMAT)Renderer::toDxgiFormat(format);
-    depthDescriptor.SampleDesc.Count = (UINT)multisampleNumber;
-    depthDescriptor.SampleDesc.Quality = (multisampleLevel != 0u) ? (UINT)multisampleLevel - 1 : 0;
+    depthDescriptor.SampleDesc.Count = 1;
+    depthDescriptor.SampleDesc.Quality = 0;
     depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
     depthDescriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     
@@ -1064,7 +1051,6 @@ License :     MIT
     this->_settings.width = width;
     this->_settings.height = height;
     this->_settings.format = format;
-    this->_settings.msaaSampleNumber = multisampleNumber;
   }
 
   // Destroy depth/stencil buffer
@@ -1189,11 +1175,9 @@ License :     MIT
       case ComponentFormat::rgba8_i: return (int32_t)DXGI_FORMAT_R8G8B8A8_SINT;
       
       case ComponentFormat::d32_f: return (int32_t)DXGI_FORMAT_D32_FLOAT;
-      case ComponentFormat::d24_unorm: return (int32_t)DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
       case ComponentFormat::d16_unorm: return (int32_t)DXGI_FORMAT_D16_UNORM;
       case ComponentFormat::d32_f_s8_ui: return (int32_t)DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
       case ComponentFormat::d24_unorm_s8_ui: return (int32_t)DXGI_FORMAT_D24_UNORM_S8_UINT;
-      case ComponentFormat::s8_ui: return (int32_t)DXGI_FORMAT_X24_TYPELESS_G8_UINT;
       
       case ComponentFormat::rgba16_f_hdr_scRGB: return (int32_t)DXGI_FORMAT_R16G16B16A16_FLOAT;
       case ComponentFormat::rgba16_unorm: return (int32_t)DXGI_FORMAT_R16G16B16A16_UNORM;

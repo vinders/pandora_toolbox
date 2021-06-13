@@ -65,13 +65,6 @@ License :     MIT
           
           inline uint32_t width() const noexcept  { return this->_settings.width; } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return this->_settings.height; }///< Get current swap-chain height
-          /// @brief Verify actual multisample/anti-aliasing count of current swap-chain (useful to initialize DepthStencilBuffer)
-          /// @remarks MSAA might be disabled even if it was enabled in creation params:
-          ///          - if the adapter or monitor doesn't support it.
-          ///          - if the buffer color/component format isn't compatible with it.
-          inline uint32_t multisampleCount() const noexcept { return this->_settings.msaaSampleNumber; }
-          /// @brief Get multisample/anti-aliasing quality level of current swap-chain (useful to initialize DepthStencilBuffer)
-          inline uint32_t multisampleLevel() const noexcept { return this->_settings.msaaQualityLevel; }
           /// @brief Verify if HDR is enabled in current swap-chain (should be verified before using HDR shaders and data)
           /// @remarks HDR might be disabled even if it was enabled in creation params:
           ///          - if the adapter or monitor doesn't support it.

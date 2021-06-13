@@ -4,6 +4,7 @@
 # include <video/d3d11/renderer_state.h>
 
   using namespace pandora::video::d3d11;
+  using namespace pandora::video;
 
   class RendererStateTest : public testing::Test {
   public:
@@ -16,6 +17,119 @@
   };
 
 
+  // -- depth/stencil state management --
+
+  TEST_F(RendererStateTest, emptyDepthContainer) {
+    DepthStencilState empty;
+    EXPECT_FALSE(empty);
+    EXPECT_FALSE(empty.isValid());
+    EXPECT_TRUE(empty.get() == nullptr);
+    DepthStencilState empty2(nullptr);
+    EXPECT_FALSE(empty2);
+    EXPECT_FALSE(empty2.isValid());
+    EXPECT_TRUE(empty2.get() == nullptr);
+
+    empty = std::move(empty2);
+    EXPECT_FALSE(empty);
+    EXPECT_FALSE(empty.isValid());
+    EXPECT_TRUE(empty.get() == nullptr);
+
+    DepthStencilState empty3 = std::move(empty);
+    EXPECT_FALSE(empty3);
+    EXPECT_FALSE(empty3.isValid());
+    EXPECT_TRUE(empty3.get() == nullptr);
+  }
+
+  TEST_F(RendererStateTest, filledDepthContainer) {
+    pandora::hardware::DisplayMonitor monitor;
+    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+
+    DepthStencilState valD1 = renderer.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
+                                                            DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
+                                                            DepthComparison::less, true);
+    EXPECT_TRUE(valD1);
+    EXPECT_TRUE(valD1.isValid());
+    EXPECT_TRUE(valD1.get() != nullptr);
+    renderer.setDepthStencilState(valD1);
+    DepthStencilState valD2 = renderer.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::replace }, 
+                                                            DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::invert }, 
+                                                            DepthComparison::greaterEqual, false);
+    EXPECT_TRUE(valD2);
+    EXPECT_TRUE(valD2.isValid());
+    EXPECT_TRUE(valD2.get() != nullptr);
+    renderer.setDepthStencilState(valD2);
+    
+    DepthStencilState valS1 = renderer.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
+                                                                DepthComparison::greater }, 
+                                                              DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
+                                                                DepthComparison::less },
+                                                              (uint8_t)0xFF, (uint8_t)0xFF);
+    EXPECT_TRUE(valS1);
+    EXPECT_TRUE(valS1.isValid());
+    EXPECT_TRUE(valS1.get() != nullptr);
+    renderer.setDepthStencilState(valS1);
+    DepthStencilState valS2 = renderer.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                DepthStencilOperation::setZero, DepthStencilOperation::replace, 
+                                                                DepthComparison::always }, 
+                                                              DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                DepthStencilOperation::setZero, DepthStencilOperation::invert, 
+                                                                DepthComparison::notEqual },
+                                                              (uint8_t)0x1, (uint8_t)0x1);
+    EXPECT_TRUE(valS2);
+    EXPECT_TRUE(valS2.isValid());
+    EXPECT_TRUE(valS2.get() != nullptr);
+    renderer.setDepthStencilState(valS2);
+    
+    DepthStencilState valDS1 = renderer.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                      DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
+                                                                      DepthComparison::greater }, 
+                                                                    DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                      DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
+                                                                      DepthComparison::less },
+                                                                    DepthComparison::less, true, (uint8_t)0xFF, (uint8_t)0xFF);
+    EXPECT_TRUE(valDS1);
+    EXPECT_TRUE(valDS1.isValid());
+    EXPECT_TRUE(valDS1.get() != nullptr);
+    renderer.setDepthStencilState(valDS1);
+    
+    DepthStencilState valDS2 = renderer.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::keep,
+                                                                      DepthStencilOperation::decrementWrap, DepthStencilOperation::replace, 
+                                                                      DepthComparison::always }, 
+                                                                    DepthStencilOperationGroup{ DepthStencilOperation::keep,
+                                                                      DepthStencilOperation::incrementWrap, DepthStencilOperation::invert, 
+                                                                      DepthComparison::always },
+                                                                    DepthComparison::greater, false, (uint8_t)0x1, (uint8_t)0x1);
+    EXPECT_TRUE(valDS2);
+    EXPECT_TRUE(valDS2.isValid());
+    EXPECT_TRUE(valDS2.get() != nullptr);
+    renderer.setDepthStencilState(valDS2);
+    renderer.setDepthStencilState(DepthStencilState{});
+
+    auto valGet = valS1.get();
+    valD1 = std::move(valS1);
+    EXPECT_TRUE(valD1);
+    EXPECT_TRUE(valD1.isValid());
+    EXPECT_TRUE(valD1.get() != nullptr);
+    EXPECT_TRUE(valD1.get() == valGet);
+    EXPECT_FALSE(valS1);
+    EXPECT_FALSE(valS1.isValid());
+    EXPECT_TRUE(valS1.get() == nullptr);
+
+    DepthStencilState moved = std::move(valD1);
+    EXPECT_TRUE(moved);
+    EXPECT_TRUE(moved.isValid());
+    EXPECT_TRUE(moved.get() != nullptr);
+    EXPECT_TRUE(moved.get() == valGet);
+    EXPECT_FALSE(valD1);
+    EXPECT_FALSE(valD1.isValid());
+    EXPECT_TRUE(valD1.get() == nullptr);
+    EXPECT_FALSE(valS1);
+    EXPECT_FALSE(valS1.isValid());
+    EXPECT_TRUE(valS1.get() == nullptr);
+  }
+  
   // -- rasterizer state management --
 
   TEST_F(RendererStateTest, emptyRasterContainer) {
@@ -44,17 +158,20 @@
     Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
 
     RasterizerState val1 = renderer.createRasterizerState(pandora::video::CullMode::wireFrame, false, 
-                                    pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false, false);
+                                    pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false);
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.isValid());
     EXPECT_TRUE(val1.get() != nullptr);
+    renderer.setRasterizerState(val1);
     RasterizerState val2(renderer.createRasterizerState(pandora::video::CullMode::cullBack, true, 
-                                  pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true, true));
+                                  pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true));
     EXPECT_TRUE(val2);
     EXPECT_TRUE(val2.isValid());
     EXPECT_TRUE(val2.get() != nullptr);
-    auto val2Get = val2.get();
+    renderer.setRasterizerState(val2);
+    renderer.setRasterizerState(RasterizerState{});
 
+    auto val2Get = val2.get();
     val1 = std::move(val2);
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.isValid());

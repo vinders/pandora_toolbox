@@ -24,7 +24,6 @@ TEST_F(SwapChainParamsTest, gettersSettersTest) {
   EXPECT_EQ(false, params.isHdrPreferred());
   EXPECT_EQ(SwapChainTargetMode::uniqueOutput, params.renderTargetMode());
   EXPECT_EQ(SwapChainOutputFlag::none, params.outputFlags());
-  EXPECT_EQ((uint32_t)1u, params.multisampleCount());
   EXPECT_EQ((uint32_t)60u, params.rateNumerator());
   EXPECT_EQ((uint32_t)1u, params.rateDenominator());
 
@@ -40,8 +39,6 @@ TEST_F(SwapChainParamsTest, gettersSettersTest) {
   EXPECT_EQ(SwapChainTargetMode::partialOutput, params.renderTargetMode());
   params.setOutputFlags(SwapChainOutputFlag::localOutput | SwapChainOutputFlag::shaderInput);
   EXPECT_EQ((SwapChainOutputFlag::localOutput | SwapChainOutputFlag::shaderInput), params.outputFlags());
-  params.setMultisample(4u);
-  EXPECT_EQ((uint32_t)4u, params.multisampleCount());
   params.setRefreshRate(60000u, 1001u);
   EXPECT_EQ((uint32_t)60000u, params.rateNumerator());
   EXPECT_EQ((uint32_t)1001u, params.rateDenominator());

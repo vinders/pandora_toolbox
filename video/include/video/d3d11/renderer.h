@@ -98,14 +98,6 @@ License :     MIT
           /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
           bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
           
-          /// @brief Verify if a multisample mode is supported (MSAA) + get max quality level
-          /// @param componentFormat Color/component format (example: pandora::video::ComponentFormat::rgba8_sRGB)
-          /// @param sampleCount     Number of samples: 1, 2, 4 or 8
-          inline bool isMultisampleSupported(uint32_t sampleCount, pandora::video::ComponentFormat format) const noexcept {
-            uint32_t qualityLevel = 1;
-            return _isMultisampleSupported(sampleCount, Renderer::toDxgiFormat(format), qualityLevel);
-          }
-          
           /// @brief Screen tearing supported (variable refresh rate display)
           inline bool isTearingAvailable() const noexcept { return (this->_dxgiLevel >= 5u); }
           /// @brief "Flip" swap mode supported -> for internal usage
@@ -129,8 +121,7 @@ License :     MIT
           
           /// @brief Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
           RasterizerState createRasterizerState(pandora::video::CullMode culling, bool isFrontClockwise, 
-                                                const pandora::video::DepthBias& depth, bool useMsaa = false,
-                                                bool scissorClipping = false);
+                                                const pandora::video::DepthBias& depth, bool scissorClipping = false);
 
           /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
           /// @param outStateContainer  RAII container in which to insert/append new state item.
@@ -225,7 +216,7 @@ License :     MIT
           
           /// @brief Change output merger depth/stencil state (depth and/or stencil testing)
           void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept;
-          /// @brief Change device rasterizer mode (culling, clipping, depth-bias, multisample, wireframe...)
+          /// @brief Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
           /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
           void setRasterizerState(const RasterizerState& state) noexcept;
@@ -315,7 +306,6 @@ License :     MIT
         private:
           void _destroy() noexcept;
           void _refreshDxgiFactory(); // throws
-          bool _isMultisampleSupported(uint32_t sampleCount, int32_t componentFormat, uint32_t& outMaxQualityLevel) const noexcept;
           static inline const float* _blackFilterBorder() noexcept { static float color[] = { 0.,0.,0.,1. }; return color; }
           void* _createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                  uint32_t rateNumerator, uint32_t rateDenominator, 

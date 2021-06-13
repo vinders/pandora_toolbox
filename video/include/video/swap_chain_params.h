@@ -45,8 +45,6 @@ namespace pandora {
       inline SwapChainParams& setRenderTargetMode(SwapChainTargetMode mode) noexcept { this->_targetMode = mode; return *this; }
       /// @brief Set special swap-chain output settings
       inline SwapChainParams& setOutputFlags(SwapChainOutputFlag flags) noexcept { this->_outputFlags = flags; return *this; }
-      /// @brief Set multi-sample anti-aliasing mode (1: disabled / 2-4-8: MSAA 2x-4x-8x)
-      inline SwapChainParams& setMultisample(uint32_t sampleNumber) noexcept { this->_multiSampleCount = (sampleNumber) ? sampleNumber : 1u; return *this; }
       
       /// @brief Set refresh rate -- milliHz -- default: 60000
       inline SwapChainParams& setRefreshRate(uint32_t rateMilliHz) noexcept;
@@ -62,7 +60,6 @@ namespace pandora {
 
       inline SwapChainTargetMode renderTargetMode() const noexcept { return _targetMode; }
       inline SwapChainOutputFlag outputFlags() const noexcept { return _outputFlags; }
-      inline uint32_t multisampleCount() const noexcept { return _multiSampleCount; }
       inline uint32_t rateNumerator() const noexcept { return _rateNumerator; }
       inline uint32_t rateDenominator() const noexcept { return _rateDenominator; }
       
@@ -74,7 +71,6 @@ namespace pandora {
       
       SwapChainTargetMode _targetMode = SwapChainTargetMode::uniqueOutput;
       SwapChainOutputFlag _outputFlags = SwapChainOutputFlag::none;
-      uint32_t _multiSampleCount = 1u;
       uint32_t _rateNumerator = 60u;
       uint32_t _rateDenominator = 1u;
     };

@@ -23,8 +23,6 @@ License :     MIT
           int32_t colorSpace;        // DXGI_COLOR_SPACE_TYPE
           bool isHdrPreferred;
           
-          uint32_t msaaSampleNumber; // MSAA x1/2/4/8
-          uint32_t msaaQualityLevel; // MSAA max quality
           SwapChainOutputFlag flags; // advanced settings
           bool useFlipSwap;          // flip-swap enabled (more efficient, but many limitations)
         };

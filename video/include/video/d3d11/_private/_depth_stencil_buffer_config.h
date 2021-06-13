@@ -16,7 +16,6 @@ License :     MIT
           uint32_t width;  // pixel size
           uint32_t height; // pixel size
           pandora::video::ComponentFormat format;
-          uint32_t msaaSampleNumber; // MSAA x1/2/4/8
         };
       }
     }

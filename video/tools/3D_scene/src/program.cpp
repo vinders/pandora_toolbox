@@ -62,12 +62,6 @@ std::unique_ptr<scene::Program> scene::Program::createProgram(std::shared_ptr<sc
   SwapChainParams params;
   params.setBackBufferFormat(pandora::video::ComponentFormat::rgba8_sRGB)
         .setFrameBufferNumber(2u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
-  switch (menu->settings().aa) {
-    case scene::AntiAliasing::msaa2x: params.setMultisample(2u); break;
-    case scene::AntiAliasing::msaa4x: params.setMultisample(4u); break;
-    case scene::AntiAliasing::msaa8x: params.setMultisample(8u); break;
-    default: params.setMultisample(1u); break;
-  }
 
   switch (menu->settings().api) {
 #   if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)

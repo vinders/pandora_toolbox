@@ -135,20 +135,9 @@ License :     MIT
     outConfig.frameBufferCount = params.frameBufferCount();
     outConfig.isHdrPreferred = params.isHdrPreferred();
     
-    // multisample mode
-    if (params.multisampleCount() > 1u && renderer._isMultisampleSupported(params.multisampleCount(), 
-                                                      outConfig.backBufferFormat, outConfig.msaaQualityLevel)) {
-      outConfig.msaaSampleNumber = params.multisampleCount();
-    }
-    else {
-      outConfig.msaaSampleNumber = 1u;
-      outConfig.msaaQualityLevel = 1u;
-    }
-    
     // verify if flip-swap is applicable
     outConfig.useFlipSwap = (renderer.isFlipSwapAvailable() 
                         && params.renderTargetMode() == SwapChainTargetMode::uniqueOutput // only one render target view
-                        && outConfig.msaaSampleNumber <= 1u // no MSAA (not allowed in flip-swap mode)
                         && (renderer.isTearingAvailable()   // tearing OFF or supported with flip-swap
                            || (params.outputFlags() & SwapChainOutputFlag::variableRefresh) == SwapChainOutputFlag::none) );
     outConfig.swapChainFormat = (outConfig.useFlipSwap)     // supported color format
@@ -333,8 +322,7 @@ License :     MIT
     }
     
     auto* device = (ID3D11Device*)this->_renderer->device();
-    CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor((this->_settings.msaaSampleNumber <= 1u) ? D3D11_RTV_DIMENSION_TEXTURE2D : D3D11_RTV_DIMENSION_TEXTURE2DMS, 
-                                                  (DXGI_FORMAT)this->_settings.backBufferFormat);
+    CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, (DXGI_FORMAT)this->_settings.backBufferFormat);
     
     targetResult = device->CreateRenderTargetView((ID3D11Texture2D*)this->_renderTarget, &viewDescriptor, 
                                                   (ID3D11RenderTargetView**)(&(this->_renderTargetView)));
