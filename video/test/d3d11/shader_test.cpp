@@ -104,6 +104,10 @@
     EXPECT_FALSE(fragmentShader.isEmpty());
     renderer.bindFragmentShader(fragmentShader.handle());
     renderer.bindFragmentShader(nullptr);
+
+    renderer.bindVertexFragmentShaders(vertexShader.handle(), fragmentShader.handle());
+    renderer.bindInputVertexFragmentShaders(inputLayout.handle(), vertexShader.handle(), fragmentShader.handle());
+    renderer.bindVertexFragmentShaders(nullptr, nullptr);
     
     auto geometryShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
                           .createShader(renderer.device());

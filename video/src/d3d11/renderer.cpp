@@ -718,6 +718,18 @@ License :     MIT
     ((ID3D11DeviceContext*)this->_context)->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
   }
   
+  // Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
+  void Renderer::bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
+    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
+  }
+  // Bind input layout, vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
+  void Renderer::bindInputVertexFragmentShaders(ShaderInputLayout::Handle inputLayout, Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
+    ((ID3D11DeviceContext*)this->_context)->IASetInputLayout((ID3D11InputLayout*)inputLayout);
+    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
+    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
+  }
+  
   // ---
   
   // Change output merger depth/stencil state (depth and/or stencil testing)

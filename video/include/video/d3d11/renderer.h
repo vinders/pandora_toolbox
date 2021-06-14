@@ -214,12 +214,21 @@ License :     MIT
           /// @param shader  Native handle (Shader.handle()) or NULL to remove compute shader.
           void bindComputeShader(Shader::Handle shader) noexcept;
           
+          /// @brief Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
+          void bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept;
+          /// @brief Bind input layout, vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
+          void bindInputVertexFragmentShaders(ShaderInputLayout::Handle inputLayout, Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept;
+          
+          // ---
+          
           /// @brief Change output merger depth/stencil state (depth and/or stencil testing)
           void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept;
           /// @brief Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
           /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
           void setRasterizerState(const RasterizerState& state) noexcept;
+          
+          // ---
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
