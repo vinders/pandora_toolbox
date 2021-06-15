@@ -682,9 +682,9 @@ License :     MIT
   // ---
 
   // Max anisotropy value (usually 16)
-  uint32_t Renderer::maxAnisotropy() const noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
+  uint32_t Renderer::maxAnisotropy() noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
   // Max array size for sample filters
-  size_t Renderer::maxFilterStates() const noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+  size_t Renderer::maxFilterStates() noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
 
 
 // -- pipeline status operations -- --------------------------------------------
@@ -717,7 +717,6 @@ License :     MIT
   void Renderer::bindComputeShader(Shader::Handle shader) noexcept {
     ((ID3D11DeviceContext*)this->_context)->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
   }
-  
   // Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
   void Renderer::bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
     ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
@@ -728,6 +727,101 @@ License :     MIT
     ((ID3D11DeviceContext*)this->_context)->IASetInputLayout((ID3D11InputLayout*)inputLayout);
     ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
     ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
+  }
+  
+  // ---
+  
+  // Constant buffers - verify slot index/length validity
+  static inline bool __verifyConstantBufferSlots(uint32_t firstIndex, size_t& inOutLength) noexcept {
+    if (firstIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT) {
+      if (firstIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
+        return false;
+      inOutLength = (size_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - (size_t)firstIndex;
+    }
+    return true;
+  }
+  // Max array size for constant buffers
+  size_t Renderer::maxConstantBuffers() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
+  
+  // Bind constant buffer(s) to the vertex shader stage
+  void Renderer::bindVertexConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the tessellation-control/hull shader stage
+  void Renderer::bindTesselControlConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->HSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the tessellation-evaluation/domain shader stage
+  void Renderer::bindTesselEvalConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->DSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the geometry shader stage
+  void Renderer::bindGeometryConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->GSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the fragment shader stage
+  void Renderer::bindFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the compute shader stage
+  void Renderer::bindComputeConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->CSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  // Bind constant buffer(s) to the vertex and fragment shader stage(s) (grouped call, to reduce overhead)
+  void Renderer::bindVertexFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+      return;
+    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+  }
+  
+  // Reset all constant buffers in vertex shader stage
+  void Renderer::clearVertexConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in tessellation-control/hull shader stage
+  void Renderer::clearTesselControlConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in tessellation-evaluation/domain shader stage
+  void Renderer::clearTesselEvalConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in geometry shader stage
+  void Renderer::clearGeometryConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in fragment/pixel shader stage (standard)
+  void Renderer::clearFragmentConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in compute shader stage
+  void Renderer::clearComputeConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->CSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+  }
+  // Reset all constant buffers in vertex/fragment shader stage (grouped call)
+  void Renderer::clearVertexFragmentConstantBuffers() noexcept {
+    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   
   // ---
@@ -850,7 +944,7 @@ License :     MIT
   
   // ---
   
-  /// @brief Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
+  // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
                             const ComponentVector128& clearColorRgba) noexcept {
     DirectX::XMVECTORF32 color;
@@ -865,7 +959,7 @@ License :     MIT
       ((ID3D11DeviceContext*)this->_context)->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     ((ID3D11DeviceContext*)this->_context)->Flush();
   }
-  /// @brief Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
+  // Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
                            const ComponentVector128& clearColorRgba) noexcept {
     DirectX::XMVECTORF32 color;
@@ -1019,80 +1113,6 @@ License :     MIT
       ((IDXGISwapChain*)swapChain)->SetFullscreenState(TRUE, nullptr); // without flip-swap, screen tearing requires fullscreen state
     
     return swapChain;
-  }
-
-
-// -- depth/stencil buffer creation -- -----------------------------------------
-
-  // Create depth/stencil buffer for existing renderer/render-target
-  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
-                                         uint32_t width, uint32_t height) { // throws
-    if (width == 0 || height == 0)
-      throw std::invalid_argument("DepthStencilBuffer: invalid width/height: values must not be 0");
-    
-    // create compatible depth/stencil buffer
-    D3D11_TEXTURE2D_DESC depthDescriptor;
-    ZeroMemory(&depthDescriptor, sizeof(depthDescriptor));
-    depthDescriptor.Width = (UINT)width;
-    depthDescriptor.Height = (UINT)height;
-    depthDescriptor.MipLevels = 1;
-    depthDescriptor.ArraySize = 1;
-    depthDescriptor.Format = (DXGI_FORMAT)Renderer::toDxgiFormat(format);
-    depthDescriptor.SampleDesc.Count = 1;
-    depthDescriptor.SampleDesc.Quality = 0;
-    depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
-    depthDescriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    
-    auto result = ((ID3D11Device*)renderer.device())->CreateTexture2D(&depthDescriptor, nullptr, (ID3D11Texture2D**)&(this->_depthStencilBuffer));
-    if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
-      throwError(result, "DepthStencilBuffer: could not create depth/stencil buffer"); return;
-    }
-    
-    // create depth/stencil view
-    D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDescriptor;
-    ZeroMemory(&depthViewDescriptor, sizeof(depthViewDescriptor));
-    depthViewDescriptor.Format = depthDescriptor.Format;
-    depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    depthViewDescriptor.Texture2D.MipSlice = 0;
-    
-    result = ((ID3D11Device*)renderer.device())->CreateDepthStencilView((ID3D11Texture2D*)this->_depthStencilBuffer, &depthViewDescriptor, 
-                                                                    (ID3D11DepthStencilView**)&(this->_depthStencilView));
-    if (FAILED(result) || this->_depthStencilView == nullptr)
-      throwError(result, "DepthStencilBuffer: could not create depth/stencil view");
-    
-    this->_settings.width = width;
-    this->_settings.height = height;
-    this->_settings.format = format;
-  }
-
-  // Destroy depth/stencil buffer
-  void DepthStencilBuffer::release() noexcept {
-    if (this->_depthStencilBuffer) {
-      try {
-        if (this->_depthStencilView) {
-          ((ID3D11DepthStencilView*)this->_depthStencilView)->Release();
-          this->_depthStencilView = nullptr;
-        }
-        ((ID3D11Texture2D*)this->_depthStencilBuffer)->Release();
-        this->_depthStencilBuffer = nullptr;
-      }
-      catch (...) {}
-    }
-  }
-  
-  DepthStencilBuffer::DepthStencilBuffer(DepthStencilBuffer&& rhs) noexcept 
-    : _depthStencilView(rhs._depthStencilView),
-      _depthStencilBuffer(rhs._depthStencilBuffer) {
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
-    rhs._depthStencilBuffer = rhs._depthStencilView = nullptr;
-  }
-  DepthStencilBuffer& DepthStencilBuffer::operator=(DepthStencilBuffer&& rhs) noexcept {
-    release();
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
-    this->_depthStencilBuffer = rhs._depthStencilBuffer;
-    this->_depthStencilView = rhs._depthStencilView;
-    rhs._depthStencilBuffer = rhs._depthStencilView = nullptr;
-    return *this;
   }
 
 

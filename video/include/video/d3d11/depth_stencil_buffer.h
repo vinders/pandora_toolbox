@@ -30,11 +30,8 @@ License :     MIT
           ///         - runtime_error: creation failure.
           DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
                              uint32_t width, uint32_t height);
-          /// @brief Destroy depth/stencil buffer
-          /// @warning If still drawing, the depth/stencil buffer should be unbound before destroying it ('Renderer.setActiveRenderTargets' with NULL or other buffer).
           ~DepthStencilBuffer() noexcept { release(); }
           /// @brief Destroy depth/stencil buffer
-          /// @warning If still drawing, the depth/stencil buffer should be unbound before destroying it ('Renderer.setActiveRenderTargets' with NULL or other buffer).
           void release() noexcept;
           
           DepthStencilBuffer() = default; ///< Empty depth/stencil buffer -- not usable (only useful to store variable not immediately initialized)
@@ -45,7 +42,7 @@ License :     MIT
         
           // -- accessors --
           
-          /// @brief Get native Direct3D 11.0 compatible depth/stencil buffer handle (cast to ID3D11Texture2D*)
+          /// @brief Get native Direct3D 11 compatible depth/stencil buffer handle (cast to ID3D11Texture2D*)
           inline Handle handle() const noexcept { return this->_depthStencilBuffer; }
           inline bool isEmpty() const noexcept { return (this->_depthStencilBuffer == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           

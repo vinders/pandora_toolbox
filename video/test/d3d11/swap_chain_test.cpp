@@ -3,6 +3,7 @@
 # include <video/window.h>
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/swap_chain.h>
+# include <video/d3d11/depth_stencil_buffer.h>
 
   using namespace pandora::video::d3d11;
 

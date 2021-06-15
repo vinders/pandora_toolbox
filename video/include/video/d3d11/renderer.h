@@ -19,8 +19,7 @@ License :     MIT
     namespace video {
       namespace d3d11 {
         class SwapChain;
-        class DepthStencilBuffer;
-        
+
         /// @class Renderer
         /// @brief Direct3D rendering device and context (specific to adapter)
         /// @warning - Renderer is the main Direct3D resource, and should be kept alive while the program runs.
@@ -39,6 +38,7 @@ License :     MIT
           using Texture2dHandle = void*; // ID3D11Texture2D*
           using RenderTargetViewHandle = void*;// ID3D11RenderTargetView*
           using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
+          using ConstantBufferHandle = void*; // ID3D11Buffer*
           using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
           using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
           using DepthStencilState = pandora::video::d3d11::DepthStencilState;
@@ -186,8 +186,8 @@ License :     MIT
                                                DepthComparison compare, float lodMin = 0.0, float lodMax = 0.0, float lodBias = 0.0, 
                                                const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           
-          uint32_t maxAnisotropy() const noexcept; ///< Max anisotropy value (usually 16)
-          size_t maxFilterStates() const noexcept; ///< Max array size for sample filters
+          static uint32_t maxAnisotropy() noexcept; ///< Max anisotropy value (usually 16)
+          static size_t maxFilterStates() noexcept; ///< Max array size for sample filters
           
           
           // -- pipeline status operations --
@@ -213,11 +213,43 @@ License :     MIT
           /// @brief Bind compute shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to remove compute shader.
           void bindComputeShader(Shader::Handle shader) noexcept;
-          
           /// @brief Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
           void bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept;
           /// @brief Bind input layout, vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
           void bindInputVertexFragmentShaders(ShaderInputLayout::Handle inputLayout, Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept;
+          
+          // ---
+          
+          static size_t maxConstantBuffers() noexcept; ///< Max array size for constant buffers
+          
+          /// @brief Bind constant buffer(s) to the vertex shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindVertexConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the tessellation-control/hull shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindTesselControlConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the tessellation-evaluation/domain shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindTesselEvalConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the geometry shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindGeometryConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the fragment shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the compute shader stage
+          /// @remarks To remove some filters, use NULL value at their index
+          void bindComputeConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          /// @brief Bind constant buffer(s) to the vertex and fragment shader stages (grouped call, to reduce overhead)
+          void bindVertexFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          
+          void clearVertexConstantBuffers() noexcept; ///< Reset all constant buffers in vertex shader stage
+          void clearTesselControlConstantBuffers() noexcept; ///< Reset all constant buffers in tessellation-control/hull shader stage
+          void clearTesselEvalConstantBuffers() noexcept; ///< Reset all constant buffers in tessellation-evaluation/domain shader stage
+          void clearGeometryConstantBuffers() noexcept; ///< Reset all constant buffers in geometry shader stage
+          void clearFragmentConstantBuffers() noexcept; ///< Reset all constant buffers in fragment/pixel shader stage (standard)
+          void clearComputeConstantBuffers() noexcept; ///< Reset all constant buffers in compute shader stage
+          void clearVertexFragmentConstantBuffers() noexcept; ///< Reset all constant buffers in vertex/fragment shader stages (grouped call, to reduce overhead)
           
           // ---
           
@@ -249,18 +281,12 @@ License :     MIT
           /// @remarks To remove some filters, use NULL value at their index
           void setComputeFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
           
-          /// @brief Reset all sampler filters in vertex shader stage
-          void clearVertexFilterStates() noexcept;
-          /// @brief Reset all sampler filters in tessellation-control/hull shader stage
-          void clearTesselControlFilterStates() noexcept;
-          /// @brief Reset all sampler filters in tessellation-evaluation/domain shader stage
-          void clearTesselEvalFilterStates() noexcept;
-          /// @brief Reset all sampler filters in geometry shader stage
-          void clearGeometryFilterStates() noexcept;
-          /// @brief Reset all sampler filters in fragment/pixel shader stage (standard)
-          void clearFragmentFilterStates() noexcept;
-          /// @brief Reset all sampler filters in compute shader stage
-          void clearComputeFilterStates() noexcept;
+          void clearVertexFilterStates() noexcept; ///< Reset all sampler filters in vertex shader stage
+          void clearTesselControlFilterStates() noexcept; ///< Reset all sampler filters in tessellation-control/hull shader stage
+          void clearTesselEvalFilterStates() noexcept; ///< Reset all sampler filters in tessellation-evaluation/domain shader stage
+          void clearGeometryFilterStates() noexcept; ///< Reset all sampler filters in geometry shader stage
+          void clearFragmentFilterStates() noexcept; ///< Reset all sampler filters in fragment/pixel shader stage (standard)
+          void clearComputeFilterStates() noexcept; ///< Reset all sampler filters in compute shader stage
           
           
           // -- render target operations --
@@ -333,6 +359,5 @@ License :     MIT
     }
   }
 
-# include "./depth_stencil_buffer.h"
 # include "./swap_chain.h"
 #endif
