@@ -8,7 +8,6 @@ License :     MIT
 # include <stdexcept>
 # include "video/d3d11/constant_buffer.h"
 # include "video/d3d11/depth_stencil_buffer.h"
-# include "video/d3d11/vertex_buffer.h"
 
 # define NOMINMAX
 # define NODRAWTEXT
