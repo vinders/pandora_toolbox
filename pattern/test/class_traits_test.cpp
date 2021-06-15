@@ -25,7 +25,7 @@ public:
   template <typename T = _DataType>
   TraitsTester(enable_if_copy_constructible<T, const T& > value) : _value(value) {}
   template <typename T = _DataType>
-  TraitsTester(enable_if_move_constructible<T, T&& > value) : _value(std::move(value)) {}
+  TraitsTester(enable_if_move_constructible<T, T&& > value) noexcept : _value(std::move(value)) {}
   ~TraitsTester() = default;
 
   const _DataType& value() const noexcept { return _value; }
@@ -35,12 +35,12 @@ public:
   template <typename T = _DataType>
   TraitsTester(enable_if_copy_constructible<T, const TraitsTester<T>& > rhs) : _value(rhs._value) {}
   template <typename T = _DataType>
-  TraitsTester(enable_if_move_constructible<T, TraitsTester<T>&& > rhs) : _value(std::move(rhs._value)) {}
+  TraitsTester(enable_if_move_constructible<T, TraitsTester<T>&& > rhs) noexcept : _value(std::move(rhs._value)) {}
 
   template <typename T = _DataType>
   enable_if_copy_constructible<T, TraitsTester<_DataType>& > operator=(const TraitsTester<T>& rhs) { _value = rhs._value; return *this; }
   template <typename T = _DataType>
-  enable_if_move_constructible<T, TraitsTester<_DataType>& > operator=(TraitsTester<T>&& rhs) { _value = std::move(rhs._value); return *this; }
+  enable_if_move_constructible<T, TraitsTester<_DataType>& > operator=(TraitsTester<T>&& rhs) noexcept { _value = std::move(rhs._value); return *this; }
 
   // - comparisons -
 
@@ -69,8 +69,8 @@ private:
           name(const T& value) : _value(value) {} \
           name(const name &) = copyable ; \
           name & operator=(const name &) = copyable ; \
-          name(name &&) = movable ; \
-          name & operator=(name &&) = movable ; \
+          name(name &&) noexcept = movable ; \
+          name & operator=(name &&) noexcept = movable ; \
           bool operator==(const name& rhs) const noexcept { return _value == rhs._value; } \
           bool operator!=(const name& rhs) const noexcept { return _value != rhs._value; } \
           bool operator<(const name& rhs) const noexcept { return _value < rhs._value; } \
@@ -148,7 +148,7 @@ TEST_F(ClassTraitsTest, moveOnlyTraits) {
   TraitsTester<Movable<int> > data(Movable<int>(42));
   EXPECT_EQ(data.value(), 42);
 
-  TraitsTester<Movable<int> > moved(std::move(data));
+  TraitsTester<Movable<int> > moved(TraitsTester<Movable<int> >(Movable<int>(42)));
   EXPECT_EQ(moved.value(), 42);
 
   data = TraitsTester<Movable<int> >(Movable<int>(4));

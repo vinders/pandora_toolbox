@@ -153,28 +153,28 @@ namespace pandora {
       ConstructorEnabler(const ConstructorEnabler& rhs) = delete;
       ConstructorEnabler(ConstructorEnabler&& rhs) = delete;
       ConstructorEnabler& operator=(const ConstructorEnabler& rhs) = default;
-      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) noexcept = default;
     };
     template <> struct ConstructorEnabler<true, false> { 
       ConstructorEnabler() = default;
       ConstructorEnabler(const ConstructorEnabler& rhs) = default;
       ConstructorEnabler(ConstructorEnabler&& rhs) = delete;
       ConstructorEnabler& operator=(const ConstructorEnabler& rhs) = default;
-      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) noexcept = default;
     };
     template <> struct ConstructorEnabler<false, true> {
       ConstructorEnabler() = default;
       ConstructorEnabler(const ConstructorEnabler& rhs) = delete;
-      ConstructorEnabler(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler(ConstructorEnabler&& rhs) noexcept = default;
       ConstructorEnabler& operator=(const ConstructorEnabler& rhs) = default;
-      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) noexcept = default;
     };
     template <> struct ConstructorEnabler<true, true> {
       ConstructorEnabler() = default;
       ConstructorEnabler(const ConstructorEnabler& rhs) = default;
-      ConstructorEnabler(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler(ConstructorEnabler&& rhs) noexcept = default;
       ConstructorEnabler& operator=(const ConstructorEnabler& rhs) = default;
-      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) = default;
+      ConstructorEnabler& operator=(ConstructorEnabler&& rhs) noexcept = default;
     };
 
     template <typename T>
@@ -185,30 +185,30 @@ namespace pandora {
     template <> struct AssignmentEnabler<false, false> {
       AssignmentEnabler() = default;
       AssignmentEnabler(const AssignmentEnabler& rhs) = default;
-      AssignmentEnabler(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler(AssignmentEnabler&& rhs) noexcept = default;
       AssignmentEnabler& operator=(const AssignmentEnabler& rhs) = delete;
       AssignmentEnabler& operator=(AssignmentEnabler&& rhs) = delete;
     };
     template <> struct AssignmentEnabler<true, false> {
       AssignmentEnabler() = default;
       AssignmentEnabler(const AssignmentEnabler& rhs) = default;
-      AssignmentEnabler(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler(AssignmentEnabler&& rhs) noexcept = default;
       AssignmentEnabler& operator=(const AssignmentEnabler& rhs) = default;
       AssignmentEnabler& operator=(AssignmentEnabler&& rhs) = delete;
     };
     template <> struct AssignmentEnabler<false, true> {
       AssignmentEnabler() = default;
       AssignmentEnabler(const AssignmentEnabler& rhs) = default;
-      AssignmentEnabler(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler(AssignmentEnabler&& rhs) noexcept = default;
       AssignmentEnabler& operator=(const AssignmentEnabler& rhs) = delete;
-      AssignmentEnabler& operator=(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler& operator=(AssignmentEnabler&& rhs) noexcept = default;
     };
     template <> struct AssignmentEnabler<true, true> {
       AssignmentEnabler() = default;
       AssignmentEnabler(const AssignmentEnabler& rhs) = default;
-      AssignmentEnabler(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler(AssignmentEnabler&& rhs) noexcept = default;
       AssignmentEnabler& operator=(const AssignmentEnabler& rhs) = default;
-      AssignmentEnabler& operator=(AssignmentEnabler&& rhs) = default;
+      AssignmentEnabler& operator=(AssignmentEnabler&& rhs) noexcept = default;
     };
 
     template <typename T>
