@@ -18,8 +18,8 @@ environment:
   # VCVARSARG: amd64
     
   # Clang10-LLVM x86_64 / C++17
-  - TOOLCHAIN: "Visual Studio 2019 Clang/LLVM 10.0.0"
-    PACKAGE_ID: clang10_x86_64
+  - TOOLCHAIN: "Visual Studio 2019 Clang/LLVM 11.0.0"
+    PACKAGE_ID: clang11_x86_64
     APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     APPVEYOR_JOB_NAME: clangcl-ninja-64
     BUILD_TYPE: Debug
@@ -30,7 +30,7 @@ environment:
     PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
     LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
     PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
-    CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe
+    CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/LLVM-11.0.0-win64.exe
   
   # Mingw-w64 x86_64 / C++17
   - TOOLCHAIN: "MinGW-w64 GCC"
