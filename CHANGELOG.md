@@ -1,6 +1,30 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.92.1.612
+2021-06-16 - 587b6e64efd4b21acb377087e2193a59fa487abf
+### features
+vinders (12):
+* video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
+* video: component format (color/depth/stencil): portable bindings for D3D/OpenGL/Vulkan
+* video: Direct3D11 rendering device/context
+* video: Direct3D11 swap-chain creation (framebuffers)
+* video: Direct3D11 swap-chain/framebuffer: management/resizing + buffer swapping
+* video: Direct3D11 rendering device/context: render-target activation + rasterizer state creation/settings
+* video: Direct3D11 rendering device/context: filter/sampler builder (linear/anisotropic/compared)
+* video: Direct3D11 shader builder/compiler/binding + input layouts
+* video: rendering viewport (region for 3D projection + near/far clipping)
+* video: Direct3D11 depth/stencil buffer and view + depth/stencil states
+* video: Direct3D11 constant data buffer (for shaders)
+* system: portable data alignment macro: __align_type(size,def)
+### fixes
+vinders (3):
+* video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
+* video: Direct3D11: remove outdated multisampling mode
+* pattern: advanced type traits: fix move detection for new MSVC compiler
+
+---
+
 ## 0.80.2.502
 2021-05-27 - 316f77782f0e0bb156ec8e332bceb276450cd5ec
 ### features
@@ -22,7 +46,7 @@ vinders (18):
 * io: INI config format serializer/deserializer
 * io: JSON format serializer/deserializer
 * io: encoder/decoder/converter/detection (UTF-8/UTF-16BE/UTF-16LE)
-* io: INI/JSON deserializers: support unicode characters (\\x<hex*1-4>, \\u<hex*4>, \\U<hex*8>)
+* io: INI/JSON deserializers: support unicode characters (\x<hex*1-4>, \u<hex*4>, \U<hex*8>)
 ### fixes
 vinders (5):
 * video: window manager + builder for Windows: refactor + fix fullscreen issues
