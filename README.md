@@ -5,7 +5,7 @@
 ![lang - C++17](_img/badges/lang_cpp17.svg)
 ![tests - Gtest](_img/badges/tests_gtest.svg)
 ![docs - Doxygen](_img/badges/docs_doxygen.svg)<br>
-![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-5a3.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-ongoing-85b.svg) ![OpenGLES3](https://img.shields.io/badge/OpenGLES_3-ongoing-85b.svg)
+![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-6c4.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-ongoing-28b.svg) ![OpenGLES3](https://img.shields.io/badge/OpenGLES_3-ongoing-28b.svg)
 
 **Pandora Toolbox** is a collection of portable C++ libraries useful to create **video/real-time projects**: video processing, video games, emulators, simple AI, screensavers...
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
@@ -16,7 +16,7 @@ The code is meant to be highly efficient and easy to use, while remaining lightw
 * CPU spec reader, CPU affinity, monitor/device handlers...
 * Common patterns, search/sort algorithms, math/string utils...
 * Real-time vector/string/circular-queue, octree/quadtree, endianness...
-* File IO, UTF-8/UTF-16 encoders, logger, location finder...
+* File utils, UTF-8/UTF-16 encoders, ini/json, logger, location finder...
 * See [detailed list of features and compatibility](./FEATURES.md).
 
 > [Cmake options](#cmake-options) - | - [Project examples](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
@@ -27,14 +27,14 @@ The code is meant to be highly efficient and easy to use, while remaining lightw
 ![C++17](_img/badges/build_cpp17.svg)
 ![C++14](_img/badges/build_cpp14.svg)
 
-|           system            | support |  compilers  |  status  |
-|-----------------------------|---------|-------------|----------|
-| Windows <sub>(x86/x86_64)</sub>     | ![supported](https://img.shields.io/badge/-supported-5a3.svg)    | ![vs2017-7](https://img.shields.io/badge/visual_studio-2017.7+-75b.svg)<br>![clangcl](https://img.shields.io/badge/clang--cl-9.1.0+-75b.svg)<br>![mingw7](https://img.shields.io/badge/mingw64-8.1.0-75b.svg)<br>![vs2017](https://img.shields.io/badge/visual_studio-2017-a99dc2.svg) | ![master](_img/badges/branch_master.svg) [![appveyor](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/master?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/master)<br>![develop](_img/badges/branch_develop.svg) [![appveyor-dev](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/develop?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/develop) |
-| Linux/BSD (X11) <sub>(x86_64)</sub> | ![ongoing](https://img.shields.io/badge/-ongoing-85b.svg)           | ![gcc7](https://img.shields.io/badge/gcc-7.1+-75b.svg)<br>![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg)<br>![gcc5](https://img.shields.io/badge/gcc-5.1-a99dc2.svg) | ![ci-replaced](https://img.shields.io/badge/CI_replacement-ongoing-85b.svg) |
-| Mac OS <sub>(x86_64/arm64)</sub>    | ![ongoing](https://img.shields.io/badge/-ongoing-85b.svg)           | ![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci-replaced](https://img.shields.io/badge/CI_replacement-ongoing-85b.svg) |
-| iOS <sub>(arm64)</sub>              | ![experimental](https://img.shields.io/badge/-experimental-37b.svg) | ![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci-replaced](https://img.shields.io/badge/CI_replacement-ongoing-85b.svg) |
-| Android <sub>(arm64)</sub>          | ![experimental](https://img.shields.io/badge/-experimental-37b.svg) | ![android](https://img.shields.io/badge/android-ndk_r22-75b.svg)<br>![android](https://img.shields.io/badge/android-ndk_r16-a99dc2.svg) | ![ci-replaced](https://img.shields.io/badge/CI_replacement-ongoing-85b.svg) |
-| Linux (Wayland) <sub>(x86_64)</sub> | ![experimental](https://img.shields.io/badge/-experimental-37b.svg) | ![gcc7](https://img.shields.io/badge/gcc-7.1+-75b.svg)<br>![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci-replaced](https://img.shields.io/badge/CI_replacement-ongoing-85b.svg) |
+|  |           system            |  compilers  |  status  |
+|--|-----------------------------|-------------|----------|
+| ![win](_img/badges/system_win.png) | Windows          | ![vs2017-7](https://img.shields.io/badge/visual_studio-2017.7+-75b.svg)<br>![clangcl](https://img.shields.io/badge/clang--cl-9.1.0+-75b.svg)<br>![mingw7](https://img.shields.io/badge/mingw64-8.1.0-75b.svg)<br>![vs2017](https://img.shields.io/badge/visual_studio-2017-a99dc2.svg) | ![master](_img/badges/branch_master.svg) [![appveyor](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/master?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/master)<br>![develop](_img/badges/branch_develop.svg) [![appveyor-dev](https://ci.appveyor.com/api/projects/status/38j8o8sc55iosqu6/branch/develop?svg=true)](https://ci.appveyor.com/project/vinders/pandora-toolbox/branch/develop) |
+| ![x11](_img/badges/system_x11.png) | Linux/BSD (X11) <br>![ongoing](https://img.shields.io/badge/-ongoing-28b.svg)    | ![gcc7](https://img.shields.io/badge/gcc-7.1+-75b.svg)<br>![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg)<br>![gcc5](https://img.shields.io/badge/gcc-5.1-a99dc2.svg) | ![master](_img/badges/branch_master.svg) [![travis](https://travis-ci.com/vinders/pandora_toolbox.svg?branch=master)](https://travis-ci.com/github/vinders/pandora_toolbox/branches)<br>![develop](_img/badges/branch_develop.svg) [![travis](https://travis-ci.com/vinders/pandora_toolbox.svg?branch=develop)](https://travis-ci.com/github/vinders/pandora_toolbox/branches) |
+| ![mac](_img/badges/system_mac.png) | Mac OS          <br>![ongoing](https://img.shields.io/badge/-ongoing-28b.svg)    | ![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci](https://img.shields.io/badge/build-see_above-999.svg) |
+| ![ios](_img/badges/system_ios.png) | iOS             <br>![experimental](https://img.shields.io/badge/-experimental-28b.svg) | ![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci](https://img.shields.io/badge/build-see_above-999.svg) |
+| ![and](_img/badges/system_and.png) | Android         <br>![experimental](https://img.shields.io/badge/-experimental-28b.svg) | ![android](https://img.shields.io/badge/android-ndk_r20+-75b.svg)<br>![android](https://img.shields.io/badge/android-ndk_r16-a99dc2.svg) | ![ci](https://img.shields.io/badge/build-see_above-999.svg) |
+| ![wln](_img/badges/system_wln.png) | Linux (Wayland) <br>![experimental](https://img.shields.io/badge/-experimental-28b.svg) | ![gcc7](https://img.shields.io/badge/gcc-7.1+-75b.svg)<br>![clang7](https://img.shields.io/badge/clang-7.0.0+-75b.svg) | ![ci](https://img.shields.io/badge/build-see_above-999.svg) |
 
 ---
 
