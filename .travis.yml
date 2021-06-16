@@ -39,7 +39,7 @@ jobs:
         - ENABLE_VULKAN=OFF
         - ENABLE_XVFB=ON
         - GENERATOR="Unix Makefiles"
-        - CMAKE_ARGS="-DCWORK_TESTS=ON"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_CI_DISABLE_SLOW_TESTS=ON"
       addons:
         apt:
           sources:
@@ -85,7 +85,7 @@ jobs:
         - ENABLE_VULKAN=ON
         - ENABLE_XVFB=ON
         - GENERATOR="Unix Makefiles"
-        - CMAKE_ARGS="-DCWORK_TESTS=ON"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_CI_DISABLE_SLOW_TESTS=ON"
       addons:
         apt:
           sources:
@@ -168,7 +168,7 @@ jobs:
         - ENABLE_VULKAN=OFF
         - ENABLE_XVFB=ON
         - GENERATOR="Unix Makefiles"
-        - CMAKE_ARGS="-DCWORK_CPP_REVISION=14 -DCWORK_TOOLS=OFF -DCWORK_TESTS=ON"
+        - CMAKE_ARGS="-DCWORK_CPP_REVISION=14 -DCWORK_TOOLS=OFF -DCWORK_TESTS=ON -DCWORK_CI_DISABLE_SLOW_TESTS=ON"
       addons:
         apt:
           sources:
@@ -209,7 +209,7 @@ jobs:
         - ENABLE_VULKAN=OFF
         - GENERATOR="Unix Makefiles"
         - IGNORE_TESTS=ON
-        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_LINUX_WAYLAND=ON -DCWORK_CI_DISABLE_SLOW_TESTS=ON"
       addons:
         apt:
           sources:
@@ -244,7 +244,7 @@ jobs:
         - BUILD_TYPE=Release
         - ENABLE_VULKAN=ON
         - GENERATOR="Unix Makefiles"
-        - CMAKE_ARGS="-DCWORK_TESTS=ON"
+        - CMAKE_ARGS="-DCWORK_TESTS=ON -DCWORK_CI_DISABLE_SLOW_TESTS=ON"
       addons:
         apt:
           sources:

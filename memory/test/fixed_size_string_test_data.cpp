@@ -28,6 +28,8 @@ protected:
 #endif
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- contruction/assignment/accessors --
 
 template <typename _CharType>
@@ -1118,6 +1120,8 @@ TEST_F(FixedSizeStringTestData, compareSubset) {
   _strCompareSubset<char16_t>(u"azerty", u"azer456789abcdefghij", u"azerty6789abcdefghij");
   _strCompareSubset<char32_t>(U"azerty", U"azer456789abcdefghij", U"azerty6789abcdefghij");
 }
+
+#endif
 
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic pop

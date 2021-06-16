@@ -14,6 +14,8 @@ protected:
 };
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- iteration --
 
 template <typename _DataType, size_t _Size>
@@ -705,3 +707,5 @@ TEST_F(FixedSizeVectorTestData2, reverseIterateMultiple) {
   _reverseIterateMultipleInFixedVector<CopyMoveObject, 2>();
   _reverseIterateMultipleInFixedVector<CopyMoveObject, 20>();
 }
+
+#endif

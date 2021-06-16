@@ -15,6 +15,8 @@ protected:
 };
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- erase operations --
 
 template <typename _DataType, size_t _Size>
@@ -474,3 +476,5 @@ TEST_F(FixedSizeVectorTestOp2, eraseIteration) {
   EXPECT_TRUE(it == data.end());
   EXPECT_EQ(size_t{ 0u }, data.size());
 }
+
+#endif

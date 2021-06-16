@@ -15,6 +15,8 @@ protected:
 };
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- assign / swap --
 
 template <typename _DataType, size_t _Size>
@@ -1331,3 +1333,5 @@ TEST_F(FixedSizeVectorTestOp, insertInitializerListAt) {
 # endif
   _insertInitListFixedVector<CopyMoveObject, 20>();
 }
+
+#endif

@@ -14,6 +14,8 @@ protected:
 };
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- accessors/compare --
 
 template <typename _DataType, size_t _Size>
@@ -371,3 +373,5 @@ TEST_F(FixedSizeVectorTestData, moveFull) {
   _moveFullFixedVector<MoveObject, 20>();
   _moveFullFixedVector<CopyMoveObject, 20>();
 }
+
+#endif

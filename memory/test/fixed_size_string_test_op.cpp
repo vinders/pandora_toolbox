@@ -23,6 +23,8 @@ protected:
 };
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- operations - double padding --
 
 template <typename _CharType>
@@ -1699,6 +1701,8 @@ TEST_F(FixedSizeStringTestOp, leftPad) {
   _strLeftPad<char16_t>(u' ', u"azerty01");
   _strLeftPad<char32_t>(U' ', U"azerty01");
 }
+
+#endif
 
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic pop

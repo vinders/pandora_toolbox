@@ -28,6 +28,8 @@ protected:
 #endif
 
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
+
 // -- change size --
 
 template <typename _CharType>
@@ -1016,6 +1018,8 @@ TEST_F(FixedSizeStringTestData2, rfindNotList) {
   EXPECT_EQ(wnotFound, wdata.find_last_not_of(L'a', size_t{ 2u }));
   EXPECT_EQ(wnotFound, wdata.find_last_not_of(L'a', size_t{ 5u }));
 }
+
+#endif
 
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic pop

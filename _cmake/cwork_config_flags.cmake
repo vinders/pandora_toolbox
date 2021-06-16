@@ -136,6 +136,10 @@ else()
     endif()
 endif()
 
+if(DEFINED CWORK_CI_DISABLE_SLOW_TESTS AND CWORK_CI_DISABLE_SLOW_TESTS)
+    add_definitions(-D_P_CI_DISABLE_SLOW_TESTS=1)
+endif()
+
 if(CWORK_VIDEO_OPENGL4)
     add_definitions(-D_VIDEO_OPENGL4_SUPPORT=1)
     if(APPLE)
