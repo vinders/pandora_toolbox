@@ -1,3 +1,4 @@
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 #include <gtest/gtest.h>
 #include <string>
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
@@ -22,8 +23,6 @@ protected:
   void TearDown() override {}
 };
 
-
-#ifndef _P_CI_DISABLE_SLOW_TESTS
 
 // -- operations - double padding --
 
@@ -1702,20 +1701,7 @@ TEST_F(FixedSizeStringTestOp, leftPad) {
   _strLeftPad<char32_t>(U' ', U"azerty01");
 }
 
-#else
-
-TEST_F(FixedSizeStringTestOp, baseOpTest) {
-  FixedSizeString<_STR_MAX_LENGTH, char> fxStr("abc");
-  fxStr.append("def");
-  EXPECT_EQ(0, fxStr.compare("abcdef"));
-  fxStr.insert(size_t{ 0 }, "0");
-  EXPECT_EQ(0, fxStr.compare("0abcdef"));
-  fxStr.pad(size_t{ 10u }, ' ');
-  EXPECT_EQ(0, fxStr.compare(" 0abcdef  "));
-}
-
-#endif
-
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
 # pragma GCC diagnostic pop
+#endif
 #endif

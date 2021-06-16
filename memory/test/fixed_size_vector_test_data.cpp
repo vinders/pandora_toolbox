@@ -377,19 +377,50 @@ TEST_F(FixedSizeVectorTestData, moveFull) {
 #else
   
 TEST_F(FixedSizeVectorTestData, baseDataTest) {
-  FixedSizeVector<int, size_t{ 5u } > data;
-  data.emplace_back(0);
-  data.emplace_back(1);
+  FixedSizeVector<int, size_t{ 5u } > src;
+  src.emplace_back(0);
+  src.emplace_back(1);
   
-  FixedSizeVector<int, size_t{ 5u } > copied(data);
+  FixedSizeVector<int, size_t{ 5u } > copied(src);
   EXPECT_EQ(size_t{ 2u }, copied.size());
   EXPECT_EQ((int)0, copied[0]);
   EXPECT_EQ((int)1, copied[1]);
   
-  FixedSizeVector<int, size_t{ 5u } > moved(std::move(data));
+  FixedSizeVector<int, size_t{ 5u } > moved(std::move(src));
   EXPECT_EQ(size_t{ 2u }, moved.size());
   EXPECT_EQ((int)0, moved[0]);
   EXPECT_EQ((int)1, moved[1]);
+  
+  FixedSizeVector<int, size_t{ 5u } > data;
+  for (int i = 0; i < 5; ++i)
+    data.emplace_back(i);
+  
+  int val = 0;
+  for (auto& it : data) {
+    EXPECT_EQ(val, it);
+    ++val;
+  }
+  
+  FixedSizeVector<int, size_t{ 5u } > data2;
+  data2.emplace_back(1);
+  data2.push_back(2);
+  data2.insert(data2.begin(), 0);
+  EXPECT_EQ(size_t{ 3u }, data2.size());
+  EXPECT_EQ((int)0, data2[0]);
+  EXPECT_EQ((int)1, data2[1]);
+  EXPECT_EQ((int)2, data2[2]);
+  
+  FixedSizeVector<int, size_t{ 5u } > data3;
+  for (int i = 0; i < 5; ++i)
+    data3.emplace_back(i);
+  
+  data3.resize(size_t{ 4u }, 0);
+  EXPECT_EQ(size_t{ 4u }, data3.size());
+  
+  data3.erase(size_t{ 0 }, size_t{ 2u });
+  EXPECT_EQ(size_t{ 2u }, data3.size());
+  EXPECT_EQ((int)2, data3[0]);
+  EXPECT_EQ((int)3, data3[1]);
 }
 
 #endif

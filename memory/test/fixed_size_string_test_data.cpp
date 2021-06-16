@@ -1131,6 +1131,28 @@ TEST_F(FixedSizeStringTestData, baseDataTest) {
   EXPECT_EQ(0, fxStr.compare("test str"));
   fxStr += "a";
   EXPECT_EQ(0, fxStr.compare("test stra"));
+  
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr3("test str");
+  fxStr3.pop_back();
+  EXPECT_EQ(0, fxStr3.compare("test st"));
+  fxStr3.resize(size_t{ 10u }, ' ');
+  EXPECT_EQ(0, fxStr3.compare("test st   "));
+  fxStr3.resize(size_t{ 2u }, ' ');
+  EXPECT_EQ(0, fxStr3.compare("te"));
+  
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr4("abc");
+  fxStr4.append("def");
+  EXPECT_EQ(0, fxStr4.compare("abcdef"));
+  fxStr4.insert(size_t{ 0 }, "0");
+  EXPECT_EQ(0, fxStr4.compare("0abcdef"));
+  fxStr4.pad(size_t{ 10u }, ' ');
+  EXPECT_EQ(0, fxStr4.compare(" 0abcdef  "));
+  
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr5("abc");
+  fxStr5.replace(size_t{ 1u }, size_t{ 1u }, "def");
+  EXPECT_EQ(0, fxStr5.compare("adefc"));
+  fxStr5.erase(size_t{ 1u }, size_t{ 3u });
+  EXPECT_EQ(0, fxStr5.compare("ac"));
 }
 
 #endif

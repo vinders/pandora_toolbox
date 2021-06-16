@@ -1,3 +1,4 @@
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 #include <gtest/gtest.h>
 #include <memory/fixed_size_vector.h>
 #include "./_fake_classes_helper.h"
@@ -13,8 +14,6 @@ protected:
   void TearDown() override {}
 };
 
-
-#ifndef _P_CI_DISABLE_SLOW_TESTS
 
 // -- iteration --
 
@@ -706,20 +705,6 @@ TEST_F(FixedSizeVectorTestData2, reverseIterateMultiple) {
 
   _reverseIterateMultipleInFixedVector<CopyMoveObject, 2>();
   _reverseIterateMultipleInFixedVector<CopyMoveObject, 20>();
-}
-
-#else
-  
-TEST_F(FixedSizeVectorTestData2, baseData2Test) {
-  FixedSizeVector<int, size_t{ 5u } > data;
-  for (int i = 0; i < 5; ++i)
-    data.emplace_back(i);
-  
-  int val = 0;
-  for (auto& it : data) {
-    EXPECT_EQ(val, it);
-    ++val;
-  }
 }
 
 #endif

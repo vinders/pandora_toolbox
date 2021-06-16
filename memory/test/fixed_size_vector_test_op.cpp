@@ -1,3 +1,4 @@
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 #include <gtest/gtest.h>
 #include <vector>
 #include <memory/fixed_size_vector.h>
@@ -14,8 +15,6 @@ protected:
   void TearDown() override {}
 };
 
-
-#ifndef _P_CI_DISABLE_SLOW_TESTS
 
 // -- assign / swap --
 
@@ -1332,19 +1331,6 @@ TEST_F(FixedSizeVectorTestOp, insertInitializerListAt) {
     _insertInitListFixedVector<CopyObject, 20>();
 # endif
   _insertInitListFixedVector<CopyMoveObject, 20>();
-}
-
-#else
-
-TEST_F(FixedSizeVectorTestOp, baseOpTest) {
-  FixedSizeVector<int, size_t{ 5u } > data;
-  data.emplace_back(1);
-  data.push_back(2);
-  data.insert(data.begin(), 0);
-  EXPECT_EQ(size_t{ 3u }, data.size());
-  EXPECT_EQ((int)0, data[0]);
-  EXPECT_EQ((int)1, data[1]);
-  EXPECT_EQ((int)2, data[2]);
 }
 
 #endif
