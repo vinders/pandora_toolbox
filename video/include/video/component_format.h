@@ -5,19 +5,18 @@ License :     MIT
 #pragma once
 
 #include <cstdint>
+#include <system/align.h>
 
 namespace pandora {
   namespace video {
     /// @brief Component vector structure - 4 * 32-bit (position/color container)
-#   if defined(_WINDOWS) && !defined(__MINGW32__)
-    __declspec(align(16))
-#   endif
+    __align_type(16,
     struct ComponentVector128 {
       union {
         float f[4];
         int32_t i32[4];
       };
-    };
+    });
 
     /// @brief Color/depth/stencil component formats bindings for drawing buffers
     /// @remarks - For HDR rendering and color space, use RG(BA) components between 10 and 32 bits ('rgba16_f_hdr_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
