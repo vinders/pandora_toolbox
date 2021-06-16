@@ -477,4 +477,20 @@ TEST_F(FixedSizeVectorTestOp2, eraseIteration) {
   EXPECT_EQ(size_t{ 0u }, data.size());
 }
 
+#else
+  
+TEST_F(FixedSizeVectorTestOp2, baseOp2Test) {
+  FixedSizeVector<int, size_t{ 5u } > data;
+  for (int i = 0; i < 5; ++i)
+    data.emplace_back(i);
+  
+  data.resize(size_t{ 4u }, 0);
+  EXPECT_EQ(size_t{ 4u }, data.size());
+  
+  data.erase(size_t{ 0 }, size_t{ 2u });
+  EXPECT_EQ(size_t{ 2u }, data.size());
+  EXPECT_EQ((int)2, data[0]);
+  EXPECT_EQ((int)3, data[1]);
+}
+
 #endif

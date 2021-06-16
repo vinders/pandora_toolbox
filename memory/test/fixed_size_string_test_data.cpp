@@ -1121,6 +1121,18 @@ TEST_F(FixedSizeStringTestData, compareSubset) {
   _strCompareSubset<char32_t>(U"azerty", U"azer456789abcdefghij", U"azerty6789abcdefghij");
 }
 
+#else
+  
+TEST_F(FixedSizeStringTestData, baseDataTest) {
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr("test str");
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr2("test str");
+  EXPECT_TRUE(fxStr == fxStr2);
+  EXPECT_EQ(0, fxStr.compare(fxStr2));
+  EXPECT_EQ(0, fxStr.compare("test str"));
+  fxStr += "a";
+  EXPECT_EQ(0, fxStr.compare("test stra"));
+}
+
 #endif
 
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5

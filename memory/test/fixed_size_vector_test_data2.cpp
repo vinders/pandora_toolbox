@@ -708,4 +708,18 @@ TEST_F(FixedSizeVectorTestData2, reverseIterateMultiple) {
   _reverseIterateMultipleInFixedVector<CopyMoveObject, 20>();
 }
 
+#else
+  
+TEST_F(FixedSizeVectorTestData2, baseData2Test) {
+  FixedSizeVector<int, size_t{ 5u } > data;
+  for (int i = 0; i < 5; ++i)
+    data.emplace_back(i);
+  
+  int val = 0;
+  for (auto& it : data) {
+    EXPECT_EQ(val, it);
+    ++val;
+  }
+}
+
 #endif

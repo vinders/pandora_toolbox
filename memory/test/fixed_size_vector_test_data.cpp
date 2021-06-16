@@ -374,4 +374,22 @@ TEST_F(FixedSizeVectorTestData, moveFull) {
   _moveFullFixedVector<CopyMoveObject, 20>();
 }
 
+#else
+  
+TEST_F(FixedSizeVectorTestData, baseDataTest) {
+  FixedSizeVector<int, size_t{ 5u } > data;
+  data.emplace_back(0);
+  data.emplace_back(1);
+  
+  FixedSizeVector<int, size_t{ 5u } > copied(data);
+  EXPECT_EQ(size_t{ 2u }, copied.size());
+  EXPECT_EQ((int)0, copied[0]);
+  EXPECT_EQ((int)1, copied[1]);
+  
+  FixedSizeVector<int, size_t{ 5u } > moved(std::move(data));
+  EXPECT_EQ(size_t{ 2u }, moved.size());
+  EXPECT_EQ((int)0, moved[0]);
+  EXPECT_EQ((int)1, moved[1]);
+}
+
 #endif

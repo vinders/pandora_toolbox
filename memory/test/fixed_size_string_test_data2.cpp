@@ -1019,6 +1019,18 @@ TEST_F(FixedSizeStringTestData2, rfindNotList) {
   EXPECT_EQ(wnotFound, wdata.find_last_not_of(L'a', size_t{ 5u }));
 }
 
+#else
+  
+TEST_F(FixedSizeStringTestData2, baseData2Test) {
+  FixedSizeString<_STR_MAX_LENGTH, char> fxStr("test str");
+  fxStr.pop_back();
+  EXPECT_EQ(0, fxStr.compare("test st"));
+  fxStr.resize(size_t{ 10u }, ' ');
+  EXPECT_EQ(0, fxStr.compare("test st   "));
+  fxStr.resize(size_t{ 2u }, ' ');
+  EXPECT_EQ(0, fxStr.compare("te"));
+}
+
 #endif
 
 #if !defined(_MSC_VER) && !defined(__clang__) && defined(__GNUG__) && __GNUC__ > 5
