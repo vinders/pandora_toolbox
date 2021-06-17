@@ -1,6 +1,6 @@
 release: #4da36a
 project: #49788c
 cmake:   #888
-C++17 build: #75b
-C++14 build: #a99dc2
+C++17 build: #57a
+C++14 build: #99a
 branch:      #49788c

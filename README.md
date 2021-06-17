@@ -24,8 +24,8 @@ The code is meant to be highly efficient and easy to use, while remaining lightw
 ## Build status
 ![cmake 3.14](_img/badges/build_cmake_3_14.svg)
 [![codecov coverage](https://codecov.io/gh/vinders/pandora_toolbox/branch/develop/graph/badge.svg?token=5NQ4BF7QRI)](https://codecov.io/gh/vinders/pandora_toolbox)
-![C++17](https://img.shields.io/badge/c++-17-57a.svg)
-![C++14](https://img.shields.io/badge/c++-14-99a.svg)
+![C++17](_img/badges/build_cpp17.svg)
+![C++14](_img/badges/build_cpp14.svg)
 
 |  |           system            |  compilers  |  status  |
 |--|-----------------------------|-------------|----------|
