@@ -6,7 +6,8 @@ License :     MIT
 # include <cstddef>
 # include <cstring>
 # include <stdexcept>
-# include "video/d3d11/constant_buffer.h"
+# include "video/d3d11/static_buffer.h"
+# include "video/d3d11/dynamic_buffer.h"
 # include "video/d3d11/depth_stencil_buffer.h"
 
 # define NOMINMAX
@@ -23,80 +24,206 @@ License :     MIT
   using namespace pandora::video;
 
 
-// -- constant buffer creation -- ----------------------------------------------
+// -- helpers -- ---------------------------------------------------------------
 
-  // Create constant buffer
-  ConstantBuffer::ConstantBuffer(Renderer& renderer, size_t bufferSize) { // throws
-    if (bufferSize == 0)
-      throw std::invalid_argument("ConstantBuffer: buffer size can't be 0");
-  
-    D3D11_BUFFER_DESC constDescriptor = {};
-    ZeroMemory(&constDescriptor, sizeof(constDescriptor));
-    constDescriptor.ByteWidth = (UINT)bufferSize;
-    constDescriptor.Usage = D3D11_USAGE_DEFAULT;
-    constDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    
-    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&constDescriptor, nullptr, (ID3D11Buffer**)&(this->_constantBuffer));
-    if (FAILED(result) || this->_constantBuffer == nullptr)
-      throwError(result, "ConstantBuffer: could not create constant buffer");
+static D3D11_BIND_FLAG __toBindFlag(pandora::video::DataBufferType type) {
+  switch (type) {
+    case pandora::video::DataBufferType::constant: return D3D11_BIND_CONSTANT_BUFFER;
+    case pandora::video::DataBufferType::vertexArray: return D3D11_BIND_VERTEX_BUFFER;
+    case pandora::video::DataBufferType::vertexIndex: return D3D11_BIND_INDEX_BUFFER;
+    default: return D3D11_BIND_SHADER_RESOURCE;
   }
-  
-  // Create constant buffer with initial data
-  ConstantBuffer::ConstantBuffer(Renderer& renderer, size_t bufferSize, const void* initData, bool isImmutable) { // throws
-    if (bufferSize == 0)
-      throw std::invalid_argument("ConstantBuffer: buffer size can't be 0");
+}
 
-    D3D11_BUFFER_DESC constDescriptor = {};
-    ZeroMemory(&constDescriptor, sizeof(constDescriptor));
-    constDescriptor.ByteWidth = (UINT)bufferSize;
-    constDescriptor.Usage = D3D11_USAGE_DEFAULT;
-    constDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+
+// -- static buffer -- ---------------------------------------------------------
+
+  // Create data buffer (to store data for shader stages)
+  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize) 
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+    
+    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&bufferDescriptor, nullptr, (ID3D11Buffer**)&(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "StaticBuffer: could not create static buffer");
+  }
+
+  // Create data buffer (to store data for shader stages) with initial value
+  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
+                             size_t bufferByteSize, const void* initData, bool isImmutable)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    
     if (isImmutable) {
       if (initData == nullptr)
-        throw std::invalid_argument("ConstantBuffer: initData can't be NULL with immutable buffers");
-      constDescriptor.Usage = D3D11_USAGE_IMMUTABLE;
+        throw std::invalid_argument("StaticBuffer: initData can't be NULL with immutable buffers");
+      bufferDescriptor.Usage = D3D11_USAGE_IMMUTABLE;
     }
     else
-      constDescriptor.Usage = D3D11_USAGE_DEFAULT;
+      bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
     
-    D3D11_SUBRESOURCE_DATA initialData;
-    ZeroMemory(&initialData, sizeof(initialData));
-    initialData.pSysMem = initData;
-    
-    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&constDescriptor, initData ? &initialData : nullptr, (ID3D11Buffer**)&(this->_constantBuffer));
-    if (FAILED(result) || this->_constantBuffer == nullptr)
-      throwError(result, "ConstantBuffer: could not create constant buffer");
+    D3D11_SUBRESOURCE_DATA subResData;
+    ZeroMemory(&subResData, sizeof(subResData));
+    subResData.pSysMem = initData;
+    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, 
+                                                                   (ID3D11Buffer**)&(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "StaticBuffer: could not create static buffer");
   }
-  
+
   // ---
 
-  // Destroy constant buffer
-  void ConstantBuffer::release() noexcept {
-    if (this->_constantBuffer) {
+  // Destroy/release static buffer instance
+  void StaticBuffer::release() noexcept {
+    if (this->_buffer) {
       try {
-        ((ID3D11Buffer*)this->_constantBuffer)->Release();
-        this->_constantBuffer = nullptr;
+        ((ID3D11Buffer*)this->_buffer)->Release();
+        this->_buffer = nullptr;
       }
       catch (...) {}
     }
   }
-  
-  ConstantBuffer::ConstantBuffer(ConstantBuffer&& rhs) noexcept 
-    : _constantBuffer(rhs._constantBuffer) {
-    rhs._constantBuffer = nullptr;
+
+  StaticBuffer::StaticBuffer(StaticBuffer&& rhs) noexcept
+    : _buffer(rhs._buffer),
+      _bufferSize(rhs._bufferSize),
+      _type(rhs._type) {
+    rhs._buffer = nullptr;
   }
-  ConstantBuffer& ConstantBuffer::operator=(ConstantBuffer&& rhs) noexcept {
+  StaticBuffer& StaticBuffer::operator=(StaticBuffer&& rhs) noexcept {
     release();
-    this->_constantBuffer = rhs._constantBuffer;
-    rhs._constantBuffer = nullptr;
+    this->_buffer = rhs._buffer;
+    this->_bufferSize = rhs._bufferSize;
+    this->_type = rhs._type;
+    rhs._buffer = nullptr;
     return *this;
+  }
+
+  // ---
+
+  // Write buffer data (has no effect if buffer is immutable)
+  void StaticBuffer::write(Renderer& renderer, const void* sourceData) {
+    ((ID3D11DeviceContext*)renderer.context())->UpdateSubresource((ID3D11Buffer*)this->_buffer, 0, nullptr, sourceData, 0, 0);
+  }
+
+
+// -- dynamic buffer -- --------------------------------------------------------
+
+  // Create data buffer (to store data for shader stages)
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
+    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == Renderer::DeviceLevel::direct3D_11_0)
+      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    
+    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&bufferDescriptor, nullptr, (ID3D11Buffer**)&(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "DynamicBuffer: could not create dynamic buffer");
+  }
+
+  // Create data buffer (to store data for shader stages) with initial value
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
+                               size_t bufferByteSize, const void* initData)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
+    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == Renderer::DeviceLevel::direct3D_11_0)
+      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    
+    D3D11_SUBRESOURCE_DATA subResData;
+    ZeroMemory(&subResData, sizeof(subResData));
+    subResData.pSysMem = initData;
+    auto result = ((ID3D11Device*)renderer.device())->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, 
+                                                                   (ID3D11Buffer**)&(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "DynamicBuffer: could not create dynamic buffer");
   }
   
   // ---
 
-  // Write buffer data
-  void ConstantBuffer::write(Renderer& renderer, const void* sourceData) {
-    ((ID3D11DeviceContext*)renderer.context())->UpdateSubresource((ID3D11Buffer*)this->_constantBuffer, 0, nullptr, sourceData, 0, 0);
+  // Destroy/release static buffer instance
+  void DynamicBuffer::release() noexcept {
+    if (this->_buffer) {
+      try {
+        ((ID3D11Buffer*)this->_buffer)->Release();
+        this->_buffer = nullptr;
+      }
+      catch (...) {}
+    }
+  }
+
+  DynamicBuffer::DynamicBuffer(DynamicBuffer&& rhs) noexcept
+    : _buffer(rhs._buffer),
+      _bufferSize(rhs._bufferSize),
+      _type(rhs._type) {
+    rhs._buffer = nullptr;
+  }
+  DynamicBuffer& DynamicBuffer::operator=(DynamicBuffer&& rhs) noexcept {
+    release();
+    this->_buffer = rhs._buffer;
+    this->_bufferSize = rhs._bufferSize;
+    this->_type = rhs._type;
+    rhs._buffer = nullptr;
+    return *this;
+  }
+
+  // ---
+
+  // Write buffer data and discard previous data - recommended for first write of the buffer for a frame
+  bool DynamicBuffer::writeDiscard(Renderer& renderer, const void* sourceData) {
+    // lock GPU access
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    auto lockResult = ((ID3D11DeviceContext*)renderer.context())->Map((ID3D11Buffer*)this->_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (FAILED(lockResult) || mappedResource.pData == nullptr)
+      return false;
+
+    memcpy(mappedResource.pData, sourceData, this->_bufferSize);
+    ((ID3D11DeviceContext*)renderer.context())->Unmap((ID3D11Buffer*)this->_buffer, 0);
+    return true;
+  }
+  // Vertex/index buffers: write buffer data with no overwrite - recommended for subsequent writes of the buffer within same frame.
+  // Constant buffers: same as 'writeDiscard'.
+  bool DynamicBuffer::write(Renderer& renderer, const void* sourceData) {
+    // lock GPU access
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    auto writeMode = (this->_type != pandora::video::DataBufferType::constant) ? D3D11_MAP_WRITE_NO_OVERWRITE : D3D11_MAP_WRITE_DISCARD;
+    auto lockResult = ((ID3D11DeviceContext*)renderer.context())->Map((ID3D11Buffer*)this->_buffer, 0, writeMode, 0, &mappedResource);
+    if (FAILED(lockResult) || mappedResource.pData == nullptr)
+      return false;
+
+    memcpy(mappedResource.pData, sourceData, this->_bufferSize);
+    ((ID3D11DeviceContext*)renderer.context())->Unmap((ID3D11Buffer*)this->_buffer, 0);
+    return true;
   }
 
 

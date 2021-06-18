@@ -17,8 +17,14 @@ namespace pandora {
         int32_t i32[4];
       };
     });
+    
+    /// @brief Data formats for index buffer
+    enum class IndexBufferFormat : int32_t {
+      r32_ui = 0, ///< 32-bit unsigned integers
+      r16_ui = 1  ///< 16-bit unsigned integers
+    };
 
-    /// @brief Color/depth/stencil component formats bindings for drawing buffers
+    /// @brief Color/depth/stencil component formats for drawing buffers
     /// @remarks - For HDR rendering and color space, use RG(BA) components between 10 and 32 bits ('rgba16_f_hdr_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
     ///          - For SDR rendering and color space, use other component types ('rgba8_sRGB' or 'rgba8_unorm' recommended).
     ///          - For HDR rendering on SDR devices, shaders will need to convert color values (or they'll be clipped when displayed).

@@ -7,7 +7,7 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstdint>
-# include "../shader_type.h"
+# include "../shader_types.h"
 
   namespace pandora {
     namespace video {
