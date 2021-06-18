@@ -10,6 +10,7 @@ License :     MIT
 # include "./_private/_swap_chain_config.h"
 # include "../component_format.h"
 # include "../render_options.h"
+# include "../shader_types.h"
 # include "../viewport.h"
 # include "../window_handle.h"
 # include "./renderer_state.h"
@@ -33,12 +34,13 @@ License :     MIT
         ///          - Split-screen rendering (same window): alternate between different Viewport instances on the same SwapChain.
         class Renderer final {
         public:
-          using DeviceHandle = void*;    // ID3D11Device*
-          using DeviceContext = void*;   // ID3D11DeviceContext*
-          using Texture2dHandle = void*; // ID3D11Texture2D*
+          using DeviceHandle = void*;          // ID3D11Device*
+          using DeviceContext = void*;         // ID3D11DeviceContext*
+          using Texture2dHandle = void*;       // ID3D11Texture2D*
           using RenderTargetViewHandle = void*;// ID3D11RenderTargetView*
           using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
-          using ConstantBufferHandle = void*; // ID3D11Buffer*
+          using DataBufferHandle = void*;      // ID3D11Buffer*
+          using TopologyFlag = uint32_t;       // D3D11_PRIMITIVE_TOPOLOGY
           using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
           using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
           using DepthStencilState = pandora::video::d3d11::DepthStencilState;
@@ -104,6 +106,131 @@ License :     MIT
           inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Restricting to local displays supported (no screen sharing or printing)
           inline bool isLocalDisplayRestrictionAvailable() const noexcept { return (this->_dxgiLevel >= 3u); }
+          
+          
+          // -- render target operations --
+          
+          /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+          void setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept;
+          /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
+          void setViewport(const pandora::video::Viewport& viewport) noexcept;
+          
+          /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
+          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
+          void clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                                  const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          /// @brief Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
+          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
+          void clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                 const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          
+          /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
+          /// @warning Binding multiple targets simultaneously is only possible if:
+          ///          - their width/height is the same;
+          ///          - their number of frame-buffers is the same;
+          ///          - their component format is the same;
+          ///          - their MSAA options are the same.
+          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
+          ///          - It should be called before the first iteration of the program loop.
+          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
+          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
+          ///          - Multiple render-targets can be used simultaneously: pass an array as 'views' and its size as 'numberViews'.
+          ///          - Calling it with 0 views (or a NULL view) disables active render-targets.
+          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
+                                      DepthStencilViewHandle depthBuffer = nullptr) noexcept;
+          /// @brief Bind/replace active render-target in Renderer (single target)
+          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
+          ///          - It should be called before the first iteration of the program loop.
+          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
+          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
+          ///          - Calling it with a NULL view disables active render-targets.
+          inline void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer = nullptr) noexcept {
+            setActiveRenderTargets(&view, size_t{1u}, depthBuffer);
+          }
+          
+          /// @brief Bind/replace active render-target(s) in Renderer (multi-target) + clear render-targets/buffer
+          /// @remarks If the render-targets contain new buffers (or resized), this is the recommended method (to reset them before using them).
+          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                                      const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          /// @brief Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
+          /// @remarks If the render-target is a new buffer (or resized), this is the recommended method (to reset it before using it).
+          void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
+          
+          // -- primitive binding --
+          
+          /// @brief Create native topology flag - basic topologies
+          /// @param type          Topology type, to interpret vertex array buffer values.
+          /// @param useAdjacency  Enable generation of additional adjacent vertices (based on buffer vertices):
+          ///                      - those vertices are only visible in the vertex shader and geometry shader;
+          ///                      - if some culling is configured before geometry shader stage, adjacent vertices may disappear;
+          ///                      - can't be used with tessellation shaders;
+          ///                      - has no effect with 'points' topology.
+          static TopologyFlag createTopology(pandora::video::VertexTopology type, bool useAdjacency) noexcept;
+          /// @brief Create native topology flag - patch topologies
+          /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
+          static TopologyFlag createPatchTopology(uint32_t controlPoints) noexcept;
+          
+          /// @brief Bind active vertex array buffer to input stage slot
+          /// @param slotIndex     Input stage slot to set/replace with vertex array buffer
+          /// @param vertexBuffer  Handle of vertex array buffer (StaticBuffer.handle() / DynamicBuffer.handle() or ID3D11Buffer*) or NULL to clear slot
+          /// @param usedByteSize  Number of bytes to read in buffer (buffer.size()-offset, to read until the end)
+          /// @param byteOffset    Byte offset of first vertex info to use in buffer (0 to start from beginning)
+          void bindVertexArrayBuffer(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int usedByteSize, unsigned int byteOffset = 0u) noexcept;
+          /// @brief Bind multiple vertex array buffers to consecutive input stage slots (example: vertex buffer + instance buffer)
+          /// @param firstSlotIndex First input stage slot to set/replace with first vertex array buffer (next buffers will use next slots)
+          /// @param length         Size of arrays 'vertexBuffers', 'usedByteSizes' and 'offsets' (same size required)
+          /// @param vertexBuffers  Array of vertex array buffers (size defined by 'length')
+          /// @param usedByteSizes  Array of "bytes to read" for each buffer
+          /// @param byteOffsets    Array of "byte offset" for each buffer
+          void bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const DataBufferHandle* vertexArrayBuffers, unsigned int* usedByteSizes, unsigned int* byteOffsets) noexcept;
+          /// @brief Bind active vertex index buffer (indexes for vertex array buffer) to input stage
+          /// @param indexBuffer  Handle of vertex index buffer (StaticBuffer.handle() / DynamicBuffer.handle() or ID3D11Buffer*)
+          /// @param dataFormat   Index data type (unsigned int 32 / 64)
+          /// @param offset       Byte offset of first vertex index to use in buffer (0 to start from beginning)
+          void bindVertexIndexBuffer(DataBufferHandle indexBuffer, pandora::video::IndexBufferFormat dataFormat, uint32_t byteOffset = 0u) noexcept;
+          /// @brief Set active vertex topology of vertex buffers for input stage
+          /// @param topology  Native topology value (createTopology / createPatchTopology / D3D11_PRIMITIVE_TOPOLOGY)
+          void setVertexTopology(TopologyFlag topology) noexcept;
+          
+          static size_t maxVertexBufferSlots() noexcept; ///< Max slots (or array size from first slot) for vertex buffers
+          
+          
+          // -- primitive drawing --
+          
+          /// @brief Draw active vertex buffer (not indexed)
+          /// @param vertexCount  Number of vertices to draw (elements)
+          /// @param vertexOffset Number of vertices to skip in buffer (elements)
+          void draw(uint32_t vertexCount, uint32_t vertexOffset = 0u) noexcept;
+          /// @brief Draw active vertex buffer (indexed: active index buffer)
+          /// @param indexCount            Number of indexes to draw (elements)
+          /// @param indexOffset           Number of indexes to skip in buffer (elements)
+          /// @param vertexOffsetFromIndex Value added to each index (to read different vertices)
+          void drawIndexed(uint32_t indexCount, uint32_t indexOffset = 0u, int32_t vertexOffsetFromIndex = 0u) noexcept;
+          
+          /// @brief Draw multiple instances of active vertex buffer (not indexed)
+          /// @param instanceCount          Number of instances to draw
+          /// @param instanceOffset         Number of instances to skip
+          /// @param vertexCountPerInstance Number of vertices to draw (elements) - for each instance
+          /// @param vertexOffset           Number of vertices to skip in buffer (elements) - for each instance
+          /// @remarks Useful to efficiently duplicate meshes with different params (color, position...) -- example: trees, leaves...
+          void drawInstances(uint32_t instanceCount, uint32_t instanceOffset, uint32_t vertexCountPerInstance, uint32_t vertexOffset = 0u) noexcept;
+          /// @brief Draw multiple instances of active vertex buffer (indexed: active index buffer)
+          /// @param instanceCount         Number of instances to draw
+          /// @param instanceOffset        Number of instances to skip
+          /// @param indexCountPerInstance Number of indexes to draw (elements) - for each instance
+          /// @param indexOffset           Number of indexes to skip in buffer (elements) - for each instance
+          /// @param vertexOffsetFromIndex Value added to each index (to read different vertices)
+          /// @remarks Useful to efficiently duplicate meshes with different params (color, position...) -- example: trees, leaves...
+          void drawInstancesIndexed(uint32_t instanceCount, uint32_t instanceOffset, uint32_t indexCountPerInstance, 
+                                    uint32_t indexOffset = 0u, int32_t vertexOffsetFromIndex = 0u) noexcept;
+          
+          /// @brief Bind + draw active vertex buffer (not indexed) - grouped call (to reduce overhead)
+          void bindDraw(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int byteSize, uint32_t vertexCount, uint32_t vertexOffset = 0u) noexcept;
+          /// @brief Bind + draw active vertex buffer (indexed: active index buffer) - grouped call (to reduce overhead)
+          void bindDrawIndexed(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int byteSize, 
+                               DataBufferHandle indexBuffer, pandora::video::IndexBufferFormat indexFormat, 
+                               uint32_t indexCount, uint32_t indexOffset = 0u) noexcept;
           
           
           // -- resource builder --
@@ -187,7 +314,7 @@ License :     MIT
                                                const float borderColor[4] = _blackFilterBorder(), int32_t index = -1);
           
           static uint32_t maxAnisotropy() noexcept; ///< Max anisotropy value (usually 16)
-          static size_t maxFilterStates() noexcept; ///< Max array size for sample filters
+          static size_t maxFilterStateSlots() noexcept; ///< Max slots (or array size from first slot) for sample filters
           
           
           // -- pipeline status operations --
@@ -220,28 +347,28 @@ License :     MIT
           
           // ---
           
-          static size_t maxConstantBuffers() noexcept; ///< Max array size for constant buffers
+          static size_t maxConstantBufferSlots() noexcept; ///< Max slots (or array size from first slot) for constant buffers
           
           /// @brief Bind constant buffer(s) to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindVertexConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindVertexConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the tessellation-control/hull shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindTesselControlConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindTesselControlConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the tessellation-evaluation/domain shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindTesselEvalConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindTesselEvalConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the geometry shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindGeometryConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindGeometryConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the fragment shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the compute shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void bindComputeConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindComputeConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           /// @brief Bind constant buffer(s) to the vertex and fragment shader stages (grouped call, to reduce overhead)
-          void bindVertexFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept;
+          void bindVertexFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
           
           void clearVertexConstantBuffers() noexcept; ///< Reset all constant buffers in vertex shader stage
           void clearTesselControlConstantBuffers() noexcept; ///< Reset all constant buffers in tessellation-control/hull shader stage
@@ -264,22 +391,22 @@ License :     MIT
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void setVertexFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setVertexFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void setTesselControlFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void setTesselEvalFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Set array of sampler filters to the geometry shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void setGeometryFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
           /// @remarks To remove some filters, use NULL value at their index
-          void setFragmentFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           /// @brief Set array of sampler filters to the compute shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          void setComputeFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept;
+          void setComputeFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept;
           
           void clearVertexFilterStates() noexcept; ///< Reset all sampler filters in vertex shader stage
           void clearTesselControlFilterStates() noexcept; ///< Reset all sampler filters in tessellation-control/hull shader stage
@@ -288,55 +415,6 @@ License :     MIT
           void clearFragmentFilterStates() noexcept; ///< Reset all sampler filters in fragment/pixel shader stage (standard)
           void clearComputeFilterStates() noexcept; ///< Reset all sampler filters in compute shader stage
           
-          
-          // -- render target operations --
-          
-          /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
-          void setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept;
-          /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
-          void setViewport(const pandora::video::Viewport& viewport) noexcept;
-          
-          /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
-          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
-          void clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                                  const pandora::video::ComponentVector128& clearColorRgba) noexcept;
-          /// @brief Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
-          /// @remarks Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
-          void clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                                 const pandora::video::ComponentVector128& clearColorRgba) noexcept;
-          
-          /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
-          /// @warning Binding multiple targets simultaneously is only possible if:
-          ///          - their width/height is the same;
-          ///          - their number of frame-buffers is the same;
-          ///          - their component format is the same;
-          ///          - their MSAA options are the same.
-          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
-          ///          - It should be called before the first iteration of the program loop.
-          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
-          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
-          ///          - Multiple render-targets can be used simultaneously: pass an array as 'views' and its size as 'numberViews'.
-          ///          - Calling it with 0 views (or a NULL view) disables active render-targets.
-          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                      DepthStencilViewHandle depthBuffer = nullptr) noexcept;
-          /// @brief Bind/replace active render-target in Renderer (single target)
-          /// @remarks - This call allows draw/render operations to fill SwapChain back-buffers and/or TextureBuffer instances.
-          ///          - It should be called before the first iteration of the program loop.
-          ///          - It should be called everytime the rendering needs to target a different resource (ex: render to texture, then swap-chain).
-          ///          - It should be called again after deleting/resizing any SwapChain or TextureBuffer.
-          ///          - Calling it with a NULL view disables active render-targets.
-          inline void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer = nullptr) noexcept {
-            setActiveRenderTargets(&view, size_t{1u}, depthBuffer);
-          }
-          
-          /// @brief Bind/replace active render-target(s) in Renderer (multi-target) + clear render-targets/buffer
-          /// @remarks If the render-targets contain new buffers (or resized), this is the recommended method (to reset them before using them).
-          void setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                                      const pandora::video::ComponentVector128& clearColorRgba) noexcept;
-          /// @brief Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
-          /// @remarks If the render-target is a new buffer (or resized), this is the recommended method (to reset it before using it).
-          void setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                                     const pandora::video::ComponentVector128& clearColorRgba) noexcept;
           
         private:
           void _destroy() noexcept;

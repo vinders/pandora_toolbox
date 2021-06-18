@@ -31,6 +31,9 @@ License :     MIT
 # include <DirectXMath.h>
 # include "video/d3d11/_private/_d3d_resource.h"
 
+# define __P_GetDevice   ((ID3D11Device*)this->_device)
+# define __P_GetContext  ((ID3D11DeviceContext*)this->_context)
+
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
@@ -245,7 +248,7 @@ License :     MIT
     if (FAILED(result) || this->_device == nullptr || this->_context == nullptr)
       throwError(result, "Renderer: failed to create device and context"); // throws
     if (isDefaultAdapter && !dxgiFactory->IsCurrent()) // if adapter not provided, system may generate another factory
-      __getCurrentDxgiFactory((ID3D11Device*)this->_device, dxgiFactory); // throws
+      __getCurrentDxgiFactory(__P_GetDevice, dxgiFactory); // throws
     
     // feature level detection
     this->_dxgiLevel = __getDxgiFactoryLevel(dxgiFactory.get());
@@ -263,7 +266,7 @@ License :     MIT
     this->_dxgiFactory = (void*)dxgiFactory.extract();
 
 #   ifdef _DEBUG
-      __configureDeviceDebug((ID3D11Device*)this->_device);
+      __configureDeviceDebug(__P_GetDevice);
 #   endif
   }
 
@@ -275,12 +278,12 @@ License :     MIT
     try {
       // release device context
       if (this->_context) {
-        ((ID3D11DeviceContext*)this->_context)->Flush();
-        ((ID3D11DeviceContext*)this->_context)->Release();
+        __P_GetContext->Flush();
+        __P_GetContext->Release();
       }
       // release device
       if (this->_device)
-        ((ID3D11Device*)this->_device)->Release();
+        __P_GetDevice->Release();
       if (this->_dxgiFactory)
         ((IDXGIFactory1*)this->_dxgiFactory)->Release();
     }
@@ -318,7 +321,7 @@ License :     MIT
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
     bool isSuccess = false;
     try {
-      auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface((ID3D11Device*)this->_device);
+      auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(__P_GetDevice);
       if (dxgiDevice) {
         D3dResource<IDXGIAdapter> adapter;
         if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
@@ -343,7 +346,7 @@ License :     MIT
 # if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
       try {
-        auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface((ID3D11Device*)this->_device);
+        auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(__P_GetDevice);
         if (dxgiDevice) {
           D3dResource<IDXGIAdapter> adapter;
           if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
@@ -367,35 +370,268 @@ License :     MIT
 # else
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
 # endif
+ 
+
+// -- render target operations -------------------------------------------------
+
+  // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+  void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
+    if (viewports != nullptr) {
+      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+      if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
+        numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+      ZeroMemory(&values[0], numberViewports*sizeof(D3D11_VIEWPORT));
+
+      D3D11_VIEWPORT* out = &values[0];
+      const Viewport* end = &viewports[numberViewports - 1u];
+      for (const Viewport* it = &viewports[0]; it <= end; ++it, ++out) {
+        out->TopLeftX = (float)it->x();
+        out->TopLeftY = (float)it->y();
+        out->Width = (float)it->width();
+        out->Height = (float)it->height();
+        out->MinDepth = (float)it->nearClipping();
+        out->MaxDepth = (float)it->farClipping();
+      }
+      __P_GetContext->RSSetViewports((UINT)numberViewports, &values[0]);
+    }
+  }
+  // Replace rasterizer viewport (3D -> 2D projection rectangle)
+  void Renderer::setViewport(const Viewport& viewport) noexcept {
+    D3D11_VIEWPORT data{};
+    data.TopLeftX = (float)viewport.x();
+    data.TopLeftY = (float)viewport.y();
+    data.Width = (float)viewport.width();
+    data.Height = (float)viewport.height();
+    data.MinDepth = (float)viewport.nearClipping();
+    data.MaxDepth = (float)viewport.farClipping();
+    __P_GetContext->RSSetViewports(1u, &data);
+  }
+  
+  // ---
+  
+  // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
+  void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
+                            const ComponentVector128& clearColorRgba) noexcept {
+    DirectX::XMVECTORF32 color;
+    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
+      
+    auto it = views;
+    for (size_t i = 0; i < numberViews; ++i, ++it) {
+      if (*it != nullptr)
+        __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
+    }
+    if (depthBuffer != nullptr)
+      __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    __P_GetContext->Flush();
+  }
+  // Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
+  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                           const ComponentVector128& clearColorRgba) noexcept {
+    DirectX::XMVECTORF32 color;
+    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
+    
+    if (view != nullptr)
+      __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
+    if (depthBuffer != nullptr)
+      __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    __P_GetContext->Flush();
+  }
+  
+  // ---
+  
+  // Bind/replace active render-target(s) in Renderer (multi-target)
+  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
+                                        DepthStencilViewHandle depthBuffer) noexcept {
+    if (views != nullptr && numberViews > 0) { // set active view(s)
+      __P_GetContext->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views, 
+                                                                 (ID3D11DepthStencilView*)depthBuffer);
+      __P_GetContext->Flush();
+      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
+    }
+    else { // clear active views
+      ID3D11RenderTargetView* emptyViews[] { nullptr };
+      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
+      __P_GetContext->Flush();
+      this->_activeTargetCount = size_t{0u};
+    }
+  }
+  
+  // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
+  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
+                                        DepthStencilViewHandle depthBuffer, const ComponentVector128& clearColorRgba) noexcept {
+    if (views != nullptr && numberViews > 0) { // set active view(s)
+      DirectX::XMVECTORF32 color;
+      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
+
+      auto it = views;
+      for (size_t i = 0; i < numberViews; ++i, ++it) {
+        if (*it != nullptr)
+          __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
+      }
+      if (depthBuffer != nullptr)
+        __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
+                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+      __P_GetContext->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views,
+                                                                 (ID3D11DepthStencilView*)depthBuffer);
+      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
+    }
+    else { // clear active views
+      ID3D11RenderTargetView* emptyViews[] { nullptr };
+      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
+      __P_GetContext->Flush();
+      this->_activeTargetCount = size_t{0u};
+    }
+  }
+  // Bind/replace active render-target in Renderer (multi-target) + clear render-target/buffer
+  void Renderer::setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                       const ComponentVector128& clearColorRgba) noexcept {
+    if (view != nullptr) { // set active view
+      DirectX::XMVECTORF32 color;
+      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
+      
+      __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
+      if (depthBuffer != nullptr)
+        __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
+                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+      __P_GetContext->OMSetRenderTargets((UINT)1u, (ID3D11RenderTargetView**)&view,
+                                                                 (ID3D11DepthStencilView*)depthBuffer);
+      this->_activeTargetCount = size_t{1u};
+    }
+    else { // clear active views
+      ID3D11RenderTargetView* emptyViews[] { nullptr };
+      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
+      __P_GetContext->Flush();
+      this->_activeTargetCount = size_t{0u};
+    }
+  }
+
+
+// -- primitive binding -- -----------------------------------------------------
+
+  // Create native topology flag - basic topologies
+  Renderer::TopologyFlag Renderer::createTopology(VertexTopology type, bool useAdjacency) noexcept {
+    D3D11_PRIMITIVE_TOPOLOGY flag;
+    switch (type) {
+      case VertexTopology::points:
+        flag = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST; break;
+      case VertexTopology::lines:
+        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ : D3D11_PRIMITIVE_TOPOLOGY_LINELIST; break;
+      case VertexTopology::lineStrips:
+        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ : D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; break;
+      case VertexTopology::triangles:
+        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST; break;
+      case VertexTopology::triangleStrip:
+        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP; break;
+      default: flag = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED; break;
+    }
+    return (Renderer::TopologyFlag)flag;
+  }
+  // Create native topology flag - patch topologies
+  Renderer::TopologyFlag Renderer::createPatchTopology(uint32_t controlPoints) noexcept {
+    if (controlPoints != 0u) {
+      --controlPoints;
+      if (controlPoints >= 32u)
+        controlPoints = 31u;
+    }
+    return (Renderer::TopologyFlag)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (Renderer::TopologyFlag)controlPoints;
+  }
+
+  // ---
+
+  // Bind active vertex array buffer to input stage slot
+  void Renderer::bindVertexArrayBuffer(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
+                                       unsigned int usedByteSize, unsigned int byteOffset) noexcept {
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &usedByteSize, &byteOffset);
+  }
+  // Bind multiple vertex array buffers to consecutive input stage slots
+  void Renderer::bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const Renderer::DataBufferHandle* vertexArrayBuffers, 
+                                       unsigned int* usedByteSizes, unsigned int* byteOffsets) noexcept {
+    __P_GetContext->IASetVertexBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)vertexArrayBuffers, usedByteSizes, byteOffsets);
+  }
+  // Bind active vertex index buffer (indexes for vertex array buffer) to input stage
+  void Renderer::bindVertexIndexBuffer(Renderer::DataBufferHandle indexBuffer, IndexBufferFormat dataFormat, uint32_t byteOffset) noexcept {
+    __P_GetContext->IASetIndexBuffer((ID3D11Buffer*)indexBuffer, (dataFormat == IndexBufferFormat::r16_ui) 
+                                                 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, (UINT)byteOffset);
+  }
+  // Set active vertex topology of vertex buffers for input stage
+  void Renderer::setVertexTopology(TopologyFlag topology) noexcept {
+    __P_GetContext->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topology);
+  }
+          
+  // Max slots (or array size from first slot) for vertex buffers
+  size_t Renderer::maxVertexBufferSlots() noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
+
+
+// -- primitive drawing -- -----------------------------------------------------
+
+  // Draw active vertex buffer (not indexed)
+  void Renderer::draw(uint32_t vertexCount, uint32_t vertexOffset) noexcept {
+    __P_GetContext->Draw((UINT)vertexCount, (UINT)vertexOffset);
+  }
+  // Draw active vertex buffer (indexed: active index buffer)
+  void Renderer::drawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffsetFromIndex) noexcept {
+    __P_GetContext->DrawIndexed((UINT)indexCount, (UINT)indexOffset, (INT)vertexOffsetFromIndex);
+  }
+  
+  // Draw multiple instances of active vertex buffer (not indexed)
+  void Renderer::drawInstances(uint32_t instanceCount, uint32_t instanceOffset, uint32_t vertexCountPerInstance, uint32_t vertexOffset) noexcept {
+    __P_GetContext->DrawInstanced((UINT)vertexCountPerInstance, (UINT)instanceCount, (UINT)vertexOffset, (UINT)instanceOffset);
+  }
+  // Draw multiple instances of active vertex buffer (indexed: active index buffer)
+  void Renderer::drawInstancesIndexed(uint32_t instanceCount, uint32_t instanceOffset, uint32_t indexCountPerInstance, 
+                                      uint32_t indexOffset, int32_t vertexOffsetFromIndex) noexcept {
+    __P_GetContext->DrawIndexedInstanced((UINT)indexCountPerInstance, (UINT)instanceCount, (UINT)indexOffset, 
+                                         (INT)vertexOffsetFromIndex, (UINT)instanceOffset);
+  }
+  
+  // ---
+  
+  // Bind + draw active vertex buffer (not indexed) - grouped call (to reduce overhead)
+  void Renderer::bindDraw(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
+                          unsigned int byteSize, uint32_t vertexCount, uint32_t vertexOffset) noexcept {
+    UINT offset = 0;
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &byteSize, &offset);
+    __P_GetContext->Draw((UINT)vertexCount, (UINT)vertexOffset);
+  }
+  // Bind + draw active vertex buffer (indexed: active index buffer) - grouped call (to reduce overhead)
+  void Renderer::bindDrawIndexed(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, unsigned int byteSize, 
+                                 Renderer::DataBufferHandle indexBuffer, IndexBufferFormat indexFormat, 
+                                 uint32_t indexCount, uint32_t indexOffset) noexcept {
+    UINT offset = 0;
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &byteSize, &offset);
+    __P_GetContext->IASetIndexBuffer((ID3D11Buffer*)indexBuffer, (indexFormat == IndexBufferFormat::r16_ui) 
+                                                                 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, offset);
+    __P_GetContext->DrawIndexed((UINT)indexCount, (UINT)indexOffset, 0);
+  }
 
 
 // -- resource builder - depth/stencil -- --------------------------------------
 
   // Convert portable depth/stencil comparison enum to Direct3D comparison enum
-  static D3D11_COMPARISON_FUNC __toDepthComparison(pandora::video::DepthComparison compare) {
+  static D3D11_COMPARISON_FUNC __toDepthComparison(DepthComparison compare) {
     switch (compare) {
-      case pandora::video::DepthComparison::never:        return D3D11_COMPARISON_NEVER;
-      case pandora::video::DepthComparison::less:         return D3D11_COMPARISON_LESS;
-      case pandora::video::DepthComparison::lessEqual:    return D3D11_COMPARISON_LESS_EQUAL;
-      case pandora::video::DepthComparison::equal:        return D3D11_COMPARISON_EQUAL;
-      case pandora::video::DepthComparison::notEqual:     return D3D11_COMPARISON_NOT_EQUAL;
-      case pandora::video::DepthComparison::greaterEqual: return D3D11_COMPARISON_GREATER_EQUAL;
-      case pandora::video::DepthComparison::greater:      return D3D11_COMPARISON_GREATER;
-      case pandora::video::DepthComparison::always:       return D3D11_COMPARISON_ALWAYS;
+      case DepthComparison::never:        return D3D11_COMPARISON_NEVER;
+      case DepthComparison::less:         return D3D11_COMPARISON_LESS;
+      case DepthComparison::lessEqual:    return D3D11_COMPARISON_LESS_EQUAL;
+      case DepthComparison::equal:        return D3D11_COMPARISON_EQUAL;
+      case DepthComparison::notEqual:     return D3D11_COMPARISON_NOT_EQUAL;
+      case DepthComparison::greaterEqual: return D3D11_COMPARISON_GREATER_EQUAL;
+      case DepthComparison::greater:      return D3D11_COMPARISON_GREATER;
+      case DepthComparison::always:       return D3D11_COMPARISON_ALWAYS;
       default: return D3D11_COMPARISON_ALWAYS;
     }
   }
   // Convert portable depth/stencil operation enum to Direct3D operation enum
-  static D3D11_STENCIL_OP __toDepthStencilOperation(pandora::video::DepthStencilOperation op) {
+  static D3D11_STENCIL_OP __toDepthStencilOperation(DepthStencilOperation op) {
     switch (op) {
-      case pandora::video::DepthStencilOperation::keep:           return D3D11_STENCIL_OP_KEEP;
-      case pandora::video::DepthStencilOperation::setZero:        return D3D11_STENCIL_OP_ZERO;
-      case pandora::video::DepthStencilOperation::replace:        return D3D11_STENCIL_OP_REPLACE;
-      case pandora::video::DepthStencilOperation::invert:         return D3D11_STENCIL_OP_INVERT;
-      case pandora::video::DepthStencilOperation::incrementClamp: return D3D11_STENCIL_OP_INCR_SAT;
-      case pandora::video::DepthStencilOperation::decrementClamp: return D3D11_STENCIL_OP_DECR_SAT;
-      case pandora::video::DepthStencilOperation::incrementWrap:  return D3D11_STENCIL_OP_INCR;
-      case pandora::video::DepthStencilOperation::decrementWrap:  return D3D11_STENCIL_OP_DECR;
+      case DepthStencilOperation::keep:           return D3D11_STENCIL_OP_KEEP;
+      case DepthStencilOperation::setZero:        return D3D11_STENCIL_OP_ZERO;
+      case DepthStencilOperation::replace:        return D3D11_STENCIL_OP_REPLACE;
+      case DepthStencilOperation::invert:         return D3D11_STENCIL_OP_INVERT;
+      case DepthStencilOperation::incrementClamp: return D3D11_STENCIL_OP_INCR_SAT;
+      case DepthStencilOperation::decrementClamp: return D3D11_STENCIL_OP_DECR_SAT;
+      case DepthStencilOperation::incrementWrap:  return D3D11_STENCIL_OP_INCR;
+      case DepthStencilOperation::decrementWrap:  return D3D11_STENCIL_OP_DECR;
       default: return D3D11_STENCIL_OP_KEEP;
     }
   }
@@ -403,9 +639,9 @@ License :     MIT
   // ---
 
   // Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthTestState(const pandora::video::DepthOperationGroup& frontFaceOp, 
-                                                   const pandora::video::DepthOperationGroup& backFaceOp,
-                                                   pandora::video::DepthComparison depthTest, bool writeMaskAll) { // throws
+  DepthStencilState Renderer::createDepthTestState(const DepthOperationGroup& frontFaceOp, 
+                                                   const DepthOperationGroup& backFaceOp,
+                                                   DepthComparison depthTest, bool writeMaskAll) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
     ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
     
@@ -426,15 +662,15 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
     ID3D11DepthStencilState* stateData;
-    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create depth state");
     return DepthStencilState((void*)stateData);
   }
   
   // Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createStencilTestState(const pandora::video::DepthStencilOperationGroup& frontFaceOp, 
-                                                     const pandora::video::DepthStencilOperationGroup& backFaceOp, 
+  DepthStencilState Renderer::createStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
+                                                     const DepthStencilOperationGroup& backFaceOp, 
                                                      uint8_t readMask, uint8_t writeMask) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
     ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -458,16 +694,16 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
 
     ID3D11DepthStencilState* stateData;
-    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create stencil state");
     return DepthStencilState((void*)stateData);
   }
   
   // Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthStencilTestState(const pandora::video::DepthStencilOperationGroup& frontFaceOp, 
-                                                          const pandora::video::DepthStencilOperationGroup& backFaceOp, 
-                                                          pandora::video::DepthComparison depthTest, bool depthWriteMaskAll, 
+  DepthStencilState Renderer::createDepthStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
+                                                          const DepthStencilOperationGroup& backFaceOp, 
+                                                          DepthComparison depthTest, bool depthWriteMaskAll, 
                                                           uint8_t stencilReadMask, uint8_t stencilWriteMask) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
     ZeroMemory(&depthStDescriptor, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -491,7 +727,7 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
 
     ID3D11DepthStencilState* stateData;
-    auto result = ((ID3D11Device*)this->_device)->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create depth/stencil state");
     return DepthStencilState((void*)stateData);
@@ -525,7 +761,7 @@ License :     MIT
     rasterizerState.ScissorEnable = scissorClipping ? TRUE : FALSE;
 
     ID3D11RasterizerState* stateData = nullptr;
-    auto result = ((ID3D11Device*)this->_device)->CreateRasterizerState(&rasterizerState, &stateData);
+    auto result = __P_GetDevice->CreateRasterizerState(&rasterizerState, &stateData);
     if (FAILED(result) || stateData == nullptr)
       throwError(result, "Renderer: failed to create rasterizer state");
     return RasterizerState((void*)stateData);
@@ -535,43 +771,43 @@ License :     MIT
 // -- resource builder - sampler -- --------------------------------------------
   
   // Convert portable filter types to Direct3D filter type
-  static D3D11_FILTER __toFilterType(pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter) {
-    bool isMagLinear = (magFilter == pandora::video::MagnificationFilter::linear);
+  static D3D11_FILTER __toFilterType(MinificationFilter minFilter, MagnificationFilter magFilter) {
+    bool isMagLinear = (magFilter == MagnificationFilter::linear);
     switch (minFilter) {
-      case pandora::video::MinificationFilter::nearest_mipNearest:
-      case pandora::video::MinificationFilter::nearest: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_POINT;
-      case pandora::video::MinificationFilter::linear_mipNearest:
-      case pandora::video::MinificationFilter::linear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-      case pandora::video::MinificationFilter::nearest_mipLinear: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-      case pandora::video::MinificationFilter::linear_mipLinear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+      case MinificationFilter::nearest_mipNearest:
+      case MinificationFilter::nearest: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_POINT;
+      case MinificationFilter::linear_mipNearest:
+      case MinificationFilter::linear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+      case MinificationFilter::nearest_mipLinear: return isMagLinear ? D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+      case MinificationFilter::linear_mipLinear:  return isMagLinear ? D3D11_FILTER_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
       default: return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
     }
   }
   // Convert portable filter types to Direct3D filter type with comparison
-  static D3D11_FILTER __toFilterComparedType(pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter) {
-    bool isMagLinear = (magFilter == pandora::video::MagnificationFilter::linear);
+  static D3D11_FILTER __toFilterComparedType(MinificationFilter minFilter, MagnificationFilter magFilter) {
+    bool isMagLinear = (magFilter == MagnificationFilter::linear);
     switch (minFilter) {
-      case pandora::video::MinificationFilter::nearest_mipNearest:
-      case pandora::video::MinificationFilter::nearest:
+      case MinificationFilter::nearest_mipNearest:
+      case MinificationFilter::nearest:
         return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
-      case pandora::video::MinificationFilter::linear_mipNearest:
-      case pandora::video::MinificationFilter::linear:
+      case MinificationFilter::linear_mipNearest:
+      case MinificationFilter::linear:
         return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT;
-      case pandora::video::MinificationFilter::nearest_mipLinear:
+      case MinificationFilter::nearest_mipLinear:
         return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR;
-      case pandora::video::MinificationFilter::linear_mipLinear:
+      case MinificationFilter::linear_mipLinear:
         return isMagLinear ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
       default: return D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
     }
   }
   // Convert portable texture-addressing to Direct3D addressing enum
-  static D3D11_TEXTURE_ADDRESS_MODE __toFilterTextureAddress(pandora::video::TextureAddressMode mode) {
+  static D3D11_TEXTURE_ADDRESS_MODE __toFilterTextureAddress(TextureAddressMode mode) {
     switch (mode) {
-      case pandora::video::TextureAddressMode::border: return D3D11_TEXTURE_ADDRESS_BORDER;
-      case pandora::video::TextureAddressMode::clamp:  return D3D11_TEXTURE_ADDRESS_CLAMP;
-      case pandora::video::TextureAddressMode::repeat: return D3D11_TEXTURE_ADDRESS_WRAP;
-      case pandora::video::TextureAddressMode::repeatMirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
-      case pandora::video::TextureAddressMode::mirrorClamp:  return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
+      case TextureAddressMode::border: return D3D11_TEXTURE_ADDRESS_BORDER;
+      case TextureAddressMode::clamp:  return D3D11_TEXTURE_ADDRESS_CLAMP;
+      case TextureAddressMode::repeat: return D3D11_TEXTURE_ADDRESS_WRAP;
+      case TextureAddressMode::repeatMirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
+      case TextureAddressMode::mirrorClamp:  return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
       default: return D3D11_TEXTURE_ADDRESS_WRAP;
     }
   }
@@ -600,8 +836,8 @@ License :     MIT
   // ---
 
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter, 
-                              const pandora::video::TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, 
+  void Renderer::createFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter, 
+                              const TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, 
                               const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
@@ -617,11 +853,11 @@ License :     MIT
     samplerDesc.MaxAnisotropy = 1;
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
   }
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createComparedFilter(FilterStates& outStateContainer, pandora::video::MinificationFilter minFilter, pandora::video::MagnificationFilter magFilter,
-                                      const pandora::video::TextureAddressMode texAddressUVW[3], pandora::video::DepthComparison compare, 
+  void Renderer::createComparedFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter,
+                                      const TextureAddressMode texAddressUVW[3], DepthComparison compare, 
                                       float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
@@ -637,11 +873,11 @@ License :     MIT
     samplerDesc.MaxAnisotropy = 1;
     samplerDesc.ComparisonFunc = __toDepthComparison(compare);
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
   }
   
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const pandora::video::TextureAddressMode texAddressUVW[3],
+  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
                                          float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
@@ -657,11 +893,11 @@ License :     MIT
     samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
   }
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const pandora::video::TextureAddressMode texAddressUVW[3],
-                                                 pandora::video::DepthComparison compare, float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
+  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
+                                                 DepthComparison compare, float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
     __verifyFilterContainerSize(outStateContainer);
     
     D3D11_SAMPLER_DESC samplerDesc{};
@@ -676,7 +912,7 @@ License :     MIT
     samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
     samplerDesc.ComparisonFunc = __toDepthComparison(compare);
     memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer((ID3D11Device*)this->_device, samplerDesc, outStateContainer, index);
+    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
   }
   
   // ---
@@ -684,360 +920,226 @@ License :     MIT
   // Max anisotropy value (usually 16)
   uint32_t Renderer::maxAnisotropy() noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
   // Max array size for sample filters
-  size_t Renderer::maxFilterStates() noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+  size_t Renderer::maxFilterStateSlots() noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
 
 
 // -- pipeline status operations -- --------------------------------------------
   
   // Bind input-layout object to the input-assembler stage
   void Renderer::bindInputLayout(ShaderInputLayout::Handle inputLayout) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->IASetInputLayout((ID3D11InputLayout*)inputLayout);
+    __P_GetContext->IASetInputLayout((ID3D11InputLayout*)inputLayout);
   }
   // Bind vertex shader stage to the device
   void Renderer::bindVertexShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
+    __P_GetContext->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
   }
   // Bind tessellation-control/hull shader stage to the device
   void Renderer::bindTesselControlShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
+    __P_GetContext->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
   }
   // Bind tessellation-evaluation/domain shader stage to the device
   void Renderer::bindTesselEvalShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
+    __P_GetContext->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
   }
   // Bind geometry shader stage to the device
   void Renderer::bindGeometryShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
+    __P_GetContext->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
   }
   // Bind fragment/pixel shader stage to the device
   void Renderer::bindFragmentShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
+    __P_GetContext->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
   }
   // Bind compute shader stage to the device
   void Renderer::bindComputeShader(Shader::Handle shader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
+    __P_GetContext->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
   }
   // Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
   void Renderer::bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
-    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
+    __P_GetContext->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
+    __P_GetContext->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
   }
   // Bind input layout, vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
   void Renderer::bindInputVertexFragmentShaders(ShaderInputLayout::Handle inputLayout, Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->IASetInputLayout((ID3D11InputLayout*)inputLayout);
-    ((ID3D11DeviceContext*)this->_context)->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
-    ((ID3D11DeviceContext*)this->_context)->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
+    __P_GetContext->IASetInputLayout((ID3D11InputLayout*)inputLayout);
+    __P_GetContext->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
+    __P_GetContext->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
   }
   
   // ---
   
   // Constant buffers - verify slot index/length validity
-  static inline bool __verifyConstantBufferSlots(uint32_t firstIndex, size_t& inOutLength) noexcept {
-    if (firstIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT) {
-      if (firstIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
+  static inline bool __verifyConstantBufferSlots(uint32_t firstSlotIndex, size_t& inOutLength) noexcept {
+    if (firstSlotIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT) {
+      if (firstSlotIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
         return false;
-      inOutLength = (size_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - (size_t)firstIndex;
+      inOutLength = (size_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - (size_t)firstSlotIndex;
     }
     return true;
   }
   // Max array size for constant buffers
-  size_t Renderer::maxConstantBuffers() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
+  size_t Renderer::maxConstantBufferSlots() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
   
   // Bind constant buffer(s) to the vertex shader stage
-  void Renderer::bindVertexConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindVertexConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->VSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the tessellation-control/hull shader stage
-  void Renderer::bindTesselControlConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindTesselControlConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->HSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->HSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the tessellation-evaluation/domain shader stage
-  void Renderer::bindTesselEvalConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindTesselEvalConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->DSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->DSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the geometry shader stage
-  void Renderer::bindGeometryConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindGeometryConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->GSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->GSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the fragment shader stage
-  void Renderer::bindFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->PSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the compute shader stage
-  void Renderer::bindComputeConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindComputeConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->CSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->CSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   // Bind constant buffer(s) to the vertex and fragment shader stage(s) (grouped call, to reduce overhead)
-  void Renderer::bindVertexFragmentConstantBuffers(uint32_t firstIndex, const ConstantBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstIndex, length))
+  void Renderer::bindVertexFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
+    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
-    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers((UINT)firstIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->VSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
+    __P_GetContext->PSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
   }
   
   // Reset all constant buffers in vertex shader stage
   void Renderer::clearVertexConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in tessellation-control/hull shader stage
   void Renderer::clearTesselControlConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in tessellation-evaluation/domain shader stage
   void Renderer::clearTesselEvalConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in geometry shader stage
   void Renderer::clearGeometryConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in fragment/pixel shader stage (standard)
   void Renderer::clearFragmentConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in compute shader stage
   void Renderer::clearComputeConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->CSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->CSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   // Reset all constant buffers in vertex/fragment shader stage (grouped call)
   void Renderer::clearVertexFragmentConstantBuffers() noexcept {
     ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-    ((ID3D11DeviceContext*)this->_context)->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+    __P_GetContext->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
   }
   
   // ---
   
   // Change output merger depth/stencil state (depth and/or stencil testing)
   void Renderer::setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->OMSetDepthStencilState((ID3D11DepthStencilState*)state.get(), (UINT)stencilRef);
+    __P_GetContext->OMSetDepthStencilState((ID3D11DepthStencilState*)state.get(), (UINT)stencilRef);
   }
   
   // Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
   void Renderer::setRasterizerState(const RasterizerState& state) noexcept {
-    ((ID3D11DeviceContext*)this->_context)->RSSetState((ID3D11RasterizerState*)state.get());
+    __P_GetContext->RSSetState((ID3D11RasterizerState*)state.get());
   }
   
   // ---
   
   // Sample filters - verify slot index/length validity
-  static inline bool __verifyFilterStateSlots(uint32_t firstIndex, size_t& inOutLength) noexcept {
-    if (firstIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) {
-      if (firstIndex >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT)
+  static inline bool __verifyFilterStateSlots(uint32_t firstSlotIndex, size_t& inOutLength) noexcept {
+    if (firstSlotIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) {
+      if (firstSlotIndex >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT)
         return false;
-      inOutLength = (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - (size_t)firstIndex;
+      inOutLength = (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - (size_t)firstSlotIndex;
     }
     return true;
   }
   
   // Set array of sampler filters to the fragment/pixel shader stage
-  void Renderer::setVertexFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setVertexFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->VSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
-  void Renderer::setTesselControlFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->HSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
-  void Renderer::setTesselEvalFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->DSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
-  void Renderer::setGeometryFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->GSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
-  void Renderer::setFragmentFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->PSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->PSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
-  void Renderer::setComputeFilterStates(uint32_t firstIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstIndex, length))
+  void Renderer::setComputeFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
+    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
       return;
-    ((ID3D11DeviceContext*)this->_context)->CSSetSamplers((UINT)firstIndex, (UINT)length, (ID3D11SamplerState**)states);
+    __P_GetContext->CSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
   }
   
   // Reset all sampler filters
   void Renderer::clearVertexFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+    __P_GetContext->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   void Renderer::clearTesselControlFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+    __P_GetContext->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   void Renderer::clearTesselEvalFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+    __P_GetContext->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   void Renderer::clearGeometryFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+    __P_GetContext->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   void Renderer::clearFragmentFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+    __P_GetContext->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
   void Renderer::clearComputeFilterStates() noexcept {
     ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    ((ID3D11DeviceContext*)this->_context)->CSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  
-
-// -- render target operations -------------------------------------------------
-
-  // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
-  void Renderer::setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept {
-    if (viewports != nullptr) {
-      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
-      if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
-        numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-      ZeroMemory(&values[0], numberViewports*sizeof(D3D11_VIEWPORT));
-
-      D3D11_VIEWPORT* out = &values[0];
-      const pandora::video::Viewport* end = &viewports[numberViewports - 1u];
-      for (const pandora::video::Viewport* it = &viewports[0]; it <= end; ++it, ++out) {
-        out->TopLeftX = (float)it->x();
-        out->TopLeftY = (float)it->y();
-        out->Width = (float)it->width();
-        out->Height = (float)it->height();
-        out->MinDepth = (float)it->nearClipping();
-        out->MaxDepth = (float)it->farClipping();
-      }
-      ((ID3D11DeviceContext*)this->_context)->RSSetViewports((UINT)numberViewports, &values[0]);
-    }
-  }
-  // Replace rasterizer viewport (3D -> 2D projection rectangle)
-  void Renderer::setViewport(const pandora::video::Viewport& viewport) noexcept {
-    D3D11_VIEWPORT data{};
-    data.TopLeftX = (float)viewport.x();
-    data.TopLeftY = (float)viewport.y();
-    data.Width = (float)viewport.width();
-    data.Height = (float)viewport.height();
-    data.MinDepth = (float)viewport.nearClipping();
-    data.MaxDepth = (float)viewport.farClipping();
-    ((ID3D11DeviceContext*)this->_context)->RSSetViewports(1u, &data);
-  }
-  
-  // ---
-  
-  // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                            const ComponentVector128& clearColorRgba) noexcept {
-    DirectX::XMVECTORF32 color;
-    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-      
-    auto it = views;
-    for (size_t i = 0; i < numberViews; ++i, ++it) {
-      if (*it != nullptr)
-        ((ID3D11DeviceContext*)this->_context)->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
-    }
-    if (depthBuffer != nullptr)
-      ((ID3D11DeviceContext*)this->_context)->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    ((ID3D11DeviceContext*)this->_context)->Flush();
-  }
-  // Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                           const ComponentVector128& clearColorRgba) noexcept {
-    DirectX::XMVECTORF32 color;
-    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-    
-    if (view != nullptr)
-      ((ID3D11DeviceContext*)this->_context)->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
-    if (depthBuffer != nullptr)
-      ((ID3D11DeviceContext*)this->_context)->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    ((ID3D11DeviceContext*)this->_context)->Flush();
-  }
-  
-  // ---
-  
-  // Bind/replace active render-target(s) in Renderer (multi-target)
-  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                        DepthStencilViewHandle depthBuffer) noexcept {
-    if (views != nullptr && numberViews > 0) { // set active view(s)
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views, 
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
-      ((ID3D11DeviceContext*)this->_context)->Flush();
-      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
-    }
-    else { // clear active views
-      ID3D11RenderTargetView* emptyViews[] { nullptr };
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      ((ID3D11DeviceContext*)this->_context)->Flush();
-      this->_activeTargetCount = size_t{0u};
-    }
-  }
-  
-  // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
-  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                        DepthStencilViewHandle depthBuffer, const ComponentVector128& clearColorRgba) noexcept {
-    if (views != nullptr && numberViews > 0) { // set active view(s)
-      DirectX::XMVECTORF32 color;
-      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-
-      auto it = views;
-      for (size_t i = 0; i < numberViews; ++i, ++it) {
-        if (*it != nullptr)
-          ((ID3D11DeviceContext*)this->_context)->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
-      }
-      if (depthBuffer != nullptr)
-        ((ID3D11DeviceContext*)this->_context)->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
-                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views,
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
-      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
-    }
-    else { // clear active views
-      ID3D11RenderTargetView* emptyViews[] { nullptr };
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      ((ID3D11DeviceContext*)this->_context)->Flush();
-      this->_activeTargetCount = size_t{0u};
-    }
-  }
-  // Bind/replace active render-target in Renderer (multi-target) + clear render-target/buffer
-  void Renderer::setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                                       const ComponentVector128& clearColorRgba) noexcept {
-    if (view != nullptr) { // set active view
-      DirectX::XMVECTORF32 color;
-      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-      
-      ((ID3D11DeviceContext*)this->_context)->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
-      if (depthBuffer != nullptr)
-        ((ID3D11DeviceContext*)this->_context)->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
-                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets((UINT)1u, (ID3D11RenderTargetView**)&view,
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
-      this->_activeTargetCount = size_t{1u};
-    }
-    else { // clear active views
-      ID3D11RenderTargetView* emptyViews[] { nullptr };
-      ((ID3D11DeviceContext*)this->_context)->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      ((ID3D11DeviceContext*)this->_context)->Flush();
-      this->_activeTargetCount = size_t{0u};
-    }
+    __P_GetContext->CSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
   }
 
 
@@ -1054,7 +1156,7 @@ License :     MIT
       if (this->_dxgiLevel >= 2u) {
         // Direct3D 11.1+
         auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: failed to access DirectX 11.1 graphics infra");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface((ID3D11Device*)this->_device, "Renderer: failed to access DirectX 11.1 device");
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(__P_GetDevice, "Renderer: failed to access DirectX 11.1 device");
         outSwapChainLevel = Renderer::DeviceLevel::direct3D_11_1;
         
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
@@ -1103,7 +1205,7 @@ License :     MIT
       descriptor.SampleDesc.Count = 1;
       descriptor.SampleDesc.Quality = 0;
 
-      auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain((ID3D11Device*)this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
+      auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(__P_GetDevice, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
         throwError(result, "Renderer: failed to create Direct3D swap-chain");
     }
