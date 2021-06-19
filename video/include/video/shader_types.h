@@ -26,7 +26,7 @@ namespace pandora {
                         ///  * can be bound with any shader stage(s): Renderer.bind<...>ConstantBuffers.
                         ///  * should contain data useful as a whole for shaders:
                         ///    -> buffer entirely copied in GPU cache during Draw calls, to be available for each vertex/pixel.
-                        ///    -> recommended for view/projection/world matrices, transformations and options.
+                        ///    -> recommended for view/projection/world matrices, transformations, lights and options.
                         ///    -> not appropriate for big data blocks of which only a few bytes are read by each vertex/pixel.
       vertexArray = 1u, ///< Vertex data input for vertex shader
                         ///  * can be bound with vertex shader stage: Renderer.bindVertexArrayBuffer(s).

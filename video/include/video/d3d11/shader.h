@@ -142,6 +142,7 @@ License :     MIT
           /// @brief Create usable input layout object -- reserved for internal use or advanced usage
           ShaderInputLayout(Handle handle) : _handle(handle) {}
           
+          ShaderInputLayout() = default;
           ShaderInputLayout(const ShaderInputLayout&) = delete;
           ShaderInputLayout(ShaderInputLayout&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = nullptr; }
           ShaderInputLayout& operator=(const ShaderInputLayout&) = delete;
@@ -151,6 +152,7 @@ License :     MIT
           ~ShaderInputLayout() noexcept;
           
           inline Handle handle() const noexcept { return this->_handle; } ///< Get native handle (cast to ID3D11InputLayout*)
+          inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
         
         private:
           Handle _handle = nullptr;

@@ -166,7 +166,7 @@ License :     MIT
           ///                      - if some culling is configured before geometry shader stage, adjacent vertices may disappear;
           ///                      - can't be used with tessellation shaders;
           ///                      - has no effect with 'points' topology.
-          static TopologyFlag createTopology(pandora::video::VertexTopology type, bool useAdjacency) noexcept;
+          static TopologyFlag createTopology(pandora::video::VertexTopology type, bool useAdjacency = false) noexcept;
           /// @brief Create native topology flag - patch topologies
           /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
           static TopologyFlag createPatchTopology(uint32_t controlPoints) noexcept;

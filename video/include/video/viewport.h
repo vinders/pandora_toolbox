@@ -25,6 +25,7 @@ namespace pandora {
         : _x(x), _y(y), _width(width), _height(height), 
           _nearClipping(nearClipping), _farClipping(farClipping) {}
           
+      Viewport() = default;
       Viewport(const Viewport&) = default;
       Viewport(Viewport&&) noexcept = default;
       Viewport& operator=(const Viewport&) = default;

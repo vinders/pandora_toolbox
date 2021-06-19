@@ -200,8 +200,4 @@
     renderer->setViewports(viewports2, size_t{1u});
   }
 
-  TEST_F(SwapChainTest, vertexDrawingTest) {
-
-  }
-
 #endif

@@ -200,8 +200,6 @@ License :     MIT
           ((ID3D11RenderTargetView*)this->_renderTargetView)->Release();
           this->_renderTargetView = nullptr;
         }
-        if (this->_renderTarget)
-          ((ID3D11Texture2D*)this->_renderTarget)->Release();
 
 #       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
           if (this->_deviceContext11_1)
@@ -225,7 +223,6 @@ License :     MIT
 
   SwapChain::SwapChain(SwapChain&& rhs) noexcept
     : _renderer(std::move(rhs._renderer)),
-      _renderTarget(rhs._renderTarget),
       _renderTargetView(rhs._renderTargetView),
       _deviceContext11_1(rhs._deviceContext11_1),
       _swapChain(rhs._swapChain),
@@ -233,13 +230,12 @@ License :     MIT
       _presentFlags(rhs._presentFlags) {
     memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
     rhs._renderer = nullptr;
-    rhs._swapChain = rhs._renderTarget = rhs._renderTargetView = rhs._deviceContext11_1 = nullptr;
+    rhs._swapChain = rhs._renderTargetView = rhs._deviceContext11_1 = nullptr;
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
     release();
     memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
     this->_renderer = std::move(rhs._renderer);
-    this->_renderTarget = rhs._renderTarget;
     this->_renderTargetView = rhs._renderTargetView;
     this->_deviceContext11_1 = rhs._deviceContext11_1;
     this->_swapChain = rhs._swapChain;
@@ -247,7 +243,7 @@ License :     MIT
     this->_presentFlags = rhs._presentFlags;
     
     rhs._renderer = nullptr;
-    rhs._swapChain = rhs._renderTarget = rhs._renderTargetView = rhs._deviceContext11_1 = nullptr;
+    rhs._swapChain = rhs._renderTargetView = rhs._deviceContext11_1 = nullptr;
     return *this;
   }
 
@@ -278,8 +274,6 @@ License :     MIT
       this->_renderer->setActiveRenderTarget(nullptr);
       ((ID3D11RenderTargetView*)this->_renderTargetView)->Release();
       this->_renderTargetView = nullptr;
-      ((ID3D11Texture2D*)this->_renderTarget)->Release();
-      this->_renderTarget = nullptr;
       ((IDXGISwapChain1*)this->_swapChain)->SetFullscreenState(FALSE, nullptr);
       ((ID3D11DeviceContext*)this->_renderer->context())->Flush();
       
@@ -315,8 +309,9 @@ License :     MIT
   
   // Create swap-chain render-target-view
   void SwapChain::_createSwapChainTargetView() { // throws
-    auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS((ID3D11Texture2D**)&(this->_renderTarget)));
-    if (FAILED(targetResult) || this->_renderTarget == nullptr) {
+    D3dResource<ID3D11Texture2D> renderTarget;
+    auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
+    if (FAILED(targetResult) || !renderTarget.hasValue()) {
       throwError(targetResult, "SwapChain: could not access render target");
       return;
     }
@@ -324,7 +319,7 @@ License :     MIT
     auto* device = (ID3D11Device*)this->_renderer->device();
     CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, (DXGI_FORMAT)this->_settings.backBufferFormat);
     
-    targetResult = device->CreateRenderTargetView((ID3D11Texture2D*)this->_renderTarget, &viewDescriptor, 
+    targetResult = device->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, 
                                                   (ID3D11RenderTargetView**)(&(this->_renderTargetView)));
     if (FAILED(targetResult) || this->_renderTargetView == nullptr)
       throwError(targetResult, "SwapChain: could not create render target view");

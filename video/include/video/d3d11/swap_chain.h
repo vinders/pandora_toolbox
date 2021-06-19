@@ -109,7 +109,6 @@ License :     MIT
         private:
           _SwapChainConfig _settings{};
           std::shared_ptr<Renderer> _renderer = nullptr;
-          Renderer::Texture2dHandle _renderTarget = nullptr;            // ID3D11Texture2D*
           Renderer::RenderTargetViewHandle _renderTargetView = nullptr; // ID3D11RenderTargetView*
           void* _deviceContext11_1 = nullptr;                           // ID3D11DeviceContext1*
           Handle _swapChain = nullptr;                                  // IDXGISwapChain*/IDXGISwapChain1*
