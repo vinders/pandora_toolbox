@@ -22,7 +22,7 @@ License :     MIT
         ///        * For buffers rewritten at least once per frame or with huge data transfers, prefer DynamicBuffer.
         ///        * For more details about buffer types, see 'DataBufferType' in <video/shader_types.h>.
         /// @remarks - To use it, bind it to the associated Renderer object (must be the same as the one used in constructor).
-        ///          - Data type size must be a multiple of 16 byte (except in index buffers): add padding in structure/array-item if necessary.
+        ///          - Constant buffer data type size must be a multiple of 16 byte: add padding in structure/array-item if necessary.
         ///          - Static buffers are meant to be persistent: should be updated at most once per frame (and less than that if the buffer size is big).
         ///          - Common practice: * geometry centered around (0;0;0) -> vertex buffers;
         ///                             * world matrix to offset the entire model in the environment -> constant buffer;
@@ -33,7 +33,7 @@ License :     MIT
           /// @brief Create data buffer (to store data for shader stages)
           /// @param renderer       The renderer for which the buffer is created: use the same renderer when binding it or when calling write.
           /// @param type           Type of buffer to create: constant buffer, vertex array buffer, vertex index buffer...
-          /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes (except in index buffers).
+          /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant buffers.
           /// @warning Initialization/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
           /// @throws - invalid_argument: if 'bufferByteSize' is 0;
           ///         - runtime_error: on creation failure.
@@ -41,7 +41,7 @@ License :     MIT
           /// @brief Create data buffer (to store data for shader stages) with initial value
           /// @param renderer       The renderer for which the buffer is created: use the same renderer when binding it or when calling write.
           /// @param type           Type of buffer to create: constant buffer, vertex array buffer, vertex index buffer...
-          /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes (except in index buffers).
+          /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant buffers.
           /// @param initData       Buffer initial value -- structure or array of input values (must not be NULL if immutable)
           /// @param isImmutable    Buffer data is immutable (true) or can be modified (false)
           /// @warning Initialization/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
