@@ -540,13 +540,13 @@ License :     MIT
 
   // Bind active vertex array buffer to input stage slot
   void Renderer::bindVertexArrayBuffer(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
-                                       unsigned int usedByteSize, unsigned int byteOffset) noexcept {
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &usedByteSize, &byteOffset);
+                                       unsigned int strideByteSize, unsigned int byteOffset) noexcept {
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideByteSize, &byteOffset);
   }
   // Bind multiple vertex array buffers to consecutive input stage slots
   void Renderer::bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const Renderer::DataBufferHandle* vertexArrayBuffers, 
-                                       unsigned int* usedByteSizes, unsigned int* byteOffsets) noexcept {
-    __P_GetContext->IASetVertexBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)vertexArrayBuffers, usedByteSizes, byteOffsets);
+                                       unsigned int* strideByteSizes, unsigned int* byteOffsets) noexcept {
+    __P_GetContext->IASetVertexBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)vertexArrayBuffers, strideByteSizes, byteOffsets);
   }
   // Bind active vertex index buffer (indexes for vertex array buffer) to input stage
   void Renderer::bindVertexIndexBuffer(Renderer::DataBufferHandle indexBuffer, IndexBufferFormat dataFormat, uint32_t byteOffset) noexcept {
@@ -588,17 +588,17 @@ License :     MIT
   
   // Bind + draw active vertex buffer (not indexed) - grouped call (to reduce overhead)
   void Renderer::bindDraw(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
-                          unsigned int byteSize, uint32_t vertexCount, uint32_t vertexOffset) noexcept {
+                          unsigned int strideSize, uint32_t vertexCount, uint32_t vertexOffset) noexcept {
     UINT offset = 0;
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &byteSize, &offset);
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideSize, &offset);
     __P_GetContext->Draw((UINT)vertexCount, (UINT)vertexOffset);
   }
   // Bind + draw active vertex buffer (indexed: active index buffer) - grouped call (to reduce overhead)
-  void Renderer::bindDrawIndexed(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, unsigned int byteSize, 
+  void Renderer::bindDrawIndexed(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, unsigned int strideSize, 
                                  Renderer::DataBufferHandle indexBuffer, IndexBufferFormat indexFormat, 
                                  uint32_t indexCount, uint32_t indexOffset) noexcept {
     UINT offset = 0;
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &byteSize, &offset);
+    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideSize, &offset);
     __P_GetContext->IASetIndexBuffer((ID3D11Buffer*)indexBuffer, (indexFormat == IndexBufferFormat::r16_ui) 
                                                                  ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, offset);
     __P_GetContext->DrawIndexed((UINT)indexCount, (UINT)indexOffset, 0);

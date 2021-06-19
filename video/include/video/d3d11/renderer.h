@@ -172,18 +172,19 @@ License :     MIT
           static TopologyFlag createPatchTopology(uint32_t controlPoints) noexcept;
           
           /// @brief Bind active vertex array buffer to input stage slot
-          /// @param slotIndex     Input stage slot to set/replace with vertex array buffer
-          /// @param vertexBuffer  Handle of vertex array buffer (StaticBuffer.handle() / DynamicBuffer.handle() or ID3D11Buffer*) or NULL to clear slot
-          /// @param usedByteSize  Number of bytes to read in buffer (buffer.size()-offset, to read until the end)
-          /// @param byteOffset    Byte offset of first vertex info to use in buffer (0 to start from beginning)
-          void bindVertexArrayBuffer(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int usedByteSize, unsigned int byteOffset = 0u) noexcept;
+          /// @param slotIndex      Input stage slot to set/replace with vertex array buffer
+          /// @param vertexBuffer   Handle of vertex array buffer (StaticBuffer.handle() / DynamicBuffer.handle() or ID3D11Buffer*) or NULL to clear slot
+          /// @param strideByteSize Size of one vertex entry (stride)
+          /// @param byteOffset     Byte offset of first vertex info to use in buffer (0 to start from beginning)
+          void bindVertexArrayBuffer(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int strideByteSize, unsigned int byteOffset = 0u) noexcept;
           /// @brief Bind multiple vertex array buffers to consecutive input stage slots (example: vertex buffer + instance buffer)
-          /// @param firstSlotIndex First input stage slot to set/replace with first vertex array buffer (next buffers will use next slots)
-          /// @param length         Size of arrays 'vertexBuffers', 'usedByteSizes' and 'offsets' (same size required)
-          /// @param vertexBuffers  Array of vertex array buffers (size defined by 'length')
-          /// @param usedByteSizes  Array of "bytes to read" for each buffer
-          /// @param byteOffsets    Array of "byte offset" for each buffer
-          void bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const DataBufferHandle* vertexArrayBuffers, unsigned int* usedByteSizes, unsigned int* byteOffsets) noexcept;
+          /// @param firstSlotIndex  First input stage slot to set/replace with first vertex array buffer (next buffers will use next slots)
+          /// @param length          Size of arrays 'vertexBuffers', 'strideByteSizes' and 'offsets' (same size required)
+          /// @param vertexBuffers   Array of vertex array buffers (size defined by 'length')
+          /// @param strideByteSizes Array of "vertex entry size (stride)" for each buffer
+          /// @param byteOffsets     Array of "byte offset" for each buffer
+          void bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const DataBufferHandle* vertexArrayBuffers, 
+                                      unsigned int* strideByteSizes, unsigned int* byteOffsets) noexcept;
           /// @brief Bind active vertex index buffer (indexes for vertex array buffer) to input stage
           /// @param indexBuffer  Handle of vertex index buffer (StaticBuffer.handle() / DynamicBuffer.handle() or ID3D11Buffer*)
           /// @param dataFormat   Index data type (unsigned int 32 / 64)
@@ -226,9 +227,11 @@ License :     MIT
                                     uint32_t indexOffset = 0u, int32_t vertexOffsetFromIndex = 0u) noexcept;
           
           /// @brief Bind + draw active vertex buffer (not indexed) - grouped call (to reduce overhead)
-          void bindDraw(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int byteSize, uint32_t vertexCount, uint32_t vertexOffset = 0u) noexcept;
+          /// @remarks See 'bindVertexArrayBuffer' for description of slotIndex/vertexArrayBuffer/strideSize
+          void bindDraw(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int strideSize, uint32_t vertexCount, uint32_t vertexOffset = 0u) noexcept;
           /// @brief Bind + draw active vertex buffer (indexed: active index buffer) - grouped call (to reduce overhead)
-          void bindDrawIndexed(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int byteSize, 
+          /// @remarks See 'bindVertexArrayBuffer' for description of slotIndex/vertexArrayBuffer/strideSize
+          void bindDrawIndexed(uint32_t slotIndex, DataBufferHandle vertexArrayBuffer, unsigned int strideSize, 
                                DataBufferHandle indexBuffer, pandora::video::IndexBufferFormat indexFormat, 
                                uint32_t indexCount, uint32_t indexOffset = 0u) noexcept;
           
