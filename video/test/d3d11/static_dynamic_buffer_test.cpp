@@ -263,7 +263,7 @@
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
       Renderer::DataBufferHandle buffers[] = { buffer3.handle(), buffer6.handle() };
-      unsigned int sizes[] = { buffer3.size(), buffer6.size() };
+      unsigned int sizes[] = { (unsigned int)buffer3.size(), (unsigned int)buffer6.size() };
       unsigned int offsets[] = { 0,0 };
       renderer.bindVertexArrayBuffers(1, size_t{2u}, &buffers[0], &sizes[0], &offsets[0]);
       renderer.bindVertexIndexBuffer(buffer2.handle(), pandora::video::IndexBufferFormat::r32_ui, 0);
@@ -342,7 +342,7 @@
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
       Renderer::DataBufferHandle buffers[] = { buffer3.handle(), buffer6.handle() };
-      unsigned int sizes[] = { buffer3.size(), buffer6.size() };
+      unsigned int sizes[] = { (unsigned int)buffer3.size(), (unsigned int)buffer6.size() };
       unsigned int offsets[] = { 0,0 };
       renderer.bindVertexArrayBuffers(1, size_t{2u}, &buffers[0], &sizes[0], &offsets[0]);
       renderer.bindVertexIndexBuffer(buffer2.handle(), pandora::video::IndexBufferFormat::r32_ui, 0);

@@ -347,8 +347,6 @@ License :     MIT
           
           // ---
           
-          static size_t maxConstantBufferSlots() noexcept; ///< Max slots (or array size from first slot) for constant buffers
-          
           /// @brief Bind constant buffer(s) to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
           void bindVertexConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept;
@@ -377,6 +375,8 @@ License :     MIT
           void clearFragmentConstantBuffers() noexcept; ///< Reset all constant buffers in fragment/pixel shader stage (standard)
           void clearComputeConstantBuffers() noexcept; ///< Reset all constant buffers in compute shader stage
           void clearVertexFragmentConstantBuffers() noexcept; ///< Reset all constant buffers in vertex/fragment shader stages (grouped call, to reduce overhead)
+          
+          static size_t maxConstantBufferSlots() noexcept; ///< Max slots (or array size from first slot) for constant buffers
           
           // ---
           
