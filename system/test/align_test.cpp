@@ -53,6 +53,10 @@ __align_type(16,
 struct ColorComponents3 {
   __align_type(16, float rgba[4]);
 });
+__align_prefix(16)
+  struct ColorComponents3b {
+  __align_type(16, float rgba[4]);
+} __align_suffix(16);
 
 TEST_F(AlignTest, alignedStructs) {
   ColorComponents  empty{};
@@ -72,6 +76,11 @@ TEST_F(AlignTest, alignedStructs) {
   EXPECT_EQ((float)0.3f, val2.b);
   EXPECT_EQ((float)0.4f, val2.a);
   ColorComponents3 val3 {{ 0.1f,0.2f,0.3f,0.4f }};
+  EXPECT_EQ((float)0.1f, val3.rgba[0]);
+  EXPECT_EQ((float)0.2f, val3.rgba[1]);
+  EXPECT_EQ((float)0.3f, val3.rgba[2]);
+  EXPECT_EQ((float)0.4f, val3.rgba[3]);
+  ColorComponents3b val3 {{ 0.1f,0.2f,0.3f,0.4f }};
   EXPECT_EQ((float)0.1f, val3.rgba[0]);
   EXPECT_EQ((float)0.2f, val3.rgba[1]);
   EXPECT_EQ((float)0.3f, val3.rgba[2]);
