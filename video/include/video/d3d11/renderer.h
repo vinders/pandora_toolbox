@@ -41,11 +41,8 @@ License :     MIT
           using DepthStencilViewHandle = void*;// ID3D11DepthStencilView*
           using DataBufferHandle = void*;      // ID3D11Buffer*
           using TopologyFlag = uint32_t;       // D3D11_PRIMITIVE_TOPOLOGY
-          using SwapChain = pandora::video::d3d11::SwapChain; // aliases for renderer templatization
           using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
-          using DepthStencilState = pandora::video::d3d11::DepthStencilState;
-          using RasterizerState = pandora::video::d3d11::RasterizerState;
-          using FilterStates = pandora::video::d3d11::FilterStates;
+          using SwapChain = pandora::video::d3d11::SwapChain;
           
           /// @brief Direct3D feature level
           enum class DeviceLevel : uint32_t {

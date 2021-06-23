@@ -25,9 +25,8 @@ License :     MIT
         ///          - Constant buffer data type size must be a multiple of 16 byte: add padding in structure/array-item if necessary.
         ///          - Dynamic buffers are meant to be updated often: at least once per frame (or less than that if the buffer size is big).
         ///          - Common practice: * geometry centered around (0;0;0) -> vertex buffers;
-        ///                             * world matrix to offset the entire model in the environment -> constant buffer;
-        ///                             * camera view/project matrix -> constant buffer;
-        ///                             * combine world matrix with view/projection matrix to reposition vertices in vertex shader.
+        ///                             * world matrix to offset the entire model in the environment -> combined with camera view into constant buffer;
+        ///                             * vertices repositioned in vertex shader by world/view matrix and projection matrix.
         class DynamicBuffer final {
         public:
           /// @brief Create data buffer (to store data for shader stages)
