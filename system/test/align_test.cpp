@@ -80,9 +80,9 @@ TEST_F(AlignTest, alignedStructs) {
   EXPECT_EQ((float)0.2f, val3.rgba[1]);
   EXPECT_EQ((float)0.3f, val3.rgba[2]);
   EXPECT_EQ((float)0.4f, val3.rgba[3]);
-  ColorComponents3b val3 {{ 0.1f,0.2f,0.3f,0.4f }};
-  EXPECT_EQ((float)0.1f, val3.rgba[0]);
-  EXPECT_EQ((float)0.2f, val3.rgba[1]);
-  EXPECT_EQ((float)0.3f, val3.rgba[2]);
-  EXPECT_EQ((float)0.4f, val3.rgba[3]);
+  ColorComponents3b val3b {{ 0.1f,0.2f,0.3f,0.4f }};
+  EXPECT_EQ((float)0.1f, val3b.rgba[0]);
+  EXPECT_EQ((float)0.2f, val3b.rgba[1]);
+  EXPECT_EQ((float)0.3f, val3b.rgba[2]);
+  EXPECT_EQ((float)0.4f, val3b.rgba[3]);
 }
