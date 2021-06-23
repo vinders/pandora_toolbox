@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.92.1.612
-2021-06-16 - 587b6e64efd4b21acb377087e2193a59fa487abf
+## 0.95.1.624
+2021-06-23 - 6882131a549227f319cf09af46ff43ae607fa97b
 ### features
-vinders (12):
+vinders (15):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
 * video: component format (color/depth/stencil): portable bindings for D3D/OpenGL/Vulkan
 * video: Direct3D11 rendering device/context
@@ -14,9 +14,12 @@ vinders (12):
 * video: Direct3D11 rendering device/context: filter/sampler builder (linear/anisotropic/compared)
 * video: Direct3D11 shader builder/compiler/binding + input layouts
 * video: rendering viewport (region for 3D projection + near/far clipping)
+* system: portable data alignment macro: __align_type(size,def)
 * video: Direct3D11 depth/stencil buffer and view + depth/stencil states
 * video: Direct3D11 constant data buffer (for shaders)
-* system: portable data alignment macro: __align_type(size,def)
+* video: Direct3D11 static/dynamic vertex/index/constant buffers
+* video: Direct3D11 vertex buffer drawing (base/indexed/instances)
+* video: Direct3D11 camera screen projection (ratio, fov, near/far-planes)
 ### fixes
 vinders (3):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor

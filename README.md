@@ -11,6 +11,8 @@
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
 Libraries (video/io/hardware...) can be included separately.
 
+![Preview](_img/renderer_preview.jpg)
+
 **Feature overview:**
 * Window, renderers, user input, video filters...
 * Timers, stopwatch, ordered lock, spin-lock, semaphore...
@@ -71,4 +73,4 @@ Examples:
 | Enable OpenGLES 3 features.<br><sub>*Default: ON on mobile systems*</sub>                    | CWORK_VIDEO_OPENGLES3      | ON<br>OFF     | all except macOS                 |
 | Maximum OpenGLES 3 feature level.<br><sub>*Default: "32"*</sub>                              | CWORK_OPENGLES3_VERSION    | "32" "31"<br>"30"       | all except macOS       |
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11          | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
-| Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "111"*</sub>            | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
+| Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "110"*</sub>            | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
