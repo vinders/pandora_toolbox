@@ -43,12 +43,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
         static void refreshOnMaximizeRestore(__WindowImpl& window, bool isMaximized, LPARAM lParam, DisplayArea& outArea) noexcept;
         static __forceinline void resizeWithHomothety(__WindowImpl& window, int movedBorder, RECT& inOutArea) noexcept;
         
-        static __forceinline void refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
-                                                        uint32_t& outX, uint32_t& outY) noexcept;
-        static void moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, uint32_t& outX, uint32_t& outY) noexcept;
-        static __forceinline void setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
-                                                       uint32_t& outX, uint32_t& outY) noexcept;
-                                                       
         static __forceinline void setCursorOnHover(uint32_t& statusFlag) noexcept;
         static __forceinline void unsetCursorOnLeave(uint32_t& statusFlag) noexcept;
         static __forceinline void setCursorOnMenuExit(__WindowImpl& window) noexcept;
@@ -434,9 +428,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
     // adjust size, based on actual window
     adjustVisibleClientSize(PixelSize{ clientArea.width, clientArea.height });
-    if (isScrollable())
-      adjustScrollbarPageSize(clientArea, true);
-    
+
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
     SetForegroundWindow(this->_handle);
     SetFocus(this->_handle);
@@ -512,12 +504,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       if ((behavior & WindowBehavior::topMost) == true)
         outWindowStyleExt |= WS_EX_TOPMOST;
     }
-    
     // common behaviors
-    if ((behavior & WindowBehavior::scrollH) == true)
-      outWindowStyle |= WS_HSCROLL;
-    if ((behavior & WindowBehavior::scrollV) == true)
-      outWindowStyle |= WS_VSCROLL;
     if ((behavior & WindowBehavior::aboveTaskbar) == true)
       outWindowStyleExt |= WS_EX_APPWINDOW;
   }
@@ -525,11 +512,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Convert portable behavior to native window-class style flag
   UINT __WindowImpl::toWindowClassStyleFlag(WindowBehavior behavior) noexcept {
     UINT classStyle = (CS_HREDRAW | CS_VREDRAW);
-    if ((behavior & WindowBehavior::dropShadow) == true)
-      classStyle |= CS_DROPSHADOW;
     if ((behavior & WindowBehavior::globalContext) == true)
       classStyle |= CS_OWNDC;
-    
     return classStyle;
   }
   
@@ -667,107 +651,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       SetForegroundWindow(this->_handle);
       SetFocus(this->_handle);
     }
-  }
-  
-  // ---
-  
-  // Change vertical/horizontal scrollbar ranges
-  bool __WindowImpl::setScrollbarRange(uint32_t posH, uint32_t posV, uint32_t horizontalMax, 
-                                       uint32_t verticalMax, uint32_t pixelsPerUnit) noexcept {
-    if (posV > verticalMax || posH > horizontalMax || pixelsPerUnit == 0)
-      return false;
-    
-    BOOL repaint;
-    PixelSize expectedClientSize;
-    if (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) {
-      repaint = TRUE;
-      expectedClientSize = lastClientSize();
-    }
-    else
-      repaint = FALSE;
-
-    this->_scrollUnit = pixelsPerUnit;
-    
-    SCROLLINFO scrollInfo;
-    ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
-    scrollInfo.cbSize = sizeof(SCROLLINFO);
-    
-    if (isScrollableH()) {
-      this->_lastScrollPosition.x = (int32_t)posH;
-      this->_maxScrollPosition.width = horizontalMax;
-      
-      scrollInfo.fMask = (SIF_POS | SIF_RANGE | SIF_PAGE);
-      scrollInfo.nPos = (int)posH;
-      scrollInfo.nMin = 0;
-      scrollInfo.nMax = (int)horizontalMax;
-      scrollInfo.nPage = this->_lastClientArea.width / pixelsPerUnit;
-      SetScrollInfo(this->_handle, SB_HORZ, &scrollInfo, repaint);
-    }
-    if (isScrollableV()) {
-      this->_lastScrollPosition.y = (int32_t)posV;
-      this->_maxScrollPosition.height = verticalMax;
-      
-      scrollInfo.fMask = (SIF_POS | SIF_RANGE | SIF_PAGE);
-      scrollInfo.nPos = (int)posV;
-      scrollInfo.nMin = 0;
-      scrollInfo.nMax = (int)verticalMax;
-      scrollInfo.nPage = this->_lastClientArea.height / pixelsPerUnit;
-      SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, repaint);
-    }
-    if (repaint)
-      adjustVisibleClientSize(expectedClientSize);
-    return true;
-  }
-  
-  // Set scrollbar page size, based on client-area size
-  void __WindowImpl::adjustScrollbarPageSize(const DisplayArea& clientArea, bool repaint) noexcept {
-    SCROLLINFO scrollInfo;
-    ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
-    scrollInfo.cbSize = sizeof(SCROLLINFO);
-    __P_ADD_FLAG(this->_statusFlags, __P_FLAG_SCROLLRANGE_HANDLER_CHANGE);
-
-    if (isScrollableH()) {
-      scrollInfo.fMask = SIF_PAGE;
-      scrollInfo.nPage = clientArea.width / this->_scrollUnit;
-      SetScrollInfo(this->_handle, SB_HORZ, &scrollInfo, (repaint && !isScrollableV()) ? TRUE : FALSE);
-    }
-    if (isScrollableV()) {
-      scrollInfo.fMask = SIF_PAGE;
-      scrollInfo.nPage = clientArea.height / this->_scrollUnit;
-      SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, repaint ? TRUE : FALSE);
-    }
-    __P_REMOVE_FLAG(this->_statusFlags, __P_FLAG_SCROLLRANGE_HANDLER_CHANGE);
-  }
-  
-  // Set lider position in horizontal scrollbar
-  bool __WindowImpl::setScrollPositionH(uint32_t pos) noexcept {
-    if (isScrollableH() && pos <= this->_maxScrollPosition.width) {
-      this->_lastScrollPosition.x = (int32_t)pos;
-      
-      SCROLLINFO scrollInfo;
-      ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
-      scrollInfo.cbSize = sizeof(SCROLLINFO);
-      scrollInfo.fMask = SIF_POS;
-      scrollInfo.nPos = (int)pos;
-      SetScrollInfo(this->_handle, SB_HORZ, &scrollInfo, (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) ? TRUE : FALSE);
-      return true;
-    }
-    return false;
-  }
-  // Set slider position in vertical scrollbar
-  bool __WindowImpl::setScrollPositionV(uint32_t pos) noexcept {
-    if (isScrollableV() && pos <= this->_maxScrollPosition.height) {
-      this->_lastScrollPosition.y = (int32_t)pos;
-      
-      SCROLLINFO scrollInfo;
-      ZeroMemory(&scrollInfo, sizeof(SCROLLINFO));
-      scrollInfo.cbSize = sizeof(SCROLLINFO);
-      scrollInfo.fMask = SIF_POS;
-      scrollInfo.nPos = (int)pos;
-      SetScrollInfo(this->_handle, SB_VERT, &scrollInfo, (this->_statusFlags & __P_FLAG_WINDOW_VISIBLE) ? TRUE : FALSE);
-      return true;
-    }
-    return false;
   }
   
 
@@ -1045,8 +928,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
                      (SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW)) != FALSE) {
       this->_lastClientArea.width = clientSize.width;
       this->_lastClientArea.height = clientSize.height;
-      if (isScrollable())
-        adjustScrollbarPageSize(this->_lastClientArea, false);
     
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
@@ -1069,8 +950,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
     if (SetWindowPos(this->_handle, HWND_TOP, (int)windowArea.x,(int)windowArea.y, 
                      (int)windowArea.width,(int)windowArea.height, (SWP_NOZORDER | SWP_SHOWWINDOW)) != FALSE) {
       this->_lastClientArea = clientArea;
-      if (isScrollable())
-        adjustScrollbarPageSize(this->_lastClientArea, false);
       
       InvalidateRect(this->_handle, nullptr, true); // repaint
       return true;
@@ -1112,8 +991,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
         || window._lastClientArea.y != outArea.y || window._lastClientArea.height != outArea.height) {
 
         window._lastClientArea = outArea;
-        if (window.isScrollable())
-          window.adjustScrollbarPageSize(outArea, false);
         return 2;
       }
       return 1;
@@ -1132,8 +1009,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
       window.computeWindowDecorations(window._currentStyleFlag, window._currentStyleExtFlag,
                                       window.hasMenu(), window._decorationSizes);
     }
-    if (window.isScrollable())
-      window.adjustScrollbarPageSize(outArea, false);
 
     // force homothety when maximized
     if (isMaximized && (window._resizeMode & ResizeMode::homothety) == true) {
@@ -1221,50 +1096,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
       default: break;
     }
   }
-  
-  // ---
 
-  // refresh scroll position during scroll event
-  __forceinline void __WindowImplEventProc::refreshScrollPosition(__WindowImpl& window, UINT message, WPARAM wParam, 
-                                                                  uint32_t& outX, uint32_t& outY) noexcept {
-    if (message == WM_HSCROLL)
-      window._lastScrollPosition.x = (int32_t)HIWORD(wParam);
-    else
-      window._lastScrollPosition.y = (int32_t)HIWORD(wParam);
-    outX = (uint32_t)window._lastScrollPosition.x;
-    outY = (uint32_t)window._lastScrollPosition.y;
-  }
-  // move scroll position during scroll event
-  void __WindowImplEventProc::moveScrollPosition(__WindowImpl& window, UINT message, int32_t add, 
-                                                               uint32_t& outX, uint32_t& outY) noexcept {
-    if (message == WM_HSCROLL) {
-      window._lastScrollPosition.x += add;
-      if (window._lastScrollPosition.x < 0)
-        window._lastScrollPosition.x = 0;
-      else if (window._lastScrollPosition.x > (int32_t)window._maxScrollPosition.width)
-        window._lastScrollPosition.x = (int32_t)window._maxScrollPosition.width;
-    }
-    else {
-      window._lastScrollPosition.y += add;
-      if (window._lastScrollPosition.y < 0)
-        window._lastScrollPosition.y = 0;
-      else if (window._lastScrollPosition.y > (int32_t)window._maxScrollPosition.height)
-        window._lastScrollPosition.y = (int32_t)window._maxScrollPosition.height;
-    }
-    outX = (uint32_t)window._lastScrollPosition.x;
-    outY = (uint32_t)window._lastScrollPosition.y;
-  }
-  // move scroll position to top/bottom during scroll event
-  __forceinline void __WindowImplEventProc::setScrollMaxPosition(__WindowImpl& window, UINT message, bool isMin, 
-                                                                 uint32_t& outX, uint32_t& outY) noexcept {
-    if (message == WM_HSCROLL)
-      window._lastScrollPosition.x = isMin ? 0 : (int32_t)window._maxScrollPosition.width;
-    else
-      window._lastScrollPosition.y = isMin ? 0 : (int32_t)window._maxScrollPosition.height;
-    outX = (uint32_t)window._lastScrollPosition.x;
-    outY = (uint32_t)window._lastScrollPosition.y;
-  }
-  
   // ---
   
   // Cursor in client area: hide cursor
@@ -1725,7 +1557,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
           break;
         }
 
-        // > window size/move/scroll events --
+        // > window size/move events --
         
         case WM_ENTERSIZEMOVE: { // manual user move/resize beginning
           __P_ADD_FLAG(window->_statusFlags, __P_FLAG_RESIZED_MOVED);
@@ -1799,9 +1631,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
             }
             case SIZE_RESTORED:
             case SIZE_MAXIMIZED: {
-              if (window->_statusFlags & __P_FLAG_SCROLLRANGE_HANDLER_CHANGE)
-                break;
-
               bool wasActive = (window->_statusFlags & (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE)) == (__P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE);
               if (wParam == SIZE_RESTORED)
                 __P_ADD_REMOVE_FLAGS(window->_statusFlags, __P_FLAG_WINDOW_VISIBLE | __P_FLAG_WINDOW_ACTIVE, 
@@ -1879,46 +1708,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
             }
             return 0;
           }
-          break;
-        }
-
-        // scrollbar slider change
-        case WM_VSCROLL:
-        case WM_HSCROLL: {
-          if (window->_onPositionEvent) {
-            uint32_t type = (uint32_t)LOWORD(wParam);
-            uint32_t posX = (uint32_t)-1, posY = (uint32_t)-1;
-            
-            if (type == SB_THUMBTRACK) {
-              __WindowImplEventProc::refreshScrollPosition(*window, message, wParam, posX, posY);
-              if (window->_onPositionEvent(&window->_container, PositionEvent::scrollPositionTrack, posX, posY,
-                                           window->_maxScrollPosition.width, window->_maxScrollPosition.height))
-                return 0;
-            }
-            else {
-              switch (type) {
-                case SB_THUMBPOSITION: __WindowImplEventProc::refreshScrollPosition(*window, message, wParam, posX, posY); break;
-                case SB_TOP:    __WindowImplEventProc::setScrollMaxPosition(*window, message, true, posX, posY); break;
-                case SB_BOTTOM: __WindowImplEventProc::setScrollMaxPosition(*window, message, false, posX, posY); break;
-                case SB_PAGEUP:   __WindowImplEventProc::moveScrollPosition(*window, message, -((int32_t)window->_scrollUnit << 8), posX, posY); break;
-                case SB_PAGEDOWN: __WindowImplEventProc::moveScrollPosition(*window, message, ((int32_t)window->_scrollUnit << 8), posX, posY); break;
-                case SB_LINEUP:   __WindowImplEventProc::moveScrollPosition(*window, message, -((int32_t)window->_scrollUnit << 3), posX, posY); break;
-                case SB_LINEDOWN: __WindowImplEventProc::moveScrollPosition(*window, message, ((int32_t)window->_scrollUnit << 3), posX, posY); break;
-                default: break;
-              }
-              if (posX != (uint32_t)-1) {
-                if (message == WM_VSCROLL)
-                  window->setScrollPositionV(posY);
-                else
-                  window->setScrollPositionH(posX);
-                
-                if (window->_onPositionEvent(&window->_container, PositionEvent::scrollPositionChanged, posX, posY,
-                                             window->_maxScrollPosition.width, window->_maxScrollPosition.height))
-                  return 0;
-              }
-            }
-          }
-          isCommandEvent = true;
           break;
         }
         

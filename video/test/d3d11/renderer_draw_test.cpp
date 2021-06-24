@@ -139,6 +139,7 @@
   struct InstanceData final {
     float position[3];
     float color[3];
+    float _pad[2];
   });
   __align_type(16,
   struct CamBuffer final {

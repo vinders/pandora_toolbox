@@ -34,14 +34,11 @@ namespace pandora {
     };
     /// @brief Window behavior settings (bit-mask flags)
     enum class WindowBehavior : uint32_t {
-      none          = 0u,     ///< no widgets
-      scrollH       = 0x001u, ///< horizontal scroll bar ('setScrollbarRange' must be called after window creation)
-      scrollV       = 0x002u, ///< vertical scroll bar ('setScrollbarRange' must be called after window creation)
-      dropShadow    = 0x010u, ///< Additional drop shadow to emphasize Z-order (useful for popup dialogs)
-      topMost       = 0x100u, ///< window displayed above all non-topmost windows
-      aboveTaskbar  = 0x200u, ///< window displayed above taskbar / status bar (useful for borderless windows)
-      globalContext = 0x400u  ///< Use global context for display/paint/rendering (faster, but shared between all windows with this option).
-                              ///  Only recommended for single window apps, for main display window only, or for duplicate/mirrored windows
+      none          = 0u,   ///< no widgets
+      topMost       = 0x1u, ///< window displayed above all non-topmost windows
+      aboveTaskbar  = 0x2u, ///< window displayed above taskbar / status bar (useful for borderless windows)
+      globalContext = 0x4u  ///< Use global context for display/paint/rendering (faster, but shared between all windows with this option).
+                            ///  Only recommended for single window apps, for main display window only, or for duplicate/mirrored windows
     };
     /// @brief Window resize mode (bit-mask flags)
     enum class ResizeMode : uint32_t {
@@ -132,9 +129,6 @@ namespace pandora {
       std::basic_string<window_char> getCaption() const; ///< Read current caption title
       CursorMode getCursorMode() const noexcept;         ///< Get current cursor mode (visibility/capture)
       PixelPosition getCursorPosition(CursorPositionType mode) const noexcept;///< Get current mouse pointer position (-1 on error)
-      PixelPosition getScrollPosition() const noexcept; ///< Read horizontal/vertical scroll box position (-1 on error)
-      int32_t getScrollPositionV() const noexcept; ///< Read vertical scroll box position (-1 on error)
-      int32_t getScrollPositionH() const noexcept; ///< Read horizontal scroll box position (-1 on error)
       
       /// @brief Get last error message (if a setter returns false)
       /// @returns Last error (if available) or empty string
@@ -155,14 +149,7 @@ namespace pandora {
       bool setDisplayMode(WindowType type, WindowBehavior components, ResizeMode resizeMode, 
                           const pandora::hardware::DisplayArea& clientArea, uint32_t rate = 0);
       bool setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept; ///< Define minimum size limits for the user (ignored if not resizable)
-      
-      /// @brief Change vertical/horizontal scrollbar ranges (only values for existing scrollbars will be used)
-      /// @remarks Scroll units don't need to be pixels, but the same unit should be used by the event handler for updating display.
-      bool setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit = 1) noexcept;
-      bool setScrollPosition(const PixelPosition& pos) noexcept; ///< Change position of slider in both scrollbars
-      bool setScrollPositionV(uint16_t pos) noexcept; ///< Change position of slider in vertical scrollbar
-      bool setScrollPositionH(uint16_t pos) noexcept; ///< Change position of slider in horizontal scrollbar
-      
+
       bool clearClientArea() noexcept; ///< Clear entire client area (with background color)
       bool clear(const pandora::hardware::DisplayArea& area) noexcept; ///< Clear rectangle relative to client area (with background color)
       
@@ -229,7 +216,7 @@ namespace pandora {
         
         /// @brief Set display monitor on which the window should appear (if omitted, will use default monitor)
         inline Builder& setParentMonitor(std::shared_ptr<pandora::hardware::DisplayMonitor> monitor) noexcept;
-        /// @brief Set window type (dialog/window/fullscreen/...) + behaviors (scrollable/resizable/top-most/...)
+        /// @brief Set window type (dialog/window/fullscreen/...) + behaviors (resizable/top-most/...)
         inline Builder& setDisplayMode(WindowType type, WindowBehavior behavior, ResizeMode resize) noexcept;
         /// @brief Set window refresh rate in milliHertz (only used in fullscreen mode, if value != 0)
         inline Builder& setRefreshRate(uint32_t rateMilliHz) noexcept;

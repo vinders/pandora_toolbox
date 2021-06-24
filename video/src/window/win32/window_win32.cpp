@@ -175,14 +175,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     }
     return { -1, -1 };
   }
-  
-  // Read horizontal/vertical scroll box position
-  PixelPosition Window::getScrollPosition() const noexcept { return this->_impl->lastScrollPosition(); }
-  // Read vertical scroll box position
-  int32_t Window::getScrollPositionV() const noexcept { return this->_impl->lastScrollPositionV(); }
-  // Read horizontal scroll box position
-  int32_t Window::getScrollPositionH() const noexcept { return this->_impl->lastScrollPositionH(); }
-  
+
   // ---
   
   // Get last error message (on change failure)
@@ -216,26 +209,6 @@ Description : Window manager + builder - Win32 implementation (Windows)
   // Define minimum size limits for the user (ignored if not resizable)
   bool Window::setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept {
     return this->_impl->setMinClientAreaSize(minWidth, minHeight);
-  }
-  
-  // ---
-  
-  // Change vertical/horizontal scrollbar ranges
-  bool Window::setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit) noexcept {
-    return this->_impl->setScrollbarRange((uint32_t)posH, (uint32_t)posV, (uint32_t)horizontalMax, (uint32_t)verticalMax, pixelsPerUnit);
-  }
-  // Change position of slider in both scrollbars
-  bool Window::setScrollPosition(const PixelPosition& pos) noexcept {
-    return (this->_impl->setScrollPositionV((uint32_t)pos.y)
-         || this->_impl->setScrollPositionH((uint32_t)pos.x));
-  }
-  // Change position of slider in vertical scrollbar
-  bool Window::setScrollPositionV(uint16_t pos) noexcept {
-    return this->_impl->setScrollPositionV((uint32_t)pos);
-  }
-  // Change position of slider in horizontal scrollbar
-  bool Window::setScrollPositionH(uint16_t pos) noexcept {
-    return this->_impl->setScrollPositionH((uint32_t)pos);
   }
 
   // ---

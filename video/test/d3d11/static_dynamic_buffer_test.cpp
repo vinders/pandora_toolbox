@@ -218,8 +218,8 @@
       EXPECT_EQ(sizeof(data1a), buffer1.size());
       EXPECT_EQ(pandora::video::DataBufferType::vertexArray, buffer1.type());
       buffer1.write(renderer, (const void*)&data1a);
-      renderer.bindVertexArrayBuffer(0, buffer1.handle(), buffer1.size(), 0);
-      renderer.bindVertexArrayBuffer(1, buffer1.handle(), buffer1.size()/2u, buffer1.size()/2u);
+      renderer.bindVertexArrayBuffer(0, buffer1.handle(), (unsigned int)buffer1.size(), 0);
+      renderer.bindVertexArrayBuffer(1, buffer1.handle(), (unsigned int)buffer1.size()/2u, (unsigned int)buffer1.size()/2u);
       unsigned int bufferSize = (unsigned int)buffer1.size(), offset = 0;
       renderer.bindVertexArrayBuffers(2, size_t{ 1u }, buffer1.handleArray(), &bufferSize, &offset);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
@@ -238,14 +238,14 @@
       StaticBuffer buffer3(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data1b), (const void*)&data1b, true);
       EXPECT_FALSE(buffer3.isEmpty());
       EXPECT_TRUE(buffer3.handle() != nullptr);
-      renderer.bindVertexArrayBuffer(2, buffer3.handle(), buffer3.size(), 0);
+      renderer.bindVertexArrayBuffer(2, buffer3.handle(), (unsigned int)buffer3.size(), 0);
       renderer.bindVertexArrayBuffer(2, nullptr, 0);
 
       StaticBuffer buffer4(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data2a));
       EXPECT_FALSE(buffer4.isEmpty());
       EXPECT_TRUE(buffer4.handle() != nullptr);
       buffer4.write(renderer, (const void*)&data2a);
-      renderer.bindVertexArrayBuffer(0, buffer4.handle(), buffer4.size(), 0);
+      renderer.bindVertexArrayBuffer(0, buffer4.handle(), (unsigned int)buffer4.size(), 0);
       buffer4.write(renderer, (const void*)&data2b);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
@@ -259,7 +259,7 @@
       StaticBuffer buffer6(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data2a), (const void*)&data2a, true);
       EXPECT_FALSE(buffer6.isEmpty());
       EXPECT_TRUE(buffer6.handle() != nullptr);
-      renderer.bindVertexArrayBuffer(0, buffer6.handle(), buffer6.size(), 0);
+      renderer.bindVertexArrayBuffer(0, buffer6.handle(), (unsigned int)buffer6.size(), 0);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
       Renderer::DataBufferHandle buffers[] = { buffer3.handle(), buffer6.handle() };
@@ -297,8 +297,8 @@
       EXPECT_EQ(sizeof(data1a), buffer1.size());
       EXPECT_EQ(pandora::video::DataBufferType::vertexArray, buffer1.type());
       buffer1.writeDiscard(renderer, (const void*)&data1a);
-      renderer.bindVertexArrayBuffer(0, buffer1.handle(), buffer1.size(), 0);
-      renderer.bindVertexArrayBuffer(1, buffer1.handle(), buffer1.size()/2u, buffer1.size()/2u);
+      renderer.bindVertexArrayBuffer(0, buffer1.handle(), (unsigned int)buffer1.size(), 0);
+      renderer.bindVertexArrayBuffer(1, buffer1.handle(), (unsigned int)buffer1.size()/2u, (unsigned int)buffer1.size()/2u);
       unsigned int bufferSize = (unsigned int)buffer1.size(), offset = 0;
       renderer.bindVertexArrayBuffers(2, size_t{ 1u }, buffer1.handleArray(), &bufferSize, &offset);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
@@ -317,14 +317,14 @@
       DynamicBuffer buffer3(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data1b), (const void*)&data1b);
       EXPECT_FALSE(buffer3.isEmpty());
       EXPECT_TRUE(buffer3.handle() != nullptr);
-      renderer.bindVertexArrayBuffer(2, buffer3.handle(), buffer3.size(), 0);
+      renderer.bindVertexArrayBuffer(2, buffer3.handle(), (unsigned int)buffer3.size(), 0);
       renderer.bindVertexArrayBuffer(2, nullptr, 0);
 
       DynamicBuffer buffer4(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data2a));
       EXPECT_FALSE(buffer4.isEmpty());
       EXPECT_TRUE(buffer4.handle() != nullptr);
       buffer4.writeDiscard(renderer, (const void*)&data2a);
-      renderer.bindVertexArrayBuffer(0, buffer4.handle(), buffer4.size(), 0);
+      renderer.bindVertexArrayBuffer(0, buffer4.handle(), (unsigned int)buffer4.size(), 0);
       buffer4.write(renderer, (const void*)&data2b);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
@@ -338,7 +338,7 @@
       DynamicBuffer buffer6(renderer, pandora::video::DataBufferType::vertexArray, sizeof(data2a), (const void*)&data2a);
       EXPECT_FALSE(buffer6.isEmpty());
       EXPECT_TRUE(buffer6.handle() != nullptr);
-      renderer.bindVertexArrayBuffer(0, buffer6.handle(), buffer6.size(), 0);
+      renderer.bindVertexArrayBuffer(0, buffer6.handle(), (unsigned int)buffer6.size(), 0);
       renderer.bindVertexArrayBuffer(0, nullptr, 0);
 
       Renderer::DataBufferHandle buffers[] = { buffer3.handle(), buffer6.handle() };

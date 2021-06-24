@@ -98,7 +98,6 @@ struct WindowParams {
   Window::CursorMode cursorMode = Window::CursorMode::visible;
   bool hasCustomCursor = false;
   bool isCentered = true;
-  bool isScrollable = false;
 };
 
 // build icon
@@ -125,10 +124,6 @@ std::shared_ptr<WindowResource> buildWindowCursor(bool usePackage) {
   else
     return WindowResource::buildCursor(SystemCursor::pointer);
 }
-// get display behavior
-WindowBehavior getBehavior(bool isScrollable) {
-  return isScrollable ? (WindowBehavior::scrollV | WindowBehavior::scrollH) : WindowBehavior::none;
-}
 
 // create main window
 std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource::Color background) { // throws on failure
@@ -139,7 +134,7 @@ std::unique_ptr<Window> createWindow(const WindowParams& params, WindowResource:
   int32_t position = params.isCentered ? Window::Builder::centeredPosition() : Window::Builder::defaultPosition();
   
   Window::Builder builder;
-  builder.setDisplayMode(params.mode, getBehavior(params.isScrollable), params.resize)
+  builder.setDisplayMode(params.mode, WindowBehavior::none, params.resize)
          .setRefreshRate(_REFRESH_RATE)
          .setSize(_DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT)
          .setPosition(position, position)
@@ -161,16 +156,14 @@ struct {
   uint32_t lastCursorPosX;
   uint32_t lastCursorPosY;
   uint32_t lastCharInput;
-  bool hasScrollbars;
   bool isRefreshed;
   bool hasClicked;
   
-  void reset(bool isScrollable) noexcept {
+  void reset() noexcept {
     lastSizeX = _DEFAULT_WINDOW_WIDTH;
     lastSizeY = _DEFAULT_WINDOW_HEIGHT;
     lastCursorPosX = lastCursorPosY = 0;
     lastCharInput = (uint32_t)'-';
-    hasScrollbars = isScrollable;
     isRefreshed = false;
     hasClicked = false;
   }
@@ -196,14 +189,11 @@ bool onWindowEvent(Window* sender, WindowEvent event, uint32_t, int32_t, int32_t
   return false;
 }
 // size/position event handler
-bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint32_t sizeX, uint32_t sizeY) {
+bool onPositionEvent(Window*, PositionEvent event, int32_t, int32_t, uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
     case PositionEvent::sizePositionChanged: 
       g_events.lastSizeX = sizeX; 
       g_events.lastSizeY = sizeY; 
-      if (g_events.hasScrollbars)
-        sender->setScrollbarRange((uint16_t)sender->getScrollPositionH(), (uint16_t)sender->getScrollPositionV(), 
-                                  (uint16_t)sizeX*2, (uint16_t)sizeY*2);
       g_events.isRefreshed = true;
       break;
     default: break;
@@ -293,15 +283,13 @@ struct BackgroundColor {
 void viewWindow(const WindowParams& params) {
   try {
     bool hasCursorChanged = false;
-    g_events.reset(params.isScrollable);
+    g_events.reset();
     BackgroundColor back = (params.feat == FeatureMode::rainbowBackground || params.mode == WindowType::fullscreen)
                          ? BackgroundColor{ 255,0,0 }
                          : BackgroundColor{ 0,0,0 };
     
     auto window = createWindow(params, WindowResource::rgbColor(back.r,back.g,back.b));
     window->setMinClientAreaSize(400, 300);
-    if (params.isScrollable)
-      window->setScrollbarRange(0, 0, (uint16_t)_DEFAULT_WINDOW_WIDTH*2, (uint16_t)_DEFAULT_WINDOW_HEIGHT*2);
     if (params.cursorMode == Window::CursorMode::hiddenRaw)
       g_events.lastCursorPosX = g_events.lastCursorPosY = 1000; // reset start position
 
@@ -340,9 +328,9 @@ void viewWindow(const WindowParams& params) {
               pandora::hardware::DisplayArea clientArea{ position, position, _DEFAULT_WINDOW_WIDTH, _DEFAULT_WINDOW_HEIGHT };
               if (window->displayMode() == WindowType::fullscreen)
                 window->setDisplayMode((params.mode != WindowType::fullscreen) ? params.mode : WindowType::window, 
-                                       getBehavior(params.isScrollable), params.resize, clientArea);
+                                       WindowBehavior::none, params.resize, clientArea);
               else
-                window->setDisplayMode(WindowType::fullscreen, getBehavior(params.isScrollable), params.resize, clientArea, _REFRESH_RATE);
+                window->setDisplayMode(WindowType::fullscreen, WindowBehavior::none, params.resize, clientArea, _REFRESH_RATE);
               break;
             }
             case FeatureMode::cursorChangeOnClick: {
@@ -441,19 +429,15 @@ void menuWindow(WindowType mode, const char* typeName) {
     printf("> to exit: ESC or close button\n");
 
     printf("\nSize mode:\n");
-    printMenu<9>({ "Back to main menu...", "Fixed", "ResizableX", "ResizableY", "Resizable", "Homothety", 
-                                           "Fixed / scrollbars", "Resizable / scrollbars", "Homothety / scrollbars" });
-    int option = readNumericInput(1, 8);
+    printMenu<6>({ "Back to main menu...", "Fixed", "ResizableX", "ResizableY", "Resizable", "Homothety" });
+    int option = readNumericInput(1, 5);
     if (option == 0) { isRunning = false; continue; }
     switch (option) {
-      case 1: params.isScrollable = false; params.resize = ResizeMode::fixed; break;
-      case 2: params.isScrollable = false; params.resize = ResizeMode::resizableX; break;
-      case 3: params.isScrollable = false; params.resize = ResizeMode::resizableY; break;
-      case 4: params.isScrollable = false; params.resize = ResizeMode::resizable; break;
-      case 5: params.isScrollable = false; params.resize = ResizeMode::resizable|ResizeMode::homothety; break;
-      case 6: params.isScrollable = true;  params.resize = ResizeMode::fixed; break;
-      case 7: params.isScrollable = true;  params.resize = ResizeMode::resizable; break;
-      case 8: params.isScrollable = true;  params.resize = ResizeMode::resizable|ResizeMode::homothety; break;
+      case 1: params.resize = ResizeMode::fixed; break;
+      case 2: params.resize = ResizeMode::resizableX; break;
+      case 3: params.resize = ResizeMode::resizableY; break;
+      case 4: params.resize = ResizeMode::resizable; break;
+      case 5: params.resize = ResizeMode::resizable|ResizeMode::homothety; break;
       default: break;
     }
 

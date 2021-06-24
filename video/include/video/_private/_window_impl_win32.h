@@ -51,8 +51,7 @@ License :     MIT
 # define __P_FLAG_CURSOR_IS_CAPTURED  0x80000 // state: current window is active
 
 # define __P_FLAG_SIZE_HANDLER_CHANGE 0x100000 // a size change has been triggered by the size handler (and should not be re-processed)
-# define __P_FLAG_SCROLLRANGE_HANDLER_CHANGE 0x200000 // a scroll range change has been triggered by the size handler (and should not be re-processed)
-# define __P_FLAG_CAPTURE_HANDLER_ON         0x400000 // capture out of window activated (after mouse leave in clipped mode)
+# define __P_FLAG_CAPTURE_HANDLER_ON  0x200000 // capture out of window activated (after mouse leave in clipped mode)
 
 namespace pandora {
   namespace video {
@@ -128,11 +127,9 @@ namespace pandora {
       static inline bool isResizable(ResizeMode mode) noexcept { return ((mode & ResizeMode::resizable) == true); }
       
       inline WindowBehavior behavior() const noexcept { return this->_behavior; }
-      inline bool isScrollable() const noexcept { return (this->_currentStyleFlag & (WS_HSCROLL|WS_VSCROLL)); }
-      inline bool isScrollableH() const noexcept { return (this->_currentStyleFlag & WS_HSCROLL); }
-      inline bool isScrollableV() const noexcept { return (this->_currentStyleFlag & WS_VSCROLL); }
       inline bool isAboveTaskbar() const noexcept { return (this->_currentStyleExtFlag & WS_EX_APPWINDOW); }
       inline Window::VisibleState getVisibleState() const noexcept;
+      inline Window::CursorMode getCursorMode() const noexcept { return this->_cursorMode; }
       
       float contentScale() const noexcept;
       inline pandora::hardware::DisplayArea lastWindowArea() const noexcept;
@@ -142,11 +139,6 @@ namespace pandora {
       inline PixelPosition lastAbsoluteClientCenter() const noexcept;
       inline PixelPosition lastClientPosition() const noexcept;
       inline PixelSize lastClientSize() const noexcept;
-      
-      inline Window::CursorMode getCursorMode() const noexcept { return this->_cursorMode; }
-      inline const PixelPosition& lastScrollPosition() const noexcept { return this->_lastScrollPosition; }
-      inline int32_t lastScrollPositionH() const noexcept { return this->_lastScrollPosition.x; }
-      inline int32_t lastScrollPositionV() const noexcept { return this->_lastScrollPosition.y; }
       
       // -- style flag conversions --
       
@@ -176,10 +168,6 @@ namespace pandora {
       bool setCursorPosition(int32_t x, int32_t y, Window::CursorPositionType mode) noexcept;
       void setCursorMode(Window::CursorMode cursorMode) noexcept;
       
-      bool setScrollbarRange(uint32_t posH, uint32_t posV, uint32_t horizontalMax, uint32_t verticalMax, uint32_t pixelsPerUnit) noexcept;
-      bool setScrollPositionH(uint32_t pos) noexcept;
-      bool setScrollPositionV(uint32_t pos) noexcept;
-      
       // -- window events --
       
       void setWindowHandler(WindowEventHandler handler) noexcept;
@@ -201,8 +189,6 @@ namespace pandora {
       
       bool readVisibleWindowArea(pandora::hardware::DisplayArea& outWindowArea) noexcept;
       bool readVisibleClientArea(pandora::hardware::DisplayArea& outClientArea) noexcept;
-      
-      void adjustScrollbarPageSize(const pandora::hardware::DisplayArea& clientArea, bool repaint) noexcept;
       
       // -- user area computation --
       
@@ -244,15 +230,12 @@ namespace pandora {
       MouseEventHandler _onMouseEvent = nullptr;
       
       // window size/position
-      WindowDecorationSize _decorationSizes{ 0,0,0,0 }; // size of window decoration (caption/borders/scrollbars)
+      WindowDecorationSize _decorationSizes{ 0,0,0,0 }; // size of window decoration (caption/borders)
       pandora::hardware::DisplayArea _lastClientArea{ 0,0,__P_DEFAULT_WINDOW_WIDTH,__P_DEFAULT_WINDOW_HEIGHT }; // last known client-area size/position
       PixelSize     _minClientSize{ __P_DEFAULT_MIN_WINDOW_WIDTH,__P_DEFAULT_MIN_WINDOW_HEIGHT }; // minimum client-area size
       PixelPosition _lastCursorPosition{ __P_RAW_ABSOLUTE_MAX_COORD/2,__P_RAW_ABSOLUTE_MAX_COORD/2 }; // last normalized cursor position 
                                                                                                       //(fraction of __P_RAW_ABSOLUTE_MAX_COORD, raw motion only)
-      PixelPosition _lastScrollPosition{ 0,0 };   // last known scroll position
-      PixelSize     _maxScrollPosition{ 0,0 };    // scroll range limits
       double        _clientAreaRatio = 4.0/3.0;   // ratio used for homothety
-      uint32_t      _scrollUnit = 1;              // number of pixels per scroll unit
     
       // window properties
       __P_FLAGS_TYPE _statusFlags = 0;

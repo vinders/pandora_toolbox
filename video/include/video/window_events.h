@@ -153,18 +153,12 @@ namespace pandora {
       sizePositionTrack      = 1u, ///< window size/position is being changed (resizing/moving):
                                    ///  - posX/posY = tracked client-area position X/Y (absolute);
                                    ///  - sizeX/sizeY = tracked client-area width/height.
-      sizePositionChanged    = 2u, ///< window size/position changed (resized/maximized/restored/moved):
+      sizePositionChanged    = 2u  ///< window size/position changed (resized/maximized/restored/moved):
                                    ///  - posX/posY = new client-area position X/Y (absolute);
                                    ///  - sizeX/sizeY = new client-area width/height.
-      scrollPositionTrack    = 3u, ///< the vertical scrollbar slider is being moved:
-                                   ///  - posX/posY = current horizontal/vertical scroll position;
-                                   ///  - sizeX/sizeY = max horizontal/vertical position.
-      scrollPositionChanged  = 4u  ///< the vertical scrollbar slider has been moved and released:
-                                   ///  - posX/posY = new horizontal/vertical scroll position;
-                                   ///  - sizeX/sizeY = max horizontal/vertical position.
     };
 
-    /// @brief Window size/position event handling function pointer (move/resize/maximize/scroll/...):
+    /// @brief Window size/position event handling function pointer (move/resize/maximize/...):
     ///        * sender:      event origin
     ///        * event:       window size/position event type
     ///        * posX/posY:   horizontal/vertical positions (see PositionEvent enum)

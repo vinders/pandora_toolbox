@@ -16,8 +16,6 @@ struct WindowParams {
   WindowBehavior behavior = WindowBehavior::none;
   ResizeMode resizeMode = ResizeMode::fixed;
   bool hasParent = false;
-  uint32_t scrollRangeX = 0;
-  uint32_t scrollRangeY = 0;
   
   pandora::hardware::DisplayArea clientArea{ 0,0,0,0 };
 };
@@ -128,9 +126,6 @@ uint32_t WindowTest::_lastSizeY = 0;
 
     EXPECT_TRUE(window->setMinClientAreaSize((params.clientArea.width != Window::Builder::defaultSize()) ? params.clientArea.width/2 : 250,
                                              (params.clientArea.height != Window::Builder::defaultSize()) ? params.clientArea.height/2 : 150) );
-    if (params.scrollRangeX > 0 || params.scrollRangeY > 0) {
-      EXPECT_TRUE(window->setScrollbarRange(0,0,(uint16_t)params.scrollRangeX,(uint16_t)params.scrollRangeY));
-    }
     if (!isUpdate) {
       window->show();
       EXPECT_TRUE(window->pollCurrentWindowEvents());
@@ -186,29 +181,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     EXPECT_TRUE(window->pollCurrentWindowEvents());
     EXPECT_EQ(10, window->getCursorPosition(Window::CursorPositionType::absolute).x);
     EXPECT_EQ(12, window->getCursorPosition(Window::CursorPositionType::absolute).y);
-
-    // verify scroll metrics
-    EXPECT_TRUE(window->getScrollPositionH() <= (int32_t)params.scrollRangeX);
-    EXPECT_TRUE(window->getScrollPositionV() <= (int32_t)params.scrollRangeY);
-    EXPECT_EQ(window->getScrollPositionH(), window->getScrollPosition().x);
-    EXPECT_EQ(window->getScrollPositionV(), window->getScrollPosition().y);
-    
-    if (params.scrollRangeX > 0 || params.scrollRangeY > 0) {
-      EXPECT_TRUE(window->setScrollbarRange(5,10,600,800));
-      EXPECT_FALSE(window->setScrollbarRange(600,600,5,5));
-      EXPECT_TRUE(window->pollCurrentWindowEvents());
-      EXPECT_EQ(5, window->getScrollPositionH());
-      EXPECT_EQ(10, window->getScrollPositionV());
-      EXPECT_TRUE(window->setScrollPositionH(20));
-      EXPECT_TRUE(window->setScrollPositionV(30));
-      EXPECT_TRUE(window->pollCurrentWindowEvents());
-      EXPECT_EQ(20, window->getScrollPositionH());
-      EXPECT_EQ(30, window->getScrollPositionV());
-      EXPECT_FALSE(window->setScrollPositionH(2000));
-      EXPECT_FALSE(window->setScrollPositionV(3000));
-      EXPECT_EQ(20, window->getScrollPositionH());
-      EXPECT_EQ(30, window->getScrollPositionV());
-    }
     
     // resources
 #   ifdef _WINDOWS
@@ -406,8 +378,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     params.behavior = WindowBehavior::globalContext;
     params.resizeMode = ResizeMode::fixed;
     params.hasParent = false;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ 0,0,Window::Builder::defaultSize(),Window::Builder::defaultSize() };
     
     Window::Builder builder;
@@ -425,8 +395,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     params.behavior = WindowBehavior::none;
     params.resizeMode = ResizeMode::fixed;
     params.hasParent = false;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ 60,40,320,220 };
     
     Window::Builder builder;
@@ -439,14 +407,12 @@ uint32_t WindowTest::_lastSizeY = 0;
     _testWindow(window, params);
   }
   
-  TEST_F(WindowTest, testWindowResizableScrollable) {
+  TEST_F(WindowTest, testWindowResizable) {
     WindowParams params;
     params.mode = WindowType::window;
-    params.behavior = (WindowBehavior::scrollH | WindowBehavior::scrollV);
+    params.behavior = WindowBehavior::none;
     params.resizeMode = ResizeMode::resizable;
     params.hasParent = false;
-    params.scrollRangeX = 3200;
-    params.scrollRangeY = 2200;
     params.clientArea = pandora::hardware::DisplayArea{ 60,40,320,220 };
     
     Window::Builder builder;
@@ -455,7 +421,7 @@ uint32_t WindowTest::_lastSizeY = 0;
                          .setSize(params.clientArea.width, params.clientArea.height)
                          .setIcon(WindowResource::buildIcon(SystemIcon::info), nullptr)
                          .setCursor(WindowResource::buildCursor(SystemCursor::wait))
-                         .create(_STR("testWindowResizableScrollable"), _STR("Test window"));
+                         .create(_STR("testWindowResizable"), _STR("Test window"));
     _testWindow(window, params);
   }
 
@@ -465,8 +431,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     params.behavior = (WindowBehavior::topMost | WindowBehavior::aboveTaskbar);
     params.resizeMode = ResizeMode::fixed;
     params.hasParent = false;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ 0,0,Window::Builder::defaultSize(),Window::Builder::defaultSize() };
 
     Window::Builder builder;
@@ -483,8 +447,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     params.behavior = WindowBehavior::topMost;
     params.resizeMode = ResizeMode::resizable;
     params.hasParent = false;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ Window::Builder::centeredPosition(),Window::Builder::centeredPosition(),300,200 };
 
     Window::Builder builder;
@@ -498,11 +460,9 @@ uint32_t WindowTest::_lastSizeY = 0;
   TEST_F(WindowTest, testDialog) {
     WindowParams params;
     params.mode = WindowType::dialog;
-    params.behavior = (WindowBehavior::topMost | WindowBehavior::dropShadow);
+    params.behavior = (WindowBehavior::topMost);
     params.resizeMode = ResizeMode::fixed;
     params.hasParent = false;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ Window::Builder::centeredPosition(),Window::Builder::centeredPosition(),300,200 };
     
     Window::Builder builder;
@@ -528,8 +488,6 @@ uint32_t WindowTest::_lastSizeY = 0;
     params.behavior = WindowBehavior::topMost;
     params.resizeMode = ResizeMode::fixed;
     params.hasParent = true;
-    params.scrollRangeX = 0;
-    params.scrollRangeY = 0;
     params.clientArea = pandora::hardware::DisplayArea{ Window::Builder::defaultPosition(),Window::Builder::defaultPosition(),
                                                         Window::Builder::defaultSize(),Window::Builder::defaultSize() };
     auto window = builder.setDisplayMode(params.mode, params.behavior, params.resizeMode)
@@ -553,11 +511,9 @@ uint32_t WindowTest::_lastSizeY = 0;
     owner->show();
     
     params.mode = WindowType::dialog;
-    params.behavior = (WindowBehavior::scrollV | WindowBehavior::scrollH);
+    params.behavior = WindowBehavior::none;
     params.resizeMode = (ResizeMode::resizable | ResizeMode::homothety);
     params.hasParent = false;
-    params.scrollRangeX = 1000;
-    params.scrollRangeY = 2000;
     params.clientArea = pandora::hardware::DisplayArea{ Window::Builder::defaultPosition(),Window::Builder::centeredPosition(),300,200 };
     
     auto window = builder.setDisplayMode(params.mode, params.behavior, params.resizeMode)

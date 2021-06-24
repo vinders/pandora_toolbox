@@ -131,14 +131,7 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
     //...
     return { -1, -1 };
   }
-  
-  // Read horizontal/vertical scroll box position
-  PixelPosition Window::getScrollPosition() const noexcept { /*...*/return PixelPosition{0,0}; }
-  // Read vertical scroll box position
-  int32_t Window::getScrollPositionV() const noexcept { /*...*/return 0; }
-  // Read horizontal scroll box position
-  int32_t Window::getScrollPositionH() const noexcept { /*...*/return 0; }
-  
+
   // ---
   
   // Get last error message (on change failure)
@@ -168,29 +161,6 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   }
   // Define minimum size limits for the user (ignored if not resizable)
   bool Window::setMinClientAreaSize(uint32_t minWidth, uint32_t minHeight) noexcept {
-    //...
-    return false;
-  }
-  
-  // ---
-  
-  // Change vertical/horizontal scrollbar ranges
-  bool Window::setScrollbarRange(uint16_t posH, uint16_t posV, uint16_t horizontalMax, uint16_t verticalMax, uint32_t pixelsPerUnit) noexcept {
-    //...
-    return false;
-  }
-  // Change position of slider in both scrollbars
-  bool Window::setScrollPosition(const PixelPosition& pos) noexcept {
-    //...
-    return false;
-  }
-  // Change position of slider in vertical scrollbar
-  bool Window::setScrollPositionV(uint16_t pos) noexcept {
-    //...
-    return false;
-  }
-  // Change position of slider in horizontal scrollbar
-  bool Window::setScrollPositionH(uint16_t pos) noexcept {
     //...
     return false;
   }
