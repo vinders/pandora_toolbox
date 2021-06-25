@@ -7,6 +7,13 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <system/align.h>
+
+# define NOMINMAX
+# define NODRAWTEXT
+# define NOGDI
+# define NOBITMAP
+# define NOMCX
+# define NOSERVICE
 # include <DirectXMath.h>
 
   namespace pandora {
@@ -241,4 +248,9 @@ License :     MIT
     }
   }
 
+# undef NODRAWTEXT
+# undef NOGDI
+# undef NOBITMAP
+# undef NOMCX
+# undef NOSERVICE
 #endif

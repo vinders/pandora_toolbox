@@ -31,7 +31,7 @@
     _TestColor data2b{ 1.0f,0.8f,0.6f,0.4f };
     
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
     {
       StaticBuffer emptyBuffer;
       EXPECT_TRUE(emptyBuffer.isEmpty());
@@ -66,15 +66,17 @@
       EXPECT_TRUE(buffer2.handle() != nullptr);
       EXPECT_EQ(sizeof(data1a), buffer2.size());
       EXPECT_EQ(pandora::video::DataBufferType::constant, buffer2.type());
-      renderer.bindVertexFragmentConstantBuffers(1, buffer2.handleArray(), size_t{1u});
+      renderer.bindVertexConstantBuffers(1, buffer2.handleArray(), size_t{1u});
+      renderer.bindFragmentConstantBuffers(1, buffer2.handleArray(), size_t{1u});
       buffer2.write(renderer, (const void*)&data1b);
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.clearVertexConstantBuffers();
+      renderer.clearFragmentConstantBuffers();
       
       StaticBuffer buffer3(renderer, pandora::video::DataBufferType::constant, sizeof(data1b), (const void*)&data1b, true);
       EXPECT_FALSE(buffer3.isEmpty());
       EXPECT_TRUE(buffer3.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(2, buffer3.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindVertexConstantBuffers(2, buffer3.handleArray(), size_t{1u});
+      renderer.clearVertexConstantBuffers();
       
       StaticBuffer buffer4(renderer, pandora::video::DataBufferType::constant, sizeof(data2a));
       EXPECT_FALSE(buffer4.isEmpty());
@@ -87,19 +89,19 @@
       StaticBuffer buffer5(renderer, pandora::video::DataBufferType::constant, sizeof(data2a), (const void*)&data2a, false);
       EXPECT_FALSE(buffer5.isEmpty());
       EXPECT_TRUE(buffer5.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(0, buffer5.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindFragmentConstantBuffers(0, buffer5.handleArray(), size_t{1u});
+      renderer.clearFragmentConstantBuffers();
       buffer5.write(renderer, (const void*)&data2b);
       
       StaticBuffer buffer6(renderer, pandora::video::DataBufferType::constant, sizeof(data2a), (const void*)&data2a, true);
       EXPECT_FALSE(buffer6.isEmpty());
       EXPECT_TRUE(buffer6.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(0, buffer6.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindVertexConstantBuffers(0, buffer6.handleArray(), size_t{1u});
+      renderer.clearVertexConstantBuffers();
 
       Renderer::DataBufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
-      renderer.bindVertexFragmentConstantBuffers(1, &buffers[0], size_t{2u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindFragmentConstantBuffers(1, &buffers[0], size_t{2u});
+      renderer.clearFragmentConstantBuffers();
       
       auto buffer1Handle = buffer1.handle();
       StaticBuffer moved(std::move(buffer1));
@@ -146,15 +148,15 @@
       EXPECT_TRUE(buffer2.handle() != nullptr);
       EXPECT_EQ(sizeof(data1a), buffer2.size());
       EXPECT_EQ(pandora::video::DataBufferType::constant, buffer2.type());
-      renderer.bindVertexFragmentConstantBuffers(1, buffer2.handleArray(), size_t{1u});
+      renderer.bindVertexConstantBuffers(1, buffer2.handleArray(), size_t{1u});
       buffer2.write(renderer, (const void*)&data1b);
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.clearVertexConstantBuffers();
       
       DynamicBuffer buffer3(renderer, pandora::video::DataBufferType::constant, sizeof(data1b), (const void*)&data1b);
       EXPECT_FALSE(buffer3.isEmpty());
       EXPECT_TRUE(buffer3.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(2, buffer3.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindFragmentConstantBuffers(2, buffer3.handleArray(), size_t{1u});
+      renderer.clearFragmentConstantBuffers();
       
       DynamicBuffer buffer4(renderer, pandora::video::DataBufferType::constant, sizeof(data2a));
       EXPECT_FALSE(buffer4.isEmpty());
@@ -167,19 +169,21 @@
       DynamicBuffer buffer5(renderer, pandora::video::DataBufferType::constant, sizeof(data2a), (const void*)&data2a);
       EXPECT_FALSE(buffer5.isEmpty());
       EXPECT_TRUE(buffer5.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(0, buffer5.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindVertexConstantBuffers(0, buffer5.handleArray(), size_t{1u});
+      renderer.bindFragmentConstantBuffers(0, buffer5.handleArray(), size_t{1u});
+      renderer.clearVertexConstantBuffers();
+      renderer.clearFragmentConstantBuffers();
       buffer5.write(renderer, (const void*)&data2b);
       
       DynamicBuffer buffer6(renderer, pandora::video::DataBufferType::constant, sizeof(data2a), (const void*)&data2a);
       EXPECT_FALSE(buffer6.isEmpty());
       EXPECT_TRUE(buffer6.handle() != nullptr);
-      renderer.bindVertexFragmentConstantBuffers(0, buffer6.handleArray(), size_t{1u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindVertexConstantBuffers(0, buffer6.handleArray(), size_t{1u});
+      renderer.clearVertexConstantBuffers();
 
       Renderer::DataBufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
-      renderer.bindVertexFragmentConstantBuffers(1, &buffers[0], size_t{2u});
-      renderer.clearVertexFragmentConstantBuffers();
+      renderer.bindFragmentConstantBuffers(1, &buffers[0], size_t{2u});
+      renderer.clearFragmentConstantBuffers();
       
       auto buffer1Handle = buffer1.handle();
       DynamicBuffer moved(std::move(buffer1));
@@ -202,7 +206,7 @@
     _TestColor data2b{ 1.0f,0.8f,0.6f,0.4f };
 
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
     {
       StaticBuffer emptyBuffer;
       EXPECT_TRUE(emptyBuffer.isEmpty());

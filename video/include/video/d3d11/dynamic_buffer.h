@@ -7,7 +7,7 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include "../shader_types.h"
-# include "./renderer.h"
+# include "./renderer.h" // includes D3D11
 
   namespace pandora {
     namespace video {
@@ -50,7 +50,12 @@ License :     MIT
           DynamicBuffer(Renderer::DataBufferHandle handle, size_t bufferSize, pandora::video::DataBufferType type) noexcept 
             : _buffer(handle), _bufferSize(bufferSize), _type(type) {}
           ~DynamicBuffer() noexcept { release(); }
-          void release() noexcept; ///< Destroy/release static buffer instance
+          void release() noexcept { ///< Destroy/release dynamic buffer instance
+            if (this->_buffer) {
+              try { this->_buffer->Release(); } catch (...) {}
+              this->_buffer = nullptr;
+            }
+          }
           
           DynamicBuffer() = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
           DynamicBuffer(const DynamicBuffer&) = delete;
@@ -60,7 +65,7 @@ License :     MIT
         
           // -- accessors --
           
-          /// @brief Get native Direct3D 11 compatible buffer handle (cast to ID3D11Buffer*)
+          /// @brief Get native Direct3D 11 compatible buffer handle
           inline Renderer::DataBufferHandle handle() const noexcept { return this->_buffer; }
           /// @brief Get pointer to native Direct3D 11 compatible buffer handle (usable as array of 1 item)
           inline const Renderer::DataBufferHandle* handleArray() const noexcept { return &(this->_buffer); }
@@ -71,7 +76,7 @@ License :     MIT
           
           /// @brief Verify if dynamic constant buffers are supported
           static inline bool hasConstantBufferSupport(Renderer& renderer) noexcept { 
-            return (renderer.featureLevel() != Renderer::DeviceLevel::direct3D_11_0);
+            return (renderer.featureLevel() != D3D_FEATURE_LEVEL_11_0);
           }
           
           // -- operations --
@@ -89,7 +94,7 @@ License :     MIT
           bool write(Renderer& renderer, const void* sourceData);
 
         private:
-          Renderer::DataBufferHandle _buffer = nullptr; // ID3D11Buffer*
+          Renderer::DataBufferHandle _buffer = nullptr;
           size_t _bufferSize = 0;
           pandora::video::DataBufferType _type = pandora::video::DataBufferType::constant;
         };

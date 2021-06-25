@@ -9,7 +9,8 @@ License :     MIT
 # include <memory>
 # include "../swap_chain_params.h"
 # include "../window_handle.h"
-# include "./renderer.h"
+# include "./renderer.h" // includes D3D11
+# include "./_private/_swap_chain_config.h" // includes D3D11
 
   namespace pandora {
     namespace video {
@@ -54,7 +55,7 @@ License :     MIT
           /// @brief Get native Direct3D 11.1+ swap-chain handle, if available (cast to IDXGISwapChain1*)
           /// @returns Handle for Direct3D 11.1+ devices (or NULL for Direct3D 11.0 devices).
           inline Handle handleLevel1() const noexcept { 
-            return (this->_swapChainLevel != Renderer::DeviceLevel::direct3D_11_0) ? this->_swapChain : nullptr;
+            return (this->_swapChainLevel != D3D_FEATURE_LEVEL_11_0) ? this->_swapChain : nullptr;
           }
           inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           
@@ -70,7 +71,10 @@ License :     MIT
           ///          - if the adapter or monitor doesn't support it.
           ///          - if the rendering API level is too old to support it.
           ///          - if the buffer color/component format isn't compatible with it.
-          bool isHdrEnabled() const noexcept;
+          inline bool isHdrEnabled() const noexcept {
+            return (this->_settings.colorSpace == (int32_t)DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
+                 || this->_settings.colorSpace == (int32_t)DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
+          }
 
           // -- operations --
           
@@ -109,10 +113,10 @@ License :     MIT
         private:
           _SwapChainConfig _settings{};
           std::shared_ptr<Renderer> _renderer = nullptr;
-          Renderer::RenderTargetViewHandle _renderTargetView = nullptr; // ID3D11RenderTargetView*
-          void* _deviceContext11_1 = nullptr;                           // ID3D11DeviceContext1*
-          Handle _swapChain = nullptr;                                  // IDXGISwapChain*/IDXGISwapChain1*
-          Renderer::DeviceLevel _swapChainLevel = Renderer::DeviceLevel::direct3D_11_1;
+          Renderer::RenderTargetViewHandle _renderTargetView = nullptr;
+          ID3D11DeviceContext1* _deviceContext11_1 = nullptr;
+          Handle _swapChain = nullptr; // IDXGISwapChain*/IDXGISwapChain1*
+          D3D_FEATURE_LEVEL _swapChainLevel = D3D_FEATURE_LEVEL_11_0;
           uint32_t _presentFlags = 0; // flags used when swapping buffers
         };
       }

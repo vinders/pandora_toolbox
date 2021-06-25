@@ -20,7 +20,7 @@
 
   TEST_F(DepthStencilBufferTest, depthStencilBufferCreationTest) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
     
     DepthStencilBuffer emptyBuffer;
     EXPECT_TRUE(emptyBuffer.isEmpty());

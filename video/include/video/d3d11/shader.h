@@ -9,6 +9,14 @@ License :     MIT
 # include <cstdint>
 # include "../shader_types.h"
 
+# define NOMINMAX
+# define NODRAWTEXT
+# define NOGDI
+# define NOBITMAP
+# define NOMCX
+# define NOSERVICE
+# include "video/d3d11/api/d3d_11.h"
+
   namespace pandora {
     namespace video {
       namespace d3d11 {
@@ -18,8 +26,7 @@ License :     MIT
         /// @brief GPU shading program/effects for Direct3D renderer
         class Shader final {
         public:
-          using DeviceHandle = void*; // ID3D11Device*
-          using InputElementDescArray = void*; // D3D11_INPUT_ELEMENT_DESC*
+          using DeviceHandle = ID3D11Device*;
           using Handle = void*; // ID3D11VertexShader*/ID3D11PixelShader*/ID3D11GeometryShader*
                                 // ID3D11ComputeShader*/ID3D11HullShader*/ID3D11DomainShader*
           
@@ -72,7 +79,10 @@ License :     MIT
               rhs._shaderBuffer = nullptr; 
               return *this; 
             }
-            ~Builder() noexcept;
+            ~Builder() noexcept {
+              if (_shaderBuffer != nullptr)
+                _shaderBuffer->Release();
+            }
 
             /// @brief Compile shader from HLSL text content
             /// @param type         Shader category/model.
@@ -104,9 +114,6 @@ License :     MIT
             /// @param length         Number of elements in 'layoutElements'
             /// @param layoutElements Array of input element descriptions:
             ///        * very specific to each shading language -> currently no portable abstraction in toolbox;
-            ///        * must be cast from D3D11_INPUT_ELEMENT_DESC[] array type;
-            ///        * requires including <video/d3d11/api/d3d_11.h>;
-            ///        * recommended usage: in a shader management *.cpp file, to avoid dependencies to d3d_11.h anywhere else.
             ///        * example:
             ///          D3D11_INPUT_ELEMENT_DESC layout[] = {
             ///            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -115,12 +122,16 @@ License :     MIT
             /// @remarks - The input layout is validated against shared input signature.
             ///          - The input layout may be bound with any other shader that has the same input signature.
             /// @throws runtime_error on failure (or if layout doesn't match shader input signature)
-            ShaderInputLayout createInputLayout(DeviceHandle device, InputElementDescArray layoutElements, size_t length) const;
+            ShaderInputLayout createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
             
           private:
-            Builder(pandora::video::ShaderType type, void* shaderBuffer);
+            Builder(pandora::video::ShaderType type, ID3DBlob* shaderBuffer)
+              : _shaderBuffer(shaderBuffer),
+                _data(static_cast<const uint8_t*>(_shaderBuffer->GetBufferPointer())),
+                _length(static_cast<size_t>(_shaderBuffer->GetBufferSize())),
+                _type(type) {}
           private:
-            void* _shaderBuffer = nullptr; // ID3DBlob*
+            ID3DBlob* _shaderBuffer = nullptr;
             const uint8_t* _data = nullptr;
             size_t _length = 0;
             pandora::video::ShaderType _type = pandora::video::ShaderType::vertex;
@@ -137,7 +148,7 @@ License :     MIT
         /// @brief Data input layout for shader object(s)
         class ShaderInputLayout final {
         public:
-          using Handle = void*; // ID3D11InputLayout*
+          using Handle = ID3D11InputLayout*;
           
           /// @brief Create usable input layout object -- reserved for internal use or advanced usage
           ShaderInputLayout(Handle handle) : _handle(handle) {}
@@ -149,9 +160,14 @@ License :     MIT
           ShaderInputLayout& operator=(ShaderInputLayout&& rhs) noexcept { 
             this->_handle = rhs._handle; rhs._handle = nullptr; return *this; 
           }
-          ~ShaderInputLayout() noexcept;
+          ~ShaderInputLayout() noexcept { release(); }
+          /// @brief Destroy input layout
+          void release() noexcept {
+            if (this->_handle)
+              this->_handle->Release();
+          }
           
-          inline Handle handle() const noexcept { return this->_handle; } ///< Get native handle (cast to ID3D11InputLayout*)
+          inline Handle handle() const noexcept { return this->_handle; } ///< Get native handle
           inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
         
         private:
@@ -160,4 +176,10 @@ License :     MIT
       }
     }
   }
+  
+# undef NODRAWTEXT
+# undef NOGDI
+# undef NOBITMAP
+# undef NOMCX
+# undef NOSERVICE
 #endif

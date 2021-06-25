@@ -8,6 +8,14 @@ License :     MIT
 # include <cstdint>
 # include "video/render_options.h"
 
+# define NOMINMAX
+# define NODRAWTEXT
+# define NOGDI
+# define NOBITMAP
+# define NOMCX
+# define NOSERVICE
+# include "video/d3d11/api/d3d_11.h"
+
   namespace pandora {
     namespace video {
       namespace d3d11 {
@@ -17,10 +25,10 @@ License :     MIT
           uint32_t height;           // pixel size
           uint32_t frameBufferCount; // front buffer + back buffers
           
-          int32_t swapChainFormat;   // DXGI_FORMAT
-          int32_t backBufferFormat;  // DXGI_FORMAT
-          int32_t bufferUsageMode;   // DXGI_USAGE
-          int32_t colorSpace;        // DXGI_COLOR_SPACE_TYPE
+          DXGI_FORMAT swapChainFormat;
+          DXGI_FORMAT backBufferFormat;
+          DXGI_USAGE bufferUsageMode;
+          DXGI_COLOR_SPACE_TYPE colorSpace;
           bool isHdrPreferred;
           
           SwapChainOutputFlag flags; // advanced settings
@@ -29,5 +37,10 @@ License :     MIT
       }
     }
   }
-  
+
+# undef NODRAWTEXT
+# undef NOGDI
+# undef NOBITMAP
+# undef NOMCX
+# undef NOSERVICE
 #endif

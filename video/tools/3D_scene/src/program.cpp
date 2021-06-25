@@ -18,7 +18,7 @@ using namespace pandora::video;
 
 template <typename _Renderer>
 static inline void __renderFrame(_Renderer& renderer, typename _Renderer::SwapChain& swapChain, bool useVsync) {
-  renderer.setActiveRenderTarget(swapChain.getRenderTargetView(), nullptr, ComponentVector128{{{ 0.1f,0.25f,0.4f,1.f }}});
+  renderer.setCleanActiveRenderTarget(swapChain.getRenderTargetView(), nullptr, nullptr);
 
   //...
 

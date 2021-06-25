@@ -3,6 +3,7 @@
 # include <video/window.h>
 # include <video/d3d11/api/d3d_11.h>
 # include <video/d3d11/renderer.h>
+# include <video/d3d11/renderer_state_factory.h>
 # include <video/d3d11/camera.h>
 # include <video/d3d11/static_buffer.h>
 # include <video/d3d11/depth_stencil_buffer.h>
@@ -159,7 +160,7 @@
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
 
     SwapChainParams params{};
     params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
@@ -175,7 +176,7 @@
       { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexBaseShaderText(), strlen(__vertexBaseShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), (Shader::InputElementDescArray)inputLayoutDescr, (size_t)1u);
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, (size_t)1u);
     auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentBaseShaderText(), strlen(__fragmentBaseShaderText()), "PSMain")
                                           .createShader(renderer->device());
@@ -195,7 +196,11 @@
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     renderer->setViewport(viewport);
 
-    renderer->clearView(chain1.getRenderTargetView(), nullptr, { {{0.f,0.5f,0.6f}} });
+    float color[4] = { 0.f,0.5f,0.6f,1.f };
+    FLOAT gammaCorrectColor[4]{ 0 };
+    renderer->toGammaCorrectColor(color, gammaCorrectColor);
+
+    renderer->clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
@@ -216,7 +221,8 @@
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
+    RendererStateFactory factory(*renderer);
 
     SwapChainParams params{};
     params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
@@ -233,7 +239,7 @@
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexPosColorShaderText(), strlen(__vertexPosColorShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), (Shader::InputElementDescArray)inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
     auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentPosColorShaderText(), strlen(__fragmentPosColorShaderText()), "PSMain")
                                           .createShader(renderer->device());
@@ -243,18 +249,18 @@
     
     // states
     DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = renderer->createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
+    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
                                                                   DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
                                                                   DepthComparison::less, true);
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
     
-    RasterizerState rasterState(renderer->createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
     EXPECT_TRUE(rasterState);
     
-    FilterStates values;
+    FilterStateArray values;
     TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    renderer->createFilter(values, MinificationFilter::linear, MagnificationFilter::linear, addrModes);
+    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -272,7 +278,7 @@
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->setViewport(viewport);
 
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), { {{0.f,0.f,0.f}} });
+    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
@@ -294,7 +300,8 @@
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
+    RendererStateFactory factory(*renderer);
 
     SwapChainParams params{};
     params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
@@ -313,7 +320,7 @@
       { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceShaderText(), strlen(__vertexInstanceShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), (Shader::InputElementDescArray)inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
     auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
       .createShader(renderer->device());
@@ -323,18 +330,18 @@
 
     // states
     DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = renderer->createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
+    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
       DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
       DepthComparison::less, true);
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(renderer->createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
     EXPECT_TRUE(rasterState);
 
-    FilterStates values;
+    FilterStateArray values;
     TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    renderer->createFilter(values, MinificationFilter::linear, MagnificationFilter::linear, addrModes);
+    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -355,13 +362,13 @@
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->setViewport(viewport);
 
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), { {{0.f,0.f,0.f}} });
+    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
     renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
 
-    void* vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+    Renderer::DataBufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
@@ -380,7 +387,8 @@
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
+    RendererStateFactory factory(*renderer);
 
     SwapChainParams params{};
     params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
@@ -399,28 +407,28 @@
       { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceCamShaderText(), strlen(__vertexInstanceCamShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), (Shader::InputElementDescArray)inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
     auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
-      .createShader(renderer->device());
+                                          .createShader(renderer->device());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
 
     // states
     DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = renderer->createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
+    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
       DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
       DepthComparison::less, true);
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(renderer->createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
     EXPECT_TRUE(rasterState);
 
-    FilterStates values;
+    FilterStateArray values;
     TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    renderer->createFilter(values, MinificationFilter::linear, MagnificationFilter::linear, addrModes);
+    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -461,13 +469,13 @@
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->setViewport(viewport);
 
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), { {{0.f,0.f,0.f}} });
+    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
     renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
 
-    void* vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+    Renderer::DataBufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
     renderer->bindVertexConstantBuffers(0, camBuffer.handleArray(), size_t{ 1u });

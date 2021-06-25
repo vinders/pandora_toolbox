@@ -42,7 +42,7 @@
 
   TEST_F(ShaderTest, compileBindFromBinaryFile) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
     
     Shader emptyShader;
@@ -68,7 +68,7 @@
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
-    auto inputLayout = binaryBuilder.createInputLayout(renderer.device(), (Shader::InputElementDescArray)inputLayoutDescr, (size_t)2u);
+    auto inputLayout = binaryBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(inputLayout.handle() != nullptr);
     
     renderer.bindInputLayout(inputLayout.handle());
@@ -79,7 +79,7 @@
   
   TEST_F(ShaderTest, compileBindFromTextFiles) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
 
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
@@ -88,7 +88,7 @@
     };
     auto vertexBuilder = Shader::Builder::compileFromFile(pandora::video::ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
     auto vertexShader = vertexBuilder.createShader(renderer.device());
-    auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), (Shader::InputElementDescArray)inputLayoutDescr, (size_t)2u);
+    auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(vertexShader.handle() != nullptr);
     EXPECT_TRUE(vertexShader.type() == pandora::video::ShaderType::vertex);
     EXPECT_FALSE(vertexShader.isEmpty());
@@ -104,10 +104,6 @@
     EXPECT_FALSE(fragmentShader.isEmpty());
     renderer.bindFragmentShader(fragmentShader.handle());
     renderer.bindFragmentShader(nullptr);
-
-    renderer.bindVertexFragmentShaders(vertexShader.handle(), fragmentShader.handle());
-    renderer.bindInputVertexFragmentShaders(inputLayout.handle(), vertexShader.handle(), fragmentShader.handle());
-    renderer.bindVertexFragmentShaders(nullptr, nullptr);
     
     auto geometryShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
                           .createShader(renderer.device());
@@ -165,7 +161,7 @@
       "}";
     auto vertexTextBuilder = Shader::Builder::compile(pandora::video::ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
     auto vertexShader2 = vertexTextBuilder.createShader(renderer.device());
-    auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), (Shader::InputElementDescArray)inputLayoutDescr, (size_t)2u);
+    auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(vertexShader2.handle() != nullptr);
     EXPECT_TRUE(vertexShader2.type() == pandora::video::ShaderType::vertex);
     EXPECT_FALSE(vertexShader2.isEmpty());

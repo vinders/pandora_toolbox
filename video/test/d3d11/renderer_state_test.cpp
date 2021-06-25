@@ -2,6 +2,7 @@
 # include <gtest/gtest.h>
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/renderer_state.h>
+# include <video/d3d11/renderer_state_factory.h>
 
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
@@ -42,65 +43,67 @@
 
   TEST_F(RendererStateTest, filledDepthContainer) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
 
-    DepthStencilState valD1 = renderer.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
-                                                            DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
-                                                            DepthComparison::less, true);
+    RendererStateFactory factory(renderer);
+
+    DepthStencilState valD1 = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
+                                                           DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
+                                                           DepthComparison::less, true);
     EXPECT_TRUE(valD1);
     EXPECT_TRUE(valD1.isValid());
     EXPECT_TRUE(valD1.get() != nullptr);
     renderer.setDepthStencilState(valD1);
-    DepthStencilState valD2 = renderer.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::replace }, 
-                                                            DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::invert }, 
-                                                            DepthComparison::greaterEqual, false);
+    DepthStencilState valD2 = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::replace }, 
+                                                           DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::invert }, 
+                                                           DepthComparison::greaterEqual, false);
     EXPECT_TRUE(valD2);
     EXPECT_TRUE(valD2.isValid());
     EXPECT_TRUE(valD2.get() != nullptr);
     renderer.setDepthStencilState(valD2);
     
-    DepthStencilState valS1 = renderer.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
-                                                                DepthComparison::greater }, 
-                                                              DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
-                                                                DepthComparison::less },
-                                                              (uint8_t)0xFF, (uint8_t)0xFF);
+    DepthStencilState valS1 = factory.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                               DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
+                                                               DepthComparison::greater }, 
+                                                             DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                               DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
+                                                               DepthComparison::less },
+                                                             (uint8_t)0xFF, (uint8_t)0xFF);
     EXPECT_TRUE(valS1);
     EXPECT_TRUE(valS1.isValid());
     EXPECT_TRUE(valS1.get() != nullptr);
     renderer.setDepthStencilState(valS1);
-    DepthStencilState valS2 = renderer.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                DepthStencilOperation::setZero, DepthStencilOperation::replace, 
-                                                                DepthComparison::always }, 
-                                                              DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                DepthStencilOperation::setZero, DepthStencilOperation::invert, 
-                                                                DepthComparison::notEqual },
-                                                              (uint8_t)0x1, (uint8_t)0x1);
+    DepthStencilState valS2 = factory.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                               DepthStencilOperation::setZero, DepthStencilOperation::replace, 
+                                                               DepthComparison::always }, 
+                                                             DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                               DepthStencilOperation::setZero, DepthStencilOperation::invert, 
+                                                               DepthComparison::notEqual },
+                                                             (uint8_t)0x1, (uint8_t)0x1);
     EXPECT_TRUE(valS2);
     EXPECT_TRUE(valS2.isValid());
     EXPECT_TRUE(valS2.get() != nullptr);
     renderer.setDepthStencilState(valS2);
     
-    DepthStencilState valDS1 = renderer.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                      DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
-                                                                      DepthComparison::greater }, 
-                                                                    DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                      DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
-                                                                      DepthComparison::less },
-                                                                    DepthComparison::less, true, (uint8_t)0xFF, (uint8_t)0xFF);
+    DepthStencilState valDS1 = factory.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                     DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
+                                                                     DepthComparison::greater }, 
+                                                                   DepthStencilOperationGroup{ DepthStencilOperation::setZero,
+                                                                     DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
+                                                                     DepthComparison::less },
+                                                                   DepthComparison::less, true, (uint8_t)0xFF, (uint8_t)0xFF);
     EXPECT_TRUE(valDS1);
     EXPECT_TRUE(valDS1.isValid());
     EXPECT_TRUE(valDS1.get() != nullptr);
     renderer.setDepthStencilState(valDS1);
     
-    DepthStencilState valDS2 = renderer.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::keep,
-                                                                      DepthStencilOperation::decrementWrap, DepthStencilOperation::replace, 
-                                                                      DepthComparison::always }, 
-                                                                    DepthStencilOperationGroup{ DepthStencilOperation::keep,
-                                                                      DepthStencilOperation::incrementWrap, DepthStencilOperation::invert, 
-                                                                      DepthComparison::always },
-                                                                    DepthComparison::greater, false, (uint8_t)0x1, (uint8_t)0x1);
+    DepthStencilState valDS2 = factory.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::keep,
+                                                                     DepthStencilOperation::decrementWrap, DepthStencilOperation::replace, 
+                                                                     DepthComparison::always }, 
+                                                                   DepthStencilOperationGroup{ DepthStencilOperation::keep,
+                                                                     DepthStencilOperation::incrementWrap, DepthStencilOperation::invert, 
+                                                                     DepthComparison::always },
+                                                                   DepthComparison::greater, false, (uint8_t)0x1, (uint8_t)0x1);
     EXPECT_TRUE(valDS2);
     EXPECT_TRUE(valDS2.isValid());
     EXPECT_TRUE(valDS2.get() != nullptr);
@@ -155,16 +158,17 @@
 
   TEST_F(RendererStateTest, filledRasterContainer) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
+    RendererStateFactory factory(renderer);
 
-    RasterizerState val1 = renderer.createRasterizerState(pandora::video::CullMode::wireFrame, false, 
-                                    pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false);
+    RasterizerState val1 = factory.createRasterizerState(pandora::video::CullMode::wireFrame, false, 
+                                   pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false);
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.isValid());
     EXPECT_TRUE(val1.get() != nullptr);
     renderer.setRasterizerState(val1);
-    RasterizerState val2(renderer.createRasterizerState(pandora::video::CullMode::cullBack, true, 
-                                  pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true));
+    RasterizerState val2(factory.createRasterizerState(pandora::video::CullMode::cullBack, true, 
+                                 pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true));
     EXPECT_TRUE(val2);
     EXPECT_TRUE(val2.isValid());
     EXPECT_TRUE(val2.get() != nullptr);
@@ -197,10 +201,10 @@
   // -- sampler/filter state management --
 
   TEST_F(RendererStateTest, emptyFilterContainer) {
-    FilterStates empty;
+    FilterStateArray empty;
     EXPECT_FALSE(empty);
     EXPECT_EQ((size_t)0, empty.size());
-    FilterStates empty2{};
+    FilterStateArray empty2{};
     EXPECT_FALSE(empty2);
     EXPECT_EQ((size_t)0, empty2.size());
 
@@ -208,22 +212,22 @@
     EXPECT_FALSE(empty);
     EXPECT_EQ((size_t)0, empty.size());
 
-    FilterStates empty3 = std::move(empty);
+    FilterStateArray empty3 = std::move(empty);
     EXPECT_FALSE(empty3);
     EXPECT_EQ((size_t)0, empty3.size());
   }
 
   TEST_F(RendererStateTest, emptyValuesFilterContainer) {
-    FilterStates values;
+    FilterStateArray values;
     EXPECT_FALSE(values);
     EXPECT_TRUE(values.empty());
     EXPECT_EQ((size_t)0, values.size());
     EXPECT_ANY_THROW(values.at(0));
     values.erase(0);
     EXPECT_EQ((size_t)0, values.size());
-    EXPECT_FALSE(values.insert(1, nullptr));
+    EXPECT_FALSE(values.insert(1, FilterState(nullptr)));
     EXPECT_EQ((size_t)0, values.size());
-    EXPECT_TRUE(values.insert(0, nullptr));
+    EXPECT_TRUE(values.insert(0, FilterState(nullptr)));
     EXPECT_TRUE(values);
     EXPECT_FALSE(values.empty());
     EXPECT_EQ((size_t)1, values.size());
@@ -233,12 +237,12 @@
     EXPECT_TRUE(values.get()[0] == nullptr);
     values.erase(0);
     EXPECT_EQ((size_t)0, values.size());
-    EXPECT_TRUE(values.append(nullptr));
+    EXPECT_TRUE(values.append(FilterState(nullptr)));
     EXPECT_EQ((size_t)1, values.size());
     EXPECT_TRUE(values.get() != nullptr);
     EXPECT_TRUE(values.at(0) == nullptr);
     EXPECT_TRUE(values.get()[0] == nullptr);
-    EXPECT_TRUE(values.insert(0, nullptr));
+    EXPECT_TRUE(values.insert(0, FilterState(nullptr)));
     EXPECT_EQ((size_t)2, values.size());
     EXPECT_ANY_THROW(values.at(2));
     EXPECT_TRUE(values.get() != nullptr);
@@ -249,32 +253,32 @@
 
     size_t length = values.size();
     while (values.size() < values.maxSize()) {
-      EXPECT_TRUE(values.append(nullptr));
+      EXPECT_TRUE(values.append(FilterState(nullptr)));
       EXPECT_EQ((size_t)++length, values.size());
     }
     EXPECT_EQ(values.maxSize(), values.size());
-    EXPECT_FALSE(values.append(nullptr));
-    EXPECT_FALSE(values.insert(0, nullptr));
-    EXPECT_FALSE(values.insert((uint32_t)values.size(), nullptr));
+    EXPECT_FALSE(values.append(FilterState(nullptr)));
+    EXPECT_FALSE(values.insert(0, FilterState(nullptr)));
+    EXPECT_FALSE(values.insert((uint32_t)values.size(), FilterState(nullptr)));
     EXPECT_EQ(values.maxSize(), values.size());
 
     values.clear();
     EXPECT_FALSE(values);
     EXPECT_ANY_THROW(values.at(0));
     EXPECT_EQ((size_t)0, values.size());
-    EXPECT_TRUE(values.append(nullptr));
+    EXPECT_TRUE(values.append(FilterState(nullptr)));
     EXPECT_EQ((size_t)1, values.size());
     length = values.size();
     while (values.size() < values.maxSize()) {
-      EXPECT_TRUE(values.insert((uint32_t)values.size(), nullptr));
+      EXPECT_TRUE(values.insert((uint32_t)values.size(), FilterState(nullptr)));
       EXPECT_EQ((size_t)++length, values.size());
     }
     EXPECT_EQ(values.maxSize(), values.size());
-    EXPECT_FALSE(values.append(nullptr));
-    EXPECT_FALSE(values.insert(0, nullptr));
+    EXPECT_FALSE(values.append(FilterState(nullptr)));
+    EXPECT_FALSE(values.insert(0, FilterState(nullptr)));
 
     auto address = values.get();
-    FilterStates moved(std::move(values));
+    FilterStateArray moved(std::move(values));
     ASSERT_TRUE(moved.get() != nullptr);
     ASSERT_TRUE(values.get() == nullptr);
     EXPECT_EQ(moved.maxSize(), moved.size());
@@ -299,31 +303,32 @@
 
   TEST_F(RendererStateTest, filledFilterContainer) {
     pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    Renderer renderer(monitor);
+    RendererStateFactory factory(renderer);
     
     float borderColor[4] { 0.,0.,0.,1. };
     pandora::video::TextureAddressMode addrModes[3] { 
       pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat
     };
 
-    FilterStates values;
-    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor);
+    FilterStateArray values;
+    values.append(factory.createFilter(pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
     ASSERT_EQ((size_t)1, values.size());
     auto val1 = values.at(0);
-    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor);
+    values.append(factory.createFilter(pandora::video::MinificationFilter::linear, 
+                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
     ASSERT_EQ((size_t)2, values.size());
     EXPECT_EQ(val1, values.at(0));
     auto val2 = values.at(1);
-    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor, 0);
+    values.insert(0, factory.createFilter(pandora::video::MinificationFilter::linear, 
+                             pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
     ASSERT_EQ((size_t)3, values.size());
     EXPECT_EQ(val1, values.at(1));
     EXPECT_EQ(val2, values.at(2));
     auto val0 = values.at(0);
-    renderer.createFilter(values, pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor, 1);
+    values.insert(1, factory.createFilter(pandora::video::MinificationFilter::linear, 
+                             pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
     ASSERT_EQ((size_t)4, values.size());
     EXPECT_EQ(val0, values.at(0));
     EXPECT_EQ(val1, values.at(2));

@@ -24,7 +24,7 @@
     EXPECT_ANY_THROW(SwapChain(nullptr, pandora::video::SwapChainParams{}, nullptr, 0, 0));
 
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
     EXPECT_ANY_THROW(SwapChain(renderer, pandora::video::SwapChainParams{}, nullptr, 0, 0));
     EXPECT_ANY_THROW(SwapChain(renderer, pandora::video::SwapChainParams{}, nullptr, 600, 400));
 
@@ -48,7 +48,7 @@
                     .create(L"_SWAPCHAIN_TEST0", L"Test");
 
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
 
     pandora::video::SwapChainParams params{};
     {
@@ -162,7 +162,7 @@
                     .create(L"_SWAPCHAIN_TEST1", L"Test");
 
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor, Renderer::DeviceLevel::direct3D_11_0);
+    auto renderer = std::make_shared<Renderer>(monitor);
 
     pandora::video::SwapChainParams params{};
     SwapChain chain1(renderer, params, window->handle(), 600, 400);

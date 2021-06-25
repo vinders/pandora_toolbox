@@ -9,15 +9,6 @@ License :     MIT
 
 namespace pandora {
   namespace video {
-    /// @brief Component vector structure - 4 * 32-bit (position/color container)
-    __align_type(16,
-    struct ComponentVector128 {
-      union {
-        float f[4];
-        int32_t i32[4];
-      };
-    });
-    
     /// @brief Data formats for index buffer
     enum class IndexBufferFormat : int32_t {
       r32_ui = 0, ///< 32-bit unsigned integers

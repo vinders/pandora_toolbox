@@ -21,7 +21,7 @@ License :     MIT
         ///          - The same depth/stencil buffer may only be used with multiple/different render-targets if they have the same size.
         class DepthStencilBuffer final {
         public:
-          using Handle = void*; // ID3D11Texture2D*
+          using Handle = ID3D11Texture2D*;
         
           /// @brief Create depth/stencil buffer for existing renderer/render-target
           /// @warning - Params 'width'/'height' should be the same as the associated render-target (swap-chain/texture buffer).

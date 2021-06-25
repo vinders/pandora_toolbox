@@ -1,13 +1,17 @@
 /*******************************************************************************
 Author  :     Romain Vinders
 License :     MIT
+--------------------------------------------------------------------------------
+Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
+            static_buffer.h / dynamic_buffer.h / depth_stencil_buffer.h /
+            shader.h / _d3d_resource.h / camera.h
+            (regrouped to improve compiler optimizations + greatly reduce executable size)
 *******************************************************************************/
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstring>
 # include <string>
 # include <stdexcept>
-# include "video/d3d11/renderer.h"
 
 # define NOMINMAX
 # define NODRAWTEXT
@@ -15,6 +19,22 @@ License :     MIT
 # define NOBITMAP
 # define NOMCX
 # define NOSERVICE
+# define NOGDICAPMASKS
+# define NOVIRTUALKEYCODES
+# define NOWINSTYLES
+# define NOSYSMETRICS
+# define NOMENUS
+# define NOICONS
+# define NOKEYSTATES
+# define NOSHOWWINDOW
+# define NOSCROLL
+# define NOSOUND
+# define NOKANJI
+# define NOHELP
+# define NOPROFILER
+# define NODEFERWINDOWPOS
+# define NOTAPE
+
 # include <system/api/windows_api.h>
 # include "video/d3d11/api/d3d_11.h"
 # if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
@@ -29,14 +49,26 @@ License :     MIT
 #   include <dxgidebug.h>
 # endif
 # include <DirectXMath.h>
+# include <D3DCompiler.h>
+
+# include "video/d3d11/renderer.h"
+# include "video/d3d11/swap_chain.h"
+# include "video/d3d11/renderer_state_factory.h"
 # include "video/d3d11/_private/_d3d_resource.h"
 
-# define __P_GetDevice   ((ID3D11Device*)this->_device)
-# define __P_GetContext  ((ID3D11DeviceContext*)this->_context)
+# include "video/d3d11/shader.h"
+# include "video/d3d11/depth_stencil_buffer.h"
+# include "video/d3d11/dynamic_buffer.h"
+# include "video/d3d11/static_buffer.h"
+# include "video/d3d11/camera.h"
 
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
+
+// -----------------------------------------------------------------------------
+// renderer.h
+// -----------------------------------------------------------------------------
 
 // -- display adapter detection -- ---------------------------------------------
 
@@ -171,11 +203,11 @@ License :     MIT
   }
   
   // If output information on DXGI factory is stale, try to create a new one
-  void Renderer::_refreshDxgiFactory() { // throws
-    if (!((IDXGIFactory1*)this->_dxgiFactory)->IsCurrent()) {
+  static __forceinline void __refreshDxgiFactory(void* dxgiFactory) { // throws
+    if (!((IDXGIFactory1*)dxgiFactory)->IsCurrent()) {
       D3dResource<IDXGIFactory1> newFactory;
       __createDxgiFactory(newFactory);
-      this->_dxgiFactory = (void*)newFactory.extract();
+      dxgiFactory = (void*)newFactory.extract();
     }
   }
   
@@ -202,36 +234,38 @@ License :     MIT
   // ---
 
   // Create Direct3D rendering device and context
-  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, Renderer::DeviceLevel minLevel, 
-                     Renderer::DeviceLevel maxLevel) { // throws
+  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelCount) { // throws
     UINT runtimeLayers = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #   ifdef _DEBUG
       if (__isDebugSdkAvailable())
         runtimeLayers |= D3D11_CREATE_DEVICE_DEBUG;
 #   endif
 
-    // list supported feature levels
-    const D3D_FEATURE_LEVEL featureLevels[] = {
-#     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-        D3D_FEATURE_LEVEL_11_1,
-#     endif
-      D3D_FEATURE_LEVEL_11_0
-    };
-    UINT featureLevelCount = (UINT)_countof(featureLevels);
-    while (featureLevelCount && (uint32_t)minLevel) {
-      --featureLevelCount;
-      minLevel = static_cast<DeviceLevel>((uint32_t)minLevel - 1u);
-    }
-    if (featureLevelCount == 0 || (uint32_t)minLevel > (uint32_t)maxLevel)
-      throw std::out_of_range("Renderer: minimum feature level requested is higher than max");
-    
-    const D3D_FEATURE_LEVEL* firstFeatLevel;
-    if (maxLevel != Renderer::DeviceLevel::direct3D_11_0 || featureLevels[0] == D3D_FEATURE_LEVEL_11_0)
-      firstFeatLevel = &featureLevels[0];
-    else {
-      firstFeatLevel = &featureLevels[1];
-      --featureLevelCount;
-    }
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      D3D_FEATURE_LEVEL defaultLevels[] { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
+      if (featureLevels == nullptr) {
+        featureLevels = &defaultLevels[0];
+        featureLevelCount = size_t{ 2u };
+      }
+      else if (featureLevelCount == 0)
+        throw std::out_of_range("Renderer: no feature level specified");
+      else if ((int32_t)*featureLevels > (int32_t)D3D_FEATURE_LEVEL_11_1)
+        throw std::out_of_range("Renderer: feature level greater than max supported Direct3D 11 level");
+#   else
+      D3D_FEATURE_LEVEL defaultLevel[] { D3D_FEATURE_LEVEL_11_0 };
+      if (featureLevels == nullptr) {
+        featureLevels = &defaultLevel[0];
+        featureLevelCount = size_t{ 1u };
+      }
+      else {
+        while (featureLevelCount && (int32_t)*featureLevels > (int32_t)D3D_FEATURE_LEVEL_11_0) {
+          ++featureLevels;
+          --featureLevelCount;
+        }
+        if (featureLevelCount == 0)
+          throw std::out_of_range("Renderer: feature level empty or greater than max supported Direct3D 11 level");
+      }
+#   endif
 
     // create DXGI factory + get primary adapter (if not found, default adapter will be used instead)
     D3dResource<IDXGIFactory1> dxgiFactory;
@@ -240,33 +274,29 @@ License :     MIT
     bool isDefaultAdapter = !adapter.hasValue();
 
     // create rendering device + context
-    D3D_FEATURE_LEVEL deviceLevel;
     auto result = D3D11CreateDevice(adapter.get(), (adapter) ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, 
-                                    nullptr, runtimeLayers, firstFeatLevel, featureLevelCount, D3D11_SDK_VERSION, 
-                                    (ID3D11Device**)&(this->_device), &deviceLevel, 
-                                    (ID3D11DeviceContext**)&(this->_context));
+                                    nullptr, runtimeLayers, &featureLevels[0], (UINT)featureLevelCount, D3D11_SDK_VERSION, 
+                                    &(this->_device), &(this->_deviceLevel), &(this->_context));
     if (FAILED(result) || this->_device == nullptr || this->_context == nullptr)
       throwError(result, "Renderer: failed to create device and context"); // throws
     if (isDefaultAdapter && !dxgiFactory->IsCurrent()) // if adapter not provided, system may generate another factory
-      __getCurrentDxgiFactory(__P_GetDevice, dxgiFactory); // throws
+      __getCurrentDxgiFactory(this->_device, dxgiFactory); // throws
     
     // feature level detection
     this->_dxgiLevel = __getDxgiFactoryLevel(dxgiFactory.get());
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      if (deviceLevel != D3D_FEATURE_LEVEL_11_0 && this->_dxgiLevel >= 2u)
-        this->_deviceLevel = Renderer::DeviceLevel::direct3D_11_1;
-      else {
-        this->_deviceLevel = Renderer::DeviceLevel::direct3D_11_0;
+      if (this->_dxgiLevel < 2u) {
+        this->_deviceLevel = D3D_FEATURE_LEVEL_11_0;
         this->_dxgiLevel = 1u;
       }
 #   else
-      this->_deviceLevel = Renderer::DeviceLevel::direct3D_11_0;
+      this->_deviceLevel = D3D_FEATURE_LEVEL_11_0;
       this->_dxgiLevel = 1u;
 #   endif
     this->_dxgiFactory = (void*)dxgiFactory.extract();
 
 #   ifdef _DEBUG
-      __configureDeviceDebug(__P_GetDevice);
+      __configureDeviceDebug(this->_device);
 #   endif
   }
 
@@ -278,12 +308,12 @@ License :     MIT
     try {
       // release device context
       if (this->_context) {
-        __P_GetContext->Flush();
-        __P_GetContext->Release();
+        this->_context->Flush();
+        this->_context->Release();
       }
       // release device
       if (this->_device)
-        __P_GetDevice->Release();
+        this->_device->Release();
       if (this->_dxgiFactory)
         ((IDXGIFactory1*)this->_dxgiFactory)->Release();
     }
@@ -296,7 +326,9 @@ License :     MIT
       _context(rhs._context),
       _deviceLevel(rhs._deviceLevel),
       _dxgiLevel(rhs._dxgiLevel) {
-    rhs._dxgiFactory = rhs._device = rhs._context = nullptr;
+    rhs._dxgiFactory = nullptr;
+    rhs._device = nullptr;
+    rhs._context = nullptr;
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
@@ -305,23 +337,20 @@ License :     MIT
     this->_context = rhs._context;
     this->_deviceLevel = rhs._deviceLevel;
     this->_dxgiLevel = rhs._dxgiLevel;
-    rhs._dxgiFactory = rhs._device = rhs._context = nullptr;
+    rhs._dxgiFactory = nullptr;
+    rhs._device = nullptr;
+    rhs._context = nullptr;
     return *this;
   }
 
 
 // -- accessors -- -------------------------------------------------------------
-
-  // Max number of simultaneous render views (swap-chains, texture targets...)
-  size_t Renderer::maxSimultaneousRenderViews() noexcept {
-    return (size_t)D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
-  }
   
   // Read device adapter VRAM size
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
     bool isSuccess = false;
     try {
-      auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(__P_GetDevice);
+      auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
       if (dxgiDevice) {
         D3dResource<IDXGIAdapter> adapter;
         if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
@@ -346,7 +375,7 @@ License :     MIT
 # if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
       try {
-        auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(__P_GetDevice);
+        auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
         if (dxgiDevice) {
           D3dResource<IDXGIAdapter> adapter;
           if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
@@ -377,7 +406,7 @@ License :     MIT
   // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
   void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
     if (viewports != nullptr) {
-      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
       if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
         numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
       ZeroMemory(&values[0], numberViewports*sizeof(D3D11_VIEWPORT));
@@ -392,7 +421,7 @@ License :     MIT
         out->MinDepth = (float)it->nearClipping();
         out->MaxDepth = (float)it->farClipping();
       }
-      __P_GetContext->RSSetViewports((UINT)numberViewports, &values[0]);
+      this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
     }
   }
   // Replace rasterizer viewport (3D -> 2D projection rectangle)
@@ -404,105 +433,98 @@ License :     MIT
     data.Height = (float)viewport.height();
     data.MinDepth = (float)viewport.nearClipping();
     data.MaxDepth = (float)viewport.farClipping();
-    __P_GetContext->RSSetViewports(1u, &data);
+    this->_context->RSSetViewports(1u, &data);
   }
   
+  // ---
+
+  static FLOAT __defaultBlackColor[] = { 0.f,0.f,0.f,1.f };
+  
+  // Convert standard sRGB(A) color to device RGB(A)
+  void Renderer::toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept {
+    DirectX::XMFLOAT3 colorArray(colorRgba);
+    DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
+    outRgba[0] = colorArray.x;
+    outRgba[1] = colorArray.y;
+    outRgba[2] = colorArray.z;
+    outRgba[3] = colorRgba[3];
+  }
+
   // ---
   
   // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                            const ComponentVector128& clearColorRgba) noexcept {
-    DirectX::XMVECTORF32 color;
-    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-      
+                            const FLOAT clearColorRgba[4]) noexcept {
     auto it = views;
     for (size_t i = 0; i < numberViews; ++i, ++it) {
       if (*it != nullptr)
-        __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
+        this->_context->ClearRenderTargetView(*it, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
     }
     if (depthBuffer != nullptr)
-      __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    __P_GetContext->Flush();
+      this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    this->_context->Flush();
   }
-  // Clear render-target + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                           const ComponentVector128& clearColorRgba) noexcept {
-    DirectX::XMVECTORF32 color;
-    color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-    
+  // Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
+  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, const FLOAT clearColorRgba[4]) noexcept {
     if (view != nullptr)
-      __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
+      this->_context->ClearRenderTargetView(view, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
-      __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    __P_GetContext->Flush();
+      this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    this->_context->Flush();
   }
-  
-  // ---
-  
+
   // Bind/replace active render-target(s) in Renderer (multi-target)
   void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
                                         DepthStencilViewHandle depthBuffer) noexcept {
     if (views != nullptr && numberViews > 0) { // set active view(s)
-      __P_GetContext->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views, 
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
-      __P_GetContext->Flush();
+      this->_context->OMSetRenderTargets((UINT)numberViews, views, depthBuffer);
+      this->_context->Flush();
       this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
-      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      __P_GetContext->Flush();
+      this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
+      this->_context->Flush();
       this->_activeTargetCount = size_t{0u};
     }
   }
   
   // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
-  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                        DepthStencilViewHandle depthBuffer, const ComponentVector128& clearColorRgba) noexcept {
+  void Renderer::setCleanActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
+                                        DepthStencilViewHandle depthBuffer, const FLOAT clearColorRgba[4]) noexcept {
     if (views != nullptr && numberViews > 0) { // set active view(s)
-      DirectX::XMVECTORF32 color;
-      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-
       auto it = views;
       for (size_t i = 0; i < numberViews; ++i, ++it) {
         if (*it != nullptr)
-          __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)*it, color);
+          this->_context->ClearRenderTargetView(*it, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
       }
       if (depthBuffer != nullptr)
-        __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
-                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-      __P_GetContext->OMSetRenderTargets((UINT)numberViews, (ID3D11RenderTargetView**)views,
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
+        this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+      this->_context->OMSetRenderTargets((UINT)numberViews, views, depthBuffer);
       this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
+      this->_context->Flush();
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
-      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      __P_GetContext->Flush();
+      this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
+      this->_context->Flush();
       this->_activeTargetCount = size_t{0u};
     }
   }
-  // Bind/replace active render-target in Renderer (multi-target) + clear render-target/buffer
-  void Renderer::setActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                                       const ComponentVector128& clearColorRgba) noexcept {
-    if (view != nullptr) { // set active view
-      DirectX::XMVECTORF32 color;
-      color.v = DirectX::XMColorSRGBToRGB((DirectX::XMVECTORF32&)clearColorRgba); // gamma-correct color
-      
-      __P_GetContext->ClearRenderTargetView((ID3D11RenderTargetView*)view, color);
-      if (depthBuffer != nullptr)
-        __P_GetContext->ClearDepthStencilView((ID3D11DepthStencilView*)depthBuffer, 
-                                                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-      __P_GetContext->OMSetRenderTargets((UINT)1u, (ID3D11RenderTargetView**)&view,
-                                                                 (ID3D11DepthStencilView*)depthBuffer);
+
+  // Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
+  void Renderer::setCleanActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
+                                       const FLOAT clearColorRgba[4]) noexcept {
+    if (view != nullptr) {
       this->_activeTargetCount = size_t{1u};
+      this->_context->ClearRenderTargetView(view, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
     }
-    else { // clear active views
-      ID3D11RenderTargetView* emptyViews[] { nullptr };
-      __P_GetContext->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      __P_GetContext->Flush();
-      this->_activeTargetCount = size_t{0u};
-    }
+    else { this->_activeTargetCount = size_t{0u}; }
+    if (depthBuffer != nullptr)
+      this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+            
+    this->_context->OMSetRenderTargets((UINT)1u, &view, depthBuffer);
+    this->_context->Flush();
   }
 
 
@@ -533,79 +555,16 @@ License :     MIT
       if (controlPoints >= 32u)
         controlPoints = 31u;
     }
-    return (Renderer::TopologyFlag)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (Renderer::TopologyFlag)controlPoints;
-  }
-
-  // ---
-
-  // Bind active vertex array buffer to input stage slot
-  void Renderer::bindVertexArrayBuffer(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
-                                       unsigned int strideByteSize, unsigned int byteOffset) noexcept {
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideByteSize, &byteOffset);
-  }
-  // Bind multiple vertex array buffers to consecutive input stage slots
-  void Renderer::bindVertexArrayBuffers(uint32_t firstSlotIndex, size_t length, const Renderer::DataBufferHandle* vertexArrayBuffers, 
-                                       unsigned int* strideByteSizes, unsigned int* byteOffsets) noexcept {
-    __P_GetContext->IASetVertexBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)vertexArrayBuffers, strideByteSizes, byteOffsets);
-  }
-  // Bind active vertex index buffer (indexes for vertex array buffer) to input stage
-  void Renderer::bindVertexIndexBuffer(Renderer::DataBufferHandle indexBuffer, IndexBufferFormat dataFormat, uint32_t byteOffset) noexcept {
-    __P_GetContext->IASetIndexBuffer((ID3D11Buffer*)indexBuffer, (dataFormat == IndexBufferFormat::r16_ui) 
-                                                 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, (UINT)byteOffset);
-  }
-  // Set active vertex topology of vertex buffers for input stage
-  void Renderer::setVertexTopology(TopologyFlag topology) noexcept {
-    __P_GetContext->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topology);
-  }
-          
-  // Max slots (or array size from first slot) for vertex buffers
-  size_t Renderer::maxVertexBufferSlots() noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
-
-
-// -- primitive drawing -- -----------------------------------------------------
-
-  // Draw active vertex buffer (not indexed)
-  void Renderer::draw(uint32_t vertexCount, uint32_t vertexOffset) noexcept {
-    __P_GetContext->Draw((UINT)vertexCount, (UINT)vertexOffset);
-  }
-  // Draw active vertex buffer (indexed: active index buffer)
-  void Renderer::drawIndexed(uint32_t indexCount, uint32_t indexOffset, int32_t vertexOffsetFromIndex) noexcept {
-    __P_GetContext->DrawIndexed((UINT)indexCount, (UINT)indexOffset, (INT)vertexOffsetFromIndex);
-  }
-  
-  // Draw multiple instances of active vertex buffer (not indexed)
-  void Renderer::drawInstances(uint32_t instanceCount, uint32_t instanceOffset, uint32_t vertexCountPerInstance, uint32_t vertexOffset) noexcept {
-    __P_GetContext->DrawInstanced((UINT)vertexCountPerInstance, (UINT)instanceCount, (UINT)vertexOffset, (UINT)instanceOffset);
-  }
-  // Draw multiple instances of active vertex buffer (indexed: active index buffer)
-  void Renderer::drawInstancesIndexed(uint32_t instanceCount, uint32_t instanceOffset, uint32_t indexCountPerInstance, 
-                                      uint32_t indexOffset, int32_t vertexOffsetFromIndex) noexcept {
-    __P_GetContext->DrawIndexedInstanced((UINT)indexCountPerInstance, (UINT)instanceCount, (UINT)indexOffset, 
-                                         (INT)vertexOffsetFromIndex, (UINT)instanceOffset);
-  }
-  
-  // ---
-  
-  // Bind + draw active vertex buffer (not indexed) - grouped call (to reduce overhead)
-  void Renderer::bindDraw(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, 
-                          unsigned int strideSize, uint32_t vertexCount, uint32_t vertexOffset) noexcept {
-    UINT offset = 0;
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideSize, &offset);
-    __P_GetContext->Draw((UINT)vertexCount, (UINT)vertexOffset);
-  }
-  // Bind + draw active vertex buffer (indexed: active index buffer) - grouped call (to reduce overhead)
-  void Renderer::bindDrawIndexed(uint32_t slotIndex, Renderer::DataBufferHandle vertexArrayBuffer, unsigned int strideSize, 
-                                 Renderer::DataBufferHandle indexBuffer, IndexBufferFormat indexFormat, 
-                                 uint32_t indexCount, uint32_t indexOffset) noexcept {
-    UINT offset = 0;
-    __P_GetContext->IASetVertexBuffers((UINT)slotIndex, 1u, (ID3D11Buffer**)&vertexArrayBuffer, &strideSize, &offset);
-    __P_GetContext->IASetIndexBuffer((ID3D11Buffer*)indexBuffer, (indexFormat == IndexBufferFormat::r16_ui) 
-                                                                 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, offset);
-    __P_GetContext->DrawIndexed((UINT)indexCount, (UINT)indexOffset, 0);
+    int32_t topologyValue = (int32_t)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int32_t)controlPoints;
+    return (Renderer::TopologyFlag)topologyValue;
   }
 
 
-// -- resource builder - depth/stencil -- --------------------------------------
+// -----------------------------------------------------------------------------
+// renderer_state_factory.h
+// -----------------------------------------------------------------------------
+
+// -- renderer state factory - depth/stencil -- --------------------------------
 
   // Convert portable depth/stencil comparison enum to Direct3D comparison enum
   static D3D11_COMPARISON_FUNC __toDepthComparison(DepthComparison compare) {
@@ -639,7 +598,7 @@ License :     MIT
   // ---
 
   // Create depth test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthTestState(const DepthOperationGroup& frontFaceOp, 
+  DepthStencilState RendererStateFactory::createDepthTestState(const DepthOperationGroup& frontFaceOp, 
                                                    const DepthOperationGroup& backFaceOp,
                                                    DepthComparison depthTest, bool writeMaskAll) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
@@ -662,14 +621,14 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
     ID3D11DepthStencilState* stateData;
-    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Renderer: failed to create depth state");
-    return DepthStencilState((void*)stateData);
+      throwError(result, "RendererStateFactory: failed to create depth state");
+    return DepthStencilState(stateData);
   }
   
   // Create stencil test state (disable depth test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
+  DepthStencilState RendererStateFactory::createStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
                                                      const DepthStencilOperationGroup& backFaceOp, 
                                                      uint8_t readMask, uint8_t writeMask) { // throws
     D3D11_DEPTH_STENCIL_DESC depthStDescriptor;
@@ -694,14 +653,14 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
 
     ID3D11DepthStencilState* stateData;
-    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Renderer: failed to create stencil state");
-    return DepthStencilState((void*)stateData);
+      throwError(result, "RendererStateFactory: failed to create stencil state");
+    return DepthStencilState(stateData);
   }
   
   // Create depth/stencil test state (disable stencil test) - can be used to set depth/stencil test mode when needed (setDepthStencilState)
-  DepthStencilState Renderer::createDepthStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
+  DepthStencilState RendererStateFactory::createDepthStencilTestState(const DepthStencilOperationGroup& frontFaceOp, 
                                                           const DepthStencilOperationGroup& backFaceOp, 
                                                           DepthComparison depthTest, bool depthWriteMaskAll, 
                                                           uint8_t stencilReadMask, uint8_t stencilWriteMask) { // throws
@@ -727,17 +686,17 @@ License :     MIT
     depthStDescriptor.BackFace.StencilFunc = __toDepthComparison(backFaceOp.stencilTest);
 
     ID3D11DepthStencilState* stateData;
-    auto result = __P_GetDevice->CreateDepthStencilState(&depthStDescriptor, &stateData);
+    auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Renderer: failed to create depth/stencil state");
-    return DepthStencilState((void*)stateData);
+      throwError(result, "RendererStateFactory: failed to create depth/stencil state");
+    return DepthStencilState(stateData);
   }
 
 
-// -- resource builder - rasterizer -- -----------------------------------------
+// -- renderer state factory - rasterizer -- -----------------------------------
 
   // Create rasterizer mode state - can be used to change rasterizer state when needed (setRasterizerState)
-  RasterizerState Renderer::createRasterizerState(CullMode culling, bool isFrontClockwise, 
+  RasterizerState RendererStateFactory::createRasterizerState(CullMode culling, bool isFrontClockwise, 
                                                   const pandora::video::DepthBias& depth,
                                                   bool scissorClipping) { // throws
     D3D11_RASTERIZER_DESC rasterizerState;
@@ -761,14 +720,14 @@ License :     MIT
     rasterizerState.ScissorEnable = scissorClipping ? TRUE : FALSE;
 
     ID3D11RasterizerState* stateData = nullptr;
-    auto result = __P_GetDevice->CreateRasterizerState(&rasterizerState, &stateData);
+    auto result = this->_device->CreateRasterizerState(&rasterizerState, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Renderer: failed to create rasterizer state");
-    return RasterizerState((void*)stateData);
+      throwError(result, "RendererStateFactory: failed to create rasterizer state");
+    return RasterizerState(stateData);
   }
 
 
-// -- resource builder - sampler -- --------------------------------------------
+// -- renderer state factory - sampler -- --------------------------------------
   
   // Convert portable filter types to Direct3D filter type
   static D3D11_FILTER __toFilterType(MinificationFilter minFilter, MagnificationFilter magFilter) {
@@ -812,35 +771,10 @@ License :     MIT
     }
   }
   
-  // Verify if filter container is already full
-  static inline void __verifyFilterContainerSize(FilterStates& outStateContainer) {
-    if (outStateContainer.size() >= outStateContainer.maxSize())
-      throw std::out_of_range("Renderer: sampler/filter state container is already full");
-  }
-  // Create sampler state from description + insert in filter container
-  static void __addFilterStateToContainer(ID3D11Device* device, D3D11_SAMPLER_DESC& samplerDesc, FilterStates& outStateContainer, int32_t index) {
-    ID3D11SamplerState* stateData = nullptr;
-    auto result = device->CreateSamplerState(&samplerDesc, &stateData);
-    if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Renderer: failed to create sampler/filter state");
-    
-    bool isValidSlot = (index < 0)
-                     ? outStateContainer.append((FilterStates::State)stateData)
-                     : outStateContainer.insert(index, (FilterStates::State)stateData);
-    if (!isValidSlot) {
-      stateData->Release();
-      throw std::out_of_range("Renderer: sampler/filter state index out of range");
-    }
-  }
-  
-  // ---
-
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter, 
-                              const TextureAddressMode texAddressUVW[3], float lodMin, float lodMax, float lodBias, 
-                              const float borderColor[4], int32_t index) {
-    __verifyFilterContainerSize(outStateContainer);
-    
+  FilterState RendererStateFactory::createFilter(MinificationFilter minFilter, MagnificationFilter magFilter, 
+                                                 const TextureAddressMode texAddressUVW[3], float lodMin, 
+                                                 float lodMax, float lodBias, const FLOAT borderColor[4]) {
     D3D11_SAMPLER_DESC samplerDesc{};
     ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
     samplerDesc.Filter = __toFilterType(minFilter, magFilter);
@@ -852,15 +786,18 @@ License :     MIT
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = 1;
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
+    memcpy((void*)samplerDesc.BorderColor, (borderColor != nullptr) ? &borderColor[0] : __defaultBlackColor, 4u*sizeof(float));
+
+    ID3D11SamplerState* stateData = nullptr;
+    auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create sampler/filter state");
+    return FilterState(stateData);
   }
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createComparedFilter(FilterStates& outStateContainer, MinificationFilter minFilter, MagnificationFilter magFilter,
-                                      const TextureAddressMode texAddressUVW[3], DepthComparison compare, 
-                                      float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
-    __verifyFilterContainerSize(outStateContainer);
-    
+  FilterState RendererStateFactory::createComparedFilter(MinificationFilter minFilter, MagnificationFilter magFilter,
+                                                         const TextureAddressMode texAddressUVW[3], DepthComparison compare, 
+                                                         float lodMin, float lodMax, float lodBias, const FLOAT borderColor[4]) {
     D3D11_SAMPLER_DESC samplerDesc{};
     ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
     samplerDesc.Filter = __toFilterComparedType(minFilter, magFilter);
@@ -872,15 +809,18 @@ License :     MIT
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = 1;
     samplerDesc.ComparisonFunc = __toDepthComparison(compare);
-    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
+    memcpy((void*)samplerDesc.BorderColor, (borderColor != nullptr) ? &borderColor[0] : __defaultBlackColor, 4u*sizeof(float));
+
+    ID3D11SamplerState* stateData = nullptr;
+    auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create compared sampler/filter state");
+    return FilterState(stateData);
   }
   
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
-                                         float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
-    __verifyFilterContainerSize(outStateContainer);
-    
+  FilterState RendererStateFactory::createAnisotropicFilter(uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
+                                                            float lodMin, float lodMax, float lodBias, const FLOAT borderColor[4]) {
     D3D11_SAMPLER_DESC samplerDesc{};
     ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
     samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
@@ -892,14 +832,18 @@ License :     MIT
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
+    memcpy((void*)samplerDesc.BorderColor, (borderColor != nullptr) ? &borderColor[0] : __defaultBlackColor, 4u*sizeof(float));
+
+    ID3D11SamplerState* stateData = nullptr;
+    auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create anisotropic sampler/filter state");
+    return FilterState(stateData);
   }
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  void Renderer::createComparedAnisotropicFilter(FilterStates& outStateContainer, uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
-                                                 DepthComparison compare, float lodMin, float lodMax, float lodBias, const float borderColor[4], int32_t index) {
-    __verifyFilterContainerSize(outStateContainer);
-    
+  FilterState RendererStateFactory::createComparedAnisotropicFilter(uint32_t maxAnisotropy, const TextureAddressMode texAddressUVW[3],
+                                                                    DepthComparison compare, float lodMin, float lodMax, float lodBias, 
+                                                                    const FLOAT borderColor[4]) {
     D3D11_SAMPLER_DESC samplerDesc{};
     ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
     samplerDesc.Filter = D3D11_FILTER_COMPARISON_ANISOTROPIC;
@@ -911,253 +855,233 @@ License :     MIT
     samplerDesc.MaxLOD = lodMax;
     samplerDesc.MaxAnisotropy = (maxAnisotropy <= (uint32_t)D3D11_MAX_MAXANISOTROPY) ? maxAnisotropy : D3D11_MAX_MAXANISOTROPY;
     samplerDesc.ComparisonFunc = __toDepthComparison(compare);
-    memcpy((void*)samplerDesc.BorderColor, (void*)borderColor, 4u*sizeof(float));
-    __addFilterStateToContainer(__P_GetDevice, samplerDesc, outStateContainer, index);
-  }
-  
-  // ---
+    memcpy((void*)samplerDesc.BorderColor, (borderColor != nullptr) ? &borderColor[0] : __defaultBlackColor, 4u*sizeof(float));
 
-  // Max anisotropy value (usually 16)
-  uint32_t Renderer::maxAnisotropy() noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
-  // Max array size for sample filters
-  size_t Renderer::maxFilterStateSlots() noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+    ID3D11SamplerState* stateData = nullptr;
+    auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create anisotropic/compared sampler/filter state");
+    return FilterState(stateData);
+  }
 
 
-// -- pipeline status operations -- --------------------------------------------
-  
-  // Bind input-layout object to the input-assembler stage
-  void Renderer::bindInputLayout(ShaderInputLayout::Handle inputLayout) noexcept {
-    __P_GetContext->IASetInputLayout((ID3D11InputLayout*)inputLayout);
-  }
-  // Bind vertex shader stage to the device
-  void Renderer::bindVertexShader(Shader::Handle shader) noexcept {
-    __P_GetContext->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
-  }
-  // Bind tessellation-control/hull shader stage to the device
-  void Renderer::bindTesselControlShader(Shader::Handle shader) noexcept {
-    __P_GetContext->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
-  }
-  // Bind tessellation-evaluation/domain shader stage to the device
-  void Renderer::bindTesselEvalShader(Shader::Handle shader) noexcept {
-    __P_GetContext->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
-  }
-  // Bind geometry shader stage to the device
-  void Renderer::bindGeometryShader(Shader::Handle shader) noexcept {
-    __P_GetContext->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
-  }
-  // Bind fragment/pixel shader stage to the device
-  void Renderer::bindFragmentShader(Shader::Handle shader) noexcept {
-    __P_GetContext->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
-  }
-  // Bind compute shader stage to the device
-  void Renderer::bindComputeShader(Shader::Handle shader) noexcept {
-    __P_GetContext->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0);
-  }
-  // Bind vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
-  void Renderer::bindVertexFragmentShaders(Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
-    __P_GetContext->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
-    __P_GetContext->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
-  }
-  // Bind input layout, vertex shader and fragment shader stages to the device (grouped call, to reduce overhead)
-  void Renderer::bindInputVertexFragmentShaders(ShaderInputLayout::Handle inputLayout, Shader::Handle vertexShader, Shader::Handle fragmentShader) noexcept {
-    __P_GetContext->IASetInputLayout((ID3D11InputLayout*)inputLayout);
-    __P_GetContext->VSSetShader((ID3D11VertexShader*)vertexShader, nullptr, 0);
-    __P_GetContext->PSSetShader((ID3D11PixelShader*)fragmentShader, nullptr, 0);
-  }
-  
-  // ---
-  
-  // Constant buffers - verify slot index/length validity
-  static inline bool __verifyConstantBufferSlots(uint32_t firstSlotIndex, size_t& inOutLength) noexcept {
-    if (firstSlotIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT) {
-      if (firstSlotIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
-        return false;
-      inOutLength = (size_t)D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - (size_t)firstSlotIndex;
+// -----------------------------------------------------------------------------
+// swap_chain.h + Renderer::toDxgiFormat
+// -----------------------------------------------------------------------------
+
+// -- color management -- ------------------------------------------------------
+
+  // Convert portable component format to DXGI_FORMAT
+  DXGI_FORMAT Renderer::toDxgiFormat(ComponentFormat format) noexcept {
+    switch (format) {
+      case ComponentFormat::rgba8_sRGB: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+      case ComponentFormat::rgba8_unorm: return DXGI_FORMAT_R8G8B8A8_UNORM;
+      case ComponentFormat::rgba8_snorm: return DXGI_FORMAT_R8G8B8A8_SNORM;
+      case ComponentFormat::rgba8_ui: return DXGI_FORMAT_R8G8B8A8_UINT;
+      case ComponentFormat::rgba8_i: return DXGI_FORMAT_R8G8B8A8_SINT;
+      
+      case ComponentFormat::d32_f: return DXGI_FORMAT_D32_FLOAT;
+      case ComponentFormat::d16_unorm: return DXGI_FORMAT_D16_UNORM;
+      case ComponentFormat::d32_f_s8_ui: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+      case ComponentFormat::d24_unorm_s8_ui: return DXGI_FORMAT_D24_UNORM_S8_UINT;
+      
+      case ComponentFormat::rgba16_f_hdr_scRGB: return DXGI_FORMAT_R16G16B16A16_FLOAT;
+      case ComponentFormat::rgba16_unorm: return DXGI_FORMAT_R16G16B16A16_UNORM;
+      case ComponentFormat::rgba16_snorm: return DXGI_FORMAT_R16G16B16A16_SNORM;
+      case ComponentFormat::rgba16_ui: return DXGI_FORMAT_R16G16B16A16_UINT;
+      case ComponentFormat::rgba16_i: return DXGI_FORMAT_R16G16B16A16_SINT;
+      case ComponentFormat::rgb10a2_unorm_hdr10: return DXGI_FORMAT_R10G10B10A2_UNORM;
+      case ComponentFormat::rgb10a2_ui: return DXGI_FORMAT_R10G10B10A2_UINT;
+      case ComponentFormat::rgba32_f: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+      case ComponentFormat::rgba32_ui: return DXGI_FORMAT_R32G32B32A32_UINT;
+      case ComponentFormat::rgba32_i: return DXGI_FORMAT_R32G32B32A32_SINT;
+      
+      case ComponentFormat::bc6h_uf: return DXGI_FORMAT_BC6H_UF16;
+      case ComponentFormat::bc6h_f: return DXGI_FORMAT_BC6H_SF16;
+      case ComponentFormat::bc7_sRGB: return DXGI_FORMAT_BC7_UNORM_SRGB;
+      case ComponentFormat::bc7_unorm: return DXGI_FORMAT_BC7_UNORM;
+      
+      case ComponentFormat::bgra8_sRGB: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+      case ComponentFormat::bgra8_unorm: return DXGI_FORMAT_B8G8R8A8_UNORM;
+      case ComponentFormat::r8_ui: return DXGI_FORMAT_R8_UINT;
+      case ComponentFormat::r8_i: return DXGI_FORMAT_R8_SINT;
+      case ComponentFormat::r8_unorm: return DXGI_FORMAT_R8_UNORM;
+      case ComponentFormat::r8_snorm: return DXGI_FORMAT_R8_SNORM;
+      case ComponentFormat::a8_unorm: return DXGI_FORMAT_A8_UNORM;
+      case ComponentFormat::rg8_unorm: return DXGI_FORMAT_R8G8_UNORM;
+      case ComponentFormat::rg8_snorm: return DXGI_FORMAT_R8G8_SNORM;
+      case ComponentFormat::rg8_ui: return DXGI_FORMAT_R8G8_UINT;
+      case ComponentFormat::rg8_i: return DXGI_FORMAT_R8G8_SINT;
+      case ComponentFormat::rgb5a1_unorm: return DXGI_FORMAT_B5G5R5A1_UNORM;
+      case ComponentFormat::r5g6b5_unorm: return DXGI_FORMAT_B5G6R5_UNORM;
+      
+      case ComponentFormat::rg16_f: return DXGI_FORMAT_R16G16_FLOAT;
+      case ComponentFormat::r16_f: return DXGI_FORMAT_R16_FLOAT;
+      case ComponentFormat::rg16_unorm: return DXGI_FORMAT_R16G16_UNORM;
+      case ComponentFormat::r16_unorm: return DXGI_FORMAT_R16_UNORM;
+      case ComponentFormat::rg16_snorm: return DXGI_FORMAT_R16G16_SNORM;
+      case ComponentFormat::r16_snorm: return DXGI_FORMAT_R16_SNORM;
+      case ComponentFormat::rg16_ui: return DXGI_FORMAT_R16G16_UINT;
+      case ComponentFormat::r16_ui: return DXGI_FORMAT_R16_UINT;
+      case ComponentFormat::rg16_i: return DXGI_FORMAT_R16G16_SINT;
+      case ComponentFormat::r16_i: return DXGI_FORMAT_R16_SINT;
+      case ComponentFormat::rgb32_f: return DXGI_FORMAT_R32G32B32_FLOAT;
+      case ComponentFormat::rg32_f: return DXGI_FORMAT_R32G32_FLOAT;
+      case ComponentFormat::r32_f: return DXGI_FORMAT_R32_FLOAT;
+      case ComponentFormat::rgb32_ui: return DXGI_FORMAT_R32G32B32_UINT;
+      case ComponentFormat::rg32_ui: return DXGI_FORMAT_R32G32_UINT;
+      case ComponentFormat::r32_ui: return DXGI_FORMAT_R32_UINT;
+      case ComponentFormat::rgb32_i: return DXGI_FORMAT_R32G32B32_SINT;
+      case ComponentFormat::rg32_i: return DXGI_FORMAT_R32G32_SINT;
+      case ComponentFormat::r32_i: return DXGI_FORMAT_R32_SINT;
+      case ComponentFormat::rg11b10_f: return DXGI_FORMAT_R11G11B10_FLOAT;
+      case ComponentFormat::rgb9e5_uf: return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+      
+#     if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
+        case ComponentFormat::rgba4_unorm: return DXGI_FORMAT_B4G4R4A4_UNORM;
+#     endif
+      case ComponentFormat::unknown: 
+      default: return DXGI_FORMAT_UNKNOWN;
     }
-    return true;
   }
-  // Max array size for constant buffers
-  size_t Renderer::maxConstantBufferSlots() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
-  
-  // Bind constant buffer(s) to the vertex shader stage
-  void Renderer::bindVertexConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->VSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the tessellation-control/hull shader stage
-  void Renderer::bindTesselControlConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->HSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the tessellation-evaluation/domain shader stage
-  void Renderer::bindTesselEvalConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->DSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the geometry shader stage
-  void Renderer::bindGeometryConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->GSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the fragment shader stage
-  void Renderer::bindFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->PSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the compute shader stage
-  void Renderer::bindComputeConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->CSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  // Bind constant buffer(s) to the vertex and fragment shader stage(s) (grouped call, to reduce overhead)
-  void Renderer::bindVertexFragmentConstantBuffers(uint32_t firstSlotIndex, const DataBufferHandle* handles, size_t length) noexcept {
-    if (handles == nullptr || !__verifyConstantBufferSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->VSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-    __P_GetContext->PSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, (ID3D11Buffer**)handles);
-  }
-  
-  // Reset all constant buffers in vertex shader stage
-  void Renderer::clearVertexConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in tessellation-control/hull shader stage
-  void Renderer::clearTesselControlConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in tessellation-evaluation/domain shader stage
-  void Renderer::clearTesselEvalConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in geometry shader stage
-  void Renderer::clearGeometryConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in fragment/pixel shader stage (standard)
-  void Renderer::clearFragmentConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in compute shader stage
-  void Renderer::clearComputeConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->CSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  // Reset all constant buffers in vertex/fragment shader stage (grouped call)
-  void Renderer::clearVertexFragmentConstantBuffers() noexcept {
-    ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-    __P_GetContext->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-    __P_GetContext->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-  }
-  
-  // ---
-  
-  // Change output merger depth/stencil state (depth and/or stencil testing)
-  void Renderer::setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef) noexcept {
-    __P_GetContext->OMSetDepthStencilState((ID3D11DepthStencilState*)state.get(), (UINT)stencilRef);
-  }
-  
-  // Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
-  void Renderer::setRasterizerState(const RasterizerState& state) noexcept {
-    __P_GetContext->RSSetState((ID3D11RasterizerState*)state.get());
-  }
-  
-  // ---
-  
-  // Sample filters - verify slot index/length validity
-  static inline bool __verifyFilterStateSlots(uint32_t firstSlotIndex, size_t& inOutLength) noexcept {
-    if (firstSlotIndex + (uint32_t)inOutLength > (uint32_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) {
-      if (firstSlotIndex >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT)
-        return false;
-      inOutLength = (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - (size_t)firstSlotIndex;
+
+# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+    // Find color space for a buffer format
+    static inline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
+      switch (backBufferFormat) {
+        case DXGI_FORMAT_R10G10B10A2_UNORM:
+        case DXGI_FORMAT_R10G10B10A2_UINT:
+        case DXGI_FORMAT_R11G11B10_FLOAT:
+          return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020; // HDR-10
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        case DXGI_FORMAT_R16G16_FLOAT:
+        case DXGI_FORMAT_R16G16B16A16_UINT:
+        case DXGI_FORMAT_R16G16_UINT:
+        case DXGI_FORMAT_R16G16B16A16_SINT:
+        case DXGI_FORMAT_R16G16_SINT:
+        case DXGI_FORMAT_R16G16B16A16_UNORM:
+        case DXGI_FORMAT_R16G16_UNORM:
+        case DXGI_FORMAT_R16G16B16A16_SNORM:
+        case DXGI_FORMAT_R16G16_SNORM:
+        case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        case DXGI_FORMAT_R32G32B32_FLOAT:
+        case DXGI_FORMAT_R32G32_FLOAT:
+        case DXGI_FORMAT_R32G32B32A32_UINT:
+        case DXGI_FORMAT_R32G32B32_UINT:
+        case DXGI_FORMAT_R32G32_UINT:
+        case DXGI_FORMAT_R32G32B32A32_SINT:
+        case DXGI_FORMAT_R32G32B32_SINT:
+        case DXGI_FORMAT_R32G32_SINT:
+          return DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709; // HDR-scRGB
+        default: break;
+      }
+      return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
     }
-    return true;
-  }
+# endif
   
-  // Set array of sampler filters to the fragment/pixel shader stage
-  void Renderer::setVertexFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  void Renderer::setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  void Renderer::setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  void Renderer::setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  void Renderer::setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->PSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  void Renderer::setComputeFilterStates(uint32_t firstSlotIndex, const FilterStates::State* states, size_t length) noexcept {
-    if (states == nullptr || !__verifyFilterStateSlots(firstSlotIndex, length))
-      return;
-    __P_GetContext->CSSetSamplers((UINT)firstSlotIndex, (UINT)length, (ID3D11SamplerState**)states);
-  }
-  
-  // Reset all sampler filters
-  void Renderer::clearVertexFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  void Renderer::clearTesselControlFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  void Renderer::clearTesselEvalFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  void Renderer::clearGeometryFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  void Renderer::clearFragmentFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-  }
-  void Renderer::clearComputeFilterStates() noexcept {
-    ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-    __P_GetContext->CSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+  // Set swap-chain color space
+  // returns: color spaces supported (true) or not
+  static bool __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, bool isHdrPreferred, DXGI_COLOR_SPACE_TYPE& outColorSpace) { // throws
+    // verify HDR support
+    outColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
+#   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
+#     if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+        if (isHdrPreferred) {
+          D3dResource<IDXGIOutput> output;
+          if (SUCCEEDED(swapChain->GetContainingOutput(output.address())) && output) {
+            DXGI_OUTPUT_DESC1 outputInfo;
+            auto outputV6 = D3dResource<IDXGIOutput6>::tryFromInterface(output.get());
+            if (outputV6 && SUCCEEDED(outputV6->GetDesc1(&outputInfo))) {
+              
+              if (outputInfo.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
+              ||  outputInfo.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709) {
+                outColorSpace = __getColorSpace(backBufferFormat);
+              }
+            }
+          }
+        }
+#     endif
+
+      // apply color space
+      auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)swapChain);
+      if (swapChainV3) {
+        UINT colorSpaceSupport = 0;
+        if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport(outColorSpace, &colorSpaceSupport))
+        && (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)) {
+
+          auto result = swapChainV3->SetColorSpace1(outColorSpace);
+          if (FAILED(result))
+            throwError(result, "SwapChain: failed to apply color space");
+          return true;
+        }
+      }
+#   endif
+    return false;
   }
 
 
 // -- swap-chain creation -- ---------------------------------------------------
 
+  // Verify if buffer format is supported by flip-swap (-> outIsFlipSwapAllowed) + return swap-chain format to use
+  static inline DXGI_FORMAT __verifyFlipSwapFormat(DXGI_FORMAT backBufferFormat, bool& outIsFlipSwapAllowed) noexcept {
+#   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
+      switch (backBufferFormat) {
+        case DXGI_FORMAT_R16G16B16A16_FLOAT: 
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+        case DXGI_FORMAT_R10G10B10A2_UNORM:   outIsFlipSwapAllowed = true; return backBufferFormat;
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: outIsFlipSwapAllowed = true; return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: outIsFlipSwapAllowed = true; return DXGI_FORMAT_B8G8R8A8_UNORM;
+        default: break;
+      }
+#   endif
+    outIsFlipSwapAllowed = false;
+    return backBufferFormat;
+  }
+
+  // Convert portable params to Direct3D swap-chain params
+  void SwapChain::_convertSwapChainParams(const Renderer& renderer, const pandora::video::SwapChainParams& params, 
+                                          _SwapChainConfig& outConfig) noexcept {
+    // convert buffer formats
+    outConfig.backBufferFormat = (params.backBufferFormat() != pandora::video::ComponentFormat::custom)
+                                 ? Renderer::toDxgiFormat(params.backBufferFormat())
+                                 : (DXGI_FORMAT)params.customBackBufferFormat();
+    outConfig.frameBufferCount = params.frameBufferCount();
+    outConfig.isHdrPreferred = params.isHdrPreferred();
+    
+    // verify if flip-swap is applicable
+    outConfig.useFlipSwap = (renderer.isFlipSwapAvailable() 
+                        && params.renderTargetMode() == SwapChainTargetMode::uniqueOutput // only one render target view
+                        && (renderer.isTearingAvailable()   // tearing OFF or supported with flip-swap
+                           || (params.outputFlags() & SwapChainOutputFlag::variableRefresh) == SwapChainOutputFlag::none) );
+    outConfig.swapChainFormat = (outConfig.useFlipSwap)     // supported color format
+                              ? __verifyFlipSwapFormat((DXGI_FORMAT)outConfig.backBufferFormat, outConfig.useFlipSwap)
+                              : outConfig.backBufferFormat;
+    
+    // buffer usage
+    outConfig.bufferUsageMode = ((params.outputFlags() & SwapChainOutputFlag::shaderInput) == true)
+                              ? (DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT)
+                              : DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    outConfig.flags = params.outputFlags();
+    if ((outConfig.flags & SwapChainOutputFlag::localOutput) == true && !renderer.isLocalDisplayRestrictionAvailable())
+      outConfig.flags &= ~(SwapChainOutputFlag::localOutput);
+  }
+  
+  // ---
+
   // Create DXGI swap-chain resource
   void* Renderer::_createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
                                    uint32_t rateNumerator, uint32_t rateDenominator, 
-                                   DeviceLevel& outSwapChainLevel) { // throws
+                                   D3D_FEATURE_LEVEL& outSwapChainLevel) { // throws
     void* swapChain = nullptr;
-    _refreshDxgiFactory();
+    __refreshDxgiFactory(this->_dxgiFactory);
     
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       if (this->_dxgiLevel >= 2u) {
         // Direct3D 11.1+
         auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: failed to access DirectX 11.1 graphics infra");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(__P_GetDevice, "Renderer: failed to access DirectX 11.1 device");
-        outSwapChainLevel = Renderer::DeviceLevel::direct3D_11_1;
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: failed to access DirectX 11.1 device");
+        outSwapChainLevel = D3D_FEATURE_LEVEL_11_1;
         
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
         ZeroMemory(&fullscnDescriptor, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
@@ -1166,9 +1090,9 @@ License :     MIT
         fullscnDescriptor.Windowed = ((config.flags & SwapChainOutputFlag::stereo) == true) ? FALSE : TRUE;
         descriptor.Width = config.width;
         descriptor.Height = config.height;
-        descriptor.Format = (DXGI_FORMAT)config.swapChainFormat;
+        descriptor.Format = config.swapChainFormat;
         descriptor.BufferCount = (UINT)config.frameBufferCount;
-        descriptor.BufferUsage = (DXGI_USAGE)config.bufferUsageMode;
+        descriptor.BufferUsage = config.bufferUsageMode;
         descriptor.Scaling = DXGI_SCALING_STRETCH;
         fullscnDescriptor.RefreshRate.Numerator = (UINT)rateNumerator;
         fullscnDescriptor.RefreshRate.Denominator = (UINT)rateDenominator;
@@ -1188,14 +1112,14 @@ License :     MIT
 #   endif
     {
       // Direct3D 11.0
-      outSwapChainLevel = Renderer::DeviceLevel::direct3D_11_0;
+      outSwapChainLevel = D3D_FEATURE_LEVEL_11_0;
       DXGI_SWAP_CHAIN_DESC descriptor = {};
       ZeroMemory(&descriptor, sizeof(DXGI_SWAP_CHAIN_DESC));
       descriptor.BufferDesc.Width = config.width;
       descriptor.BufferDesc.Height = config.height;
       descriptor.BufferDesc.Format = (DXGI_FORMAT)config.swapChainFormat;
       descriptor.BufferCount = (UINT)config.frameBufferCount;
-      descriptor.BufferUsage = (DXGI_USAGE)config.bufferUsageMode;
+      descriptor.BufferUsage = config.bufferUsageMode;
       descriptor.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
       descriptor.BufferDesc.RefreshRate.Numerator = (UINT)rateNumerator;
       descriptor.BufferDesc.RefreshRate.Denominator = (UINT)rateDenominator;
@@ -1205,7 +1129,7 @@ License :     MIT
       descriptor.SampleDesc.Count = 1;
       descriptor.SampleDesc.Quality = 0;
 
-      auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(__P_GetDevice, &descriptor, (IDXGISwapChain**)&swapChain);
+      auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
         throwError(result, "Renderer: failed to create Direct3D swap-chain");
     }
@@ -1216,165 +1140,219 @@ License :     MIT
     
     return swapChain;
   }
-
-
-// -- single state containers -- -----------------------------------------------
-
-  void DepthStencilState::release() noexcept {
-    if (this->_state != nullptr) {
-      ((ID3D11DepthStencilState*)this->_state)->Release();
-      this->_state = nullptr;
-    }
-  }
-  
-  void RasterizerState::release() noexcept {
-    if (this->_state != nullptr) {
-      ((ID3D11RasterizerState*)this->_state)->Release();
-      this->_state = nullptr;
-    }
-  }
-
-
-// -- sampler filter state container -- ----------------------------------------
-  
-  FilterStates::FilterStates() {
-    this->_states = (FilterStates::State*)calloc(D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, sizeof(ID3D11SamplerState*));
-    if (this->_states == nullptr)
-      throw std::bad_alloc();
-  }
-  FilterStates::~FilterStates() noexcept {
-    if (this->_states) {
-      clear();
-      free(this->_states);
-    }
-  }
   
   // ---
   
-  size_t FilterStates::maxSize() noexcept {
-    return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT;
-  }
-  
-  // ---
-  
-  bool FilterStates::insert(uint32_t index, FilterStates::State state) noexcept {
-    if (this->_length >= maxSize())
-      return false;
+  // Create rendering swap-chain for existing renderer
+  SwapChain::SwapChain(std::shared_ptr<Renderer> renderer, const pandora::video::SwapChainParams& params, 
+                       pandora::video::WindowHandle window, uint32_t width, uint32_t height)
+    : _renderer(std::move(renderer)) { // throws
+    if (this->_renderer == nullptr)
+      throw std::invalid_argument("SwapChain: renderer must not be NULL");
+    if (window == nullptr)
+      throw std::invalid_argument("SwapChain: window handle must not be NULL");
+    if (width == 0 || height == 0)
+      throw std::invalid_argument("SwapChain: invalid width/height: values must not be 0");
     
-    if (index < (uint32_t)this->_length) {
-      memmove((void*)&_states[index + 1], (void*)&_states[index], (this->_length - (size_t)index)*sizeof(ID3D11SamplerState*));
-      this->_states[index] = state;
-    }
-    else if (index == (uint32_t)this->_length) {
-      this->_states[this->_length] = state;
-    }
-    else
-      return false;
+    // build swap-chain
+    memset((void*)&this->_settings, 0, sizeof(_SwapChainConfig));
+    this->_settings.width = width;
+    this->_settings.height = height;
+    this->_presentFlags = ((this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+    _convertSwapChainParams(*(this->_renderer), params, this->_settings);
+    
+    this->_swapChain = this->_renderer->_createSwapChain(this->_settings, window, params.rateNumerator(),
+                                                         params.rateDenominator(), this->_swapChainLevel); // throws
 
-    ++(this->_length);
-    return true;
+    // find + set color space value (if supported)
+    DXGI_COLOR_SPACE_TYPE colorSpace;
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_settings.backBufferFormat,
+                    this->_settings.isHdrPreferred, colorSpace);
+    this->_settings.colorSpace = colorSpace;
+
+    _createSwapChainTargetView(); // create render-target-view
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      auto contextV1 = D3dResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context());
+      this->_deviceContext11_1 = contextV1.extract();
+#   endif
   }
-  void FilterStates::erase(uint32_t index) noexcept {
-    if (index < this->_length) {
-      if (this->_states[index] != nullptr)
-        ((ID3D11SamplerState*)this->_states[index])->Release();
-      
-      if (index + 1 < (uint32_t)this->_length)
-        memmove((void*)&_states[index], (void*)&_states[index + 1], (this->_length - (size_t)index - 1u) * sizeof(ID3D11SamplerState*));
-      --(this->_length);
-      this->_states[this->_length] = nullptr;
+
+
+// -- swap-chain destruction/move -- -------------------------------------------
+
+  // Destroy swap-chain
+  void SwapChain::release() noexcept {
+    if (this->_swapChain != nullptr) {
+      try {
+        if (this->_renderTargetView) {
+          this->_renderer->setActiveRenderTarget(nullptr);
+          this->_renderTargetView->Release();
+          this->_renderTargetView = nullptr;
+        }
+#       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+          if (this->_deviceContext11_1)
+            this->_deviceContext11_1->Release();
+#       endif
+      } 
+      catch (...) {}
+        
+      try {
+        if (this->_swapChainLevel == D3D_FEATURE_LEVEL_11_1) {
+          ((IDXGISwapChain1*)this->_swapChain)->SetFullscreenState(FALSE, nullptr); // fullscreen must be OFF, or Release will throw
+          ((IDXGISwapChain1*)this->_swapChain)->Release();
+        }
+        else {
+          ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(FALSE, nullptr); // fullscreen must be OFF, or Release will throw
+          ((IDXGISwapChain*)this->_swapChain)->Release();
+        }
+      } 
+      catch (...) {}
+      this->_swapChain = nullptr;
+      this->_renderer = nullptr;
     }
   }
-  void FilterStates::clear() noexcept {
-    auto it = this->_states;
-    for (size_t i = 0; i < this->_length; ++i, ++it) {
-      if (*it != nullptr) {
-        ((ID3D11SamplerState*)(*it))->Release();
-        *it = nullptr;
+
+  SwapChain::SwapChain(SwapChain&& rhs) noexcept
+    : _renderer(std::move(rhs._renderer)),
+      _renderTargetView(rhs._renderTargetView),
+      _deviceContext11_1(rhs._deviceContext11_1),
+      _swapChain(rhs._swapChain),
+      _swapChainLevel(rhs._swapChainLevel),
+      _presentFlags(rhs._presentFlags) {
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
+    rhs._renderer = nullptr;
+    rhs._swapChain = nullptr;
+    rhs._renderTargetView = nullptr;
+    rhs._deviceContext11_1 = nullptr;
+  }
+  SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
+    release();
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
+    this->_renderer = std::move(rhs._renderer);
+    this->_renderTargetView = rhs._renderTargetView;
+    this->_deviceContext11_1 = rhs._deviceContext11_1;
+    this->_swapChain = rhs._swapChain;
+    this->_swapChainLevel = rhs._swapChainLevel;
+    this->_presentFlags = rhs._presentFlags;
+    rhs._renderer = nullptr;
+    rhs._swapChain = nullptr;
+    rhs._renderTargetView = nullptr;
+    rhs._deviceContext11_1 = nullptr;
+    return *this;
+  }
+
+
+// -- operations -- ------------------------------------------------------------
+
+  // Change back-buffer(s) size + refresh color space
+  bool SwapChain::resize(uint32_t width, uint32_t height) { // throws
+    bool isResized = (width != this->_settings.width || height != this->_settings.height);
+    if (isResized) {
+      if (width == 0 || height == 0)
+        throw std::invalid_argument("SwapChain: invalid width/height: values must not be 0");
+      
+      // clear previous size-specific context
+      this->_renderer->setActiveRenderTarget(nullptr);
+      this->_renderTargetView->Release();
+      this->_renderTargetView = nullptr;
+      ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(FALSE, nullptr);
+      this->_renderer->context()->Flush();
+      
+      // resize swap-chain
+      DXGI_SWAP_CHAIN_FLAG flags = (this->_settings.useFlipSwap && (this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) 
+                                 ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : (DXGI_SWAP_CHAIN_FLAG)0;
+      auto result = ((IDXGISwapChain*)this->_swapChain)->ResizeBuffers((UINT)this->_settings.frameBufferCount, (UINT)width, (UINT)height, 
+                                                                       (DXGI_FORMAT)this->_settings.swapChainFormat, flags);
+      if (FAILED(result)) {
+        if (result == DXGI_ERROR_DEVICE_REMOVED || result == DXGI_ERROR_DEVICE_RESET || result == DXGI_ERROR_DEVICE_HUNG)
+          throw std::domain_error("SwapChain: adapter has changed: Renderer and SwapChain must be recreated");
+        throwError(result, "SwapChain: resize failure");
       }
+      
+      this->_settings.width = width;
+      this->_settings.height = height;
+      // fullscreen required: tearing without flip-swap / stereo rendering
+      if ((!this->_settings.useFlipSwap && (this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) 
+      || (this->_settings.flags & SwapChainOutputFlag::stereo) == true)
+        ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(TRUE, nullptr);
     }
-    this->_length = 0;
+
+    // find + set color space value (if supported)
+    DXGI_COLOR_SPACE_TYPE colorSpace;
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_settings.backBufferFormat,
+                    this->_settings.isHdrPreferred, colorSpace);
+    this->_settings.colorSpace = colorSpace;
+    
+    if (isResized) // create render-target-view
+      _createSwapChainTargetView();
+    return isResized;
   }
-
-
-// -- buffer format bindings -- ------------------------------------------------
-
-  // Convert portable component format to DXGI_FORMAT
-  int32_t Renderer::toDxgiFormat(ComponentFormat format) noexcept {
-    switch (format) {
-      case ComponentFormat::rgba8_sRGB: return (int32_t)DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-      case ComponentFormat::rgba8_unorm: return (int32_t)DXGI_FORMAT_R8G8B8A8_UNORM;
-      case ComponentFormat::rgba8_snorm: return (int32_t)DXGI_FORMAT_R8G8B8A8_SNORM;
-      case ComponentFormat::rgba8_ui: return (int32_t)DXGI_FORMAT_R8G8B8A8_UINT;
-      case ComponentFormat::rgba8_i: return (int32_t)DXGI_FORMAT_R8G8B8A8_SINT;
-      
-      case ComponentFormat::d32_f: return (int32_t)DXGI_FORMAT_D32_FLOAT;
-      case ComponentFormat::d16_unorm: return (int32_t)DXGI_FORMAT_D16_UNORM;
-      case ComponentFormat::d32_f_s8_ui: return (int32_t)DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-      case ComponentFormat::d24_unorm_s8_ui: return (int32_t)DXGI_FORMAT_D24_UNORM_S8_UINT;
-      
-      case ComponentFormat::rgba16_f_hdr_scRGB: return (int32_t)DXGI_FORMAT_R16G16B16A16_FLOAT;
-      case ComponentFormat::rgba16_unorm: return (int32_t)DXGI_FORMAT_R16G16B16A16_UNORM;
-      case ComponentFormat::rgba16_snorm: return (int32_t)DXGI_FORMAT_R16G16B16A16_SNORM;
-      case ComponentFormat::rgba16_ui: return (int32_t)DXGI_FORMAT_R16G16B16A16_UINT;
-      case ComponentFormat::rgba16_i: return (int32_t)DXGI_FORMAT_R16G16B16A16_SINT;
-      case ComponentFormat::rgb10a2_unorm_hdr10: return (int32_t)DXGI_FORMAT_R10G10B10A2_UNORM;
-      case ComponentFormat::rgb10a2_ui: return (int32_t)DXGI_FORMAT_R10G10B10A2_UINT;
-      case ComponentFormat::rgba32_f: return (int32_t)DXGI_FORMAT_R32G32B32A32_FLOAT;
-      case ComponentFormat::rgba32_ui: return (int32_t)DXGI_FORMAT_R32G32B32A32_UINT;
-      case ComponentFormat::rgba32_i: return (int32_t)DXGI_FORMAT_R32G32B32A32_SINT;
-      
-      case ComponentFormat::bc6h_uf: return (int32_t)DXGI_FORMAT_BC6H_UF16;
-      case ComponentFormat::bc6h_f: return (int32_t)DXGI_FORMAT_BC6H_SF16;
-      case ComponentFormat::bc7_sRGB: return (int32_t)DXGI_FORMAT_BC7_UNORM_SRGB;
-      case ComponentFormat::bc7_unorm: return (int32_t)DXGI_FORMAT_BC7_UNORM;
-      
-      case ComponentFormat::bgra8_sRGB: return (int32_t)DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-      case ComponentFormat::bgra8_unorm: return (int32_t)DXGI_FORMAT_B8G8R8A8_UNORM;
-      case ComponentFormat::r8_ui: return (int32_t)DXGI_FORMAT_R8_UINT;
-      case ComponentFormat::r8_i: return (int32_t)DXGI_FORMAT_R8_SINT;
-      case ComponentFormat::r8_unorm: return (int32_t)DXGI_FORMAT_R8_UNORM;
-      case ComponentFormat::r8_snorm: return (int32_t)DXGI_FORMAT_R8_SNORM;
-      case ComponentFormat::a8_unorm: return (int32_t)DXGI_FORMAT_A8_UNORM;
-      case ComponentFormat::rg8_unorm: return (int32_t)DXGI_FORMAT_R8G8_UNORM;
-      case ComponentFormat::rg8_snorm: return (int32_t)DXGI_FORMAT_R8G8_SNORM;
-      case ComponentFormat::rg8_ui: return (int32_t)DXGI_FORMAT_R8G8_UINT;
-      case ComponentFormat::rg8_i: return (int32_t)DXGI_FORMAT_R8G8_SINT;
-      case ComponentFormat::rgb5a1_unorm: return (int32_t)DXGI_FORMAT_B5G5R5A1_UNORM;
-      case ComponentFormat::r5g6b5_unorm: return (int32_t)DXGI_FORMAT_B5G6R5_UNORM;
-      
-      case ComponentFormat::rg16_f: return (int32_t)DXGI_FORMAT_R16G16_FLOAT;
-      case ComponentFormat::r16_f: return (int32_t)DXGI_FORMAT_R16_FLOAT;
-      case ComponentFormat::rg16_unorm: return (int32_t)DXGI_FORMAT_R16G16_UNORM;
-      case ComponentFormat::r16_unorm: return (int32_t)DXGI_FORMAT_R16_UNORM;
-      case ComponentFormat::rg16_snorm: return (int32_t)DXGI_FORMAT_R16G16_SNORM;
-      case ComponentFormat::r16_snorm: return (int32_t)DXGI_FORMAT_R16_SNORM;
-      case ComponentFormat::rg16_ui: return (int32_t)DXGI_FORMAT_R16G16_UINT;
-      case ComponentFormat::r16_ui: return (int32_t)DXGI_FORMAT_R16_UINT;
-      case ComponentFormat::rg16_i: return (int32_t)DXGI_FORMAT_R16G16_SINT;
-      case ComponentFormat::r16_i: return (int32_t)DXGI_FORMAT_R16_SINT;
-      case ComponentFormat::rgb32_f: return (int32_t)DXGI_FORMAT_R32G32B32_FLOAT;
-      case ComponentFormat::rg32_f: return (int32_t)DXGI_FORMAT_R32G32_FLOAT;
-      case ComponentFormat::r32_f: return (int32_t)DXGI_FORMAT_R32_FLOAT;
-      case ComponentFormat::rgb32_ui: return (int32_t)DXGI_FORMAT_R32G32B32_UINT;
-      case ComponentFormat::rg32_ui: return (int32_t)DXGI_FORMAT_R32G32_UINT;
-      case ComponentFormat::r32_ui: return (int32_t)DXGI_FORMAT_R32_UINT;
-      case ComponentFormat::rgb32_i: return (int32_t)DXGI_FORMAT_R32G32B32_SINT;
-      case ComponentFormat::rg32_i: return (int32_t)DXGI_FORMAT_R32G32_SINT;
-      case ComponentFormat::r32_i: return (int32_t)DXGI_FORMAT_R32_SINT;
-      case ComponentFormat::rg11b10_f: return (int32_t)DXGI_FORMAT_R11G11B10_FLOAT;
-      case ComponentFormat::rgb9e5_uf: return (int32_t)DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
-      
-#     if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
-        case ComponentFormat::rgba4_unorm: return (int32_t)DXGI_FORMAT_B4G4R4A4_UNORM;
-#     endif
-      case ComponentFormat::unknown: 
-      default: return (int32_t)DXGI_FORMAT_UNKNOWN;
+  
+  // ---
+  
+  // Create swap-chain render-target-view
+  void SwapChain::_createSwapChainTargetView() { // throws
+    D3dResource<ID3D11Texture2D> renderTarget;
+    auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
+    if (FAILED(targetResult) || !renderTarget.hasValue()) {
+      throwError(targetResult, "SwapChain: could not access render target");
+      return;
+    }
+    
+    CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_settings.backBufferFormat);
+    targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
+    if (FAILED(targetResult) || this->_renderTargetView == nullptr)
+      throwError(targetResult, "SwapChain: could not create render target view");
+  }
+  
+  // ---
+  
+  // Throw appropriate exception for 'swap buffers' error
+  void __processSwapBuffersError(HRESULT result) {
+    switch (result) {
+      // minor issues -> ignore
+      case DXGI_ERROR_WAS_STILL_DRAWING:
+      case DXGI_ERROR_FRAME_STATISTICS_DISJOINT:
+      case DXGI_ERROR_NONEXCLUSIVE:
+      case DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: break;
+      // device lost
+      case DXGI_ERROR_DEVICE_REMOVED:
+      case DXGI_ERROR_DEVICE_RESET: throw std::domain_error("SwapChain: device access lost");
+      // invalid option
+      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: local display restriction is not supported on current device");
+      default: throwError(result, "SwapChain: internal error"); break;
     }
   }
 
+  // Swap back-buffer(s) and front-buffer, to display drawn content on screen
+  void SwapChain::swapBuffers(bool useVsync) {
+    auto result = ((IDXGISwapChain*)this->_swapChain)->Present(useVsync ? 1 : 0, this->_presentFlags);
+    if (FAILED(result))
+      __processSwapBuffersError(result);
+    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
+  }
+  
+  // Swap back-buffer(s) and front-buffer, to display drawn content on screen + discard render-target content after it
+  void SwapChain::swapBuffersDiscard(bool useVsync, Renderer::DepthStencilViewHandle depthBuffer) {
+    auto result = ((IDXGISwapChain*)this->_swapChain)->Present(useVsync ? 1 : 0, this->_presentFlags);
+    if (FAILED(result))
+      __processSwapBuffersError(result);
+    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
+    
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      // discard content of render target + depth/stencil buffer
+      if (this->_deviceContext11_1) {
+        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView((ID3D11RenderTargetView*)this->_renderTargetView);
+        if (depthBuffer != nullptr)
+          ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView((ID3D11DepthStencilView*)depthBuffer);
+      }
+#   endif
+  }
 
-// -- error messages -- --------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// _d3d_resource.h -- error messages
+// -----------------------------------------------------------------------------
 
   void pandora::video::d3d11::throwError(HRESULT result, const char* messageContent) {
     auto message = std::string(messageContent) + ": Direct3D error ";
@@ -1415,5 +1393,396 @@ License :     MIT
     }
     throw std::runtime_error(std::move(message));
   }
+  
+  void pandora::video::d3d11::throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo) {
+    std::string message(messagePrefix);
+    message += " (";
+    message += shaderInfo;
+    message += "): ";
+    if (errorMessage) {
+      message += (const char*)errorMessage->GetBufferPointer();
+      errorMessage->Release();
+    }
+    else
+      message += "missing or empty shader file/content";
+    throw std::runtime_error(std::move(message));
+  }
+  
+  
+// -----------------------------------------------------------------------------
+// static_buffer.h
+// -----------------------------------------------------------------------------
+
+  static D3D11_BIND_FLAG __toBindFlag(pandora::video::DataBufferType type) {
+    switch (type) {
+      case pandora::video::DataBufferType::constant:    return D3D11_BIND_CONSTANT_BUFFER;
+      case pandora::video::DataBufferType::vertexArray: return D3D11_BIND_VERTEX_BUFFER;
+      case pandora::video::DataBufferType::vertexIndex: return D3D11_BIND_INDEX_BUFFER;
+      default: return D3D11_BIND_SHADER_RESOURCE;
+    }
+  }
+
+  // Create data buffer (to store data for shader stages)
+  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize) 
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+    
+    auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "StaticBuffer: could not create static buffer");
+  }
+
+  // Create data buffer (to store data for shader stages) with initial value
+  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
+                             size_t bufferByteSize, const void* initData, bool isImmutable)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    
+    if (isImmutable) {
+      if (initData == nullptr)
+        throw std::invalid_argument("StaticBuffer: initData can't be NULL with immutable buffers");
+      bufferDescriptor.Usage = D3D11_USAGE_IMMUTABLE;
+    }
+    else
+      bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
+    
+    D3D11_SUBRESOURCE_DATA subResData;
+    ZeroMemory(&subResData, sizeof(subResData));
+    subResData.pSysMem = initData;
+    auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "StaticBuffer: could not create static buffer");
+  }
+
+  // ---
+
+  StaticBuffer::StaticBuffer(StaticBuffer&& rhs) noexcept
+    : _buffer(rhs._buffer),
+      _bufferSize(rhs._bufferSize),
+      _type(rhs._type) {
+    rhs._buffer = nullptr;
+  }
+  StaticBuffer& StaticBuffer::operator=(StaticBuffer&& rhs) noexcept {
+    release();
+    this->_buffer = rhs._buffer;
+    this->_bufferSize = rhs._bufferSize;
+    this->_type = rhs._type;
+    rhs._buffer = nullptr;
+    return *this;
+  }
+
+
+// -----------------------------------------------------------------------------
+// dynamic_buffer.h
+// -----------------------------------------------------------------------------
+
+  // Create data buffer (to store data for shader stages)
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
+    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == D3D_FEATURE_LEVEL_11_0)
+      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    
+    auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "DynamicBuffer: could not create dynamic buffer");
+  }
+
+  // Create data buffer (to store data for shader stages) with initial value
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
+                               size_t bufferByteSize, const void* initData)
+    : _bufferSize(bufferByteSize), _type(type) {
+    if (bufferByteSize == 0)
+      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
+    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == D3D_FEATURE_LEVEL_11_0)
+      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+    
+    D3D11_BUFFER_DESC bufferDescriptor = {};
+    ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
+    bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
+    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    
+    D3D11_SUBRESOURCE_DATA subResData;
+    ZeroMemory(&subResData, sizeof(subResData));
+    subResData.pSysMem = initData;
+    auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
+    if (FAILED(result) || this->_buffer == nullptr)
+      throwError(result, "DynamicBuffer: could not create dynamic buffer");
+  }
+  
+  // ---
+
+  DynamicBuffer::DynamicBuffer(DynamicBuffer&& rhs) noexcept
+    : _buffer(rhs._buffer),
+      _bufferSize(rhs._bufferSize),
+      _type(rhs._type) {
+    rhs._buffer = nullptr;
+  }
+  DynamicBuffer& DynamicBuffer::operator=(DynamicBuffer&& rhs) noexcept {
+    release();
+    this->_buffer = rhs._buffer;
+    this->_bufferSize = rhs._bufferSize;
+    this->_type = rhs._type;
+    rhs._buffer = nullptr;
+    return *this;
+  }
+
+  // ---
+
+  // Write buffer data and discard previous data - recommended for first write of the buffer for a frame
+  bool DynamicBuffer::writeDiscard(Renderer& renderer, const void* sourceData) {
+    // lock GPU access
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    auto lockResult = renderer.context()->Map(this->_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (FAILED(lockResult) || mappedResource.pData == nullptr)
+      return false;
+
+    memcpy(mappedResource.pData, sourceData, this->_bufferSize);
+    renderer.context()->Unmap(this->_buffer, 0);
+    return true;
+  }
+  // Vertex/index buffers: write buffer data with no overwrite - recommended for subsequent writes of the buffer within same frame.
+  // Constant buffers: same as 'writeDiscard'.
+  bool DynamicBuffer::write(Renderer& renderer, const void* sourceData) {
+    // lock GPU access
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    auto writeMode = (this->_type != pandora::video::DataBufferType::constant) ? D3D11_MAP_WRITE_NO_OVERWRITE : D3D11_MAP_WRITE_DISCARD;
+    auto lockResult = renderer.context()->Map(this->_buffer, 0, writeMode, 0, &mappedResource);
+    if (FAILED(lockResult) || mappedResource.pData == nullptr)
+      return false;
+
+    memcpy(mappedResource.pData, sourceData, this->_bufferSize);
+    renderer.context()->Unmap(this->_buffer, 0);
+    return true;
+  }
+
+
+// -----------------------------------------------------------------------------
+// depth_stencil_buffer.h
+// -----------------------------------------------------------------------------
+
+  // Create depth/stencil buffer for existing renderer/render-target
+  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
+                                         uint32_t width, uint32_t height) { // throws
+    if (width == 0 || height == 0)
+      throw std::invalid_argument("DepthStencilBuffer: invalid width/height: values must not be 0");
+    
+    // create compatible depth/stencil buffer
+    D3D11_TEXTURE2D_DESC depthDescriptor;
+    ZeroMemory(&depthDescriptor, sizeof(depthDescriptor));
+    depthDescriptor.Width = (UINT)width;
+    depthDescriptor.Height = (UINT)height;
+    depthDescriptor.MipLevels = 1;
+    depthDescriptor.ArraySize = 1;
+    depthDescriptor.Format = (DXGI_FORMAT)Renderer::toDxgiFormat(format);
+    depthDescriptor.SampleDesc.Count = 1;
+    depthDescriptor.SampleDesc.Quality = 0;
+    depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
+    depthDescriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    
+    auto result = renderer.device()->CreateTexture2D(&depthDescriptor, nullptr, &(this->_depthStencilBuffer));
+    if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
+      throwError(result, "DepthStencilBuffer: could not create depth/stencil buffer"); return;
+    }
+    
+    // create depth/stencil view
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDescriptor;
+    ZeroMemory(&depthViewDescriptor, sizeof(depthViewDescriptor));
+    depthViewDescriptor.Format = depthDescriptor.Format;
+    depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthViewDescriptor.Texture2D.MipSlice = 0;
+    
+    result = renderer.device()->CreateDepthStencilView(this->_depthStencilBuffer, &depthViewDescriptor, &(this->_depthStencilView));
+    if (FAILED(result) || this->_depthStencilView == nullptr)
+      throwError(result, "DepthStencilBuffer: could not create depth/stencil view");
+    
+    this->_settings.width = width;
+    this->_settings.height = height;
+    this->_settings.format = format;
+  }
+
+  // Destroy depth/stencil buffer
+  void DepthStencilBuffer::release() noexcept {
+    if (this->_depthStencilBuffer) {
+      if (this->_depthStencilView) {
+        try { this->_depthStencilView->Release(); } catch (...) {}
+        this->_depthStencilView = nullptr;
+      }
+      try { this->_depthStencilBuffer->Release(); } catch (...) {}
+      this->_depthStencilBuffer = nullptr;
+    }
+  }
+  
+  // ---
+  
+  DepthStencilBuffer::DepthStencilBuffer(DepthStencilBuffer&& rhs) noexcept 
+    : _depthStencilView(rhs._depthStencilView),
+      _depthStencilBuffer(rhs._depthStencilBuffer) {
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
+    rhs._depthStencilBuffer = nullptr;
+    rhs._depthStencilView = nullptr;
+  }
+  DepthStencilBuffer& DepthStencilBuffer::operator=(DepthStencilBuffer&& rhs) noexcept {
+    release();
+    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
+    this->_depthStencilBuffer = rhs._depthStencilBuffer;
+    this->_depthStencilView = rhs._depthStencilView;
+    rhs._depthStencilBuffer = nullptr;
+    rhs._depthStencilView = nullptr;
+    return *this;
+  }
+
+
+// -----------------------------------------------------------------------------
+// shader.h
+// -----------------------------------------------------------------------------
+
+// -- create/compile shaders -- ------------------------------------------------
+
+  // Get D3D11 shader model ID
+  static const char* __getShaderModel(pandora::video::ShaderType type) {
+    switch (type) {
+      case pandora::video::ShaderType::vertex:        return "vs_5_0"; break;
+      case pandora::video::ShaderType::tesselControl: return "hs_5_0"; break;
+      case pandora::video::ShaderType::tesselEval:    return "ds_5_0"; break;
+      case pandora::video::ShaderType::geometry:      return "gs_5_0"; break;
+      case pandora::video::ShaderType::fragment:      return "ps_5_0"; break;
+      default: return "cs_5_0"; break;
+    }
+  }
+
+  // Compile shader from text content
+  Shader::Builder Shader::Builder::compile(pandora::video::ShaderType type, const char* textContent, size_t length, const char* entryPoint, bool isStrict) {
+    ID3DBlob* errorMessage = nullptr;
+    ID3DBlob* shaderBuffer = nullptr;
+    const char* shaderModel = __getShaderModel(type);
+    HRESULT result = D3DCompile((LPCVOID)textContent, (SIZE_T)length, nullptr, nullptr, nullptr, entryPoint, shaderModel, 
+                                isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
+    if (FAILED(result))
+      throwShaderError(errorMessage, "Shader: text compile error", shaderModel);
+    return Shader::Builder(type, shaderBuffer);
+  }
+  // Compile shader from text file
+  Shader::Builder Shader::Builder::compileFromFile(pandora::video::ShaderType type, const wchar_t* filePath, const char* entryPoint, bool isStrict) {
+    
+    ID3DBlob* errorMessage = nullptr;
+    ID3DBlob* shaderBuffer = nullptr;
+    const char* shaderModel = __getShaderModel(type);
+    HRESULT result = D3DCompileFromFile(filePath, nullptr, nullptr, entryPoint, shaderModel, 
+                                        isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
+    if (FAILED(result))
+      throwShaderError(errorMessage, "Shader: file compile error", shaderModel);
+    return Shader::Builder(type, shaderBuffer);
+  }
+
+
+// -- create shader objects -- -------------------------------------------------
+
+  // Create shader object
+  Shader Shader::Builder::createShader(Shader::DeviceHandle device) const {
+    HRESULT result;
+    Shader::Handle handle = nullptr;
+    switch (this->_type) {
+      case pandora::video::ShaderType::vertex:
+        result = device->CreateVertexShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11VertexShader**)&handle);
+        break;
+      case pandora::video::ShaderType::tesselControl:
+        result = device->CreateHullShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11HullShader**)&handle);
+        break;
+      case pandora::video::ShaderType::tesselEval:
+        result = device->CreateDomainShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11DomainShader**)&handle);
+        break;
+      case pandora::video::ShaderType::geometry:
+        result = device->CreateGeometryShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11GeometryShader**)&handle);
+        break;
+      case pandora::video::ShaderType::fragment:
+        result = device->CreatePixelShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11PixelShader**)&handle);
+        break;
+      default:
+        result = device->CreateComputeShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11ComputeShader**)&handle);
+        break;
+    }
+
+    if (FAILED(result) || handle == nullptr)
+      throwError(result, "Shader.Builder: failed to create shader object");
+    return Shader(handle, this->_type);
+  }
+  
+  // Destroy shader object
+  void Shader::release() noexcept {
+    if (this->_handle != nullptr) {
+      try {
+        switch (this->_type) {
+          case pandora::video::ShaderType::vertex:        ((ID3D11VertexShader*)this->_handle)->Release(); break;
+          case pandora::video::ShaderType::tesselControl: ((ID3D11HullShader*)this->_handle)->Release(); break;
+          case pandora::video::ShaderType::tesselEval:    ((ID3D11DomainShader*)this->_handle)->Release(); break;
+          case pandora::video::ShaderType::geometry:      ((ID3D11GeometryShader*)this->_handle)->Release(); break;
+          case pandora::video::ShaderType::fragment:      ((ID3D11PixelShader*)this->_handle)->Release(); break;
+          default: ((ID3D11ComputeShader*)this->_handle)->Release(); break;
+        }
+        this->_handle = nullptr;
+      }
+      catch (...) {}
+    }
+  }
+  
+  // ---
+
+  // Create input layout for shader object
+  ShaderInputLayout Shader::Builder::createInputLayout(Shader::DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const {
+    ID3D11InputLayout* inputLayout = nullptr;
+    HRESULT result = device->CreateInputLayout((D3D11_INPUT_ELEMENT_DESC*)layoutElements, (UINT)length, 
+                                                                (const void*)this->_data, (SIZE_T)this->_length, &inputLayout);
+    if (FAILED(result) || inputLayout == nullptr)
+      throwError(result, "Shader.Builder: failed to create specified input layout");
+    return ShaderInputLayout((ShaderInputLayout::Handle)inputLayout);
+  }
+  
+  
+// -----------------------------------------------------------------------------
+// camera.h
+// -----------------------------------------------------------------------------
+
+// -- camera projection -- -----------------------------------------------------
+
+  // Compute shader projection matrix
+  void CameraProjection::_computeProjection() noexcept {
+    _constrainFieldOfView();
+    float fovRad = DirectX::XMConvertToRadians(this->_fieldOfView);
+    this->_projection = DirectX::XMMatrixPerspectiveFovLH(fovRad, this->_displayRatio, this->_nearPlane, this->_farPlane);
+  }
+
+
+// -- camera view helpers -- ---------------------------------------------------
+
+//https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/june/directx-factor-the-canvas-and-the-camera
+//https://www.gamedev.net/tutorials/programming/graphics/directx-11-c-game-camera-r2978/
+//https://github.com/Pindrought/DirectX-11-Engine-VS2017/tree/Tutorial_31/DirectX%2011%20Engine%20VS2017/DirectX%2011%20Engine%20VS2017/Graphics
+//https://learnopengl.com/Getting-started/Camera
 
 #endif
