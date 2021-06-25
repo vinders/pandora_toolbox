@@ -114,7 +114,10 @@ License :     MIT
           _SwapChainConfig _settings{};
           std::shared_ptr<Renderer> _renderer = nullptr;
           Renderer::RenderTargetViewHandle _renderTargetView = nullptr;
-          ID3D11DeviceContext1* _deviceContext11_1 = nullptr;
+#         if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+            ID3D11DeviceContext1* _deviceContext11_1 = nullptr;
+#         endif
+
           Handle _swapChain = nullptr; // IDXGISwapChain*/IDXGISwapChain1*
           D3D_FEATURE_LEVEL _swapChainLevel = D3D_FEATURE_LEVEL_11_0;
           uint32_t _presentFlags = 0; // flags used when swapping buffers

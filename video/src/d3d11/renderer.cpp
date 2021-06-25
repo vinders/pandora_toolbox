@@ -1215,7 +1215,9 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
   SwapChain::SwapChain(SwapChain&& rhs) noexcept
     : _renderer(std::move(rhs._renderer)),
       _renderTargetView(rhs._renderTargetView),
-      _deviceContext11_1(rhs._deviceContext11_1),
+#     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+        _deviceContext11_1(rhs._deviceContext11_1),
+#     endif
       _swapChain(rhs._swapChain),
       _swapChainLevel(rhs._swapChainLevel),
       _presentFlags(rhs._presentFlags) {
@@ -1223,21 +1225,27 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     rhs._renderer = nullptr;
     rhs._swapChain = nullptr;
     rhs._renderTargetView = nullptr;
-    rhs._deviceContext11_1 = nullptr;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      rhs._deviceContext11_1 = nullptr;
+#   endif
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
     release();
     memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
     this->_renderer = std::move(rhs._renderer);
     this->_renderTargetView = rhs._renderTargetView;
-    this->_deviceContext11_1 = rhs._deviceContext11_1;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      this->_deviceContext11_1 = rhs._deviceContext11_1;
+#   endif
     this->_swapChain = rhs._swapChain;
     this->_swapChainLevel = rhs._swapChainLevel;
     this->_presentFlags = rhs._presentFlags;
     rhs._renderer = nullptr;
     rhs._swapChain = nullptr;
     rhs._renderTargetView = nullptr;
-    rhs._deviceContext11_1 = nullptr;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      rhs._deviceContext11_1 = nullptr;
+#   endif
     return *this;
   }
 
