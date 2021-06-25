@@ -1,4 +1,8 @@
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+# ifndef __MINGW32__
+#   pragma warning(push)
+#   pragma warning(disable : 4324)
+# endif
 # include <gtest/gtest.h>
 # include <video/window.h>
 # include <video/d3d11/api/d3d_11.h>
@@ -140,7 +144,6 @@
   struct InstanceData final {
     float position[3];
     float color[3];
-    float _pad[2];
   });
   __align_type(16,
   struct CamBuffer final {
@@ -484,4 +487,7 @@
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
   }
 
+# ifndef __MINGW32__
+#   pragma warning(pop)
+# endif
 #endif
