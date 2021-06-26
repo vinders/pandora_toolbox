@@ -70,16 +70,15 @@ License :     MIT
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; } ///< Get available DXGI level on current system (1-6)
           inline D3D_FEATURE_LEVEL featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
           
-          inline size_t activeRenderViews() noexcept { return this->_activeTargetCount; } ///< Current number of render views (swap-chains, texture targets...)
-          /// @brief Max number of simultaneous render views (swap-chains, texture targets...)
-          static constexpr inline size_t maxSimultaneousRenderViews() noexcept { return (size_t)D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
-          
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
           /// @brief Convert portable color/depth/component format to DXGI_FORMAT (cast result to DXGI_FORMAT)
           /// @remarks Useful to fill input layout descriptions with portable format values (see "video/d3d11/shader.h").
           static DXGI_FORMAT toDxgiFormat(pandora::video::ComponentFormat format) noexcept;
+          /// @brief Convert standard sRGB(A) color to device RGB(A)
+          /// @remarks Should be called to obtain the color to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
+          static void toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept;
           
           
           // -- feature support --
@@ -100,15 +99,18 @@ License :     MIT
           
           
           // -- render target operations --
-
-          /// @brief Convert standard sRGB(A) color to device RGB(A)
-          /// @remarks Should be called to obtain the color to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
-          static void toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept;
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           void setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
           void setViewport(const pandora::video::Viewport& viewport) noexcept;
+          
+          // ---
+
+          /// @brief Current number of render-target views (swap-chains, texture targets...)
+          inline size_t activeRenderTargets() noexcept { return this->_activeTargetCount; }
+          /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
+          static constexpr inline size_t maxRenderTargets() noexcept { return (size_t)D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
           
           /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
@@ -345,10 +347,21 @@ License :     MIT
           inline void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept {
             this->_context->OMSetDepthStencilState(state.get(), (UINT)stencilRef);
           }
+          
           /// @brief Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
           /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
           inline void setRasterizerState(const RasterizerState& state) noexcept { this->_context->RSSetState(state.get()); }
+          
+          /// @brief Change output merger blend state (color/alpha blending with render-target(s)), or empty state to reset (BlendState{})
+          /// @remarks If the blend state uses BlendFactor::constantColor/constantInvColor, a default white color is used.
+          ///          To customize the constant color, use 'setBlendState(state, constantColorRgba)' instead.
+          inline void setBlendState(const BlendState& state) noexcept { this->_context->OMSetBlendState(state.get(), nullptr, 0xFFFFFFFFu); }
+          /// @brief Change output merger blend state with constant factors (color/alpha blending with render-target(s))
+          /// @remarks The constant color is only used if the blend state uses BlendFactor::constantColor/constantInvColor.
+          inline void setBlendState(const BlendState& state, const FLOAT constantColorRgba[4]) noexcept {
+            this->_context->OMSetBlendState(state.get(), constantColorRgba, 0xFFFFFFFFu);
+          }
           
           // ---
           

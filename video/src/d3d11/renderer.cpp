@@ -440,18 +440,6 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 
   static FLOAT __defaultBlackColor[] = { 0.f,0.f,0.f,1.f };
   
-  // Convert standard sRGB(A) color to device RGB(A)
-  void Renderer::toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept {
-    DirectX::XMFLOAT3 colorArray(colorRgba);
-    DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
-    outRgba[0] = colorArray.x;
-    outRgba[1] = colorArray.y;
-    outRgba[2] = colorArray.z;
-    outRgba[3] = colorRgba[3];
-  }
-
-  // ---
-  
   // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
                             const FLOAT clearColorRgba[4]) noexcept {
@@ -567,7 +555,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 // -- renderer state factory - depth/stencil -- --------------------------------
 
   // Convert portable depth/stencil comparison enum to Direct3D comparison enum
-  static D3D11_COMPARISON_FUNC __toDepthComparison(DepthComparison compare) {
+  static D3D11_COMPARISON_FUNC __toDepthComparison(DepthComparison compare) noexcept {
     switch (compare) {
       case DepthComparison::never:        return D3D11_COMPARISON_NEVER;
       case DepthComparison::less:         return D3D11_COMPARISON_LESS;
@@ -581,7 +569,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     }
   }
   // Convert portable depth/stencil operation enum to Direct3D operation enum
-  static D3D11_STENCIL_OP __toDepthStencilOperation(DepthStencilOperation op) {
+  static D3D11_STENCIL_OP __toDepthStencilOperation(DepthStencilOperation op) noexcept {
     switch (op) {
       case DepthStencilOperation::keep:           return D3D11_STENCIL_OP_KEEP;
       case DepthStencilOperation::setZero:        return D3D11_STENCIL_OP_ZERO;
@@ -727,10 +715,171 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
   }
 
 
+// -- renderer state factory - blending -- -------------------------------------
+
+  // Convert portable grouped blend factors to Direct3D blend factors
+  static void __toBlendFactor(BlendFactor factor, D3D11_BLEND& outColorBlend, D3D11_BLEND& outAlphaBlend) noexcept {
+    switch (factor) {
+      case BlendFactor::zero:           outColorBlend = outAlphaBlend = D3D11_BLEND_ZERO; break;
+      case BlendFactor::one:            outColorBlend = outAlphaBlend = D3D11_BLEND_ONE; break;
+      case BlendFactor::sourceColor:     outColorBlend = D3D11_BLEND_SRC_COLOR;      outAlphaBlend = D3D11_BLEND_SRC_ALPHA; break;
+      case BlendFactor::sourceInvColor:  outColorBlend = D3D11_BLEND_INV_SRC_COLOR;  outAlphaBlend = D3D11_BLEND_INV_SRC_ALPHA; break;
+      case BlendFactor::destColor:       outColorBlend = D3D11_BLEND_DEST_COLOR;     outAlphaBlend = D3D11_BLEND_DEST_ALPHA; break;
+      case BlendFactor::destInvColor:    outColorBlend = D3D11_BLEND_INV_DEST_COLOR; outAlphaBlend = D3D11_BLEND_INV_DEST_ALPHA; break;
+      case BlendFactor::dualSrcColor:    outColorBlend = D3D11_BLEND_SRC1_COLOR;     outAlphaBlend = D3D11_BLEND_SRC1_ALPHA; break;
+      case BlendFactor::dualSrcInvColor: outColorBlend = D3D11_BLEND_INV_SRC1_COLOR; outAlphaBlend = D3D11_BLEND_INV_SRC1_ALPHA; break;
+      case BlendFactor::sourceAlpha:    outColorBlend = outAlphaBlend = D3D11_BLEND_SRC_ALPHA; break;
+      case BlendFactor::sourceInvAlpha: outColorBlend = outAlphaBlend = D3D11_BLEND_INV_SRC_ALPHA; break;
+      case BlendFactor::destAlpha:      outColorBlend = outAlphaBlend = D3D11_BLEND_DEST_ALPHA; break;
+      case BlendFactor::destInvAlpha:   outColorBlend = outAlphaBlend = D3D11_BLEND_INV_DEST_ALPHA; break;
+      case BlendFactor::sourceAlphaSat: outColorBlend = outAlphaBlend = D3D11_BLEND_SRC_ALPHA_SAT; break;
+      case BlendFactor::dualSrcAlpha:    outColorBlend = outAlphaBlend = D3D11_BLEND_SRC1_ALPHA; break;
+      case BlendFactor::dualSrcInvAlpha: outColorBlend = outAlphaBlend = D3D11_BLEND_INV_SRC1_ALPHA; break;
+      case BlendFactor::constantColor:    outColorBlend = outAlphaBlend = D3D11_BLEND_BLEND_FACTOR; break;
+      case BlendFactor::constantInvColor: outColorBlend = outAlphaBlend = D3D11_BLEND_INV_BLEND_FACTOR; break;
+      default: outColorBlend = outAlphaBlend = D3D11_BLEND_ZERO; break;
+    }
+  }
+  // Convert portable separate blend factors to Direct3D blend factors
+  static D3D11_BLEND __toBlendFactor(BlendFactor factor, bool isAlpha) noexcept {
+    switch (factor) {
+      case BlendFactor::zero:           return D3D11_BLEND_ZERO;
+      case BlendFactor::one:            return D3D11_BLEND_ONE;
+      case BlendFactor::sourceColor:    return isAlpha ? D3D11_BLEND_SRC_ALPHA : D3D11_BLEND_SRC_COLOR;
+      case BlendFactor::sourceInvColor: return isAlpha ? D3D11_BLEND_INV_SRC_ALPHA : D3D11_BLEND_INV_SRC_COLOR;
+      case BlendFactor::sourceAlpha:    return D3D11_BLEND_SRC_ALPHA;
+      case BlendFactor::sourceInvAlpha: return D3D11_BLEND_INV_SRC_ALPHA;
+      case BlendFactor::destColor:      return isAlpha ? D3D11_BLEND_DEST_ALPHA : D3D11_BLEND_DEST_COLOR;
+      case BlendFactor::destInvColor:   return isAlpha ? D3D11_BLEND_INV_DEST_ALPHA : D3D11_BLEND_INV_DEST_COLOR;
+      case BlendFactor::destAlpha:      return D3D11_BLEND_DEST_ALPHA;
+      case BlendFactor::destInvAlpha:   return D3D11_BLEND_INV_DEST_ALPHA;
+      case BlendFactor::sourceAlphaSat: return D3D11_BLEND_SRC_ALPHA_SAT;
+      case BlendFactor::dualSrcColor:    return isAlpha ? D3D11_BLEND_SRC1_ALPHA : D3D11_BLEND_SRC1_COLOR;
+      case BlendFactor::dualSrcInvColor: return isAlpha ? D3D11_BLEND_INV_SRC1_ALPHA : D3D11_BLEND_INV_SRC1_COLOR;
+      case BlendFactor::dualSrcAlpha:    return D3D11_BLEND_SRC1_ALPHA;
+      case BlendFactor::dualSrcInvAlpha: return D3D11_BLEND_INV_SRC1_ALPHA;
+      case BlendFactor::constantColor:    return D3D11_BLEND_BLEND_FACTOR;
+      case BlendFactor::constantInvColor: return D3D11_BLEND_INV_BLEND_FACTOR;
+      default: return D3D11_BLEND_ZERO;
+    }
+  }
+  // Convert portable blend operators to Direct3D blend operators
+  static D3D11_BLEND_OP __toBlendOperator(BlendOperator op) noexcept {
+    switch (op) {
+      case BlendOperator::add:         return D3D11_BLEND_OP_ADD;
+      case BlendOperator::subtract:    return D3D11_BLEND_OP_SUBTRACT;
+      case BlendOperator::revSubtract: return D3D11_BLEND_OP_REV_SUBTRACT;
+      case BlendOperator::minimum:     return D3D11_BLEND_OP_MIN;
+      case BlendOperator::maximum:     return D3D11_BLEND_OP_MAX;
+      default: return D3D11_BLEND_OP_ADD;
+    }
+  }
+  
+  // Fill grouped blend state params
+  static inline void __fillBlendStateParams(BlendFactor sourceFactor, BlendFactor destFactor, 
+                                            BlendOperator op, D3D11_RENDER_TARGET_BLEND_DESC& outDescriptor) noexcept {
+    outDescriptor.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    if (op != BlendOperator::none) {
+      outDescriptor.BlendEnable = TRUE;
+      __toBlendFactor(sourceFactor, outDescriptor.SrcBlend, outDescriptor.SrcBlendAlpha);
+      __toBlendFactor(destFactor, outDescriptor.DestBlend, outDescriptor.DestBlendAlpha);
+      outDescriptor.BlendOp = outDescriptor.BlendOpAlpha = __toBlendOperator(op);
+    }
+    else {
+      outDescriptor.BlendEnable = FALSE;
+      outDescriptor.SrcBlend = outDescriptor.SrcBlendAlpha = D3D11_BLEND_ONE;
+      outDescriptor.DestBlend = outDescriptor.DestBlendAlpha = D3D11_BLEND_ZERO;
+      outDescriptor.BlendOp = outDescriptor.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    }
+  }
+  // Fill separate blend state params
+  static inline void __fillBlendStateParams(BlendFactor sourceColorFactor, BlendFactor destColorFactor, BlendOperator colorOp, 
+                                            BlendFactor sourceAlphaFactor, BlendFactor destAlphaFactor, BlendOperator alphaOp, 
+                                            D3D11_RENDER_TARGET_BLEND_DESC& outDescriptor) noexcept {
+    outDescriptor.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    if (colorOp != BlendOperator::none && alphaOp != BlendOperator::none) {
+      outDescriptor.BlendEnable = TRUE;
+      outDescriptor.SrcBlend = __toBlendFactor(sourceColorFactor, false);
+      outDescriptor.SrcBlendAlpha = __toBlendFactor(sourceAlphaFactor, true);
+      outDescriptor.DestBlend = __toBlendFactor(destColorFactor, false);
+      outDescriptor.DestBlendAlpha = __toBlendFactor(destAlphaFactor, true);
+      outDescriptor.BlendOp = __toBlendOperator(colorOp);
+      outDescriptor.BlendOpAlpha = __toBlendOperator(alphaOp);
+    }
+    else {
+      outDescriptor.BlendEnable = FALSE;
+      outDescriptor.SrcBlend = outDescriptor.SrcBlendAlpha = D3D11_BLEND_ONE;
+      outDescriptor.DestBlend = outDescriptor.DestBlendAlpha = D3D11_BLEND_ZERO;
+      outDescriptor.BlendOp = outDescriptor.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    }
+  }
+  
+  // ---
+
+  // Create general blend state (common to all render-targets)
+  BlendState RendererStateFactory::createBlendState(BlendFactor sourceFactor, BlendFactor destFactor, BlendOperator op) { // throws
+    D3D11_BLEND_DESC descriptor{};
+    ZeroMemory(&descriptor, sizeof(D3D11_BLEND_DESC));
+    __fillBlendStateParams(sourceFactor, destFactor, op, descriptor.RenderTarget[0]);
+    
+    ID3D11BlendState* stateData = nullptr;
+    HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create general blend state");
+    return BlendState(stateData);
+  }
+  // Create general blend state (common to all render-targets) - separate color/alpha params
+  BlendState RendererStateFactory::createBlendState(BlendFactor sourceColorFactor, BlendFactor destColorFactor, BlendOperator colorOp, 
+                                                    BlendFactor sourceAlphaFactor, BlendFactor destAlphaFactor, BlendOperator alphaOp) { // throws
+    D3D11_BLEND_DESC descriptor{};
+    ZeroMemory(&descriptor, sizeof(D3D11_BLEND_DESC));
+    __fillBlendStateParams(sourceColorFactor, destColorFactor, colorOp, sourceAlphaFactor, destAlphaFactor, alphaOp, descriptor.RenderTarget[0]);
+    
+    ID3D11BlendState* stateData = nullptr;
+    HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create split blend state");
+    return BlendState(stateData);
+  }
+
+  // Create blend state with different grouped params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
+  BlendState RendererStateFactory::createBlendStatePerTarget(const TargetBlendingParams* perTargetParams, size_t arrayLength) { // throws
+    D3D11_BLEND_DESC descriptor{};
+    ZeroMemory(&descriptor, sizeof(D3D11_BLEND_DESC));
+    descriptor.IndependentBlendEnable = TRUE;
+    for (size_t i = 0; i < arrayLength; ++i, ++perTargetParams) {
+      __fillBlendStateParams(perTargetParams->sourceFactor, perTargetParams->destFactor, perTargetParams->op, descriptor.RenderTarget[i]);
+    }
+    
+    ID3D11BlendState* stateData = nullptr;
+    HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create per-target blend state");
+    return BlendState(stateData);
+  }
+  // Create blend state with different color/alpha params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
+  BlendState RendererStateFactory::createBlendStatePerTarget(const TargetBlendingSplitParams* perTargetParams, size_t arrayLength) { // throws
+    D3D11_BLEND_DESC descriptor{};
+    ZeroMemory(&descriptor, sizeof(D3D11_BLEND_DESC));
+    descriptor.IndependentBlendEnable = TRUE;
+    for (size_t i = 0; i < arrayLength; ++i, ++perTargetParams) {
+      __fillBlendStateParams(perTargetParams->sourceColorFactor, perTargetParams->destColorFactor, perTargetParams->colorOp, 
+                             perTargetParams->sourceAlphaFactor, perTargetParams->destAlphaFactor, perTargetParams->alphaOp, 
+                             descriptor.RenderTarget[i]);
+    }
+    
+    ID3D11BlendState* stateData = nullptr;
+    HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "RendererStateFactory: failed to create per-target split blend state");
+    return BlendState(stateData);
+  }
+
+
 // -- renderer state factory - sampler -- --------------------------------------
   
   // Convert portable filter types to Direct3D filter type
-  static D3D11_FILTER __toFilterType(MinificationFilter minFilter, MagnificationFilter magFilter) {
+  static D3D11_FILTER __toFilterType(MinificationFilter minFilter, MagnificationFilter magFilter) noexcept {
     bool isMagLinear = (magFilter == MagnificationFilter::linear);
     switch (minFilter) {
       case MinificationFilter::nearest_mipNearest:
@@ -743,7 +892,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     }
   }
   // Convert portable filter types to Direct3D filter type with comparison
-  static D3D11_FILTER __toFilterComparedType(MinificationFilter minFilter, MagnificationFilter magFilter) {
+  static D3D11_FILTER __toFilterComparedType(MinificationFilter minFilter, MagnificationFilter magFilter) noexcept {
     bool isMagLinear = (magFilter == MagnificationFilter::linear);
     switch (minFilter) {
       case MinificationFilter::nearest_mipNearest:
@@ -760,7 +909,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     }
   }
   // Convert portable texture-addressing to Direct3D addressing enum
-  static D3D11_TEXTURE_ADDRESS_MODE __toFilterTextureAddress(TextureAddressMode mode) {
+  static D3D11_TEXTURE_ADDRESS_MODE __toFilterTextureAddress(TextureAddressMode mode) noexcept {
     switch (mode) {
       case TextureAddressMode::border: return D3D11_TEXTURE_ADDRESS_BORDER;
       case TextureAddressMode::clamp:  return D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -866,10 +1015,18 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 
 
 // -----------------------------------------------------------------------------
-// swap_chain.h + Renderer::toDxgiFormat
+// renderer.h/swap_chain.h : color management
 // -----------------------------------------------------------------------------
 
-// -- color management -- ------------------------------------------------------
+  // Convert standard sRGB(A) color to device RGB(A)
+  void Renderer::toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept {
+    DirectX::XMFLOAT3 colorArray(colorRgba);
+    DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
+    outRgba[0] = colorArray.x;
+    outRgba[1] = colorArray.y;
+    outRgba[2] = colorArray.z;
+    outRgba[3] = colorRgba[3];
+  }
 
   // Convert portable component format to DXGI_FORMAT
   DXGI_FORMAT Renderer::toDxgiFormat(ComponentFormat format) noexcept {
@@ -1019,6 +1176,10 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     return false;
   }
 
+
+// -----------------------------------------------------------------------------
+// swap_chain.h
+// -----------------------------------------------------------------------------
 
 // -- swap-chain creation -- ---------------------------------------------------
 

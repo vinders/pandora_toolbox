@@ -48,7 +48,7 @@
            " > HDR API available: %s\n > Flip swap available: %s\n > Tearing available: %s\n > Local display limit available: %s\n", 
            renderer.dxgiLevel(), ((uint32_t)renderer.featureLevel() > 0) ? "1+" : "0",
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
-           (uint32_t)renderer.maxSimultaneousRenderViews(), (uint32_t)renderer.maxFilterStateSlots(), 
+           (uint32_t)renderer.maxRenderTargets(), (uint32_t)renderer.maxFilterStateSlots(), 
            RendererStateFactory::maxAnisotropy(), 
            isMonitorHdr ? trueVal : falseVal,
            renderer.isHdrAvailable() ? trueVal : falseVal,
@@ -121,29 +121,29 @@
 
     Renderer::RenderTargetViewHandle emptyView = nullptr;
     renderer.setActiveRenderTargets(nullptr, 0, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTarget(nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTarget(emptyView, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTargets(nullptr, 0, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTargets(&emptyView, 1, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTarget(nullptr, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTarget(emptyView, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearViews(nullptr, 0, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearViews(&emptyView, 1, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearView(nullptr, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearView(emptyView, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderViews());
+    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     
     pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
     renderer.setViewports(&viewport1, size_t{1u});

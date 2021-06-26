@@ -67,7 +67,36 @@ License :     MIT
           
           // -- blend state buffer --
           
-          //...
+          /// @brief Create general blend state (common to all render-targets)
+          /// @param sourceFactor Blend factor used for source (shader output)
+          /// @param destFactor   Blend factor used for destination (existing render-target)
+          /// @param op           Color/alpha blend operator
+          /// @throws runtime_error on creation failure
+          BlendState createBlendState(pandora::video::BlendFactor sourceFactor, pandora::video::BlendFactor destFactor, 
+                                      pandora::video::BlendOperator op);
+          /// @brief Create general blend state (common to all render-targets) - separate color/alpha params
+          /// @param sourceColorFactor Blend factor used for source color (shader output)
+          /// @param destColorFactor   Blend factor used for destination color (existing render-target)
+          /// @param colorOp           Color blend operator
+          /// @param sourceAlphaFactor Blend factor used for source alpha (shader output)
+          /// @param destAlphaFactor   Blend factor used for destination alpha (existing render-target)
+          /// @param alphaOp           Alpha blend operator
+          /// @throws runtime_error on creation failure
+          BlendState createBlendState(pandora::video::BlendFactor sourceColorFactor, pandora::video::BlendFactor destColorFactor,
+                                      pandora::video::BlendOperator colorOp,
+                                      pandora::video::BlendFactor sourceAlphaFactor, pandora::video::BlendFactor destAlphaFactor,
+                                      pandora::video::BlendOperator alphaOp);
+
+          /// @brief Create blend state with different grouped params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
+          /// @param perTargetParams  Array of blending params, for each render-target (array index == target index).
+          /// @param arrayLength      Length of 'perTargetParams'.
+          /// @throws runtime_error on creation failure
+          BlendState createBlendStatePerTarget(const pandora::video::TargetBlendingParams* perTargetParams, size_t arrayLength);
+          /// @brief Create blend state with different color/alpha params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
+          /// @param perTargetParams  Array of separate color/alpha blending params, for each render-target (array index == target index).
+          /// @param arrayLength      Length of 'perTargetParams'.
+          /// @throws runtime_error on creation failure
+          BlendState createBlendStatePerTarget(const pandora::video::TargetBlendingSplitParams* perTargetParams, size_t arrayLength);
 
 
           // -- sampler filter state buffer --

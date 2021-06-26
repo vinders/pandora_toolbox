@@ -9,7 +9,7 @@ License :     MIT
 
 namespace pandora {
   namespace video {
-    // -- rasterizing --
+    // -- rasterizing / merge --
     
     /// @brief Renderer culling mode
     enum class CullMode : uint32_t {
@@ -25,16 +25,55 @@ namespace pandora {
       float depthBiasSlopeScale = 0.0f;
       bool isClipped = true;
     };
-    /// @brief Buffer transparency mode
-    enum class AlphaBlending : uint32_t {
-      ignored       = 0u, ///< No transparency
-      standard      = 1u, ///< Standard transparency: - rgba(255,0,0,255) == full saturation red, opaque.
-                          ///                         - rgba(127,0,0,127) == 50% saturation red, 50% transparent.
-                          ///                         - rgba(255,0,0,127) == full saturation red, 50% transparent.
-      preMultiplied = 2u  ///< Pre-multiplied transparency: - rgba(255,0,0,255) == full saturation red, opaque.
-                          ///                               - rgba(127,0,0,127) == full saturation red, 50% transparent.
-                          ///                               - rgba(255,0,0,127) == additive blended red, 50% transparent.
+    
+    /// @brief Color/alpha blend factor
+    enum class BlendFactor : uint32_t {
+      zero            = 0u, ///< All zero        (0,0,0,0)             -> GL_ZERO / D3D11_BLEND_ZERO
+      one             = 1u, ///< All one         (1,1,1,1)             -> GL_ONE / D3D11_BLEND_ONE
+      sourceColor     = 2u, ///< Source color    (sR,sG,sB,sA)         -> GL_SRC_COLOR / D3D11_BLEND_SRC_COLOR
+      sourceInvColor  = 3u, ///< Source opposite (1-sR,1-sG,1-sB,1-sA) -> GL_ONE_MINUS_SRC_COLOR / D3D11_BLEND_INV_SRC_COLOR
+      sourceAlpha     = 4u, ///< Source alpha    (sA,sA,sA,sA)         -> GL_SRC_ALPHA / D3D11_BLEND_SRC_ALPHA
+      sourceInvAlpha  = 5u, ///< Src. alpha opp. (1-sA,1-sA,1-sA,1-sA) -> GL_ONE_MINUS_SRC_ALPHA / D3D11_BLEND_INV_SRC_ALPHA
+      destColor       = 6u, ///< Dest. color     (dR,dG,dB,dA)         -> GL_DST_COLOR / D3D11_BLEND_DEST_COLOR
+      destInvColor    = 7u, ///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA) -> GL_ONE_MINUS_DST_COLOR / D3D11_BLEND_INV_DEST_COLOR
+      destAlpha       = 8u, ///< Dest. alpha     (dA,dA,dA,dA)         -> GL_DST_ALPHA / D3D11_BLEND_DEST_ALPHA
+      destInvAlpha    = 9u, ///< Dest. alpha opp.(1-dA,1-dA,1-dA,1-dA) -> GL_ONE_MINUS_DST_ALPHA / D3D11_BLEND_INV_DEST_ALPHA
+      sourceAlphaSat  = 10u,///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA) -> GL_SRC_ALPHA_SATURATE / D3D11_BLEND_SRC_ALPHA_SAT
+      dualSrcColor    = 11u,///< Dual-source color                     -> GL_SRC1_COLOR / D3D11_BLEND_SRC1_COLOR
+      dualSrcInvColor = 12u,///< Dual-source opposite                  -> GL_ONE_MINUS_SRC1_COLOR / D3D11_BLEND_INV_SRC1_COLOR
+      dualSrcAlpha    = 13u,///< Dual-source alpha                     -> GL_SRC1_ALPHA / D3D11_BLEND_SRC1_ALPHA
+      dualSrcInvAlpha = 14u,///< Dual-source alpha opposite            -> GL_ONE_MINUS_SRC1_ALPHA / D3D11_BLEND_INV_SRC1_ALPHA
+      constantColor   = 15u,///< Constant (cR,cG,cB,cA)                -> GL_CONSTANT_COLOR / D3D11_BLEND_BLEND_FACTOR
+                            ///< Uses constant color provided at binding (requires 'GL_ARB_imaging' extension with OpenGL)
+      constantInvColor= 16u ///< Constant (1-cR,1-cG,1-cB,1-cA)        -> GL_ONE_MINUS_CONSTANT_COLOR / D3D11_BLEND_INV_BLEND_FACTOR (requires 'GL_ARB_imaging' extension with OpenGL)
+                            ///< Opposite of constant color provided at binding (requires 'GL_ARB_imaging' extension with OpenGL)
     };
+    /// @brief Color/alpha blend operator
+    enum class BlendOperator : uint32_t {
+      none        = 0u, ///< Disable all blending for render target (if color and/or alpha operator is 'none', no blending occurs)
+      add         = 1u, ///< Source RGBA + dest. RGBA    -> GL_FUNC_ADD / D3D11_BLEND_OP_ADD
+      subtract    = 2u, ///< Source RGBA - dest. RGBA    -> GL_FUNC_SUBTRACT / D3D11_BLEND_OP_SUBTRACT
+      revSubtract = 3u, ///< Dest. RGBA - source RGBA    -> GL_FUNC_REVERSE_SUBTRACT / D3D11_BLEND_OP_REV_SUBTRACT
+      minimum     = 4u, ///< min(source RGBA, dest RGBA) -> GL_MIN / D3D11_BLEND_OP_MIN
+      maximum     = 5u  ///< max(source RGBA, dest RGBA) -> GL_MAX / D3D11_BLEND_OP_MAX
+    };
+    
+    /// @brief Blending settings for a render-target - grouped color/alpha
+    struct TargetBlendingParams final {
+      BlendFactor sourceFactor = BlendFactor::one;
+      BlendFactor destFactor = BlendFactor::zero;
+      BlendOperator op   = BlendOperator::add;
+    };
+    /// @brief Blending settings for a render-target - separate color/alpha
+    struct TargetBlendingSplitParams final {
+      BlendFactor sourceColorFactor = BlendFactor::one;
+      BlendFactor destColorFactor   = BlendFactor::zero;
+      BlendOperator colorOp         = BlendOperator::add;
+      BlendFactor sourceAlphaFactor = BlendFactor::one;
+      BlendFactor destAlphaFactor   = BlendFactor::zero;
+      BlendOperator alphaOp         = BlendOperator::add;
+    };
+    
     
     // -- textures / filtering --
     
@@ -60,6 +99,7 @@ namespace pandora {
       nearest = 0, ///< Use nearest point during upscaling
       linear = 1u  ///< Bilinear interpolation during upscaling
     };
+    
     
     // -- depth / stencil tests --
     
@@ -100,6 +140,7 @@ namespace pandora {
       DepthStencilOperation passOp;        ///< Operation to perform on pixel when all tests pass
       DepthComparison stencilTest;         ///< Stencil-test comparison to perform
     };
+    
     
     // -- swap-chain behavior --
     

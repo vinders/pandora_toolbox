@@ -198,6 +198,102 @@
     EXPECT_TRUE(val2.get() == nullptr);
   }
 
+  // -- blend state management --
+
+  TEST_F(RendererStateTest, emptyBlendContainer) {
+    BlendState empty;
+    EXPECT_FALSE(empty);
+    EXPECT_FALSE(empty.isValid());
+    EXPECT_TRUE(empty.get() == nullptr);
+    BlendState empty2(nullptr);
+    EXPECT_FALSE(empty2);
+    EXPECT_FALSE(empty2.isValid());
+    EXPECT_TRUE(empty2.get() == nullptr);
+
+    empty = std::move(empty2);
+    EXPECT_FALSE(empty);
+    EXPECT_FALSE(empty.isValid());
+    EXPECT_TRUE(empty.get() == nullptr);
+
+    BlendState empty3 = std::move(empty);
+    EXPECT_FALSE(empty3);
+    EXPECT_FALSE(empty3.isValid());
+    EXPECT_TRUE(empty3.get() == nullptr);
+  }
+
+  TEST_F(RendererStateTest, filledBlendContainer) {
+    pandora::hardware::DisplayMonitor monitor;
+    Renderer renderer(monitor);
+    RendererStateFactory factory(renderer);
+    const FLOAT color[4] = { 0.f,0.f,0.f,1.f };
+
+    BlendState val1 = factory.createBlendState(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::add);
+    EXPECT_TRUE(val1);
+    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.get() != nullptr);
+    renderer.setBlendState(val1);
+    renderer.setBlendState(val1, color);
+    BlendState val2(factory.createBlendState(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::revSubtract, 
+                                             BlendFactor::one, BlendFactor::zero, BlendOperator::maximum));
+    EXPECT_TRUE(val2);
+    EXPECT_TRUE(val2.isValid());
+    EXPECT_TRUE(val2.get() != nullptr);
+    renderer.setBlendState(val2);
+    renderer.setBlendState(val2, color);
+    renderer.setBlendState(BlendState{});
+
+    BlendState val3(factory.createBlendState(BlendFactor::constantColor, BlendFactor::constantInvColor, BlendOperator::subtract));
+    EXPECT_TRUE(val3);
+    EXPECT_TRUE(val3.isValid());
+    EXPECT_TRUE(val3.get() != nullptr);
+    renderer.setBlendState(val3);
+    renderer.setBlendState(val3, color);
+    renderer.setBlendState(BlendState{});
+
+    TargetBlendingParams params1[]{ {BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::add}, 
+                                    {BlendFactor::sourceInvColor, BlendFactor::destColor, BlendOperator::subtract},
+                                    {BlendFactor::one, BlendFactor::zero, BlendOperator::none} };
+    BlendState val4(factory.createBlendStatePerTarget(params1, (size_t)3u));
+    EXPECT_TRUE(val4);
+    EXPECT_TRUE(val4.isValid());
+    EXPECT_TRUE(val4.get() != nullptr);
+    renderer.setBlendState(val4);
+    renderer.setBlendState(val4, color);
+    renderer.setBlendState(BlendState{});
+
+    TargetBlendingSplitParams params2 = { BlendFactor::sourceColor, BlendFactor::destColor, BlendOperator::minimum, 
+                                          BlendFactor::one, BlendFactor::one, BlendOperator::maximum };
+    BlendState val5(factory.createBlendStatePerTarget(&params2, (size_t)1u));
+    EXPECT_TRUE(val5);
+    EXPECT_TRUE(val5.isValid());
+    EXPECT_TRUE(val5.get() != nullptr);
+    renderer.setBlendState(val5);
+    renderer.setBlendState(val5, color);
+    renderer.setBlendState(BlendState{});
+
+    auto val2Get = val2.get();
+    val1 = std::move(val2);
+    EXPECT_TRUE(val1);
+    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.get() != nullptr);
+    EXPECT_TRUE(val1.get() == val2Get);
+    EXPECT_FALSE(val2);
+    EXPECT_FALSE(val2.isValid());
+    EXPECT_TRUE(val2.get() == nullptr);
+
+    BlendState valM = std::move(val1);
+    EXPECT_TRUE(valM);
+    EXPECT_TRUE(valM.isValid());
+    EXPECT_TRUE(valM.get() != nullptr);
+    EXPECT_TRUE(valM.get() == val2Get);
+    EXPECT_FALSE(val1);
+    EXPECT_FALSE(val1.isValid());
+    EXPECT_TRUE(val1.get() == nullptr);
+    EXPECT_FALSE(val2);
+    EXPECT_FALSE(val2.isValid());
+    EXPECT_TRUE(val2.get() == nullptr);
+  }
+
   // -- sampler/filter state management --
 
   TEST_F(RendererStateTest, emptyFilterContainer) {
