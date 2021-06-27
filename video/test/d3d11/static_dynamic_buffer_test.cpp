@@ -114,8 +114,7 @@
       EXPECT_TRUE(moved.isEmpty());
       EXPECT_TRUE(buffer1.handle() == buffer1Handle);
       EXPECT_TRUE(moved.handle() == nullptr);
-    }
-    if (DynamicBuffer::hasConstantBufferSupport(renderer)) {
+    }{
       DynamicBuffer emptyBuffer;
       EXPECT_TRUE(emptyBuffer.isEmpty());
       EXPECT_TRUE(emptyBuffer.handle() == nullptr);
@@ -286,8 +285,7 @@
       EXPECT_TRUE(moved.isEmpty());
       EXPECT_TRUE(buffer1.handle() == buffer1Handle);
       EXPECT_TRUE(moved.handle() == nullptr);
-    }
-    if (DynamicBuffer::hasConstantBufferSupport(renderer)) {
+    }{
       DynamicBuffer emptyBuffer;
       EXPECT_TRUE(emptyBuffer.isEmpty());
       EXPECT_TRUE(emptyBuffer.handle() == nullptr);
