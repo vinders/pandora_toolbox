@@ -62,9 +62,14 @@ License :     MIT
           
           StaticBuffer() = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
           StaticBuffer(const StaticBuffer&) = delete;
-          StaticBuffer(StaticBuffer&& rhs) noexcept;
+          StaticBuffer(StaticBuffer&& rhs) noexcept : _buffer(rhs._buffer), _bufferSize(rhs._bufferSize), _type(rhs._type) { rhs._buffer = nullptr; }
           StaticBuffer& operator=(const StaticBuffer&) = delete;
-          StaticBuffer& operator=(StaticBuffer&& rhs) noexcept;
+          StaticBuffer& operator=(StaticBuffer&& rhs) noexcept {
+            release();
+            this->_buffer = rhs._buffer; this->_bufferSize = rhs._bufferSize; this->_type = rhs._type;
+            rhs._buffer = nullptr;
+            return *this;
+          }
         
           // -- accessors --
           

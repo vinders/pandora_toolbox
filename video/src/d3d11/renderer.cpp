@@ -186,20 +186,20 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     {
       auto result = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
       if (FAILED(result) || dxgiFactory == nullptr)
-        throwError(result, "Renderer: failed to create DirectX graphics infrastructure");
+        throwError(result, "Renderer: DXGI creation failed");
     }
     outDxgiFactory = dxgiFactory;
   }
   
   // Get current DXGI factory of device
   static inline void __getCurrentDxgiFactory(ID3D11Device* device, D3dResource<IDXGIFactory1>& outDxgiFactory) { // throws
-    auto dxgiDevice = D3dResource<IDXGIDevice>::fromInterface(device, "Renderer: failed to access DirectX graphics device");
+    auto dxgiDevice = D3dResource<IDXGIDevice>::fromInterface(device, "Renderer: DXGI access failed");
     D3dResource<IDXGIAdapter> adapter;
     auto result = dxgiDevice->GetAdapter(adapter.address());
     if (FAILED(result) || !adapter.hasValue())
-      throwError(result, "Renderer: failed to obtain Direct3D device adapter");
+      throwError(result, "Renderer: adapter access failed");
     
-    outDxgiFactory = D3dResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: failed to obtain DirectX graphics infra");
+    outDxgiFactory = D3dResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: DXGI factory failure");
   }
   
   // If output information on DXGI factory is stale, try to create a new one
@@ -248,9 +248,9 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
         featureLevelCount = size_t{ 2u };
       }
       else if (featureLevelCount == 0)
-        throw std::out_of_range("Renderer: no feature level specified");
+        throw std::out_of_range("Renderer: no feat level");
       else if ((int32_t)*featureLevels > (int32_t)D3D_FEATURE_LEVEL_11_1)
-        throw std::out_of_range("Renderer: feature level greater than max supported Direct3D 11 level");
+        throw std::out_of_range("Renderer: feat level above max supported");
 #   else
       D3D_FEATURE_LEVEL defaultLevel[] { D3D_FEATURE_LEVEL_11_0 };
       if (featureLevels == nullptr) {
@@ -263,7 +263,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
           --featureLevelCount;
         }
         if (featureLevelCount == 0)
-          throw std::out_of_range("Renderer: feature level empty or greater than max supported Direct3D 11 level");
+          throw std::out_of_range("Renderer: feat level empty or above max supported");
       }
 #   endif
 
@@ -278,7 +278,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
                                     nullptr, runtimeLayers, &featureLevels[0], (UINT)featureLevelCount, D3D11_SDK_VERSION, 
                                     &(this->_device), &(this->_deviceLevel), &(this->_context));
     if (FAILED(result) || this->_device == nullptr || this->_context == nullptr)
-      throwError(result, "Renderer: failed to create device and context"); // throws
+      throwError(result, "Renderer: device/context creation failed"); // throws
     if (isDefaultAdapter && !dxgiFactory->IsCurrent()) // if adapter not provided, system may generate another factory
       __getCurrentDxgiFactory(this->_device, dxgiFactory); // throws
     
@@ -611,7 +611,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create depth state");
+      throwError(result, "Factory: depth state failure");
     return DepthStencilState(stateData);
   }
   
@@ -643,7 +643,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create stencil state");
+      throwError(result, "Factory: stencil state failure");
     return DepthStencilState(stateData);
   }
   
@@ -676,7 +676,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create depth/stencil state");
+      throwError(result, "Factory: depth/stencil failure");
     return DepthStencilState(stateData);
   }
 
@@ -710,7 +710,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11RasterizerState* stateData = nullptr;
     auto result = this->_device->CreateRasterizerState(&rasterizerState, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create rasterizer state");
+      throwError(result, "Factory: raster state failure");
     return RasterizerState(stateData);
   }
 
@@ -825,7 +825,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create general blend state");
+      throwError(result, "Factory: blend state failure");
     return BlendState(stateData);
   }
   // Create general blend state (common to all render-targets) - separate color/alpha params
@@ -838,7 +838,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create split blend state");
+      throwError(result, "Factory: split blend failure");
     return BlendState(stateData);
   }
 
@@ -854,7 +854,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create per-target blend state");
+      throwError(result, "Factory: per-target blend failure");
     return BlendState(stateData);
   }
   // Create blend state with different color/alpha params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
@@ -871,7 +871,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create per-target split blend state");
+      throwError(result, "Factory: per-target split blend failure");
     return BlendState(stateData);
   }
 
@@ -940,7 +940,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create sampler/filter state");
+      throwError(result, "Factory: sampler failure");
     return FilterState(stateData);
   }
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
@@ -963,7 +963,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create compared sampler/filter state");
+      throwError(result, "Factory: sampler-comp failure");
     return FilterState(stateData);
   }
   
@@ -986,7 +986,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create anisotropic sampler/filter state");
+      throwError(result, "Factory: anisotropic sampler failure");
     return FilterState(stateData);
   }
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
@@ -1009,7 +1009,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "RendererStateFactory: failed to create anisotropic/compared sampler/filter state");
+      throwError(result, "Factory: anisotropic sampler-comp failure");
     return FilterState(stateData);
   }
 
@@ -1168,7 +1168,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 
           auto result = swapChainV3->SetColorSpace1(outColorSpace);
           if (FAILED(result))
-            throwError(result, "SwapChain: failed to apply color space");
+            throwError(result, "SwapChain: color space failure");
           return true;
         }
       }
@@ -1240,8 +1240,8 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       if (this->_dxgiLevel >= 2u) {
         // Direct3D 11.1+
-        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: failed to access DirectX 11.1 graphics infra");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: failed to access DirectX 11.1 device");
+        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: DXGI access failed");
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: device access failed");
         outSwapChainLevel = D3D_FEATURE_LEVEL_11_1;
         
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
@@ -1267,7 +1267,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 
         auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
         if (FAILED(result) || swapChain == nullptr)
-          throwError(result, "Renderer: failed to create Direct3D 11.1 swap-chain");
+          throwError(result, "Renderer: swap-chain failure");
       }
       else
 #   endif
@@ -1292,7 +1292,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 
       auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
-        throwError(result, "Renderer: failed to create Direct3D swap-chain");
+        throwError(result, "Renderer: swap-chain failure");
     }
     
     ((IDXGIFactory1*)this->_dxgiFactory)->MakeWindowAssociation((HWND)window, DXGI_MWA_NO_ALT_ENTER); // prevent DXGI from responding to the ALT+ENTER shortcut
@@ -1309,11 +1309,11 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
                        pandora::video::WindowHandle window, uint32_t width, uint32_t height)
     : _renderer(std::move(renderer)) { // throws
     if (this->_renderer == nullptr)
-      throw std::invalid_argument("SwapChain: renderer must not be NULL");
+      throw std::invalid_argument("SwapChain: NULL renderer");
     if (window == nullptr)
-      throw std::invalid_argument("SwapChain: window handle must not be NULL");
+      throw std::invalid_argument("SwapChain: NULL window");
     if (width == 0 || height == 0)
-      throw std::invalid_argument("SwapChain: invalid width/height: values must not be 0");
+      throw std::invalid_argument("SwapChain: width/height is 0");
     
     // build swap-chain
     memset((void*)&this->_settings, 0, sizeof(_SwapChainConfig));
@@ -1418,7 +1418,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     bool isResized = (width != this->_settings.width || height != this->_settings.height);
     if (isResized) {
       if (width == 0 || height == 0)
-        throw std::invalid_argument("SwapChain: invalid width/height: values must not be 0");
+        throw std::invalid_argument("SwapChain: width/height is 0");
       
       // clear previous size-specific context
       this->_renderer->setActiveRenderTarget(nullptr);
@@ -1434,7 +1434,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
                                                                        (DXGI_FORMAT)this->_settings.swapChainFormat, flags);
       if (FAILED(result)) {
         if (result == DXGI_ERROR_DEVICE_REMOVED || result == DXGI_ERROR_DEVICE_RESET || result == DXGI_ERROR_DEVICE_HUNG)
-          throw std::domain_error("SwapChain: adapter has changed: Renderer and SwapChain must be recreated");
+          throw std::domain_error("SwapChain: adapter changed: Renderer/SwapChain must be recreated");
         throwError(result, "SwapChain: resize failure");
       }
       
@@ -1464,14 +1464,14 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     D3dResource<ID3D11Texture2D> renderTarget;
     auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
     if (FAILED(targetResult) || !renderTarget.hasValue()) {
-      throwError(targetResult, "SwapChain: could not access render target");
+      throwError(targetResult, "SwapChain: render target not accessible");
       return;
     }
     
     CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_settings.backBufferFormat);
     targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
     if (FAILED(targetResult) || this->_renderTargetView == nullptr)
-      throwError(targetResult, "SwapChain: could not create render target view");
+      throwError(targetResult, "SwapChain: target view failure");
   }
   
   // ---
@@ -1486,9 +1486,9 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
       case DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: break;
       // device lost
       case DXGI_ERROR_DEVICE_REMOVED:
-      case DXGI_ERROR_DEVICE_RESET: throw std::domain_error("SwapChain: device access lost");
+      case DXGI_ERROR_DEVICE_RESET: throw std::domain_error("SwapChain: device lost");
       // invalid option
-      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: local display restriction is not supported on current device");
+      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: local display restriction not supported");
       default: throwError(result, "SwapChain: internal error"); break;
     }
   }
@@ -1524,7 +1524,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
 // -----------------------------------------------------------------------------
 
   void pandora::video::d3d11::throwError(HRESULT result, const char* messageContent) {
-    auto message = std::string(messageContent) + ": Direct3D error ";
+    auto message = std::string(messageContent) + ": D3D ";
     switch (result) {
       case E_UNEXPECTED: message += "E_UNEXPECTED"; break;
       case E_NOTIMPL: message += "E_NOTIMPL"; break;
@@ -1573,7 +1573,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
       errorMessage->Release();
     }
     else
-      message += "missing or empty shader file/content";
+      message += "missing/empty shader file/content";
     throw std::runtime_error(std::move(message));
   }
   
@@ -1595,7 +1595,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
   StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize) 
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
-      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+      throw std::invalid_argument("Buffer: size is 0");
     
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
@@ -1605,7 +1605,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "StaticBuffer: could not create static buffer");
+      throwError(result, "Buffer: creation failed");
   }
 
   // Create data buffer (to store data for shader stages) with initial value
@@ -1613,7 +1613,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
                              size_t bufferByteSize, const void* initData, bool isImmutable)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
-      throw std::invalid_argument("StaticBuffer: buffer size can't be 0");
+      throw std::invalid_argument("Buffer: size is 0");
     
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
@@ -1622,7 +1622,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     
     if (isImmutable) {
       if (initData == nullptr)
-        throw std::invalid_argument("StaticBuffer: initData can't be NULL with immutable buffers");
+        throw std::invalid_argument("Buffer: immutable with NULL initData");
       bufferDescriptor.Usage = D3D11_USAGE_IMMUTABLE;
     }
     else
@@ -1633,24 +1633,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     subResData.pSysMem = initData;
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "StaticBuffer: could not create static buffer");
-  }
-
-  // ---
-
-  StaticBuffer::StaticBuffer(StaticBuffer&& rhs) noexcept
-    : _buffer(rhs._buffer),
-      _bufferSize(rhs._bufferSize),
-      _type(rhs._type) {
-    rhs._buffer = nullptr;
-  }
-  StaticBuffer& StaticBuffer::operator=(StaticBuffer&& rhs) noexcept {
-    release();
-    this->_buffer = rhs._buffer;
-    this->_bufferSize = rhs._bufferSize;
-    this->_type = rhs._type;
-    rhs._buffer = nullptr;
-    return *this;
+      throwError(result, "Buffer: creation failed");
   }
 
 
@@ -1662,9 +1645,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
   DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
-      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
-    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == D3D_FEATURE_LEVEL_11_0)
-      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+      throw std::invalid_argument("Buffer: size is 0");
     
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
@@ -1675,7 +1656,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "DynamicBuffer: could not create dynamic buffer");
+      throwError(result, "Buffer: creation failed");
   }
 
   // Create data buffer (to store data for shader stages) with initial value
@@ -1683,9 +1664,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
                                size_t bufferByteSize, const void* initData)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
-      throw std::invalid_argument("DynamicBuffer: buffer size can't be 0");
-    if (type == pandora::video::DataBufferType::constant && renderer.featureLevel() == D3D_FEATURE_LEVEL_11_0)
-      throw std::invalid_argument("DynamicBuffer: dynamic constant buffers not supported with Direct3D 11.0");
+      throw std::invalid_argument("Buffer: size is 0");
     
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
@@ -1699,24 +1678,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     subResData.pSysMem = initData;
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "DynamicBuffer: could not create dynamic buffer");
-  }
-  
-  // ---
-
-  DynamicBuffer::DynamicBuffer(DynamicBuffer&& rhs) noexcept
-    : _buffer(rhs._buffer),
-      _bufferSize(rhs._bufferSize),
-      _type(rhs._type) {
-    rhs._buffer = nullptr;
-  }
-  DynamicBuffer& DynamicBuffer::operator=(DynamicBuffer&& rhs) noexcept {
-    release();
-    this->_buffer = rhs._buffer;
-    this->_bufferSize = rhs._bufferSize;
-    this->_type = rhs._type;
-    rhs._buffer = nullptr;
-    return *this;
+      throwError(result, "Buffer: creation failed");
   }
 
   // ---
@@ -1759,7 +1721,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
   DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
                                          uint32_t width, uint32_t height) { // throws
     if (width == 0 || height == 0)
-      throw std::invalid_argument("DepthStencilBuffer: invalid width/height: values must not be 0");
+      throw std::invalid_argument("DepthStencil: width/height is 0");
     
     // create compatible depth/stencil buffer
     D3D11_TEXTURE2D_DESC depthDescriptor;
@@ -1776,7 +1738,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     
     auto result = renderer.device()->CreateTexture2D(&depthDescriptor, nullptr, &(this->_depthStencilBuffer));
     if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
-      throwError(result, "DepthStencilBuffer: could not create depth/stencil buffer"); return;
+      throwError(result, "DepthStencil: creation failed"); return;
     }
     
     // create depth/stencil view
@@ -1788,7 +1750,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     
     result = renderer.device()->CreateDepthStencilView(this->_depthStencilBuffer, &depthViewDescriptor, &(this->_depthStencilView));
     if (FAILED(result) || this->_depthStencilView == nullptr)
-      throwError(result, "DepthStencilBuffer: could not create depth/stencil view");
+      throwError(result, "DepthStencil: view failure");
     
     this->_settings.width = width;
     this->_settings.height = height;
@@ -1853,7 +1815,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     HRESULT result = D3DCompile((LPCVOID)textContent, (SIZE_T)length, nullptr, nullptr, nullptr, entryPoint, shaderModel, 
                                 isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
     if (FAILED(result))
-      throwShaderError(errorMessage, "Shader: text compile error", shaderModel);
+      throwShaderError(errorMessage, "Shader: compile error", shaderModel);
     return Shader::Builder(type, shaderBuffer);
   }
   // Compile shader from text file
@@ -1865,7 +1827,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     HRESULT result = D3DCompileFromFile(filePath, nullptr, nullptr, entryPoint, shaderModel, 
                                         isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
     if (FAILED(result))
-      throwShaderError(errorMessage, "Shader: file compile error", shaderModel);
+      throwShaderError(errorMessage, "Shader: file/compile error", shaderModel);
     return Shader::Builder(type, shaderBuffer);
   }
 
@@ -1898,7 +1860,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     }
 
     if (FAILED(result) || handle == nullptr)
-      throwError(result, "Shader.Builder: failed to create shader object");
+      throwError(result, "Builder: shader create failed");
     return Shader(handle, this->_type);
   }
   
@@ -1928,7 +1890,7 @@ Implements: renderer.h / renderer_state_factory.h / swap_chain.h /
     HRESULT result = device->CreateInputLayout((D3D11_INPUT_ELEMENT_DESC*)layoutElements, (UINT)length, 
                                                                 (const void*)this->_data, (SIZE_T)this->_length, &inputLayout);
     if (FAILED(result) || inputLayout == nullptr)
-      throwError(result, "Shader.Builder: failed to create specified input layout");
+      throwError(result, "Builder: layout create failed");
     return ShaderInputLayout((ShaderInputLayout::Handle)inputLayout);
   }
   

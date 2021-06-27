@@ -20,7 +20,6 @@ License :     MIT
         ///           -> used for meshes with variable vertex count (usually terrains) and for per-vertex animation.
         ///        * For small buffers that aren't updated too often, prefer StaticBuffer.
         ///        * For more details about buffer types, see 'DataBufferType' in <video/shader_types.h>.
-        /// @warning Constant buffers can only be dynamic buffers with Direct3D 11.1+. Check available feature level, or call 'hasConstantBufferSupport'.
         /// @remarks - To use it, bind it to the associated Renderer object (must be the same as the one used in constructor).
         ///          - Constant buffer data type size must be a multiple of 16 byte: add padding in structure/array-item if necessary.
         ///          - Dynamic buffers are meant to be updated often: at least once per frame (or less than that if the buffer size is big).
@@ -59,9 +58,14 @@ License :     MIT
           
           DynamicBuffer() = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
           DynamicBuffer(const DynamicBuffer&) = delete;
-          DynamicBuffer(DynamicBuffer&& rhs) noexcept;
+          DynamicBuffer(DynamicBuffer&& rhs) noexcept : _buffer(rhs._buffer), _bufferSize(rhs._bufferSize), _type(rhs._type) { rhs._buffer = nullptr; }
           DynamicBuffer& operator=(const DynamicBuffer&) = delete;
-          DynamicBuffer& operator=(DynamicBuffer&& rhs) noexcept;
+          DynamicBuffer& operator=(DynamicBuffer&& rhs) noexcept {
+            release();
+            this->_buffer = rhs._buffer; this->_bufferSize = rhs._bufferSize; this->_type = rhs._type;
+            rhs._buffer = nullptr;
+            return *this;
+          }
         
           // -- accessors --
           
@@ -73,11 +77,6 @@ License :     MIT
           inline bool isEmpty() const noexcept { return (this->_buffer == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           inline size_t size() const noexcept { return this->_bufferSize; } ///< Get buffer byte size
           pandora::video::DataBufferType type() const noexcept { return this->_type; } ///< Get buffer type: constant/vertex/index
-          
-          /// @brief Verify if dynamic constant buffers are supported
-          static inline bool hasConstantBufferSupport(Renderer& renderer) noexcept { 
-            return (renderer.featureLevel() != D3D_FEATURE_LEVEL_11_0);
-          }
           
           // -- operations --
 
