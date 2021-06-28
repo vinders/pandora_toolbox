@@ -6,7 +6,7 @@ License :     MIT
 
 #if !defined(_WINDOWS)
 # include <cstdint>
-# include <string>
+# include <memory/light_string.h>
 # include "video/message_box.h"
 
   namespace pandora {
@@ -17,7 +17,7 @@ License :     MIT
         // set last error message (in case of Result::failure)
         void setLastError(const char* error) noexcept;
         // get copy of last error message (in case of Result::failure)
-        std::string getLastError();
+        pandora::memory::LightString getLastError();
         
         
         // -- action button labels --

@@ -51,7 +51,7 @@ Description : Message box - UIKit implementation (iOS)
   // ---
   
   // get last error message (in case of Result::failure)
-  std::string MessageBox::getLastError() { 
+  pandora::memory::LightString MessageBox::getLastError() { 
     return __MessageBox::getLastError();
   }
   

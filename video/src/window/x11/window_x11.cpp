@@ -121,7 +121,7 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   const pandora::hardware::DisplayMonitor& Window::displayMonitor() const noexcept { throw std::runtime_error("not implemented"); }
   
   // Read current caption title
-  std::basic_string<window_char> Window::getCaption() const { return ""; }
+  pandora::memory::LightString Window::getCaption() const { return pandora::memory::LightString{}; }
   
   // Get current cursor mode (visibility/capture)
   Window::CursorMode Window::getCursorMode() const noexcept { return Window::CursorMode::visible; }
@@ -135,8 +135,8 @@ Description : Window manager + builder - X11 implementation (Linux/Unix/BSD)
   // ---
   
   // Get last error message (on change failure)
-  std::string Window::getLastError() {
-    return "not implemented";
+  pandora::memory::LightString Window::getLastError() {
+    return pandora::memory::LightString("not implemented");
   }
   
   

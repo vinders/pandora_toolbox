@@ -8,8 +8,8 @@ Includes hpp implementations at the end of the file
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstring>
-# include <string>
 # include <stdexcept>
+# include <memory/light_string.h>
 
 # define NOMINMAX
 # define NODRAWTEXT
@@ -71,7 +71,7 @@ Includes hpp implementations at the end of the file
 // -- display adapter detection -- ---------------------------------------------
 
   // Verify if a hardware adapter outputs on a monitor
-  static bool __isHardwareAdapterForMonitor(IDXGIAdapter1* adapter, const std::wstring& targetMonitorId) {
+  static bool __isHardwareAdapterForMonitor(IDXGIAdapter1* adapter, const pandora::memory::LightWString& targetMonitorId) {
     D3dResource<IDXGIOutput> output;
     DXGI_OUTPUT_DESC monitorDescription;
     for (UINT index = 0; adapter->EnumOutputs(index, output.address()) == S_OK && output; ++index) {
@@ -84,7 +84,7 @@ Includes hpp implementations at the end of the file
   // Find primary hardware adapter
   static D3dResource<IDXGIAdapter1> __getHardwareAdapter(IDXGIFactory1* factory, const pandora::hardware::DisplayMonitor& target) {
     // try to find adapter associated with monitor (if not empty monitor)
-    std::wstring targetDeviceString;
+    pandora::memory::LightWString targetDeviceString;
     if (!target.attributes().id.empty())
       targetDeviceString = target.adapterName();
 
@@ -1055,58 +1055,93 @@ Includes hpp implementations at the end of the file
 // _d3d_resource.h -- error messages
 // -----------------------------------------------------------------------------
 
-  void pandora::video::d3d11::throwError(HRESULT result, const char* messageContent) {
-    auto message = std::string(messageContent) + ": D3D ";
+  // Exception class with LightString
+  class RuntimeException final : public std::runtime_error {
+  public:
+    RuntimeException(std::shared_ptr<pandora::memory::LightString>&& msg) noexcept : std::runtime_error(msg->c_str()), _message(std::move(msg)) {}
+    RuntimeException(const RuntimeException& rhs) noexcept : std::runtime_error(rhs), _message(rhs._message) {}
+    RuntimeException(RuntimeException&& rhs) noexcept : std::runtime_error(rhs), _message(std::move(rhs._message)) {}
+    RuntimeException& operator=(const RuntimeException& rhs) noexcept { std::exception::operator=(rhs); _message = rhs._message; }
+    virtual ~RuntimeException() noexcept { _message.reset(); }
+  private:
+    std::shared_ptr<pandora::memory::LightString> _message;
+  };
+  
+  // ---
+  
+  static inline const char* __getDirect3DError(HRESULT result) {
     switch (result) {
-      case E_UNEXPECTED: message += "E_UNEXPECTED"; break;
-      case E_NOTIMPL: message += "E_NOTIMPL"; break;
-      case E_OUTOFMEMORY: message += "E_OUTOFMEMORY"; break;
-      case E_INVALIDARG: message += "E_INVALIDARG"; break;
-      case E_NOINTERFACE: message += "E_NOINTERFACE"; break;
-      case E_POINTER: message += "E_POINTER"; break;
-      case E_HANDLE: message += "E_HANDLE"; break;
-      case E_ABORT: message += "E_ABORT"; break;
-      case E_FAIL: message += "E_FAIL"; break;
-      case E_ACCESSDENIED: message += "E_ACCESSDENIED"; break;
-      case E_PENDING: message += "E_PENDING"; break;
-      case E_BOUNDS: message += "E_BOUNDS"; break;
-      case E_CHANGED_STATE: message += "E_CHANGED_STATE"; break;
-      case E_ILLEGAL_STATE_CHANGE: message += "E_ILLEGAL_STATE_CHANGE"; break;
-      case E_ILLEGAL_METHOD_CALL: message += "E_ILLEGAL_METHOD_CALL"; break;
-      case RO_E_METADATA_NAME_NOT_FOUND: message += "RO_E_METADATA_NAME_NOT_FOUND"; break;
-      case RO_E_METADATA_NAME_IS_NAMESPACE: message += "RO_E_METADATA_NAME_IS_NAMESPACE"; break;
-      case RO_E_METADATA_INVALID_TYPE_FORMAT: message += "RO_E_METADATA_INVALID_TYPE_FORMAT"; break;
-      case RO_E_INVALID_METADATA_FILE: message += "RO_E_INVALID_METADATA_FILE"; break;
-      case RO_E_CLOSED: message += "RO_E_CLOSED"; break;
-      case RO_E_EXCLUSIVE_WRITE: message += "RO_E_EXCLUSIVE_WRITE"; break;
-      case RO_E_ERROR_STRING_NOT_FOUND: message += "RO_E_ERROR_STRING_NOT_FOUND"; break;
-      case E_STRING_NOT_NULL_TERMINATED: message += "E_STRING_NOT_NULL_TERMINATED"; break;
-      case E_ILLEGAL_DELEGATE_ASSIGNMENT: message += "E_ILLEGAL_DELEGATE_ASSIGNMENT"; break;
-      case E_ASYNC_OPERATION_NOT_STARTED: message += "E_ASYNC_OPERATION_NOT_STARTED"; break;
-      case CO_E_INIT_ONLY_SINGLE_THREADED: message += "CO_E_INIT_ONLY_SINGLE_THREADED"; break;
-      case CO_E_CANT_REMOTE: message += "E_ASYNC_OPERATIOCO_E_CANT_REMOTEN_NOT_STARTED"; break;
-      case CO_E_LAUNCH_PERMSSION_DENIED: message += "CO_E_LAUNCH_PERMSSION_DENIED"; break;
-      case CO_E_REMOTE_COMMUNICATION_FAILURE: message += "CO_E_REMOTE_COMMUNICATION_FAILURE"; break;
-      case CO_E_IIDREG_INCONSISTENT: message += "CO_E_IIDREG_INCONSISTENT"; break;
-      case CO_E_NOT_SUPPORTED: message += "CO_E_NOT_SUPPORTED"; break;
-      case CO_E_RELOAD_DLL: message += "CO_E_RELOAD_DLL"; break;
-      default: message += std::to_string((int32_t)result & 0xFFFF); break;
+      case E_UNEXPECTED: return "UNEXPECTED";
+      case E_NOTIMPL: return "NOTIMPL";
+      case E_OUTOFMEMORY: return "OUTOFMEM";
+      case E_INVALIDARG: return "INVALIDARG";
+      case E_NOINTERFACE: return "NOINTERFACE";
+      case E_POINTER: return "POINTER";
+      case E_HANDLE: return "HANDLE";
+      case E_ABORT: return "ABORT";
+      case E_FAIL: return "FAIL";
+      case E_ACCESSDENIED: return "ACCESSDENIED";
+      case E_PENDING: return "PENDING";
+      case E_BOUNDS: return "BOUNDS";
+      case E_CHANGED_STATE: return "CHANGED_STATE";
+      case E_ILLEGAL_STATE_CHANGE: return "ILLEGAL_STATE_CHANGE";
+      case E_ILLEGAL_METHOD_CALL: return "ILLEGAL_METHOD_CALL";
+      case RO_E_METADATA_NAME_NOT_FOUND: return "META_NAME_NOT_FOUND";
+      case RO_E_METADATA_NAME_IS_NAMESPACE: return "META_NAME_IS_NAMESPACE";
+      case RO_E_METADATA_INVALID_TYPE_FORMAT: return "META_INVALID_TYPE";
+      case RO_E_INVALID_METADATA_FILE: return "INVALID_META_FILE";
+      case RO_E_CLOSED: return "CLOSED";
+      case RO_E_EXCLUSIVE_WRITE: return "EXCLUSIVE_WRITE";
+      case RO_E_ERROR_STRING_NOT_FOUND: return "ERROR_STR_NOT_FOUND";
+      case E_STRING_NOT_NULL_TERMINATED: return "STR_NOT_NULL_TERM";
+      case E_ILLEGAL_DELEGATE_ASSIGNMENT: return "ILLEGAL_DELEGATE_ASSIGN";
+      case E_ASYNC_OPERATION_NOT_STARTED: return "ASYNC_OP_NOT_STARTED";
+      case CO_E_INIT_ONLY_SINGLE_THREADED: return "INIT_ONLY_SINGLE_THREADED";
+      case CO_E_CANT_REMOTE: return "CANT_REMOTE";
+      case CO_E_LAUNCH_PERMSSION_DENIED: return "LAUNCH_PERMSSION_DENIED";
+      case CO_E_REMOTE_COMMUNICATION_FAILURE: return "REMOTE_COMM_FAILURE";
+      case CO_E_IIDREG_INCONSISTENT: return "IIDREG_INCONSIST";
+      case CO_E_NOT_SUPPORTED: return "NOT_SUPPORTED";
+      case CO_E_RELOAD_DLL: return "RELOAD_DLL";
+      default: return "INTERNAL_ERROR";
     }
-    throw std::runtime_error(std::move(message));
+  }
+
+  void pandora::video::d3d11::throwError(HRESULT result, const char* messageContent) {
+    const char* d3dError = __getDirect3DError(result);
+
+    // pre-compute total size to avoid having multiple dynamic allocs
+    size_t prefixSize = strlen(messageContent);
+    size_t errorSize = strlen(d3dError);
+    auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + errorSize);
+    
+    // copy message in preallocated string
+    memcpy((void*)message->data(),                 messageContent, prefixSize*sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize]),    ": ",         size_t{2u}*sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize+2u]), d3dError,     errorSize *sizeof(char));
+    
+    throw RuntimeException(std::move(message));
   }
   
   void pandora::video::d3d11::throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo) {
-    std::string message(messagePrefix);
-    message += " (";
-    message += shaderInfo;
-    message += "): ";
-    if (errorMessage) {
-      message += (const char*)errorMessage->GetBufferPointer();
+    const char* errorData = (errorMessage) ? (const char*)errorMessage->GetBufferPointer() : "missing/empty shader file/content";
+    
+    // pre-compute total size to avoid having multiple dynamic allocs
+    size_t prefixSize = strlen(messagePrefix);
+    size_t infoSize = strlen(shaderInfo);
+    size_t errorSize = strlen(errorData);
+    auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + infoSize + 3u + errorSize);
+    
+    // copy message in preallocated string
+    memcpy((void*)message->data(),                           messagePrefix, prefixSize*sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize]),             " (",         size_t{2u}*sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize + 2u]),        shaderInfo,   infoSize  *sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize+infoSize+2u]), "): ",        size_t{3u}*sizeof(char));
+    memcpy((void*)&(message->data()[prefixSize+infoSize+2u+3u]), errorData, errorSize *sizeof(char));
+    
+    if (errorMessage)
       errorMessage->Release();
-    }
-    else
-      message += "missing/empty shader file/content";
-    throw std::runtime_error(std::move(message));
+    throw RuntimeException(std::move(message));
   }
   
 

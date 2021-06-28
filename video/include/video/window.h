@@ -7,7 +7,7 @@ License :     MIT
 #include <cassert>
 #include <cstdint>
 #include <cstddef>
-#include <string>
+#include <memory/light_string.h>
 #include <thread/spin_lock.h>
 #include <hardware/display_monitor.h>
 #include <system/preprocessor_tools.h>
@@ -20,8 +20,10 @@ namespace pandora {
     class __WindowImpl;
 #   ifdef _WINDOWS
       typedef wchar_t window_char;
+      using LightWindowString = pandora::memory::LightWString;
 #   else
       typedef char window_char;
+      using LightWindowString = pandora::memory::LightString;
 #   endif
     
     /// @brief Type of window (display mode + decoration)
@@ -126,13 +128,13 @@ namespace pandora {
       float contentScale() const noexcept;      ///< Read scale factor to use for content (based on DPI)
       
       const pandora::hardware::DisplayMonitor& displayMonitor() const noexcept; ///< Get display monitor on which the window is located
-      std::basic_string<window_char> getCaption() const; ///< Read current caption title
-      CursorMode getCursorMode() const noexcept;         ///< Get current cursor mode (visibility/capture)
+      LightWindowString getCaption() const;      ///< Read current caption title
+      CursorMode getCursorMode() const noexcept; ///< Get current cursor mode (visibility/capture)
       PixelPosition getCursorPosition(CursorPositionType mode) const noexcept;///< Get current mouse pointer position (-1 on error)
       
       /// @brief Get last error message (if a setter returns false)
       /// @returns Last error (if available) or empty string
-      static std::string getLastError();
+      static pandora::memory::LightString getLastError() noexcept;
       
       
       // -- display changes --

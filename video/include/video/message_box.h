@@ -5,7 +5,7 @@ License :     MIT
 #pragma once
 
 #include <cstdint>
-#include <string>
+#include <memory/light_string.h>
 #include "video/window_handle.h"
 #ifdef MessageBox
 # undef MessageBox // fix win32 API conflicts
@@ -82,7 +82,7 @@ namespace pandora {
 
       /// @brief Get last error message (in case of Result::failure)
       /// @returns Last error (if available) or empty string
-      static std::string getLastError();
+      static pandora::memory::LightString getLastError() noexcept;
     };
   }
 }

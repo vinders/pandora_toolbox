@@ -5,9 +5,21 @@ License :     MIT
 Description : Message box - Win32 implementation (Windows)
 *******************************************************************************/
 #ifdef _WINDOWS
-# include <cassert>
+
+# define NOMINMAX
+# define NOMCX
+# define NOMETAFILE
+# define NOOPENFILE
+# define NOSCROLL
+# define NOSOUND
+# define NOKANJI
+# define NOHELP
+# define NOPROFILER
+# define NOTAPE
+
 # include <cstdint>
 # include <mutex>
+# include <type_traits>
 # include <system/api/windows_api.h>
 # include "video/message_box.h"
 
@@ -105,23 +117,20 @@ Description : Message box - Win32 implementation (Windows)
   // ---
   
   // get last error message (in case of Result::failure)
-  std::string MessageBox::getLastError() {
+  pandora::memory::LightString MessageBox::getLastError() noexcept {
     DWORD errorNb = ::GetLastError();
     if (errorNb == 0)
-      return ""; // no error found
+      return pandora::memory::LightString{}; // no error found
     
     LPSTR buffer = nullptr;
     size_t length = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                                    nullptr, errorNb, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr);
-    if (buffer == nullptr)
-      return "";
-
-    try {
-      std::string message(buffer, length);
+    if (buffer != nullptr) {
+      pandora::memory::LightString message(buffer, length);
       LocalFree(buffer);
       return message;
     }
-    catch (const std::bad_alloc&) { LocalFree(buffer); throw; } // no leaks
+    return pandora::memory::LightString("Internal error");
   }
   
   

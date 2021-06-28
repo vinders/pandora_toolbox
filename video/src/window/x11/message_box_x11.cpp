@@ -510,7 +510,7 @@ Description : Message box - Xorg implementation (Linux/Unix/BSD)
   // ---
   
   // get last error message (in case of Result::failure)
-  std::string MessageBox::getLastError() { 
+  pandora::memory::LightString MessageBox::getLastError() { 
     return __MessageBox::getLastError();
   }
   

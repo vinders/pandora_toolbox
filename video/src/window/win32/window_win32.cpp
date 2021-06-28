@@ -22,6 +22,7 @@ Includes hpp implementations at the end of the file
 
 # include <cstdint>
 # include <cstring>
+# include <mutex>
 # include <thread/spin_lock.h>
 # include <system/api/windows_api.h>
 # include <system/api/windows_app.h>
@@ -185,12 +186,12 @@ Includes hpp implementations at the end of the file
   const pandora::hardware::DisplayMonitor& Window::displayMonitor() const noexcept { return this->_impl->displayMonitor(); }
   
   // Read current caption title
-  std::basic_string<window_char> Window::getCaption() const {
+  pandora::memory::LightWString Window::getCaption() const {
     WCHAR buffer[128]{ 0 };
     int length = GetWindowTextW(this->_impl->handle(), buffer, sizeof(buffer)/sizeof(WCHAR));
     if (length > 0) // result != -1, and not empty
-      return std::basic_string<window_char>(buffer, length); 
-    return L""; 
+      return pandora::memory::LightWString(buffer, length); 
+    return pandora::memory::LightWString{}; 
   }
   
   // Get current cursor mode (visibility/capture)
@@ -217,8 +218,20 @@ Includes hpp implementations at the end of the file
   // ---
   
   // Get last error message (on change failure)
-  std::string Window::getLastError() {
-    return __WindowImpl::formatLastError(nullptr);
+  pandora::memory::LightString Window::getLastError() noexcept {
+    DWORD errorNb = ::GetLastError();
+    if (errorNb == 0)
+      return pandora::memory::LightString{}; // no error found
+    
+    LPSTR buffer = nullptr;
+    size_t length = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                   nullptr, errorNb, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr);
+    if (buffer != nullptr) {
+      pandora::memory::LightString message(buffer, length);
+      LocalFree(buffer);
+      return message;
+    }
+    return pandora::memory::LightString("Internal error");
   }
   
   
@@ -427,25 +440,6 @@ Includes hpp implementations at the end of the file
         static __forceinline void processRawInputEvent(__WindowImpl& window, LPARAM lParam);
       };
     }
-  }
-  
-  // Get last error message
-  std::string __WindowImpl::formatLastError(const char* prefix) {
-    DWORD errorNb = ::GetLastError();
-    if (errorNb != 0) {
-      LPSTR buffer = nullptr;
-      size_t length = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                                   nullptr, errorNb, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr);
-      if (buffer != nullptr) {
-        try {
-          std::string message(buffer, length);
-          LocalFree(buffer);
-          return (prefix) ? std::string(prefix) + message : message;
-        }
-        catch (const std::bad_alloc&) { LocalFree(buffer); } // no leaks
-      }
-    }
-    return (prefix) ? std::string(prefix) + "unknown error" : "";
   }
   
 

@@ -38,7 +38,7 @@ endif()
 if(_EXTERN_LIBS)
     cwork_set_external_libs("private" ${_EXTERN_LIBS})
 endif()
-cwork_set_internal_libs(system thread hardware)
+cwork_set_internal_libs(system thread memory hardware)
 
 
 # ┌──────────────────────────────────────────────────────────────────┐

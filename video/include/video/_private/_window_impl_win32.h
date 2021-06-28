@@ -8,7 +8,7 @@ License :     MIT
 # include <cstdint>
 # include <cstddef>
 # include <memory>
-# include <mutex>
+# include <memory/light_string.h>
 # include <system/api/windows_api.h>
 # include "video/window.h"
 
@@ -76,7 +76,7 @@ namespace pandora {
       void applyStyle(HWND handle) noexcept; // apply stored style properties on existing window (restore)
       
     private:
-      std::wstring _caption;
+      pandora::memory::LightWString _caption;
       RECT _windowArea{ -1,-1,-1,-1 };
 
       HANDLE _oldProp = nullptr;
@@ -102,8 +102,6 @@ namespace pandora {
       __WindowImpl(Window& container, HWND existingHandle, const Window::Builder::Params& params, 
                    bool callExistingEventProc); // throws
       ~__WindowImpl() noexcept;
-      
-      static std::string formatLastError(const char* prefix);
       
       // -- accessors --
       
@@ -212,7 +210,7 @@ namespace pandora {
     
     private:
       // resources
-      std::wstring _windowClassName;
+      pandora::memory::LightWString _windowClassName;
       std::shared_ptr<pandora::hardware::DisplayMonitor> _monitor = nullptr; // parent display monitor
       std::unique_ptr<WindowStyle> _originalStyle = nullptr;                 // backup of original style (builder.update existing window)
       RAWINPUT* _mouseInputBuffer = nullptr; // buffer for raw motion events
