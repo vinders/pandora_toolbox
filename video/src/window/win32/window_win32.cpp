@@ -552,12 +552,12 @@ Includes hpp implementations at the end of the file
                                     (int)windowArea.x, (int)windowArea.y, (int)windowArea.width, (int)windowArea.height,
                                     this->_parent, this->_menuHandle, this->_moduleInstance, nullptr);
     if (this->_handle == nullptr)
-      throw std::runtime_error("Window: creation failed");
+      throw std::runtime_error("Window: creation error");
     __incrementWindowCount(); // only increment after handle creation
     
     // reference window instance as user data (for event processor)
     if (SetPropW(this->_handle, __P_WINDOW_ID, (HANDLE)this) == FALSE)
-      throw std::runtime_error("Window: message handling config failed");
+      throw std::runtime_error("Window: message handler config error");
   }
   
   // ---
@@ -582,14 +582,14 @@ Includes hpp implementations at the end of the file
 
     // reference instance as user data (for event processor)
     if (SetPropW(this->_handle, __P_WINDOW_ID, (HANDLE)this) == FALSE)
-      throw std::runtime_error("Window: message handling config failed");
+      throw std::runtime_error("Window: message handler config error");
     if (callExistingEventProc && _originalStyle->_eventProcessor != nullptr)
       __P_ADD_FLAG(this->_statusFlags, __P_FLAG_USE_ORIG_EVENT_PROC);
     
     // replace window resources
     SetLastError(0);
     if (SetWindowLongPtr(existingHandle, GWLP_WNDPROC, (LONG_PTR)&__WindowImpl::windowEventProcessor) == 0 && GetLastError() != 0)
-      throw std::runtime_error("Window: event binding failed"); // if returns 0, verify if error occurred
+      throw std::runtime_error("Window: event handler binding error"); // if returns 0, verify if error occurred
     if (params.captionIcon)
       SetClassLongPtr(existingHandle, GCLP_HICONSM, (LONG_PTR)params.captionIcon->handle());
     if (params.appIcon)
@@ -602,7 +602,7 @@ Includes hpp implementations at the end of the file
 
     // change window mode/style/position
     if (!setDisplayMode(params.displayMode, params.behavior, params.resizeMode, params.clientArea, params.refreshRate))
-      throw std::runtime_error("Window: position/size change failed");
+      throw std::runtime_error("Window: pos/size change error");
     if (this->_menuHandle)
       DrawMenuBar(this->_handle);
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);

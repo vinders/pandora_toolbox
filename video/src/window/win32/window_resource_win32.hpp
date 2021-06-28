@@ -202,7 +202,7 @@ Implementation included in window_win32.cpp
     : _handle(isSubMenu ? (MenuHandle)CreatePopupMenu() : (MenuHandle)CreateMenu()), 
       _isSubMenu(isSubMenu) {
     if (this->_handle == nullptr)
-      throw std::runtime_error("WindowMenu: menu creation failed");
+      throw std::runtime_error("WindowMenu: creation error");
   }
   WindowMenu::~WindowMenu() noexcept {
     if (this->_handle != nullptr)
