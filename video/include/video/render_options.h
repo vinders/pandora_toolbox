@@ -100,6 +100,16 @@ namespace pandora {
       linear = 1u  ///< Bilinear interpolation during upscaling
     };
     
+    /// @brief Resource / texture memory usage
+    enum class ResourceUsage : uint32_t {
+      immutable = 0u, ///< Immutable: initialized at creation, read-only.
+      gpuStatic = 1u, ///< Default / static: very rarely updated by CPU (or small size) - GPU read-write (very fast) / indirect CPU write-only (slow).
+      dynamic   = 2u, ///< Dynamic: often updated by CPU - GPU read-write (slow) / CPU write-only (very fast).
+      staging   = 3u  ///< Staging / read-write: no GPU access / CPU data-transfer read-write (very fast). 
+                      ///  This should not be used for displayed resources or render-targets.
+                      ///  The staging resource content is usually copied from/to a gpuStatic/dynamic resource (which can be accessed by the GPU).
+    };
+    
     
     // -- depth / stencil tests --
     

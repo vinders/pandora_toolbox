@@ -32,13 +32,19 @@ License :     MIT
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
         ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.
         ///          - Split-screen rendering (same window): alternate between different Viewport instances on the same SwapChain.
+        ///          - Optimization: minimize shader changes, state changes, drawing calls: sort by shader, then texture/material, then other states.
+        ///          - Optimization: order of meshes and polygons: front to back (if a depth buffer is enabled).
+        ///          - Optimization: align vertex buffer entries to a multiple of 16-byte per entry (add padding if necessary).
         class Renderer final {
         public:
           using DeviceHandle = ID3D11Device*;
           using DeviceContext = ID3D11DeviceContext*;
+          using Texture1dHandle = ID3D11Texture1D*;
           using Texture2dHandle = ID3D11Texture2D*;
+          using Texture3dHandle = ID3D11Texture3D*;
           using RenderTargetViewHandle = ID3D11RenderTargetView*;
           using DepthStencilViewHandle = ID3D11DepthStencilView*;
+          using ResourceViewHandle = ID3D11ShaderResourceView*;
           using DataBufferHandle = ID3D11Buffer*;
           using TopologyFlag = D3D11_PRIMITIVE_TOPOLOGY;
           using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
@@ -338,6 +344,68 @@ License :     MIT
           inline void clearComputeConstantBuffers() noexcept { ///< Reset all constant buffers in compute shader stage
             ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
             this->_context->CSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+          }
+          
+          
+          // -- pipeline status operations - textures / shader resources --
+          
+          /// @brief Max slots (or array size from first slot) for shader resources / textures
+          static constexpr inline size_t maxResourceSlots() noexcept { return D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; }
+          
+          /// @brief Bind shader resource(s) to the vertex shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindVertexResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->VSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          /// @brief Bind shader resource(s) to the tessellation-control/hull shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindTesselControlResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->HSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          /// @brief Bind shader resource(s) to the tessellation-evaluation/domain shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindTesselEvalResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->DSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          /// @brief Bind shader resource(s) to the geometry shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindGeometryResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->GSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          /// @brief Bind shader resource(s) (or texture(s)) to the fragment shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindFragmentResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->PSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          /// @brief Bind shader resource(s) (or texture(s)) to the compute shader stage
+          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+          inline void bindComputeResources(uint32_t firstSlotIndex, const ResourceViewHandle* handles, size_t length) noexcept {
+            this->_context->CSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+          }
+          
+          inline void clearVertexResources() noexcept { ///< Reset all shader resource(s) in vertex shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->VSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+          }
+          inline void clearTesselControlResources() noexcept { ///< Reset all shader resource(s) in tessellation-control/hull shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->HSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+          }
+          inline void clearTesselEvalResources() noexcept { ///< Reset all shader resource(s) in tessellation-evaluation/domain shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->DSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+          }
+          inline void clearGeometryResources() noexcept { ///< Reset all shader resource(s) in geometry shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->GSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+          }
+          inline void clearFragmentResources() noexcept { ///< Reset all shader resource(s) in fragment/pixel shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+          }
+          inline void clearComputeResources() noexcept { ///< Reset all shader resource(s) in compute shader stage
+            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+            this->_context->CSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
           }
           
           
