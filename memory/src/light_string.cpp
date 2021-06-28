@@ -14,9 +14,11 @@ using namespace pandora::memory;
 LightString::LightString(size_t length) noexcept : _value(length ? (char*)calloc(length + 1, sizeof(char)) : nullptr) {
   this->_size = (_value != nullptr) ? length : 0;
 }
-LightString::~LightString() noexcept {
-  if (this->_value != nullptr)
+void LightString::clear() noexcept {
+  if (this->_value != nullptr) {
     free(this->_value);
+    this->_size = 0;
+  }
 }
 
 bool LightString::operator==(const LightString& rhs) const noexcept { 
@@ -24,7 +26,7 @@ bool LightString::operator==(const LightString& rhs) const noexcept {
 }
 bool LightString::operator==(const char* rhs) const noexcept {
   if (this->_value != nullptr)
-    return (rhs != nullptr && strncmp(this->_value, rhs, this->_size + 1u) == 0);
+    return (rhs != nullptr && strcmp(this->_value, rhs) == 0);
   return (rhs == nullptr || *rhs == '\0');
 }
 
@@ -74,9 +76,11 @@ bool LightString::append(const char* value) noexcept { return (value != nullptr)
 LightWString::LightWString(size_t length) noexcept : _value(length ? (wchar_t*)calloc(length + 1, sizeof(wchar_t)) : nullptr) {
   this->_size = (_value != nullptr) ? length : 0;
 }
-LightWString::~LightWString() noexcept {
-  if (this->_value != nullptr)
+void LightWString::clear() noexcept {
+  if (this->_value != nullptr) {
     free(this->_value);
+    this->_size = 0;
+  }
 }
 
 bool LightWString::operator==(const LightWString& rhs) const noexcept { 
@@ -84,7 +88,7 @@ bool LightWString::operator==(const LightWString& rhs) const noexcept {
 }
 bool LightWString::operator==(const wchar_t* rhs) const noexcept {
   if (this->_value != nullptr)
-    return (rhs != nullptr && wcsncmp(this->_value, rhs, this->_size + 1u) == 0);
+    return (rhs != nullptr && wcscmp(this->_value, rhs) == 0);
   return (rhs == nullptr || *rhs == L'\0');
 }
 

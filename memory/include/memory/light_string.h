@@ -18,7 +18,7 @@ namespace pandora {
       LightString(LightString&& rhs) noexcept : _value(rhs._value), _size(rhs._size) { rhs._value = nullptr; rhs._size = 0; }
       LightString& operator=(const LightString& rhs) noexcept { assign(rhs._value, rhs._size); return *this; }
       LightString& operator=(LightString&& rhs) noexcept { this->_value = rhs._value; this->_size = rhs._size; rhs._value = nullptr; rhs._size = 0; return *this; }
-      ~LightString() noexcept;
+      ~LightString() noexcept { clear(); }
       
       LightString(size_t length) noexcept; ///< Create preallocated empty string
       LightString(const char* value) noexcept { assign(value); } ///< Create initialized string
@@ -26,9 +26,8 @@ namespace pandora {
       
       // -- accessors --
       
-      inline const char* c_str() const noexcept { return this->_value; } ///< Get string content (NULL if empty)
+      inline const char* c_str() const noexcept { return (this->_value) ? this->_value : _emptyValue(); } ///< Get string content (never NULL)
       inline const char* data() const noexcept { return this->_value; }  ///< Get string content (NULL if empty)
-      inline char* c_str() noexcept { return this->_value; } ///< Get string content (NULL if empty, unless preallocated)
       inline char* data() noexcept { return this->_value; }  ///< Get string content (NULL if empty, unless preallocated)
       
       constexpr inline size_t length() const noexcept { return this->_size; } ///< Get current length of the string
@@ -42,6 +41,8 @@ namespace pandora {
       
       // -- operators --
       
+      void clear() noexcept; ///< Clear string content (set to NULL)
+      
       bool assign(const char* value) noexcept; ///< Copy another string (zero ended)
       bool assign(const char* value, size_t length) noexcept; ///< Copy another string/substring
       inline LightString& operator=(const char* value) noexcept { assign(value); return *this; }
@@ -54,6 +55,7 @@ namespace pandora {
       inline LightString operator+(const LightString& rhs) const noexcept { LightString copy(*this); copy += rhs._value; return copy; }
 
     private:
+      static constexpr const char* _emptyValue() noexcept { return ""; }
       char* _value = nullptr;
       size_t _size = 0u;
     };
@@ -70,7 +72,7 @@ namespace pandora {
       LightWString(LightWString&& rhs) noexcept : _value(rhs._value), _size(rhs._size) { rhs._value = nullptr; rhs._size = 0; }
       LightWString& operator=(const LightWString& rhs) noexcept { assign(rhs._value, rhs._size); return *this; }
       LightWString& operator=(LightWString&& rhs) noexcept { this->_value = rhs._value; this->_size = rhs._size; rhs._value = nullptr; rhs._size = 0; return *this; }
-      ~LightWString() noexcept;
+      ~LightWString() noexcept { clear(); }
       
       LightWString(size_t length) noexcept; ///< Create preallocated empty string
       LightWString(const wchar_t* value) noexcept { assign(value); } ///< Create initialized string
@@ -78,9 +80,8 @@ namespace pandora {
       
       // -- accessors --
       
-      inline const wchar_t* c_str() const noexcept { return this->_value; } ///< Get string content (NULL if empty)
+      inline const wchar_t* c_str() const noexcept { return (this->_value) ? this->_value : _emptyValue(); } ///< Get string content (never NULL)
       inline const wchar_t* data() const noexcept { return this->_value; }  ///< Get string content (NULL if empty)
-      inline wchar_t* c_str() noexcept { return this->_value; } ///< Get string content (NULL if empty, unless preallocated)
       inline wchar_t* data() noexcept { return this->_value; }  ///< Get string content (NULL if empty, unless preallocated)
       
       constexpr inline size_t length() const noexcept { return this->_size; } ///< Get current length of the string
@@ -94,6 +95,8 @@ namespace pandora {
       
       // -- operators --
       
+      void clear() noexcept; ///< Clear string content (set to NULL)
+      
       bool assign(const wchar_t* value) noexcept; ///< Copy another string (zero ended)
       bool assign(const wchar_t* value, size_t length) noexcept; ///< Copy another string/substring
       inline LightWString& operator=(const wchar_t* value) noexcept { assign(value); return *this; }
@@ -106,6 +109,7 @@ namespace pandora {
       inline LightWString operator+(const LightWString& rhs) const noexcept { LightWString copy(*this); copy += rhs._value; return copy; }
 
     private:
+      static constexpr const wchar_t* _emptyValue() noexcept { return L""; }
       wchar_t* _value = nullptr;
       size_t _size = 0u;
     };

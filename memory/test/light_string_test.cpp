@@ -17,20 +17,23 @@ protected:
 
 TEST_F(LightStringTest, stringAccessorsCtors) {
   LightString empty;
-  EXPECT_TRUE(empty.c_str() == nullptr);
+  EXPECT_TRUE(empty.c_str() != nullptr);
   EXPECT_TRUE(empty.data() == nullptr);
+  EXPECT_STREQ("", empty.c_str());
   EXPECT_EQ(size_t{0}, empty.size());
   EXPECT_EQ(size_t{0}, empty.length());
   EXPECT_TRUE(empty.empty());
   
   LightString empty2;
+  EXPECT_STREQ("", empty2.c_str());
   EXPECT_TRUE(empty == empty2);
   EXPECT_FALSE(empty != empty2);
   EXPECT_TRUE(empty == "");
   EXPECT_FALSE(empty != "");
   
   LightString preallocEmpty(size_t{0});
-  EXPECT_TRUE(preallocEmpty.c_str() == nullptr);
+  EXPECT_STREQ("", preallocEmpty.c_str());
+  EXPECT_TRUE(preallocEmpty.c_str() != nullptr);
   EXPECT_TRUE(preallocEmpty.data() == nullptr);
   EXPECT_EQ(size_t{0}, preallocEmpty.size());
   EXPECT_EQ(size_t{0}, preallocEmpty.length());
@@ -43,7 +46,7 @@ TEST_F(LightStringTest, stringAccessorsCtors) {
   EXPECT_EQ(size_t{16u}, prealloc.length());
   EXPECT_FALSE(prealloc.empty());
   EXPECT_EQ('\0', prealloc.c_str()[0]);
-  prealloc.c_str()[0] = 'a';
+  prealloc.data()[0] = 'a';
   EXPECT_STREQ(prealloc.c_str(), "a");
   
   LightString val1("abc");
@@ -115,7 +118,7 @@ TEST_F(LightStringTest, stringAccessorsCtors) {
   EXPECT_EQ('a', moved.c_str()[0]);
   EXPECT_STREQ(moved.c_str(), "ab");
   EXPECT_TRUE(valTrunc.empty());
-  EXPECT_TRUE(valTrunc.c_str() == nullptr);
+  EXPECT_TRUE(valTrunc.c_str() != nullptr);
   valTrunc = std::move(moved);
   EXPECT_TRUE(valTrunc.c_str() != nullptr);
   EXPECT_TRUE(valTrunc.data() != nullptr);
@@ -125,7 +128,7 @@ TEST_F(LightStringTest, stringAccessorsCtors) {
   EXPECT_EQ('a', valTrunc.c_str()[0]);
   EXPECT_STREQ(valTrunc.c_str(), "ab");
   EXPECT_TRUE(moved.empty());
-  EXPECT_TRUE(moved.c_str() == nullptr);
+  EXPECT_TRUE(moved.c_str() != nullptr);
 }
 
 TEST_F(LightStringTest, stringOperators) {
@@ -220,7 +223,7 @@ TEST_F(LightStringTest, stringOperators) {
 
 TEST_F(LightStringTest, wstringAccessorsCtors) {
   LightWString empty;
-  EXPECT_TRUE(empty.c_str() == nullptr);
+  EXPECT_TRUE(empty.c_str() != nullptr);
   EXPECT_TRUE(empty.data() == nullptr);
   EXPECT_EQ(size_t{0}, empty.size());
   EXPECT_EQ(size_t{0}, empty.length());
@@ -233,7 +236,7 @@ TEST_F(LightStringTest, wstringAccessorsCtors) {
   EXPECT_FALSE(empty != L"");
   
   LightWString preallocEmpty(size_t{0});
-  EXPECT_TRUE(preallocEmpty.c_str() == nullptr);
+  EXPECT_TRUE(preallocEmpty.c_str() != nullptr);
   EXPECT_TRUE(preallocEmpty.data() == nullptr);
   EXPECT_EQ(size_t{0}, preallocEmpty.size());
   EXPECT_EQ(size_t{0}, preallocEmpty.length());
@@ -246,7 +249,7 @@ TEST_F(LightStringTest, wstringAccessorsCtors) {
   EXPECT_EQ(size_t{16u}, prealloc.length());
   EXPECT_FALSE(prealloc.empty());
   EXPECT_EQ(L'\0', prealloc.c_str()[0]);
-  prealloc.c_str()[0] = L'a';
+  prealloc.data()[0] = L'a';
   EXPECT_STREQ(prealloc.c_str(), L"a");
   
   LightWString val1(L"abc");
@@ -318,7 +321,7 @@ TEST_F(LightStringTest, wstringAccessorsCtors) {
   EXPECT_EQ(L'a', moved.c_str()[0]);
   EXPECT_STREQ(moved.c_str(), L"ab");
   EXPECT_TRUE(valTrunc.empty());
-  EXPECT_TRUE(valTrunc.c_str() == nullptr);
+  EXPECT_TRUE(valTrunc.c_str() != nullptr);
   valTrunc = std::move(moved);
   EXPECT_TRUE(valTrunc.c_str() != nullptr);
   EXPECT_TRUE(valTrunc.data() != nullptr);
@@ -328,7 +331,7 @@ TEST_F(LightStringTest, wstringAccessorsCtors) {
   EXPECT_EQ(L'a', valTrunc.c_str()[0]);
   EXPECT_STREQ(valTrunc.c_str(), L"ab");
   EXPECT_TRUE(moved.empty());
-  EXPECT_TRUE(moved.c_str() == nullptr);
+  EXPECT_TRUE(moved.c_str() != nullptr);
 }
 
 TEST_F(LightStringTest, wstringOperators) {
