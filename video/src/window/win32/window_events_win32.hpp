@@ -3,13 +3,12 @@ Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
 Description : Window events & handlers - Win32 implementation (Windows)
+--------------------------------------------------------------------------------
+Implementation included in window_win32.cpp
+(grouped object improves compiler optimizations + reduces executable size)
 *******************************************************************************/
 #ifdef _WINDOWS
-# include <cassert>
-# include <cstdint>
-# include <system/api/windows_api.h>
-# include "video/window_events.h"
-# include "video/window_keycodes.h"
+// includes + namespaces: in window_win32.cpp
 
   
 // -- keyboard events -- ----------------------------------------------------------

@@ -3,20 +3,15 @@ Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
 Description : WindowResource - Win32 implementation (Windows)
+--------------------------------------------------------------------------------
+Implementation included in window_win32.cpp
+(grouped object improves compiler optimizations + reduces executable size)
 *******************************************************************************/
 #ifdef _WINDOWS
-# include <cstdint>
-# include <cstring>
-# include <system/api/windows_api.h>
-# include <system/api/windows_app.h>
-# include "video/window_resource.h"
+// includes + namespaces: in window_win32.cpp
 
 # define __P_MAKE_SHARED_RES(handle, categ) \
          std::make_shared<WindowResource>((WindowResourceHandle) handle, categ)
-
-  using namespace pandora::video;
-  using pandora::system::AppInstanceHandle;
-  using pandora::system::WindowsApp;
 
 
 // -- WindowResource destruction -- --------------------------------------------
@@ -307,4 +302,5 @@ Description : WindowResource - Win32 implementation (Windows)
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;
   }
 
+# undef __P_MAKE_SHARED_RES
 #endif

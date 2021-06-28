@@ -3,6 +3,9 @@ Author  :     Romain Vinders
 License :     MIT
 --------------------------------------------------------------------------------
 Description : Window manager + builder - Win32 implementation (Windows)
+--------------------------------------------------------------------------------
+Includes hpp implementations at the end of the file 
+(grouped object improves compiler optimizations + reduces executable size)
 *******************************************************************************/
 #ifdef _WINDOWS
 
@@ -17,6 +20,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
 # define NOPROFILER
 # define NOTAPE
 
+# include <cstdint>
+# include <cstring>
 # include <thread/spin_lock.h>
 # include <system/api/windows_api.h>
 # include <system/api/windows_app.h>
@@ -24,7 +29,9 @@ Description : Window manager + builder - Win32 implementation (Windows)
 # include <shellapi.h>
 # include <Dbt.h>
 
+# include "video/window_events.h"
 # include "video/window_keycodes.h"
+# include "video/window_resource.h"
 # include "video/_private/_window_impl_win32.h"
 # include "video/window.h"
 
@@ -39,6 +46,8 @@ Description : Window manager + builder - Win32 implementation (Windows)
   using pandora::hardware::DisplayArea;
   using pandora::hardware::DisplayMode;
   using pandora::hardware::DisplayMonitor;
+  using pandora::system::AppInstanceHandle;
+  using pandora::system::WindowsApp;
 
 
 // -----------------------------------------------------------------------------
@@ -51,7 +60,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
   std::unique_ptr<Window> Window::Builder::create(const window_char* contextName, const window_char* caption, 
                                                   WindowHandle parentWindow) { // throws
     if (contextName == nullptr || *contextName == 0)
-      throw std::invalid_argument("Window.Builder: context name must not be NULL or empty");
+      throw std::invalid_argument("Window: NULL/empty contextName");
   
     WNDCLASSEXW windowClass;
     ZeroMemory(&windowClass, sizeof(WNDCLASSEXW));
@@ -82,7 +91,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
     
     // window creation
     if (RegisterClassExW(&windowClass) == 0)
-      throw std::runtime_error("Window.Builder: context class registration failure");
+      throw std::runtime_error("Window: context reg. failure");
     try {
       return std::unique_ptr<Window>(new Window(contextName, caption, this->_params, parentWindow));
     }
@@ -549,12 +558,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
                                     (int)windowArea.x, (int)windowArea.y, (int)windowArea.width, (int)windowArea.height,
                                     this->_parent, this->_menuHandle, this->_moduleInstance, nullptr);
     if (this->_handle == nullptr)
-      throw std::runtime_error(formatLastError("Window creation failure: "));
+      throw std::runtime_error("Window: creation failed");
     __incrementWindowCount(); // only increment after handle creation
     
     // reference window instance as user data (for event processor)
     if (SetPropW(this->_handle, __P_WINDOW_ID, (HANDLE)this) == FALSE)
-      throw std::runtime_error(formatLastError("Window: user data creation (for message handling) failure: "));
+      throw std::runtime_error("Window: message handling config failed");
   }
   
   // ---
@@ -574,19 +583,19 @@ Description : Window manager + builder - Win32 implementation (Windows)
     _container(container)
   {
     if (existingHandle == nullptr)
-      throw std::invalid_argument("Window: existingHandle must not be NULL");
+      throw std::invalid_argument("Window: NULL existingHandle");
     __incrementWindowCount();
 
     // reference instance as user data (for event processor)
     if (SetPropW(this->_handle, __P_WINDOW_ID, (HANDLE)this) == FALSE)
-      throw std::runtime_error(formatLastError("Window: user data creation (for message handling) failure: "));
+      throw std::runtime_error("Window: message handling config failed");
     if (callExistingEventProc && _originalStyle->_eventProcessor != nullptr)
       __P_ADD_FLAG(this->_statusFlags, __P_FLAG_USE_ORIG_EVENT_PROC);
     
     // replace window resources
     SetLastError(0);
     if (SetWindowLongPtr(existingHandle, GWLP_WNDPROC, (LONG_PTR)&__WindowImpl::windowEventProcessor) == 0 && GetLastError() != 0)
-      throw std::runtime_error(formatLastError("Window: event processor binding failure: ")); // if returns 0, verify if error occurred
+      throw std::runtime_error("Window: event binding failed"); // if returns 0, verify if error occurred
     if (params.captionIcon)
       SetClassLongPtr(existingHandle, GCLP_HICONSM, (LONG_PTR)params.captionIcon->handle());
     if (params.appIcon)
@@ -599,7 +608,7 @@ Description : Window manager + builder - Win32 implementation (Windows)
 
     // change window mode/style/position
     if (!setDisplayMode(params.displayMode, params.behavior, params.resizeMode, params.clientArea, params.refreshRate))
-      throw std::runtime_error(formatLastError("Window: position/size application failure: "));
+      throw std::runtime_error("Window: position/size change failed");
     if (this->_menuHandle)
       DrawMenuBar(this->_handle);
     __P_ADD_FLAG(this->_statusFlags, __P_FLAG_FIRST_DISPLAY_DONE);
@@ -2281,4 +2290,12 @@ Description : Window manager + builder - Win32 implementation (Windows)
   }
 
 # undef __if_constexpr
+
+
+// -----------------------------------------------------------------------------
+// Include hpp implementations
+// -----------------------------------------------------------------------------
+# include "./window_events_win32.hpp"
+# include "./window_resource_win32.hpp"
+
 #endif

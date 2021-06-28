@@ -58,7 +58,7 @@ macro(pandora_video_autodetect_files category_id)
     endif()
     unset(CWORK_AUTODETECTED_FILES)
     
-    autodetect_source_files("${_SOURCE_DIR}/${category_id}" "*.c*")
+    autodetect_source_files("${_SOURCE_DIR}/${category_id}" "*.[hc]*")
     if(CWORK_AUTODETECTED_FILES)
         if(_SOURCE_FILES)
             set(_SOURCE_FILES ${_SOURCE_FILES} ${CWORK_AUTODETECTED_FILES})
