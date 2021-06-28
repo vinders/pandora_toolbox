@@ -1,10 +1,15 @@
 /*******************************************************************************
 Author  :     Romain Vinders
 License :     MIT
+--------------------------------------------------------------------------------
+Includes hpp implementations at the end of the file 
+(grouped object improves compiler optimizations + reduces executable size)
 *******************************************************************************/
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
+#include "io/encoder.h"
+#include "io/_private/_key_value_serializer_common.h"
 #include "io/key_value_serializer.h"
 
 using namespace pandora::io;
@@ -260,3 +265,9 @@ void SerializableValue::_pushArrayItem(SerializableValue&& value) {
   ((SerializableValue::Array*)this->_value.arrayRef)->emplace_back(std::move(value));
   this->_length = ((SerializableValue::Array*)this->_value.arrayRef)->size();
 }
+
+
+// -----------------------------------------------------------------------------
+// Include hpp implementations
+// -----------------------------------------------------------------------------
+# include "./_key_value_serializer_common.hpp"

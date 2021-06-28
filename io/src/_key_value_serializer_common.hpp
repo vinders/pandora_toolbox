@@ -1,12 +1,11 @@
 /*******************************************************************************
 Author  :     Romain Vinders
 License :     MIT
+--------------------------------------------------------------------------------
+Implementation included in key_value_serializer.cpp
+(grouped object improves compiler optimizations + reduces executable size)
 *******************************************************************************/
-#include <cassert>
-#include <cstring>
-#include <stdexcept>
-#include "io/encoder.h"
-#include "io/_private/_key_value_serializer_common.h"
+// includes: in key_value_serializer.cpp
 
 
 // -- text serialization helpers -- --------------------------------------------

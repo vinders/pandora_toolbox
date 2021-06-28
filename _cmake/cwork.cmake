@@ -476,7 +476,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         endif()
         if(NOT ${CWORK_PROJECT_NAME}_SOURCE_FILES)
             message("> auto-detection of source files...")
-            autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/${source_dir}" "*.c*")
+            autodetect_source_files("${CMAKE_CURRENT_SOURCE_DIR}/${source_dir}" "*.[hc]*")
             set(${CWORK_PROJECT_NAME}_SOURCE_FILES ${CWORK_AUTODETECTED_FILES})
             unset(CWORK_AUTODETECTED_FILES)
             
