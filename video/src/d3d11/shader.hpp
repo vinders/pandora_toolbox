@@ -76,7 +76,7 @@ Implementation included in renderer.cpp
     }
 
     if (FAILED(result) || handle == nullptr)
-      throwError(result, "Builder: shader create failed");
+      throwError(result, "Shader: creation error");
     return Shader(handle, this->_type);
   }
   
@@ -106,7 +106,7 @@ Implementation included in renderer.cpp
     HRESULT result = device->CreateInputLayout((D3D11_INPUT_ELEMENT_DESC*)layoutElements, (UINT)length, 
                                                                 (const void*)this->_data, (SIZE_T)this->_length, &inputLayout);
     if (FAILED(result) || inputLayout == nullptr)
-      throwError(result, "Builder: layout create failed");
+      throwError(result, "Shader: layout creation error");
     return ShaderInputLayout((ShaderInputLayout::Handle)inputLayout);
   }
 

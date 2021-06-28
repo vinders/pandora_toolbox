@@ -184,20 +184,20 @@ Includes hpp implementations at the end of the file
     {
       auto result = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
       if (FAILED(result) || dxgiFactory == nullptr)
-        throwError(result, "Renderer: DXGI creation failed");
+        throwError(result, "Renderer: DXGI creation error");
     }
     outDxgiFactory = dxgiFactory;
   }
   
   // Get current DXGI factory of device
   static inline void __getCurrentDxgiFactory(ID3D11Device* device, D3dResource<IDXGIFactory1>& outDxgiFactory) { // throws
-    auto dxgiDevice = D3dResource<IDXGIDevice>::fromInterface(device, "Renderer: DXGI access failed");
+    auto dxgiDevice = D3dResource<IDXGIDevice>::fromInterface(device, "Renderer: DXGI access error");
     D3dResource<IDXGIAdapter> adapter;
     auto result = dxgiDevice->GetAdapter(adapter.address());
     if (FAILED(result) || !adapter.hasValue())
-      throwError(result, "Renderer: adapter access failed");
+      throwError(result, "Renderer: adapter access error");
     
-    outDxgiFactory = D3dResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: DXGI factory failure");
+    outDxgiFactory = D3dResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: DXGI factory error");
   }
   
   // If output information on DXGI factory is stale, try to create a new one
@@ -246,9 +246,7 @@ Includes hpp implementations at the end of the file
         featureLevelCount = size_t{ 2u };
       }
       else if (featureLevelCount == 0)
-        throw std::out_of_range("Renderer: no feat level");
-      else if ((int32_t)*featureLevels > (int32_t)D3D_FEATURE_LEVEL_11_1)
-        throw std::out_of_range("Renderer: feat level above max supported");
+        throw std::out_of_range("Renderer: no feat-levels");
 #   else
       D3D_FEATURE_LEVEL defaultLevel[] { D3D_FEATURE_LEVEL_11_0 };
       if (featureLevels == nullptr) {
@@ -261,7 +259,7 @@ Includes hpp implementations at the end of the file
           --featureLevelCount;
         }
         if (featureLevelCount == 0)
-          throw std::out_of_range("Renderer: feat level empty or above max supported");
+          throw std::out_of_range("Renderer: no feat-levels/above max supported");
       }
 #   endif
 
@@ -276,7 +274,7 @@ Includes hpp implementations at the end of the file
                                     nullptr, runtimeLayers, &featureLevels[0], (UINT)featureLevelCount, D3D11_SDK_VERSION, 
                                     &(this->_device), &(this->_deviceLevel), &(this->_context));
     if (FAILED(result) || this->_device == nullptr || this->_context == nullptr)
-      throwError(result, "Renderer: device/context creation failed"); // throws
+      throwError(result, "Renderer: device/context creation error"); // throws
     if (isDefaultAdapter && !dxgiFactory->IsCurrent()) // if adapter not provided, system may generate another factory
       __getCurrentDxgiFactory(this->_device, dxgiFactory); // throws
     
@@ -700,7 +698,7 @@ Includes hpp implementations at the end of the file
 
           auto result = swapChainV3->SetColorSpace1(outColorSpace);
           if (FAILED(result))
-            throwError(result, "SwapChain: color space failure");
+            throwError(result, "SwapChain: color space error");
           return true;
         }
       }
@@ -772,8 +770,8 @@ Includes hpp implementations at the end of the file
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       if (this->_dxgiLevel >= 2u) {
         // Direct3D 11.1+
-        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: DXGI access failed");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: device access failed");
+        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: DXGI access error");
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: device access error");
         outSwapChainLevel = D3D_FEATURE_LEVEL_11_1;
         
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
@@ -799,7 +797,7 @@ Includes hpp implementations at the end of the file
 
         auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
         if (FAILED(result) || swapChain == nullptr)
-          throwError(result, "Renderer: swap-chain failure");
+          throwError(result, "Renderer: swap-chain not created");
       }
       else
 #   endif
@@ -824,7 +822,7 @@ Includes hpp implementations at the end of the file
 
       auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
       if (FAILED(result) || swapChain == nullptr)
-        throwError(result, "Renderer: swap-chain failure");
+        throwError(result, "Renderer: swap-chain not created");
     }
     
     ((IDXGIFactory1*)this->_dxgiFactory)->MakeWindowAssociation((HWND)window, DXGI_MWA_NO_ALT_ENTER); // prevent DXGI from responding to the ALT+ENTER shortcut
@@ -966,8 +964,8 @@ Includes hpp implementations at the end of the file
                                                                        (DXGI_FORMAT)this->_settings.swapChainFormat, flags);
       if (FAILED(result)) {
         if (result == DXGI_ERROR_DEVICE_REMOVED || result == DXGI_ERROR_DEVICE_RESET || result == DXGI_ERROR_DEVICE_HUNG)
-          throw std::domain_error("SwapChain: adapter changed: Renderer/SwapChain must be recreated");
-        throwError(result, "SwapChain: resize failure");
+          throw std::domain_error("Adapter changed: recreate Renderer/SwapChain");
+        throwError(result, "SwapChain: resize error");
       }
       
       this->_settings.width = width;
@@ -996,14 +994,14 @@ Includes hpp implementations at the end of the file
     D3dResource<ID3D11Texture2D> renderTarget;
     auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
     if (FAILED(targetResult) || !renderTarget.hasValue()) {
-      throwError(targetResult, "SwapChain: render target not accessible");
+      throwError(targetResult, "SwapChain: render-target access error");
       return;
     }
     
     CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_settings.backBufferFormat);
     targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
     if (FAILED(targetResult) || this->_renderTargetView == nullptr)
-      throwError(targetResult, "SwapChain: target view failure");
+      throwError(targetResult, "SwapChain: target view not created");
   }
   
   // ---
@@ -1020,7 +1018,7 @@ Includes hpp implementations at the end of the file
       case DXGI_ERROR_DEVICE_REMOVED:
       case DXGI_ERROR_DEVICE_RESET: throw std::domain_error("SwapChain: device lost");
       // invalid option
-      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: local display restriction not supported");
+      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: display restriction not supported");
       default: throwError(result, "SwapChain: internal error"); break;
     }
   }

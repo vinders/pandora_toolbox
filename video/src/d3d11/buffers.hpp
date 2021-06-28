@@ -36,7 +36,7 @@ Implementation included in renderer.cpp
     
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "Buffer: creation failed");
+      throwError(result, "Buffer: creation error");
   }
 
   // Create data buffer (to store data for shader stages) with initial value
@@ -64,7 +64,7 @@ Implementation included in renderer.cpp
     subResData.pSysMem = initData;
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "Buffer: creation failed");
+      throwError(result, "Buffer: creation error");
   }
 
 
@@ -87,7 +87,7 @@ Implementation included in renderer.cpp
     
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "Buffer: creation failed");
+      throwError(result, "Buffer: creation error");
   }
 
   // Create data buffer (to store data for shader stages) with initial value
@@ -109,7 +109,7 @@ Implementation included in renderer.cpp
     subResData.pSysMem = initData;
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, initData ? &subResData : nullptr, &(this->_buffer));
     if (FAILED(result) || this->_buffer == nullptr)
-      throwError(result, "Buffer: creation failed");
+      throwError(result, "Buffer: creation error");
   }
 
   // ---
@@ -169,7 +169,7 @@ Implementation included in renderer.cpp
     
     auto result = renderer.device()->CreateTexture2D(&depthDescriptor, nullptr, &(this->_depthStencilBuffer));
     if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
-      throwError(result, "DepthStencil: creation failed"); return;
+      throwError(result, "DepthStencil: creation error"); return;
     }
     
     // create depth/stencil view
@@ -181,7 +181,7 @@ Implementation included in renderer.cpp
     
     result = renderer.device()->CreateDepthStencilView(this->_depthStencilBuffer, &depthViewDescriptor, &(this->_depthStencilView));
     if (FAILED(result) || this->_depthStencilView == nullptr)
-      throwError(result, "DepthStencil: view failure");
+      throwError(result, "DepthStencil: view not created");
     
     this->_settings.width = width;
     this->_settings.height = height;

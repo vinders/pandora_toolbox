@@ -18,12 +18,6 @@
 
   // -- create rendering device/context --
 
-  TEST_F(RendererTest, createRendererInvalidParams) {
-    pandora::hardware::DisplayMonitor monitor;
-    D3D_FEATURE_LEVEL level[]{ (D3D_FEATURE_LEVEL)65000 };
-    EXPECT_ANY_THROW(Renderer(monitor, level, (size_t)1u));
-  }
-
   TEST_F(RendererTest, createRenderer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);

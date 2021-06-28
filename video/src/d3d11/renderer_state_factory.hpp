@@ -68,7 +68,7 @@ Implementation included in renderer.cpp
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: depth state failure");
+      throwError(result, "Factory: depth state error");
     return DepthStencilState(stateData);
   }
   
@@ -100,7 +100,7 @@ Implementation included in renderer.cpp
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: stencil state failure");
+      throwError(result, "Factory: stencil state error");
     return DepthStencilState(stateData);
   }
   
@@ -133,7 +133,7 @@ Implementation included in renderer.cpp
     ID3D11DepthStencilState* stateData;
     auto result = this->_device->CreateDepthStencilState(&depthStDescriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: depth/stencil failure");
+      throwError(result, "Factory: depth/stencil error");
     return DepthStencilState(stateData);
   }
 
@@ -167,7 +167,7 @@ Implementation included in renderer.cpp
     ID3D11RasterizerState* stateData = nullptr;
     auto result = this->_device->CreateRasterizerState(&rasterizerState, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: raster state failure");
+      throwError(result, "Factory: raster state error");
     return RasterizerState(stateData);
   }
 
@@ -282,7 +282,7 @@ Implementation included in renderer.cpp
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: blend state failure");
+      throwError(result, "Factory: blend state error");
     return BlendState(stateData);
   }
   // Create general blend state (common to all render-targets) - separate color/alpha params
@@ -295,7 +295,7 @@ Implementation included in renderer.cpp
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: split blend failure");
+      throwError(result, "Factory: split blend error");
     return BlendState(stateData);
   }
 
@@ -311,7 +311,7 @@ Implementation included in renderer.cpp
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: per-target blend failure");
+      throwError(result, "Factory: per-target blend error");
     return BlendState(stateData);
   }
   // Create blend state with different color/alpha params per render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
@@ -328,7 +328,7 @@ Implementation included in renderer.cpp
     ID3D11BlendState* stateData = nullptr;
     HRESULT result = this->_device->CreateBlendState(&descriptor, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: per-target split blend failure");
+      throwError(result, "Factory: per-target blend error");
     return BlendState(stateData);
   }
 
@@ -397,7 +397,7 @@ Implementation included in renderer.cpp
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: sampler failure");
+      throwError(result, "Factory: sampler error");
     return FilterState(stateData);
   }
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
@@ -420,7 +420,7 @@ Implementation included in renderer.cpp
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: sampler-comp failure");
+      throwError(result, "Factory: sampler error");
     return FilterState(stateData);
   }
   
@@ -443,7 +443,7 @@ Implementation included in renderer.cpp
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: anisotropic sampler failure");
+      throwError(result, "Factory: anisotropic sampler error");
     return FilterState(stateData);
   }
   // Create anisotropic sampler filter state - can be used to change sampler filter state when needed (setFilterState)
@@ -466,7 +466,7 @@ Implementation included in renderer.cpp
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&samplerDesc, &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: anisotropic sampler-comp failure");
+      throwError(result, "Factory: anisotropic sampler error");
     return FilterState(stateData);
   }
 
