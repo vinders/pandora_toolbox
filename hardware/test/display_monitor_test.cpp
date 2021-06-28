@@ -217,10 +217,10 @@ TEST_F(DisplayMonitorTest, monitorById) {
     std::string invalidId = "--DUMMY_INVALID_ID!!!--";
 # endif
 
-  EXPECT_THROW(DisplayMonitor(invalidId, false), std::invalid_argument);
+  EXPECT_THROW(DisplayMonitor(DisplayMonitor::DeviceId(invalidId.c_str()), false), std::invalid_argument);
 
   DisplayMonitor defaultMonitor;
-  DisplayMonitor invalidUseDefault(invalidId, true);
+  DisplayMonitor invalidUseDefault(DisplayMonitor::DeviceId(invalidId.c_str()), true);
   EXPECT_EQ(defaultMonitor.handle(), invalidUseDefault.handle());
   EXPECT_EQ(defaultMonitor.attributes().id, invalidUseDefault.attributes().id);
   EXPECT_EQ(defaultMonitor.attributes().isPrimary, invalidUseDefault.attributes().isPrimary);
@@ -231,7 +231,7 @@ TEST_F(DisplayMonitorTest, monitorById) {
       defaultMonitor = std::move(monitors[0]);
   }
   if (defaultMonitor.handle() && !defaultMonitor.attributes().id.empty()) { // if a monitor exists
-    DisplayMonitor monitorById(defaultMonitor.attributes().id, false); // would throw if invalid id
+    DisplayMonitor monitorById(DisplayMonitor::DeviceId(defaultMonitor.attributes().id.c_str()), false); // would throw if invalid id
     EXPECT_EQ(defaultMonitor.handle(), monitorById.handle());
     EXPECT_EQ(defaultMonitor.attributes().id, monitorById.attributes().id);
     EXPECT_EQ(defaultMonitor.attributes().description, monitorById.attributes().description);

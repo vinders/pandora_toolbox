@@ -59,7 +59,7 @@ void displaySpecs(const CpuSpecs& specs) {
     DisplayMode mode = it.getDisplayMode();
 
 #   if defined(_WINDOWS)
-      std::wstring adapterName = it.adapterName();
+      auto adapterName = it.adapterName();
       printf(" - %S: %ux%u (work area:%ux%u) %s\n   %S (%S)\n   Display mode: %ux%u:%u @%.2fHz\n", it.attributes().id.c_str(),
             it.attributes().screenArea.width, it.attributes().screenArea.height,
             it.attributes().workArea.width, it.attributes().workArea.height,

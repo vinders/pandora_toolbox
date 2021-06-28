@@ -5,8 +5,8 @@ License :     MIT
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <vector>
+#include <memory/light_string.h>
 
 namespace pandora { 
   namespace hardware {
@@ -36,8 +36,8 @@ namespace pandora {
 #     if defined(_WINDOWS)
         using Handle = void*;
         using WindowHandle = void*;
-        using DeviceId = std::wstring;
-        using String = std::wstring;
+        using DeviceId = pandora::memory::LightWString;
+        using String = pandora::memory::LightWString;
 #     else
 #       if defined(__APPLE__) || defined(_P_ENABLE_LINUX_WAYLAND)
           using Handle = void*;
@@ -46,8 +46,8 @@ namespace pandora {
           using Handle = uint64_t;
           using WindowHandle = int32_t;
 #       endif
-        using DeviceId = std::string;
-        using String = std::string;
+        using DeviceId = LightString;
+        using String = LightString;
 #     endif
 
       /// @brief Attributes of a display monitor on a system

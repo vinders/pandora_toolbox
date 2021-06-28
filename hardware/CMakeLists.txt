@@ -14,7 +14,7 @@ project("${CWORK_SOLUTION_NAME}.hardware" VERSION ${CWORK_BUILD_VERSION} LANGUAG
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘
 cwork_set_external_libs("private" display_io_libs)
-cwork_set_internal_libs(system)
+cwork_set_internal_libs(system memory)
 if(MINGW)
     cwork_set_compile_options(-mfxsr -mxsave -mxsaveopt)
 endif()

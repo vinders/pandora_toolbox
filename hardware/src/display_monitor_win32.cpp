@@ -10,7 +10,6 @@ Description : Display monitor - Win32 implementation (Windows)
 #   pragma warning(disable : 26812)
 # endif
 # include <cstdint>
-# include <string>
 # include <stdexcept>
 # include <vector>
 # include "hardware/_private/_libraries_win32.h"
@@ -28,7 +27,7 @@ Description : Display monitor - Win32 implementation (Windows)
     }
     
     // read brand/description string of monitor
-    static inline std::wstring _readDeviceDescription(const DisplayMonitor::DeviceId& id) {
+    static inline pandora::memory::LightWString _readDeviceDescription(const DisplayMonitor::DeviceId& id) {
       DISPLAY_DEVICEW device;
       ZeroMemory(&device, sizeof(device));
       device.cb = sizeof(device);
@@ -37,7 +36,7 @@ Description : Display monitor - Win32 implementation (Windows)
             : L"Generic PnP Monitor";
     }
     // read brand/description string of adapter
-    static inline std::wstring _readAdapterName(const DisplayMonitor::DeviceId& id) {
+    static inline pandora::memory::LightWString _readAdapterName(const DisplayMonitor::DeviceId& id) {
       DISPLAY_DEVICEW device;
       ZeroMemory(&device, sizeof(device));
       device.cb = sizeof(device);
@@ -184,14 +183,41 @@ Description : Display monitor - Win32 implementation (Windows)
     // ---
 
     static BOOL CALLBACK __list_callback(HMONITOR handle, HDC, RECT*, LPARAM data) {
-      std::vector<DisplayMonitor::Handle>* handleList = (std::vector<DisplayMonitor::Handle>*)data;
-      if (handle != nullptr && handleList != nullptr)
-        handleList->emplace_back((DisplayMonitor::Handle)handle);
+      std::vector<DisplayMonitor>* monitorList = (std::vector<DisplayMonitor>*)data;
+      if (handle != nullptr && monitorList != nullptr) {
+        try {
+          monitorList->emplace_back((DisplayMonitor::Handle)handle, false);
+        }
+        catch (const std::bad_alloc&) { throw; }
+        catch (...) {} // ignore invalid_argument
+      }
       return TRUE;
     }
-    // list handles of all active monitors
-    static inline bool listHandles(std::vector<DisplayMonitor::Handle>& out) {
+    // list all active monitors
+    static inline bool listMonitors(std::vector<DisplayMonitor>& out) {
       return (EnumDisplayMonitors(nullptr, nullptr, __list_callback, (LPARAM)&out) != FALSE);
+    }
+    
+    struct __DisplayMonitorIndexSearch final {
+      uint32_t currentIndex;
+      uint32_t targetIndex;
+      DisplayMonitor::Handle result;
+    };
+    static BOOL CALLBACK __getAt_callback(HMONITOR handle, HDC, RECT*, LPARAM data) {
+      __DisplayMonitorIndexSearch* search = (__DisplayMonitorIndexSearch*)data;
+      if (handle != nullptr && search != nullptr) {
+        if (search->currentIndex == search->targetIndex)
+          search->result = (DisplayMonitor::Handle)handle;
+        ++(search->currentIndex);
+      }
+      return TRUE;
+    }
+    // get handle at index (out of all active monitors)
+    static inline DisplayMonitor::Handle getHandleAt(uint32_t index) {
+      __DisplayMonitorIndexSearch search{ 0, index, nullptr };
+      if (EnumDisplayMonitors(nullptr, nullptr, __getAt_callback, (LPARAM)&search) != FALSE)
+        return search.result;
+      return (DisplayMonitor::Handle)0;
     }
   }
 
@@ -207,7 +233,7 @@ Description : Display monitor - Win32 implementation (Windows)
       if (usePrimaryAsDefault)
         this->_handle = monitors::getPrimary(this->_attributes);
       else
-        throw std::invalid_argument("DisplayMonitor: monitor handle is invalid or can't be used.");
+        throw std::invalid_argument("Monitor: invalid handle");
     }
   }
   DisplayMonitor::DisplayMonitor(const DisplayMonitor::DeviceId& id, bool usePrimaryAsDefault) {
@@ -216,36 +242,23 @@ Description : Display monitor - Win32 implementation (Windows)
       if (usePrimaryAsDefault)
         this->_handle = monitors::getPrimary(this->_attributes);
       else
-        throw std::invalid_argument("DisplayMonitor: monitor ID was not found on system.");
+        throw std::invalid_argument("Monitor: ID not found");
     }
   }
   DisplayMonitor::DisplayMonitor(bool usePrimaryAsDefault, uint32_t index) {
-    std::vector<DisplayMonitor::Handle> handles;
-    if (monitors::listHandles(handles) && index < handles.size())
-      this->_handle = handles[index];
+    this->_handle = monitors::getHandleAt(index);
     if (this->_handle == nullptr || !attributes::read((HMONITOR)this->_handle, this->_attributes)) {
       if (usePrimaryAsDefault)
         this->_handle = monitors::getPrimary(this->_attributes);
       else
-        throw std::invalid_argument("DisplayMonitor: monitor index was not found on system.");
+        throw std::invalid_argument("Monitor: index not found");
     }
   }
 
   std::vector<DisplayMonitor> DisplayMonitor::listAvailableMonitors() {
     std::vector<DisplayMonitor> monitorList;
-
-    std::vector<DisplayMonitor::Handle> handles;
-    if (monitors::listHandles(handles)) {
-      for (auto it : handles) {
-        try {
-          monitorList.emplace_back(it, false);
-        }
-        catch (const std::bad_alloc&) { throw; }
-        catch (...) {} // ignore invalid_argument
-      }
-    }
-
-    if (monitorList.empty()) { // primary monitor as default
+    if (!monitors::listMonitors(monitorList) || monitorList.empty()) {
+      // primary monitor as default
       monitorList.emplace_back();
       if (monitorList[0].attributes().screenArea.width == 0) // no display monitor
         monitorList.clear();
