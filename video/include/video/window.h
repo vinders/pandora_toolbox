@@ -10,7 +10,7 @@ License :     MIT
 #include <memory/light_string.h>
 #include <thread/spin_lock.h>
 #include <hardware/display_monitor.h>
-#include <system/preprocessor_tools.h>
+#include <system/_private/_enum_flags.h>
 #include "video/window_handle.h"
 #include "video/window_events.h"
 #include "video/window_resource.h"

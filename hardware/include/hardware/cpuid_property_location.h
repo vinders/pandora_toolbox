@@ -11,7 +11,6 @@ Location identification for CPUID property
 #include <cassert>
 #include <string>
 #include <system/cpu_arch.h>
-#include <system/preprocessor_tools.h>
 #include "./cpu_vendor.h"
 
 namespace pandora {
