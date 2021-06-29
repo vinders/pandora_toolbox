@@ -11,6 +11,8 @@ namespace pandora {
     /// @class LightString
     /// @brief Simple string container with dynamic allocation.
     ///        Useful to avoid the huge weight/overhead of std::string when not needed.
+    /// @warning - No exception thrown: for required values, verify if not empty after setting it (or use assign() -> returns success).
+    ///          - On allocation failure, constructors create an empty string (NULL data).
     class LightString final {
     public:
       LightString() noexcept = default;
@@ -20,7 +22,7 @@ namespace pandora {
       LightString& operator=(LightString&& rhs) noexcept { this->_value = rhs._value; this->_size = rhs._size; rhs._value = nullptr; rhs._size = 0; return *this; }
       ~LightString() noexcept { clear(); }
       
-      LightString(size_t length) noexcept; ///< Create preallocated empty string
+      LightString(size_t length, char repeated = ' ') noexcept; ///< Create string with repeated char (also useful to prealloc before calling assign / updating through data()[])
       LightString(const char* value) noexcept { assign(value); } ///< Create initialized string
       LightString(const char* value, size_t length) noexcept { assign(value, length); } ///< Create initialized string
       
@@ -47,8 +49,8 @@ namespace pandora {
       bool assign(const char* value, size_t length) noexcept; ///< Copy another string/substring
       inline LightString& operator=(const char* value) noexcept { assign(value); return *this; }
       
-      bool append(const char* value) noexcept; ///< Append another string (zero ended)
-      bool append(const char* value, size_t length) noexcept; ///< Append another string/substring
+      bool append(const char* suffix) noexcept; ///< Append another string (zero ended) -- causes realloc: if string changes often, prefer std::string
+      bool append(const char* suffix, size_t length) noexcept; ///< Append another string/substring -- causes realloc: if string changes often, prefer std::string
       inline LightString& operator+=(const char* rhs) noexcept { append(rhs); return *this; }
       inline LightString operator+(const char* rhs) const noexcept { LightString copy(*this); copy += rhs; return copy; }
       inline LightString& operator+=(const LightString& rhs) noexcept { append(rhs._value); return *this; }
@@ -65,6 +67,8 @@ namespace pandora {
     /// @class LightWString
     /// @brief Simple wide string container with dynamic allocation.
     ///        Useful to avoid the huge weight/overhead of std::wstring when not needed.
+    /// @warning - No exception thrown: for required values, verify if not empty after setting it (or use assign() -> returns success).
+    ///          - On allocation failure, constructors create an empty string (NULL data).
     class LightWString final {
     public:
       LightWString() noexcept = default;
@@ -74,7 +78,7 @@ namespace pandora {
       LightWString& operator=(LightWString&& rhs) noexcept { this->_value = rhs._value; this->_size = rhs._size; rhs._value = nullptr; rhs._size = 0; return *this; }
       ~LightWString() noexcept { clear(); }
       
-      LightWString(size_t length) noexcept; ///< Create preallocated empty string
+      LightWString(size_t length, wchar_t repeated = L' ') noexcept; ///< Create string with repeated char (also useful to prealloc before calling assign / updating through data()[])
       LightWString(const wchar_t* value) noexcept { assign(value); } ///< Create initialized string
       LightWString(const wchar_t* value, size_t length) noexcept { assign(value, length); } ///< Create initialized string
       
@@ -101,8 +105,8 @@ namespace pandora {
       bool assign(const wchar_t* value, size_t length) noexcept; ///< Copy another string/substring
       inline LightWString& operator=(const wchar_t* value) noexcept { assign(value); return *this; }
       
-      bool append(const wchar_t* value) noexcept; ///< Append another string (zero ended)
-      bool append(const wchar_t* value, size_t length) noexcept; ///< Append another string/substring
+      bool append(const wchar_t* suffix) noexcept; ///< Append another string (zero ended) -- causes realloc: if string changes often, prefer std::string
+      bool append(const wchar_t* suffix, size_t length) noexcept; ///< Append another string/substring -- causes realloc: if string changes often, prefer std::string
       inline LightWString& operator+=(const wchar_t* rhs) noexcept { append(rhs); return *this; }
       inline LightWString operator+(const wchar_t* rhs) const noexcept { LightWString copy(*this); copy += rhs; return copy; }
       inline LightWString& operator+=(const LightWString& rhs) noexcept { append(rhs._value); return *this; }

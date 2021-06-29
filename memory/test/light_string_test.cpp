@@ -39,15 +39,15 @@ TEST_F(LightStringTest, stringAccessorsCtors) {
   EXPECT_EQ(size_t{0}, preallocEmpty.length());
   EXPECT_TRUE(preallocEmpty.empty());
   
-  LightString prealloc(size_t{16u});
+  LightString prealloc(size_t{16u}, ' ');
   EXPECT_TRUE(prealloc.c_str() != nullptr);
   EXPECT_TRUE(prealloc.data() != nullptr);
   EXPECT_EQ(size_t{16u}, prealloc.size());
   EXPECT_EQ(size_t{16u}, prealloc.length());
   EXPECT_FALSE(prealloc.empty());
-  EXPECT_EQ('\0', prealloc.c_str()[0]);
+  EXPECT_EQ(' ', prealloc.c_str()[0]);
   prealloc.data()[0] = 'a';
-  EXPECT_STREQ(prealloc.c_str(), "a");
+  EXPECT_STREQ(prealloc.c_str(), "a               ");
   
   LightString val1("abc");
   EXPECT_TRUE(val1.c_str() != nullptr);
@@ -217,6 +217,12 @@ TEST_F(LightStringTest, stringOperators) {
   LightString concat2 = val2 + val1.c_str();
   EXPECT_TRUE(concat2 == "abc456789defabzzzabc");
   EXPECT_FALSE(concat2.empty());
+  
+  concat2.clear();
+  EXPECT_TRUE(concat2.empty());
+  EXPECT_EQ(size_t{0}, concat2.size());
+  EXPECT_TRUE(concat2.c_str() != nullptr);
+  EXPECT_TRUE(concat2.data() == nullptr);
 }
 
 // -- LightWString --
@@ -242,15 +248,15 @@ TEST_F(LightStringTest, wstringAccessorsCtors) {
   EXPECT_EQ(size_t{0}, preallocEmpty.length());
   EXPECT_TRUE(preallocEmpty.empty());
   
-  LightWString prealloc(size_t{16u});
+  LightWString prealloc(size_t{16u}, L' ');
   EXPECT_TRUE(prealloc.c_str() != nullptr);
   EXPECT_TRUE(prealloc.data() != nullptr);
   EXPECT_EQ(size_t{16u}, prealloc.size());
   EXPECT_EQ(size_t{16u}, prealloc.length());
   EXPECT_FALSE(prealloc.empty());
-  EXPECT_EQ(L'\0', prealloc.c_str()[0]);
+  EXPECT_EQ(L' ', prealloc.c_str()[0]);
   prealloc.data()[0] = L'a';
-  EXPECT_STREQ(prealloc.c_str(), L"a");
+  EXPECT_STREQ(prealloc.c_str(), L"a               ");
   
   LightWString val1(L"abc");
   EXPECT_TRUE(val1.c_str() != nullptr);
@@ -420,4 +426,10 @@ TEST_F(LightStringTest, wstringOperators) {
   LightWString concat2 = val2 + val1.c_str();
   EXPECT_TRUE(concat2 == L"abc456789defabzzzabc");
   EXPECT_FALSE(concat2.empty());
+  
+  concat2.clear();
+  EXPECT_TRUE(concat2.empty());
+  EXPECT_EQ(size_t{0}, concat2.size());
+  EXPECT_TRUE(concat2.c_str() != nullptr);
+  EXPECT_TRUE(concat2.data() == nullptr);
 }
