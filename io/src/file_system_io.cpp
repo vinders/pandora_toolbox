@@ -1,6 +1,9 @@
 /*******************************************************************************
 Author  :     Romain Vinders
 License :     MIT
+--------------------------------------------------------------------------------
+Includes hpp implementations at the end of the file 
+(grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #ifdef _MSC_VER
 # define _CRT_SECURE_NO_WARNINGS
@@ -16,6 +19,19 @@ License :     MIT
 #include "io/_private/_filesystem_api.h"
 #include "io/_private/_file_time.h"
 #include "io/file_system_io.h"
+
+// file_system_locations includes
+#include "io/_private/_system_location_finder.h"
+#include "io/_private/_user_home_path.h"
+#if !defined(_WINDOWS)
+# if defined(__APPLE__)
+#   include <TargetConditionals.h>
+# elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
+#   include <cstdlib>
+#   include "io/_private/_key_value_file_reader.h"
+# endif
+#endif
+#include "io/file_system_locations.h"
 
 using namespace pandora::io;
 
@@ -657,3 +673,9 @@ int pandora::io::removeDirectory(const std::string& path) noexcept {
 #   endif
   }
 #endif
+
+
+// -----------------------------------------------------------------------------
+// Include hpp implementations
+// -----------------------------------------------------------------------------
+# include "./file_system_locations.hpp"

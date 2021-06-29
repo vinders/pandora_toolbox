@@ -1,27 +1,11 @@
 /*******************************************************************************
 Author  :     Romain Vinders
 License :     MIT
+--------------------------------------------------------------------------------
+Implementation included in file_system_io.cpp
+(grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
-#include <cstddef>
-#include <cstdint>
-#include <string>
-#include <vector>
-#include "io/_private/_filesystem_api.h"
-#include "io/_private/_system_location_finder.h"
-#include "io/_private/_user_home_path.h"
-
-#if !defined(_WINDOWS)
-# if defined(__APPLE__)
-#   include <TargetConditionals.h>
-# elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
-#   include <cstdlib>
-#   include "io/_private/_key_value_file_reader.h"
-# endif
-#endif
-
-#include "io/file_system_locations.h"
-
-using namespace pandora::io;
+// includes + namespaces: in file_system_io.cpp
 
 
 // -- absolute path of current location --
