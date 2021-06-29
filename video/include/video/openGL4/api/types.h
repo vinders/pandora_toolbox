@@ -8,6 +8,7 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
 
 #if defined(_VIDEO_OPENGL4_SUPPORT)
 # include "./opengl.h"
+# include <system/_private/_enum_flags.h>
 
   namespace pandora {
     namespace video {
@@ -38,71 +39,7 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
         };
         
         
-        // -- color/alpha blending --
-        
-        /// @brief Color/alpha blend factor
-        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
-        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
-        enum class BlendFactor : GLenum {
-          zero            = GL_ZERO,                 ///< All zero        (0,0,0,0)
-          one             = GL_ONE,                  ///< All one         (1,1,1,1)
-          sourceColor     = GL_SRC_COLOR,            ///< Source color    (sR,sG,sB,sA)
-          sourceInvColor  = GL_ONE_MINUS_SRC_COLOR,  ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
-          sourceAlpha     = GL_SRC_ALPHA,            ///< Source alpha    (sA,sA,sA,sA)
-          sourceInvAlpha  = GL_ONE_MINUS_SRC_ALPHA,  ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
-          destColor       = GL_DST_COLOR,            ///< Dest. color     (dR,dG,dB,dA)
-          destInvColor    = GL_ONE_MINUS_DST_COLOR,  ///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
-          destAlpha       = GL_DST_ALPHA,            ///< Dest. alpha     (dA,dA,dA,dA)
-          destInvAlpha    = GL_ONE_MINUS_DST_ALPHA,  ///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
-          sourceAlphaSat  = GL_SRC_ALPHA_SATURATE,   ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
-          dualSrcColor    = GL_SRC1_COLOR,           ///< Dual-source color
-          dualSrcInvColor = GL_ONE_MINUS_SRC1_COLOR, ///< Dual-source opposite
-          dualSrcAlpha    = GL_SRC1_ALPHA,           ///< Dual-source alpha
-          dualSrcInvAlpha = GL_ONE_MINUS_SRC1_ALPHA, ///< Dual-source alpha opposite
-          constantColor   = GL_CONSTANT_COLOR,       ///< Constant (cR,cG,cB,cA) - constant color provided at binding (requires 'GL_ARB_imaging' extension)
-          constantInvColor= GL_ONE_MINUS_CONSTANT_COLOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
-                                                        ///  (requires 'GL_ARB_imaging' extension)
-          constantAlpha   = GL_CONSTANT_ALPHA,          ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
-          constantInvAlpha= GL_ONE_MINUS_CONSTANT_ALPHA ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
-        };
-        /// @brief Color/alpha blend operator
-        enum class BlendOp : GLenum {
-          none        = GL_NONE,                  ///< Disable all blending for render target
-          add         = GL_FUNC_ADD,              ///< Source RGBA + dest. RGBA
-          subtract    = GL_FUNC_SUBTRACT,         ///< Source RGBA - dest. RGBA
-          revSubtract = GL_FUNC_REVERSE_SUBTRACT, ///< Dest. RGBA - source RGBA
-          minimum     = GL_MIN,                   ///< min(source RGBA, dest RGBA)
-          maximum     = GL_MAX                    ///< max(source RGBA, dest RGBA)
-        };
-        
-        
-        // -- depth/stencil testing --
-        
-        /// @brief Depth/stencil comparison type for depth/stencil tests and shadow samplers
-        enum class StencilCompare : uint32_t {
-          never        = 0u, ///< always fail
-          less         = 1u, ///< success: source < existing-ref
-          lessEqual    = 2u, ///< success: source <= existing-ref
-          equal        = 3u, ///< success: source == existing-ref
-          notEqual     = 4u, ///< success: source != existing-ref
-          greaterEqual = 5u, ///< success: source >= existing-ref
-          greater      = 6u, ///< success: source > existing-ref
-          always       = 7u  ///< always succeed (default value)
-        };
-        /// @brief Depth/stencil operation to perform
-        enum class StencilOp : uint32_t {
-          keep           = 0u, ///< Keep existing stencil value
-          zero           = 1u, ///< Set stencil value to 0
-          replace        = 2u, ///< Replace stencil value with reference value
-          invert         = 3u, ///< Invert stencil value
-          incrementClamp = 4u, ///< Increment stencil value (clamp result)
-          decrementClamp = 5u, ///< Decrement stencil value (clamp result)
-          incrementWrap  = 6u, ///< Increment stencil value (wrap result)
-          decrementWrap  = 7u  ///< Decrement stencil value (wrap result)
-        };
-        
-        
-        // -- Component data formats --
+        // -- component data formats --
         
         /// @brief Color/normal/depth/stencil data formats (vertex array buffers, depth/stencil buffers, textures...)
         /// @remarks - HDR rendering / color space: RG(BA) components between 10 and 32 bits ('rgba16_f_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
@@ -214,6 +151,7 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
           triangleStrip    = GL_TRIANGLE_STRIP,          ///< Triangle-strip - triangle for each vertex and the previous two
           triangleStripAdj = GL_TRIANGLE_STRIP_ADJACENCY ///< Triangle-strip - triangle for each vertex and the previous two - with adjacency
         };
+        
         /// @brief Index data formats (vertex index buffers)
         enum class VertexIndexFormat : GLenum {
           r32_ui = GL_R32UI, ///< 32-bit unsigned integers
@@ -226,7 +164,103 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
           d24_unorm_s8_ui = GL_DEPTH24_STENCIL8, ///< 24-bit float depth / 8-bit stencil (recommended)
           d16_unorm = GL_DEPTH_COMPONENT16,      ///< 16-bit float depth
         };
+        /// @brief Verify if a depth/stencil format contains stencil component
+        constexpr inline bool _hasStencilComponent(DepthStencilFormat format) noexcept { 
+          return (format == DepthStencilFormat::d32_f_s8_ui || format == DepthStencilFormat::d24_unorm_s8_ui); 
+        }
+        
+        
+        // -- color/alpha blending --
+        
+        /// @brief RGBA color component - bit-mask flags
+        enum class ColorComponentFlag : int {
+          none  = 0,
+          red   = 0x1,
+          green = 0x2,
+          blue  = 0x4,
+          alpha = 0x8,
+          all   = 0xF
+        };
+        
+        /// @brief Color/alpha blend factor
+        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
+        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
+        enum class BlendFactor : GLenum {
+          zero            = GL_ZERO,                 ///< All zero        (0,0,0,0)
+          one             = GL_ONE,                  ///< All one         (1,1,1,1)
+          sourceColor     = GL_SRC_COLOR,            ///< Source color    (sR,sG,sB,sA)
+          sourceInvColor  = GL_ONE_MINUS_SRC_COLOR,  ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
+          sourceAlpha     = GL_SRC_ALPHA,            ///< Source alpha    (sA,sA,sA,sA)
+          sourceInvAlpha  = GL_ONE_MINUS_SRC_ALPHA,  ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
+          destColor       = GL_DST_COLOR,            ///< Dest. color     (dR,dG,dB,dA)
+          destInvColor    = GL_ONE_MINUS_DST_COLOR,  ///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
+          destAlpha       = GL_DST_ALPHA,            ///< Dest. alpha     (dA,dA,dA,dA)
+          destInvAlpha    = GL_ONE_MINUS_DST_ALPHA,  ///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
+          sourceAlphaSat  = GL_SRC_ALPHA_SATURATE,   ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
+          dualSrcColor    = GL_SRC1_COLOR,           ///< Dual-source color
+          dualSrcInvColor = GL_ONE_MINUS_SRC1_COLOR, ///< Dual-source opposite
+          dualSrcAlpha    = GL_SRC1_ALPHA,           ///< Dual-source alpha
+          dualSrcInvAlpha = GL_ONE_MINUS_SRC1_ALPHA, ///< Dual-source alpha opposite
+          constantColor   = GL_CONSTANT_COLOR,       ///< Constant (cR,cG,cB,cA) - constant color provided at binding (requires 'GL_ARB_imaging' extension)
+          constantInvColor= GL_ONE_MINUS_CONSTANT_COLOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
+                                                        ///  (requires 'GL_ARB_imaging' extension)
+          constantAlpha   = GL_CONSTANT_ALPHA,          ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
+          constantInvAlpha= GL_ONE_MINUS_CONSTANT_ALPHA ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
+        };
+        /// @brief Color/alpha blend operator
+        enum class BlendOp : GLenum {
+          none        = GL_NONE,                  ///< Disable all blending for render target
+          add         = GL_FUNC_ADD,              ///< Source RGBA + dest. RGBA
+          subtract    = GL_FUNC_SUBTRACT,         ///< Source RGBA - dest. RGBA
+          revSubtract = GL_FUNC_REVERSE_SUBTRACT, ///< Dest. RGBA - source RGBA
+          minimum     = GL_MIN,                   ///< min(source RGBA, dest RGBA)
+          maximum     = GL_MAX                    ///< max(source RGBA, dest RGBA)
+        };
+        /// @brief Blend operation state (color/alpha blend params for a render-target)
+        struct BlendOpState final {
+          BlendFactor srcColorFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output RGB value
+          BlendFactor destColorFactor = BlendFactor::zero; ///< Operation to perform on existing render-target RGB value
+          BlendOp colorBlendOp        = BlendOp::add;      ///< Blend operation between srcColorFactor and destColorFactor
+          BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output alpha value
+          BlendFactor destAlphaFactor = BlendFactor::zero; ///< Operation to perform on existing render-target alpha value
+          BlendOp alphaBlendOp        = BlendOp::add;      ///< Blend operation between srcAlphaFactor and destAlphaFactor
+          ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
+        };
+        
+        
+        // -- depth/stencil testing --
+        
+        /// @brief Depth/stencil comparison type for depth/stencil tests and shadow samplers
+        enum class StencilCompare : uint32_t {
+          never        = 0u, ///< always fail
+          less         = 1u, ///< success: source < existing-ref
+          lessEqual    = 2u, ///< success: source <= existing-ref
+          equal        = 3u, ///< success: source == existing-ref
+          notEqual     = 4u, ///< success: source != existing-ref
+          greaterEqual = 5u, ///< success: source >= existing-ref
+          greater      = 6u, ///< success: source > existing-ref
+          always       = 7u  ///< always succeed (default value)
+        };
+        /// @brief Depth/stencil operation to perform
+        enum class StencilOp : uint32_t {
+          keep           = 0u, ///< Keep existing stencil value
+          zero           = 1u, ///< Set stencil value to 0
+          replace        = 2u, ///< Replace stencil value with reference value
+          invert         = 3u, ///< Invert stencil value
+          incrementClamp = 4u, ///< Increment stencil value (clamp result)
+          decrementClamp = 5u, ///< Decrement stencil value (clamp result)
+          incrementWrap  = 6u, ///< Increment stencil value (wrap result)
+          decrementWrap  = 7u  ///< Decrement stencil value (wrap result)
+        };
+        /// @brief Depth/stencil operation state (depth/stencil test comparison + operations performed based on result)
+        struct StencilOpState {
+          StencilOp failed;      ///< Operation on stencil pixel when stencil test fails
+          StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
+          StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
+          StencilCompare comp; ///< Stencil test comparison
+        };
       }
     }
   }
+  _P_FLAGS_OPERATORS(pandora::video::openGL4::ColorComponentFlag, int);
 #endif

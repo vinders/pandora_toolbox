@@ -8,6 +8,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include "./vulkan.h"
+# include <system/_private/_enum_flags.h>
 
   namespace pandora {
     namespace video {
@@ -36,70 +37,17 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         };
         
         
-        // -- color/alpha blending --
+        // -- component data formats --
         
-        /// @brief Color/alpha blend factor
-        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
-        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
-        enum class BlendFactor : int/*VkBlendFactor*/ {
-          zero            = VK_BLEND_FACTOR_ZERO,                 ///< All zero        (0,0,0,0)
-          one             = VK_BLEND_FACTOR_ONE,                  ///< All one         (1,1,1,1)
-          sourceColor     = VK_BLEND_FACTOR_SRC_COLOR,            ///< Source color    (sR,sG,sB,sA)
-          sourceInvColor  = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,  ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
-          sourceAlpha     = VK_BLEND_FACTOR_SRC_ALPHA,            ///< Source alpha    (sA,sA,sA,sA)
-          sourceInvAlpha  = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,  ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
-          destColor       = VK_BLEND_FACTOR_DST_COLOR,            ///< Dest. color     (dR,dG,dB,dA)
-          destInvColor    = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,  ///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
-          destAlpha       = VK_BLEND_FACTOR_DST_ALPHA,            ///< Dest. alpha     (dA,dA,dA,dA)
-          destInvAlpha    = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,  ///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
-          sourceAlphaSat  = VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,   ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
-          dualSrcColor    = VK_BLEND_FACTOR_SRC1_COLOR,           ///< Dual-source color
-          dualSrcInvColor = VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, ///< Dual-source opposite
-          dualSrcAlpha    = VK_BLEND_FACTOR_SRC1_ALPHA,           ///< Dual-source alpha
-          dualSrcInvAlpha = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, ///< Dual-source alpha opposite
-          constantColor   = VK_BLEND_FACTOR_CONSTANT_COLOR,       ///< Constant (cR,cG,cB,cA) - constant color provided at binding
-          constantInvColor= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
-          constantAlpha   = VK_BLEND_FACTOR_CONSTANT_ALPHA,       ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
-          constantInvAlpha= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
+        /// @brief RGBA color component - bit-mask flags
+        enum class ColorComponentFlag : int/*VkColorComponentFlagBits*/ {
+          none  = 0,
+          red   = VK_COLOR_COMPONENT_R_BIT,
+          green = VK_COLOR_COMPONENT_G_BIT,
+          blue  = VK_COLOR_COMPONENT_B_BIT,
+          alpha = VK_COLOR_COMPONENT_A_BIT,
+          all   = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
         };
-        /// @brief Color/alpha blend operator
-        enum class BlendOp : int/*VkBlendOp*/ {
-          none        = (VkBlendOp)-1,                ///< Disable all blending for render target
-          add         = VK_BLEND_OP_ADD,              ///< Source RGBA + dest. RGBA
-          subtract    = VK_BLEND_OP_SUBTRACT,         ///< Source RGBA - dest. RGBA
-          revSubtract = VK_BLEND_OP_REVERSE_SUBTRACT, ///< Dest. RGBA - source RGBA
-          minimum     = VK_BLEND_OP_MIN,              ///< min(source RGBA, dest RGBA)
-          maximum     = VK_BLEND_OP_MAX               ///< max(source RGBA, dest RGBA)
-        };
-        
-        
-        // -- depth/stencil testing --
-        
-        /// @brief Depth/stencil comparison type for depth/stencil tests and shadow samplers
-        enum class StencilCompare : int/*VkCompareOp*/ {
-          never        = VK_COMPARE_OP_NEVER,            ///< always fail
-          less         = VK_COMPARE_OP_LESS,             ///< success: source < existing-ref
-          lessEqual    = VK_COMPARE_OP_LESS_OR_EQUAL,    ///< success: source <= existing-ref
-          equal        = VK_COMPARE_OP_EQUAL,            ///< success: source == existing-ref
-          notEqual     = VK_COMPARE_OP_NOT_EQUAL,        ///< success: source != existing-ref
-          greaterEqual = VK_COMPARE_OP_GREATER_OR_EQUAL, ///< success: source >= existing-ref
-          greater      = VK_COMPARE_OP_GREATER,          ///< success: source > existing-ref
-          always       = VK_COMPARE_OP_ALWAYS            ///< always succeed (default value)
-        };
-        /// @brief Depth/stencil operation to perform
-        enum class StencilOp : int/*VkStencilOp*/ {
-          keep           = VK_STENCIL_OP_KEEP,               ///< Keep existing stencil value
-          zero           = VK_STENCIL_OP_ZERO,               ///< Set stencil value to 0
-          replace        = VK_STENCIL_OP_REPLACE,            ///< Replace stencil value with reference value
-          invert         = VK_STENCIL_OP_INVERT,             ///< Invert stencil value
-          incrementClamp = VK_STENCIL_OP_INCREMENT_AND_CLAMP,///< Increment stencil value (clamp result)
-          decrementClamp = VK_STENCIL_OP_DECREMENT_AND_CLAMP,///< Decrement stencil value (clamp result)
-          incrementWrap  = VK_STENCIL_OP_INCREMENT_AND_WRAP, ///< Increment stencil value (wrap result)
-          decrementWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP  ///< Decrement stencil value (wrap result)
-        };
-        
-        
-        // -- Component data formats --
         
         /// @brief Color/normal/depth/stencil data formats (vertex array buffers, depth/stencil buffers, textures...)
         /// @remarks - HDR rendering / color space: RG(BA) components between 10 and 32 bits ('rgba16_f_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
@@ -210,6 +158,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           triangleStrip    = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,               ///< Triangle-strip - triangle for each vertex and the previous two
           triangleStripAdj = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY ///< Triangle-strip - triangle for each vertex and the previous two - with adjacency
         };
+        
         /// @brief Index data formats (vertex index buffers)
         enum class VertexIndexFormat : int/*VkFormat*/ {
           r32_ui = VK_FORMAT_R32_UINT, ///< 32-bit unsigned integers
@@ -222,7 +171,92 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           d24_unorm_s8_ui = VK_FORMAT_D24_UNORM_S8_UINT, ///< 24-bit float depth / 8-bit stencil (recommended)
           d16_unorm = VK_FORMAT_D16_UNORM,               ///< 16-bit float depth
         };
+        /// @brief Verify if a depth/stencil format contains stencil component
+        constexpr inline bool _hasStencilComponent(DepthStencilFormat format) noexcept { 
+          return (format == DepthStencilFormat::d32_f_s8_ui || format == DepthStencilFormat::d24_unorm_s8_ui); 
+        }
+        
+        
+        // -- color/alpha blending --
+        
+        /// @brief Color/alpha blend factor
+        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
+        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
+        enum class BlendFactor : int/*VkBlendFactor*/ {
+          zero            = VK_BLEND_FACTOR_ZERO,                 ///< All zero        (0,0,0,0)
+          one             = VK_BLEND_FACTOR_ONE,                  ///< All one         (1,1,1,1)
+          sourceColor     = VK_BLEND_FACTOR_SRC_COLOR,            ///< Source color    (sR,sG,sB,sA)
+          sourceInvColor  = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,  ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
+          sourceAlpha     = VK_BLEND_FACTOR_SRC_ALPHA,            ///< Source alpha    (sA,sA,sA,sA)
+          sourceInvAlpha  = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,  ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
+          destColor       = VK_BLEND_FACTOR_DST_COLOR,            ///< Dest. color     (dR,dG,dB,dA)
+          destInvColor    = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,  ///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
+          destAlpha       = VK_BLEND_FACTOR_DST_ALPHA,            ///< Dest. alpha     (dA,dA,dA,dA)
+          destInvAlpha    = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,  ///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
+          sourceAlphaSat  = VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,   ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
+          dualSrcColor    = VK_BLEND_FACTOR_SRC1_COLOR,           ///< Dual-source color
+          dualSrcInvColor = VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, ///< Dual-source opposite
+          dualSrcAlpha    = VK_BLEND_FACTOR_SRC1_ALPHA,           ///< Dual-source alpha
+          dualSrcInvAlpha = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, ///< Dual-source alpha opposite
+          constantColor   = VK_BLEND_FACTOR_CONSTANT_COLOR,       ///< Constant (cR,cG,cB,cA) - constant color provided at binding
+          constantInvColor= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
+          constantAlpha   = VK_BLEND_FACTOR_CONSTANT_ALPHA,       ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
+          constantInvAlpha= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
+        };
+        /// @brief Color/alpha blend operator
+        enum class BlendOp : int/*VkBlendOp*/ {
+          none        = (VkBlendOp)-1,                ///< Disable all blending for render target
+          add         = VK_BLEND_OP_ADD,              ///< Source RGBA + dest. RGBA
+          subtract    = VK_BLEND_OP_SUBTRACT,         ///< Source RGBA - dest. RGBA
+          revSubtract = VK_BLEND_OP_REVERSE_SUBTRACT, ///< Dest. RGBA - source RGBA
+          minimum     = VK_BLEND_OP_MIN,              ///< min(source RGBA, dest RGBA)
+          maximum     = VK_BLEND_OP_MAX               ///< max(source RGBA, dest RGBA)
+        };
+        /// @brief Blend operation state (color/alpha blend params for a render-target)
+        struct BlendOpState final {
+          BlendFactor srcColorFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output RGB value
+          BlendFactor destColorFactor = BlendFactor::zero; ///< Operation to perform on existing render-target RGB value
+          BlendOp colorBlendOp        = BlendOp::add;      ///< Blend operation between srcColorFactor and destColorFactor
+          BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output alpha value
+          BlendFactor destAlphaFactor = BlendFactor::zero; ///< Operation to perform on existing render-target alpha value
+          BlendOp alphaBlendOp        = BlendOp::add;      ///< Blend operation between srcAlphaFactor and destAlphaFactor
+          ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
+        };
+        
+        
+        // -- depth/stencil testing --
+        
+        /// @brief Depth/stencil comparison type for depth/stencil tests and shadow samplers
+        enum class StencilCompare : int/*VkCompareOp*/ {
+          never        = VK_COMPARE_OP_NEVER,            ///< always fail
+          less         = VK_COMPARE_OP_LESS,             ///< success: source < existing-ref
+          lessEqual    = VK_COMPARE_OP_LESS_OR_EQUAL,    ///< success: source <= existing-ref
+          equal        = VK_COMPARE_OP_EQUAL,            ///< success: source == existing-ref
+          notEqual     = VK_COMPARE_OP_NOT_EQUAL,        ///< success: source != existing-ref
+          greaterEqual = VK_COMPARE_OP_GREATER_OR_EQUAL, ///< success: source >= existing-ref
+          greater      = VK_COMPARE_OP_GREATER,          ///< success: source > existing-ref
+          always       = VK_COMPARE_OP_ALWAYS            ///< always succeed (default value)
+        };
+        /// @brief Depth/stencil operation to perform
+        enum class StencilOp : int/*VkStencilOp*/ {
+          keep           = VK_STENCIL_OP_KEEP,               ///< Keep existing stencil value
+          zero           = VK_STENCIL_OP_ZERO,               ///< Set stencil value to 0
+          replace        = VK_STENCIL_OP_REPLACE,            ///< Replace stencil value with reference value
+          invert         = VK_STENCIL_OP_INVERT,             ///< Invert stencil value
+          incrementClamp = VK_STENCIL_OP_INCREMENT_AND_CLAMP,///< Increment stencil value (clamp result)
+          decrementClamp = VK_STENCIL_OP_DECREMENT_AND_CLAMP,///< Decrement stencil value (clamp result)
+          incrementWrap  = VK_STENCIL_OP_INCREMENT_AND_WRAP, ///< Increment stencil value (wrap result)
+          decrementWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP  ///< Decrement stencil value (wrap result)
+        };
+        /// @brief Depth/stencil operation state (depth/stencil test comparison + operations performed based on result)
+        struct StencilOpState {
+          StencilOp failed;      ///< Operation on stencil pixel when stencil test fails
+          StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
+          StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
+          StencilCompare comp; ///< Stencil test comparison
+        };
       }
     }
   }
+  _P_FLAGS_OPERATORS(pandora::video::vulkan::ColorComponentFlag, int);
 #endif

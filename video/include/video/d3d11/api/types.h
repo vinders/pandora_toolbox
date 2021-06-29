@@ -14,6 +14,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
 # define NOMCX
 # define NOSERVICE
 # include "./d3d_11.h"
+# include <system/_private/_enum_flags.h>
 
   namespace pandora {
     namespace video {
@@ -38,76 +39,23 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         /// @brief Texture minify/magnify/mip-map filter type
         /// @remarks Values such as D3D11_FILTER_MIN_MAG_MIP_LINEAR are obtained by combining 
         ///          separate minify/magnify/mip-map filters in RendererStateFactory.
-        enum class TextureFilter : uint32_t {
-          nearest = 0u, ///< Use nearest point
-          linear  = 1u  ///< Linear interpolation
+        enum class TextureFilter : int {
+          nearest = 0, ///< Use nearest point
+          linear  = 1  ///< Linear interpolation
         };
         
         
-        // -- color/alpha blending --
+        // -- component data formats --
         
-        /// @brief Color/alpha blend factor
-        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
-        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
-        enum class BlendFactor : int/*D3D11_BLEND*/ {
-          zero            = D3D11_BLEND_ZERO,          ///< All zero        (0,0,0,0)
-          one             = D3D11_BLEND_ONE,           ///< All one         (1,1,1,1)
-          sourceColor     = D3D11_BLEND_SRC_COLOR,     ///< Source color    (sR,sG,sB,sA)
-          sourceInvColor  = D3D11_BLEND_INV_SRC_COLOR, ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
-          sourceAlpha     = D3D11_BLEND_SRC_ALPHA,     ///< Source alpha    (sA,sA,sA,sA)
-          sourceInvAlpha  = D3D11_BLEND_INV_SRC_ALPHA, ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
-          destColor       = D3D11_BLEND_DEST_COLOR,    ///< Dest. color     (dR,dG,dB,dA)
-          destInvColor    = D3D11_BLEND_INV_DEST_COLOR,///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
-          destAlpha       = D3D11_BLEND_DEST_ALPHA,    ///< Dest. alpha     (dA,dA,dA,dA)
-          destInvAlpha    = D3D11_BLEND_INV_DEST_ALPHA,///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
-          sourceAlphaSat  = D3D11_BLEND_SRC_ALPHA_SAT, ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
-          dualSrcColor    = D3D11_BLEND_SRC1_COLOR,    ///< Dual-source color
-          dualSrcInvColor = D3D11_BLEND_INV_SRC1_COLOR,///< Dual-source opposite
-          dualSrcAlpha    = D3D11_BLEND_SRC1_ALPHA,    ///< Dual-source alpha
-          dualSrcInvAlpha = D3D11_BLEND_INV_SRC1_ALPHA,///< Dual-source alpha opposite
-          constantColor   = D3D11_BLEND_BLEND_FACTOR,    ///< Constant (cR,cG,cB,cA) - constant color provided at binding
-          constantInvColor= D3D11_BLEND_INV_BLEND_FACTOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
-          constantAlpha   = D3D11_BLEND_BLEND_FACTOR,    ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
-          constantInvAlpha= D3D11_BLEND_INV_BLEND_FACTOR ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
+        /// @brief RGBA color component - bit-mask flags
+        enum class ColorComponentFlag : int/*D3D11_COLOR_WRITE_ENABLE*/ {
+          none  = 0,
+          red   = D3D11_COLOR_WRITE_ENABLE_RED,
+          green = D3D11_COLOR_WRITE_ENABLE_GREEN,
+          blue  = D3D11_COLOR_WRITE_ENABLE_BLUE,
+          alpha = D3D11_COLOR_WRITE_ENABLE_ALPHA,
+          all   = D3D11_COLOR_WRITE_ENABLE_ALL
         };
-        /// @brief Color/alpha blend operator
-        enum class BlendOp : int/*D3D11_BLEND_OP*/ {
-          none        = (D3D11_BLEND_OP)-1,          ///< Disable all blending for render target
-          add         = D3D11_BLEND_OP_ADD,          ///< Source RGBA + dest. RGBA
-          subtract    = D3D11_BLEND_OP_SUBTRACT,     ///< Source RGBA - dest. RGBA
-          revSubtract = D3D11_BLEND_OP_REV_SUBTRACT, ///< Dest. RGBA - source RGBA
-          minimum     = D3D11_BLEND_OP_MIN,          ///< min(source RGBA, dest RGBA)
-          maximum     = D3D11_BLEND_OP_MAX           ///< max(source RGBA, dest RGBA)
-        };
-        
-        
-        // -- depth/stencil testing --
-        
-        /// @brief Depth/stencil comparison type for depth/stencil testing and shadow samplers
-        enum class StencilCompare : int/*D3D11_COMPARISON_FUNC*/ {
-          never        = D3D11_COMPARISON_NEVER,        ///< always fail
-          less         = D3D11_COMPARISON_LESS,         ///< success: source < existing-ref
-          lessEqual    = D3D11_COMPARISON_LESS_EQUAL,   ///< success: source <= existing-ref
-          equal        = D3D11_COMPARISON_EQUAL,        ///< success: source == existing-ref
-          notEqual     = D3D11_COMPARISON_NOT_EQUAL,    ///< success: source != existing-ref
-          greaterEqual = D3D11_COMPARISON_GREATER_EQUAL,///< success: source >= existing-ref
-          greater      = D3D11_COMPARISON_GREATER,      ///< success: source > existing-ref
-          always       = D3D11_COMPARISON_ALWAYS        ///< always succeed (default value)
-        };
-        /// @brief Depth/stencil operation to perform
-        enum class StencilOp : int/*D3D11_STENCIL_OP*/ {
-          keep           = D3D11_STENCIL_OP_KEEP,     ///< Keep existing stencil value
-          zero           = D3D11_STENCIL_OP_ZERO,     ///< Set stencil value to 0
-          replace        = D3D11_STENCIL_OP_REPLACE,  ///< Replace stencil value with reference value
-          invert         = D3D11_STENCIL_OP_INVERT,   ///< Invert stencil value
-          incrementClamp = D3D11_STENCIL_OP_INCR_SAT, ///< Increment stencil value (clamp result)
-          decrementClamp = D3D11_STENCIL_OP_DECR_SAT, ///< Decrement stencil value (clamp result)
-          incrementWrap  = D3D11_STENCIL_OP_INCR,     ///< Increment stencil value (wrap result)
-          decrementWrap  = D3D11_STENCIL_OP_DECR      ///< Decrement stencil value (wrap result)
-        };
-        
-        
-        // -- Component data formats --
         
         /// @brief Color/normal/depth/stencil data formats (vertex array buffers, depth/stencil buffers, textures...)
         /// @remarks - HDR rendering / color space: RG(BA) components between 10 and 32 bits ('rgba16_f_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
@@ -218,6 +166,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           triangleStrip    = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,    ///< Triangle-strip - triangle for each vertex and the previous two
           triangleStripAdj = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ ///< Triangle-strip - triangle for each vertex and the previous two - with adjacency
         };
+        
         /// @brief Index data formats (vertex index buffers)
         enum class VertexIndexFormat : int/*DXGI_FORMAT*/ {
           r32_ui = DXGI_FORMAT_R32_UINT, ///< 32-bit unsigned integers (recommended)
@@ -230,9 +179,94 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           d24_unorm_s8_ui = DXGI_FORMAT_D24_UNORM_S8_UINT,///< 24-bit float depth / 8-bit stencil (recommended)
           d16_unorm = DXGI_FORMAT_D16_UNORM,              ///< 16-bit float depth
         };
+        /// @brief Verify if a depth/stencil format contains stencil component
+        constexpr inline bool _hasStencilComponent(DepthStencilFormat format) noexcept { 
+          return (format == DepthStencilFormat::d32_f_s8_ui || format == DepthStencilFormat::d24_unorm_s8_ui); 
+        }
+        
+        
+        // -- color/alpha blending --
+        
+        /// @brief Color/alpha blend factor
+        /// @remarks When using separate color/alpha blending, the alpha factor must be zero/one or
+        ///          a value with a name containing "Alpha" (ex: sourceAlpha, destInvAlpha...).
+        enum class BlendFactor : int/*D3D11_BLEND*/ {
+          zero            = D3D11_BLEND_ZERO,          ///< All zero        (0,0,0,0)
+          one             = D3D11_BLEND_ONE,           ///< All one         (1,1,1,1)
+          sourceColor     = D3D11_BLEND_SRC_COLOR,     ///< Source color    (sR,sG,sB,sA)
+          sourceInvColor  = D3D11_BLEND_INV_SRC_COLOR, ///< Source opposite (1-sR,1-sG,1-sB,1-sA)
+          sourceAlpha     = D3D11_BLEND_SRC_ALPHA,     ///< Source alpha    (sA,sA,sA,sA)
+          sourceInvAlpha  = D3D11_BLEND_INV_SRC_ALPHA, ///< Src. alpha opposite (1-sA,1-sA,1-sA,1-sA)
+          destColor       = D3D11_BLEND_DEST_COLOR,    ///< Dest. color     (dR,dG,dB,dA)
+          destInvColor    = D3D11_BLEND_INV_DEST_COLOR,///< Dest. opposite  (1-dR,1-dG,1-dB,1-dA)
+          destAlpha       = D3D11_BLEND_DEST_ALPHA,    ///< Dest. alpha     (dA,dA,dA,dA)
+          destInvAlpha    = D3D11_BLEND_INV_DEST_ALPHA,///< Dest. alpha opposite (1-dA,1-dA,1-dA,1-dA)
+          sourceAlphaSat  = D3D11_BLEND_SRC_ALPHA_SAT, ///< Alpha saturation clamp (f,f,f,1) with f = min(sA,1-dA)
+          dualSrcColor    = D3D11_BLEND_SRC1_COLOR,    ///< Dual-source color
+          dualSrcInvColor = D3D11_BLEND_INV_SRC1_COLOR,///< Dual-source opposite
+          dualSrcAlpha    = D3D11_BLEND_SRC1_ALPHA,    ///< Dual-source alpha
+          dualSrcInvAlpha = D3D11_BLEND_INV_SRC1_ALPHA,///< Dual-source alpha opposite
+          constantColor   = D3D11_BLEND_BLEND_FACTOR,    ///< Constant (cR,cG,cB,cA) - constant color provided at binding
+          constantInvColor= D3D11_BLEND_INV_BLEND_FACTOR,///< Constant (1-cR,1-cG,1-cB,1-cA) - opposite of constant color provided at binding
+          constantAlpha   = D3D11_BLEND_BLEND_FACTOR,    ///< Constant (-,-,-,cA) - constant provided at binding - only for alpha (separate blending)
+          constantInvAlpha= D3D11_BLEND_INV_BLEND_FACTOR ///< Constant (-,-,-,1-cA) - opposite of constant provided at binding - only for alpha (separate blending)
+        };
+        /// @brief Color/alpha blend operator
+        enum class BlendOp : int/*D3D11_BLEND_OP*/ {
+          none        = (D3D11_BLEND_OP)-1,          ///< Disable all blending for render target
+          add         = D3D11_BLEND_OP_ADD,          ///< Source RGBA + dest. RGBA
+          subtract    = D3D11_BLEND_OP_SUBTRACT,     ///< Source RGBA - dest. RGBA
+          revSubtract = D3D11_BLEND_OP_REV_SUBTRACT, ///< Dest. RGBA - source RGBA
+          minimum     = D3D11_BLEND_OP_MIN,          ///< min(source RGBA, dest RGBA)
+          maximum     = D3D11_BLEND_OP_MAX           ///< max(source RGBA, dest RGBA)
+        };
+        /// @brief Blend operation state (color/alpha blend params for a render-target)
+        struct BlendOpState final {
+          BlendFactor srcColorFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output RGB value
+          BlendFactor destColorFactor = BlendFactor::zero; ///< Operation to perform on existing render-target RGB value
+          BlendOp colorBlendOp        = BlendOp::add;      ///< Blend operation between srcColorFactor and destColorFactor
+          BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output alpha value
+          BlendFactor destAlphaFactor = BlendFactor::zero; ///< Operation to perform on existing render-target alpha value
+          BlendOp alphaBlendOp        = BlendOp::add;      ///< Blend operation between srcAlphaFactor and destAlphaFactor
+          ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
+        };
+        
+        
+        // -- depth/stencil testing --
+        
+        /// @brief Depth/stencil comparison type for depth/stencil testing and shadow samplers
+        enum class StencilCompare : int/*D3D11_COMPARISON_FUNC*/ {
+          never        = D3D11_COMPARISON_NEVER,        ///< always fail
+          less         = D3D11_COMPARISON_LESS,         ///< success: source < existing-ref
+          lessEqual    = D3D11_COMPARISON_LESS_EQUAL,   ///< success: source <= existing-ref
+          equal        = D3D11_COMPARISON_EQUAL,        ///< success: source == existing-ref
+          notEqual     = D3D11_COMPARISON_NOT_EQUAL,    ///< success: source != existing-ref
+          greaterEqual = D3D11_COMPARISON_GREATER_EQUAL,///< success: source >= existing-ref
+          greater      = D3D11_COMPARISON_GREATER,      ///< success: source > existing-ref
+          always       = D3D11_COMPARISON_ALWAYS        ///< always succeed (default value)
+        };
+        /// @brief Depth/stencil operation to perform
+        enum class StencilOp : int/*D3D11_STENCIL_OP*/ {
+          keep           = D3D11_STENCIL_OP_KEEP,     ///< Keep existing stencil value
+          zero           = D3D11_STENCIL_OP_ZERO,     ///< Set stencil value to 0
+          replace        = D3D11_STENCIL_OP_REPLACE,  ///< Replace stencil value with reference value
+          invert         = D3D11_STENCIL_OP_INVERT,   ///< Invert stencil value
+          incrementClamp = D3D11_STENCIL_OP_INCR_SAT, ///< Increment stencil value (clamp result)
+          decrementClamp = D3D11_STENCIL_OP_DECR_SAT, ///< Decrement stencil value (clamp result)
+          incrementWrap  = D3D11_STENCIL_OP_INCR,     ///< Increment stencil value (wrap result)
+          decrementWrap  = D3D11_STENCIL_OP_DECR      ///< Decrement stencil value (wrap result)
+        };
+        /// @brief Depth/stencil operation state (depth/stencil test comparison + operations performed based on result)
+        struct StencilOpState {
+          StencilOp failed;      ///< Operation on stencil pixel when stencil test fails
+          StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
+          StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
+          StencilCompare comp; ///< Stencil test comparison
+        };
       }
     }
   }
+  _P_FLAGS_OPERATORS(pandora::video::d3d11::ColorComponentFlag, int);
 # undef NODRAWTEXT
 # undef NOGDI
 # undef NOBITMAP
