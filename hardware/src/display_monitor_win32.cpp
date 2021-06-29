@@ -22,12 +22,12 @@ Description : Display monitor - Win32 implementation (Windows)
 
   namespace attributes {
     // verify if a monitor is the primary device
-    static inline bool _isPrimaryDevice(const MONITORINFOEXW& info) {
+    static inline bool _isPrimaryDevice(const MONITORINFOEXW& info) noexcept {
       return ((info.dwFlags & MONITORINFOF_PRIMARY) != 0);
     }
     
     // read brand/description string of monitor
-    static inline pandora::memory::LightWString _readDeviceDescription(const DisplayMonitor::DeviceId& id) {
+    static inline pandora::memory::LightWString _readDeviceDescription(const DisplayMonitor::DeviceId& id) noexcept {
       DISPLAY_DEVICEW device;
       ZeroMemory(&device, sizeof(device));
       device.cb = sizeof(device);
@@ -36,7 +36,7 @@ Description : Display monitor - Win32 implementation (Windows)
             : L"Generic PnP Monitor";
     }
     // read brand/description string of adapter
-    static inline pandora::memory::LightWString _readAdapterName(const DisplayMonitor::DeviceId& id) {
+    static inline pandora::memory::LightWString _readAdapterName(const DisplayMonitor::DeviceId& id) noexcept {
       DISPLAY_DEVICEW device;
       ZeroMemory(&device, sizeof(device));
       device.cb = sizeof(device);
@@ -46,16 +46,16 @@ Description : Display monitor - Win32 implementation (Windows)
         for (uint32_t index = 0; result; ++index) {
           result = (EnumDisplayDevicesW(nullptr, index, &device, 0) != FALSE);
           if (result != FALSE && id == device.DeviceName)
-            return device.DeviceString;
+            return pandora::memory::LightWString(device.DeviceString);
         }
       }
       else if (EnumDisplayDevicesW(nullptr, 0, &device, 0) != FALSE)
-        return device.DeviceString;
-      return L"";
+        return pandora::memory::LightWString(device.DeviceString);
+      return pandora::memory::LightWString{};
     }
     
     // read screen area of a monitor (screen position/size + work area)
-    static inline void _readScreenArea(const MONITORINFOEXW& info, DisplayArea& outScreenArea, DisplayArea& outWorkArea) {
+    static inline void _readScreenArea(const MONITORINFOEXW& info, DisplayArea& outScreenArea, DisplayArea& outWorkArea) noexcept {
       outScreenArea.x = info.rcMonitor.left;
       outScreenArea.y = info.rcMonitor.top;
       outScreenArea.width  = static_cast<uint32_t>(info.rcMonitor.right - info.rcMonitor.left);
@@ -66,13 +66,13 @@ Description : Display monitor - Win32 implementation (Windows)
       outWorkArea.height = static_cast<uint32_t>(info.rcWork.bottom - info.rcWork.top);
     }
     // read primary screen area with default metrics (fallback if _readScreenArea can't be used)
-    static void _readDefaultPrimaryScreenArea(DisplayArea& out) {
+    static void _readDefaultPrimaryScreenArea(DisplayArea& out) noexcept {
       out.x = out.y = 0;
       
       DEVMODEW deviceInfo;
       ZeroMemory(&deviceInfo, sizeof(deviceInfo));
       deviceInfo.dmSize = sizeof(deviceInfo);
-      if (EnumDisplaySettingsExW(nullptr, ENUM_CURRENT_SETTINGS, &deviceInfo, 0) != FALSE && deviceInfo.dmPelsWidth > 0u && deviceInfo.dmPelsHeight > 0u) {
+      if (EnumDisplaySettingsExW(nullptr, ENUM_CURRENT_SETTINGS, &deviceInfo, 0) != FALSE && deviceInfo.dmPelsWidth > 0u) {
         out.width  = static_cast<uint32_t>(deviceInfo.dmPelsWidth);
         out.height = static_cast<uint32_t>(deviceInfo.dmPelsHeight);
       }
@@ -91,7 +91,7 @@ Description : Display monitor - Win32 implementation (Windows)
       }
     }
     // read primary work area size/position (fallback if _readScreenArea can't be used)
-    static bool _readDefaultPrimaryWorkArea(DisplayArea& out) {
+    static bool _readDefaultPrimaryWorkArea(DisplayArea& out) noexcept {
       RECT workArea;
       if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0) != FALSE && workArea.right > workArea.left) {
         out.x = workArea.left;
@@ -112,7 +112,8 @@ Description : Display monitor - Win32 implementation (Windows)
       info.cbSize = sizeof(info);
 
       if (GetMonitorInfoW(handle, (MONITORINFO*)&info) != FALSE && info.rcMonitor.right > info.rcMonitor.left) {
-        outAttr.id = info.szDevice;
+        if (!outAttr.id.assign(info.szDevice))
+          throw std::bad_alloc{};
         outAttr.isPrimary = ::attributes::_isPrimaryDevice(info);
         outAttr.description = ::attributes::_readDeviceDescription(outAttr.id);
         ::attributes::_readScreenArea(info, outAttr.screenArea, outAttr.workArea);
@@ -128,7 +129,8 @@ Description : Display monitor - Win32 implementation (Windows)
 
       if (GetMonitorInfoW(handle, (MONITORINFO*)&info) != FALSE && wcscmp(info.szDevice, id.c_str()) == 0) {
         if (outAttr != nullptr) {
-          outAttr->id = info.szDevice;
+          if (!outAttr->id.assign(info.szDevice))
+            throw std::bad_alloc{};
           outAttr->isPrimary = ::attributes::_isPrimaryDevice(info);
           outAttr->description = ::attributes::_readDeviceDescription(outAttr->id);
           ::attributes::_readScreenArea(info, outAttr->screenArea, outAttr->workArea);
@@ -203,7 +205,7 @@ Description : Display monitor - Win32 implementation (Windows)
       uint32_t targetIndex;
       DisplayMonitor::Handle result;
     };
-    static BOOL CALLBACK __getAt_callback(HMONITOR handle, HDC, RECT*, LPARAM data) {
+    static BOOL CALLBACK __getAt_callback(HMONITOR handle, HDC, RECT*, LPARAM data) noexcept {
       __DisplayMonitorIndexSearch* search = (__DisplayMonitorIndexSearch*)data;
       if (handle != nullptr && search != nullptr) {
         if (search->currentIndex == search->targetIndex)
@@ -213,7 +215,7 @@ Description : Display monitor - Win32 implementation (Windows)
       return TRUE;
     }
     // get handle at index (out of all active monitors)
-    static inline DisplayMonitor::Handle getHandleAt(uint32_t index) {
+    static inline DisplayMonitor::Handle getHandleAt(uint32_t index) noexcept {
       __DisplayMonitorIndexSearch search{ 0, index, nullptr };
       if (EnumDisplayMonitors(nullptr, nullptr, __getAt_callback, (LPARAM)&search) != FALSE)
         return search.result;
