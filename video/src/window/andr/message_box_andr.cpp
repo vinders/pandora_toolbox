@@ -106,7 +106,7 @@ Description : Message box - JNI implementation (Android)
   // ---
   
   // get last error message (in case of Result::failure)
-  pandora::memory::LightString MessageBox::getLastError() { 
+  pandora::memory::LightString MessageBox::getLastError() noexcept { 
     return __MessageBox::getLastError();
   }
   

@@ -520,8 +520,7 @@ Includes hpp implementations at the end of the file
   // Window construction
   __WindowImpl::__WindowImpl(Window& container, const wchar_t* caption, const wchar_t* windowClassName, 
                              const Window::Builder::Params& params, HWND parent) // throws
-  : _windowClassName(windowClassName),
-    _monitor((params.monitor != nullptr) ? params.monitor : std::make_shared<DisplayMonitor>()), // throws
+  : _monitor((params.monitor != nullptr) ? params.monitor : std::make_shared<DisplayMonitor>()), // throws
     _originalStyle(nullptr),
     _mouseInputBuffer(nullptr),
     _mouseInputBufferSize(0),
@@ -532,6 +531,9 @@ Includes hpp implementations at the end of the file
     _menuHandle((params.menu != nullptr) ? (HMENU)params.menu->handle() : nullptr),
     _container(container)
   {
+    if (!_windowClassName.assign(windowClassName))
+      throw std::bad_alloc{};
+    
     // set window style flags
     toWindowStyleFlags(params.displayMode, params.behavior, params.resizeMode, 
                        this->_currentStyleFlag, this->_currentStyleExtFlag);

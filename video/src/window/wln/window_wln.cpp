@@ -135,7 +135,7 @@ Description : Window manager + builder - Wayland implementation (Linux)
   // ---
   
   // Get last error message (on change failure)
-  pandora::memory::LightString Window::getLastError() {
+  pandora::memory::LightString Window::getLastError() noexcept {
     return pandora::memory::LightString("not implemented");
   }
   

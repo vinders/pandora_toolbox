@@ -17,7 +17,7 @@ License :     MIT
         // set last error message (in case of Result::failure)
         void setLastError(const char* error) noexcept;
         // get copy of last error message (in case of Result::failure)
-        pandora::memory::LightString getLastError();
+        pandora::memory::LightString getLastError() noexcept;
         
         
         // -- action button labels --

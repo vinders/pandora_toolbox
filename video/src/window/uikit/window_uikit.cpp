@@ -137,7 +137,7 @@ Description : Window manager + builder - UIKit implementation (iOS)
   // ---
   
   // Get last error message (on change failure)
-  pandora::memory::LightString Window::getLastError() {
+  pandora::memory::LightString Window::getLastError() noexcept {
     return pandora::memory::LightString("not implemented");
   }
   

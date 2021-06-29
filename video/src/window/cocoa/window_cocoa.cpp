@@ -138,7 +138,7 @@ Description : Window manager + builder - Cocoa implementation (Mac OS)
   // ---
   
   // Get last error message (on change failure)
-  pandora::memory::LightString Window::getLastError() {
+  pandora::memory::LightString Window::getLastError() noexcept {
     return pandora::memory::LightString("not implemented");
   }
   

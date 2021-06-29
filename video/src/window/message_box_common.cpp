@@ -15,18 +15,17 @@ Description : Message box - common implementation helpers
 // -- error messages -- --------------------------------------------------------
 
   static pandora::thread::SpinLock __lastErrorLock;
-  static std::string __lastError;
+  static pandora::memory::LightString __lastError;
   
   // set last error message (in case of Result::failure)
   void pandora::video::__MessageBox::setLastError(const char* error) noexcept { 
-    try { 
-      std::lock_guard<pandora::thread::SpinLock> guard(__lastErrorLock);
-      __lastError = error; 
-    } catch (...) {} // do not throw on alloc failure: avoid leaks in calling code (free() called after it) + avoid breaking noexcept callers
+    std::lock_guard<pandora::thread::SpinLock> guard(__lastErrorLock);
+    __lastError = error; 
+    // do not throw on alloc failure: avoid leaks in calling code (free() called after it) + avoid breaking noexcept callers
   }
 
   // get copy of last error message (in case of Result::failure)
-  std::string pandora::video::__MessageBox::getLastError() { 
+  pandora::memory::LightString pandora::video::__MessageBox::getLastError() noexcept { 
     std::lock_guard<pandora::thread::SpinLock> guard(__lastErrorLock);
     return __lastError;
   }
