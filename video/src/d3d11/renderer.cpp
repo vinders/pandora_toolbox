@@ -1057,9 +1057,9 @@ Includes hpp implementations at the end of the file
   class RuntimeException final : public std::runtime_error {
   public:
     RuntimeException(std::shared_ptr<pandora::memory::LightString>&& msg) noexcept : std::runtime_error(msg->c_str()), _message(std::move(msg)) {}
-    RuntimeException(const RuntimeException& rhs) noexcept : std::runtime_error(rhs), _message(rhs._message) {}
-    RuntimeException(RuntimeException&& rhs) noexcept : std::runtime_error(rhs), _message(std::move(rhs._message)) {}
-    RuntimeException& operator=(const RuntimeException& rhs) noexcept { std::exception::operator=(rhs); _message = rhs._message; }
+    RuntimeException(const RuntimeException& rhs) noexcept : std::runtime_error(rhs._message->c_str()), _message(rhs._message) {}
+    RuntimeException(RuntimeException&& rhs) noexcept : std::runtime_error(rhs._message->c_str()), _message(rhs._message) {}
+    RuntimeException& operator=(const RuntimeException& rhs) noexcept { std::runtime_error::operator=(rhs); _message = rhs._message; }
     virtual ~RuntimeException() noexcept { _message.reset(); }
   private:
     std::shared_ptr<pandora::memory::LightString> _message;
@@ -1072,13 +1072,18 @@ Includes hpp implementations at the end of the file
       case E_UNEXPECTED: return "UNEXPECTED";
       case E_NOTIMPL: return "NOTIMPL";
       case E_OUTOFMEMORY: return "OUTOFMEM";
+      case DXGI_ERROR_INVALID_CALL:
       case E_INVALIDARG: return "INVALIDARG";
       case E_NOINTERFACE: return "NOINTERFACE";
       case E_POINTER: return "POINTER";
       case E_HANDLE: return "HANDLE";
       case E_ABORT: return "ABORT";
       case E_FAIL: return "FAIL";
+      case DXGI_ERROR_ACCESS_DENIED:
       case E_ACCESSDENIED: return "ACCESSDENIED";
+      case DXGI_ERROR_ACCESS_LOST: return "ACCESS_LOST";
+      case DXGI_ERROR_NAME_ALREADY_EXISTS:
+      case DXGI_ERROR_ALREADY_EXISTS: return "ALREADY_EXISTS";
       case E_PENDING: return "PENDING";
       case E_BOUNDS: return "BOUNDS";
       case E_CHANGED_STATE: return "CHANGED_STATE";
@@ -1099,6 +1104,7 @@ Includes hpp implementations at the end of the file
       case CO_E_LAUNCH_PERMSSION_DENIED: return "LAUNCH_PERMSSION_DENIED";
       case CO_E_REMOTE_COMMUNICATION_FAILURE: return "REMOTE_COMM_FAILURE";
       case CO_E_IIDREG_INCONSISTENT: return "IIDREG_INCONSIST";
+      case DXGI_ERROR_UNSUPPORTED:
       case CO_E_NOT_SUPPORTED: return "NOT_SUPPORTED";
       case CO_E_RELOAD_DLL: return "RELOAD_DLL";
       default: return "INTERNAL_ERROR";
@@ -1114,10 +1120,11 @@ Includes hpp implementations at the end of the file
     auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + errorSize);
     
     // copy message in preallocated string
-    memcpy((void*)message->data(),                 messageContent, prefixSize*sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize]),    ": ",         size_t{2u}*sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize+2u]), d3dError,     errorSize *sizeof(char));
-    
+    if (!message->empty()) { // if no alloc failure
+      memcpy((void*)message->data(),                 messageContent, prefixSize*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize]),    ": ",         size_t{2u}*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize+2u]), d3dError,     errorSize *sizeof(char));
+    }
     throw RuntimeException(std::move(message));
   }
   
@@ -1131,12 +1138,13 @@ Includes hpp implementations at the end of the file
     auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + infoSize + 3u + errorSize);
     
     // copy message in preallocated string
-    memcpy((void*)message->data(),                           messagePrefix, prefixSize*sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize]),             " (",         size_t{2u}*sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize + 2u]),        shaderInfo,   infoSize  *sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize+infoSize+2u]), "): ",        size_t{3u}*sizeof(char));
-    memcpy((void*)&(message->data()[prefixSize+infoSize+2u+3u]), errorData, errorSize *sizeof(char));
-    
+    if (!message->empty()) { // if no alloc failure
+      memcpy((void*)message->data(),                           messagePrefix, prefixSize*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize]),             " (",         size_t{2u}*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize + 2u]),        shaderInfo,   infoSize  *sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize+infoSize+2u]), "): ",        size_t{3u}*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize+infoSize+2u+3u]), errorData, errorSize *sizeof(char));
+    }
     if (errorMessage)
       errorMessage->Release();
     throw RuntimeException(std::move(message));
