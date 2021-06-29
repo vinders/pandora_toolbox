@@ -5,7 +5,7 @@
 ![lang - C++17](_img/badges/lang_cpp17.svg)
 ![tests - Gtest](_img/badges/tests_gtest.svg)
 ![docs - Doxygen](_img/badges/docs_doxygen.svg)<br>
-![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-6c4.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-ongoing-28b.svg) ![OpenGLES3](https://img.shields.io/badge/OpenGLES_3-ongoing-28b.svg)
+![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-6c4.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-ongoing-28b.svg) ![Vulkan](https://img.shields.io/badge/Vulkan_1.2-ongoing-28b.svg)
 
 **Pandora Toolbox** is a collection of portable C++ libraries useful to create **video/real-time projects**: video processing, video games, emulators, simple AI, screensavers...
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
@@ -15,7 +15,7 @@ Libraries (video/io/hardware...) can be included separately.
 
 **Feature overview:**
 * Window, renderer, user input, video filters...
-* Display monitor &amp; gamepad, CPU spec reader...
+* Display monitor, gamepad, CPU spec reader...
 * Timers, stopwatch, ordered lock, spin-lock, semaphore...
 * Fixed max size vector/string, circular queue, endianness...
 * Design patterns, search/sort algorithms, math/string utils...
@@ -68,7 +68,7 @@ Examples:
 | Use Linux Wayland display server (instead of X.org).<br><sub>*Default: OFF*</sub>            | CWORK_LINUX_WAYLAND        | ON<br>OFF     | only linux systems            |
 | Enable OpenGL 4 features.<br><sub>*Default: ON on desktop systems*</sub>                     | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all desktop systems    |
 | Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems    |
-| Enable OpenGLES 3 features.<br><sub>*Default: ON on mobile systems*</sub>                    | CWORK_VIDEO_OPENGLES3      | ON<br>OFF     | all except macOS                 |
-| Maximum OpenGLES 3 feature level.<br><sub>*Default: "32"*</sub>                              | CWORK_OPENGLES3_VERSION    | "32" "31"<br>"30"       | all except macOS       |
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11          | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
-| Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "110"*</sub>            | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
+| Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "110"*</sub>  | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
+| Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all systems<br>(environment variable *VULKAN_SDK* required)  |
+| Maximum Vulkan feature level (1.2).<br><sub>*Default: "12"*</sub>                                  | CWORK_VULKAN_VERSION       | "12"          | all systems    |
