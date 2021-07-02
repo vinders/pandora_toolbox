@@ -27,11 +27,17 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
         using TextureView = GLuint;       ///< Bindable texture view for shaders
         
         using InputLayoutHandle = GLuint; ///< Input layout representation, for shader input stage
-        using ColorChannel = float;///< R/G/B/A color value
+        using ColorChannel = float;       ///< R/G/B/A color value
         
         
         // -- rasterizer settings --
     
+        /// @brief Rasterizer filling mode
+        enum class FillMode : GLenum {
+          fill    = GL_FILL,       ///< Filled/solid polygons
+          lines   = GL_LINE,       ///< Lines/wireframe
+          linesAA = GL_LINE_SMOOTH ///< Anti-aliased lines/wireframe
+        };
         /// @brief Rasterizer culling mode
         enum class CullMode : GLenum {
           none      = GL_NONE, ///< No culling / all polygons
@@ -275,16 +281,6 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
           minimum     = GL_MIN,                   ///< min(source RGBA, dest RGBA)
           maximum     = GL_MAX                    ///< max(source RGBA, dest RGBA)
         };
-        /// @brief Blend operation state (color/alpha blend params for a render-target)
-        struct BlendOpState final {
-          BlendFactor srcColorFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output RGB value
-          BlendFactor destColorFactor = BlendFactor::zero; ///< Operation to perform on existing render-target RGB value
-          BlendOp colorBlendOp        = BlendOp::add;      ///< Blend operation between srcColorFactor and destColorFactor
-          BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output alpha value
-          BlendFactor destAlphaFactor = BlendFactor::zero; ///< Operation to perform on existing render-target alpha value
-          BlendOp alphaBlendOp        = BlendOp::add;      ///< Blend operation between srcAlphaFactor and destAlphaFactor
-          ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
-        };
         
         
         // -- depth/stencil testing --
@@ -317,6 +313,19 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
           StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
           StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
           StencilCompare comp; ///< Stencil test comparison
+        };
+        
+        
+        // -- shaders --
+
+        /// @brief Shader pipeline stage type
+        enum class ShaderType : uint32_t {
+          vertex   = GL_VERTEX_SHADER, ///< Vertex shader: process input vertex data -> outputs vertex projection.
+          tessCtrl = GL_TESS_CONTROL_SHADER, ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
+          tessEval = GL_TESS_EVALUATION_SHADER, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
+          geometry = GL_GEOMETRY_SHADER, ///< Geometry shader: modify/duplicate primitive.
+          fragment = GL_FRAGMENT_SHADER, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
+          compute  = GL_COMPUTE_SHADER  ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
         };
       }
     }

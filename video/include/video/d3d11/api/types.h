@@ -34,11 +34,17 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         using TextureView = ID3D11ShaderResourceView*;    ///< Bindable texture view for shaders
         
         using InputLayoutHandle = ID3D11InputLayout*;     ///< Input layout representation, for shader input stage
-        using ColorChannel = FLOAT;                ///< R/G/B/A color value
+        using ColorChannel = FLOAT;                       ///< R/G/B/A color value
         
         
         // -- rasterizer settings --
-    
+        
+        /// @brief Rasterizer filling mode
+        enum class FillMode : int/*D3D11_FILL_MODE*/ {
+          fill    = D3D11_FILL_SOLID,     ///< Filled/solid polygons
+          lines   = D3D11_FILL_WIREFRAME, ///< Lines/wireframe
+          linesAA = (D3D11_FILL_WIREFRAME | 0x8000000) ///< Anti-aliased lines/wireframe
+        };
         /// @brief Rasterizer culling mode
         enum class CullMode : int/*D3D11_CULL_MODE*/ {
           none      = D3D11_CULL_NONE, ///< No culling / all polygons
@@ -154,7 +160,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           // 4-6 bit
           rgb5a1_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G5R5A1_UNORM, 2), ///< B5G5R5A1 normalized unsigned int
           r5g6b5_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G6R5_UNORM, 2),   ///< B5G6R5 normalized unsigned int
-          rgba4_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B4G4R4A4_UNORM, 2),  ///< B4G4R4A4 normalized unsigned int
+          rgba4_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B4G4R4A4_UNORM, 2),  ///< B4G4R4A4 normalized unsigned int -- requires Win8.1+
           
           // depth/stencil
           d32_f = __P_D3D11_FORMAT(DXGI_FORMAT_D32_FLOAT, 4),                  ///< D32 float
@@ -279,16 +285,6 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           minimum     = D3D11_BLEND_OP_MIN,          ///< min(source RGBA, dest RGBA)
           maximum     = D3D11_BLEND_OP_MAX           ///< max(source RGBA, dest RGBA)
         };
-        /// @brief Blend operation state (color/alpha blend params for a render-target)
-        struct BlendOpState final {
-          BlendFactor srcColorFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output RGB value
-          BlendFactor destColorFactor = BlendFactor::zero; ///< Operation to perform on existing render-target RGB value
-          BlendOp colorBlendOp        = BlendOp::add;      ///< Blend operation between srcColorFactor and destColorFactor
-          BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Operation to perform on pixel shader output alpha value
-          BlendFactor destAlphaFactor = BlendFactor::zero; ///< Operation to perform on existing render-target alpha value
-          BlendOp alphaBlendOp        = BlendOp::add;      ///< Blend operation between srcAlphaFactor and destAlphaFactor
-          ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
-        };
         
         
         // -- depth/stencil testing --
@@ -321,6 +317,19 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
           StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
           StencilCompare comp; ///< Stencil test comparison
+        };
+        
+        
+        // -- shaders --
+        
+        /// @brief Shader pipeline stage type
+        enum class ShaderType : int {
+          vertex   = 0, ///< Vertex shader: process input vertex data -> outputs vertex projection.
+          tessCtrl = 1, ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
+          tessEval = 2, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
+          geometry = 3, ///< Geometry shader: modify/duplicate primitive.
+          fragment = 4, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
+          compute  = 5  ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
         };
       }
     }
