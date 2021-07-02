@@ -14,7 +14,7 @@
 
 Pandora Toolbox contains a simple set of helpers and utilities for the development of video games, emulators and real-time projects. *Efficiency* and *portability* are the main guidelines. I created it to use it as a library for my personal projects and for my portfolio.
 
-Please note that the toolbox is **not** a do-it-all framework and shouldn't be used or developed as such (except for the CMake part). It is intended to be a *lightweight* static library, that provides useful/recurring features and abstractions of system calls. It's only supposed to contain utilities that are truly useful for games/emulation/ai/...
+Please note that the toolbox is **not** a general framework and shouldn't be used or developed as such. It is intended to be a static library, that provides useful/recurring features and abstractions of system calls. It's only supposed to contain utilities that are truly useful for games/emulation/ai/...
 
 Suggestions, bug fixes and new features are welcome, as long as they respect that philosophy. If you'd like to share some ideas or if you're interested in contributing to the project, don't hesitate to contact me. Please provide as much detail and context as possible.
 
