@@ -267,7 +267,6 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         };
         /// @brief Color/alpha blend operator
         enum class BlendOp : int/*VkBlendOp*/ {
-          none        = (VkBlendOp)-1,                ///< Disable all blending for render target
           add         = VK_BLEND_OP_ADD,              ///< Source RGBA + dest. RGBA
           subtract    = VK_BLEND_OP_SUBTRACT,         ///< Source RGBA - dest. RGBA
           revSubtract = VK_BLEND_OP_REVERSE_SUBTRACT, ///< Dest. RGBA - source RGBA
@@ -299,13 +298,6 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           decrementClamp = VK_STENCIL_OP_DECREMENT_AND_CLAMP,///< Decrement stencil value (clamp result)
           incrementWrap  = VK_STENCIL_OP_INCREMENT_AND_WRAP, ///< Increment stencil value (wrap result)
           decrementWrap  = VK_STENCIL_OP_DECREMENT_AND_WRAP  ///< Decrement stencil value (wrap result)
-        };
-        /// @brief Depth/stencil operation state (depth/stencil test comparison + operations performed based on result)
-        struct StencilOpState {
-          StencilOp failed;      ///< Operation on stencil pixel when stencil test fails
-          StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
-          StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
-          StencilCompare comp; ///< Stencil test comparison
         };
         
         

@@ -278,7 +278,6 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         };
         /// @brief Color/alpha blend operator
         enum class BlendOp : int/*D3D11_BLEND_OP*/ {
-          none        = (D3D11_BLEND_OP)-1,          ///< Disable all blending for render target
           add         = D3D11_BLEND_OP_ADD,          ///< Source RGBA + dest. RGBA
           subtract    = D3D11_BLEND_OP_SUBTRACT,     ///< Source RGBA - dest. RGBA
           revSubtract = D3D11_BLEND_OP_REV_SUBTRACT, ///< Dest. RGBA - source RGBA
@@ -310,13 +309,6 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           decrementClamp = D3D11_STENCIL_OP_DECR_SAT, ///< Decrement stencil value (clamp result)
           incrementWrap  = D3D11_STENCIL_OP_INCR,     ///< Increment stencil value (wrap result)
           decrementWrap  = D3D11_STENCIL_OP_DECR      ///< Decrement stencil value (wrap result)
-        };
-        /// @brief Depth/stencil operation state (depth/stencil test comparison + operations performed based on result)
-        struct StencilOpState {
-          StencilOp failed;      ///< Operation on stencil pixel when stencil test fails
-          StencilOp depthFailed; ///< Operation on stencil pixel when depth test fails (stencil test passes)
-          StencilOp passed;      ///< Operation on stencil pixel when depth/stencil test passes
-          StencilCompare comp; ///< Stencil test comparison
         };
         
         
