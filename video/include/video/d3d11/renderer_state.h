@@ -8,14 +8,7 @@ License :     MIT
 # include <cstdint>
 # include <cstring>
 # include <stdexcept>
-
-# define NOMINMAX
-# define NODRAWTEXT
-# define NOGDI
-# define NOBITMAP
-# define NOMCX
-# define NOSERVICE
-# include "video/d3d11/api/d3d_11.h"
+# include "./api/types.h" // includes D3D11
 
   namespace pandora {
     namespace video {
@@ -193,10 +186,4 @@ License :     MIT
       }
     }
   }
-  
-# undef NODRAWTEXT
-# undef NOGDI
-# undef NOBITMAP
-# undef NOMCX
-# undef NOSERVICE
 #endif

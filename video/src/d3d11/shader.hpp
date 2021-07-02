@@ -12,19 +12,20 @@ Implementation included in renderer.cpp
 // -- create/compile shaders -- ------------------------------------------------
 
   // Get D3D11 shader model ID
-  static const char* __getShaderModel(pandora::video::ShaderType type) {
+  static const char* __getShaderModel(ShaderType type) {
     switch (type) {
-      case pandora::video::ShaderType::vertex:        return "vs_5_0"; break;
-      case pandora::video::ShaderType::tesselControl: return "hs_5_0"; break;
-      case pandora::video::ShaderType::tesselEval:    return "ds_5_0"; break;
-      case pandora::video::ShaderType::geometry:      return "gs_5_0"; break;
-      case pandora::video::ShaderType::fragment:      return "ps_5_0"; break;
-      default: return "cs_5_0"; break;
+      case ShaderType::vertex:   return "vs_5_0";
+      case ShaderType::tessCtrl: return "hs_5_0";
+      case ShaderType::tessEval: return "ds_5_0";
+      case ShaderType::geometry: return "gs_5_0";
+      case ShaderType::fragment: return "ps_5_0";
+      case ShaderType::compute:  return "cs_5_0";
+      default: return "";
     }
   }
 
   // Compile shader from text content
-  Shader::Builder Shader::Builder::compile(pandora::video::ShaderType type, const char* textContent, size_t length, const char* entryPoint, bool isStrict) {
+  Shader::Builder Shader::Builder::compile(ShaderType type, const char* textContent, size_t length, const char* entryPoint, bool isStrict) {
     ID3DBlob* errorMessage = nullptr;
     ID3DBlob* shaderBuffer = nullptr;
     const char* shaderModel = __getShaderModel(type);
@@ -35,7 +36,7 @@ Implementation included in renderer.cpp
     return Shader::Builder(type, shaderBuffer);
   }
   // Compile shader from text file
-  Shader::Builder Shader::Builder::compileFromFile(pandora::video::ShaderType type, const wchar_t* filePath, const char* entryPoint, bool isStrict) {
+  Shader::Builder Shader::Builder::compileFromFile(ShaderType type, const wchar_t* filePath, const char* entryPoint, bool isStrict) {
     
     ID3DBlob* errorMessage = nullptr;
     ID3DBlob* shaderBuffer = nullptr;
@@ -51,23 +52,23 @@ Implementation included in renderer.cpp
 // -- create shader objects -- -------------------------------------------------
 
   // Create shader object
-  Shader Shader::Builder::createShader(Shader::DeviceHandle device) const {
+  Shader Shader::Builder::createShader(DeviceHandle device) const {
     HRESULT result;
     Shader::Handle handle = nullptr;
     switch (this->_type) {
-      case pandora::video::ShaderType::vertex:
+      case ShaderType::vertex:
         result = device->CreateVertexShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11VertexShader**)&handle);
         break;
-      case pandora::video::ShaderType::tesselControl:
+      case ShaderType::tessCtrl:
         result = device->CreateHullShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11HullShader**)&handle);
         break;
-      case pandora::video::ShaderType::tesselEval:
+      case ShaderType::tessEval:
         result = device->CreateDomainShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11DomainShader**)&handle);
         break;
-      case pandora::video::ShaderType::geometry:
+      case ShaderType::geometry:
         result = device->CreateGeometryShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11GeometryShader**)&handle);
         break;
-      case pandora::video::ShaderType::fragment:
+      case ShaderType::fragment:
         result = device->CreatePixelShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11PixelShader**)&handle);
         break;
       default:
@@ -85,12 +86,13 @@ Implementation included in renderer.cpp
     if (this->_handle != nullptr) {
       try {
         switch (this->_type) {
-          case pandora::video::ShaderType::vertex:        ((ID3D11VertexShader*)this->_handle)->Release(); break;
-          case pandora::video::ShaderType::tesselControl: ((ID3D11HullShader*)this->_handle)->Release(); break;
-          case pandora::video::ShaderType::tesselEval:    ((ID3D11DomainShader*)this->_handle)->Release(); break;
-          case pandora::video::ShaderType::geometry:      ((ID3D11GeometryShader*)this->_handle)->Release(); break;
-          case pandora::video::ShaderType::fragment:      ((ID3D11PixelShader*)this->_handle)->Release(); break;
-          default: ((ID3D11ComputeShader*)this->_handle)->Release(); break;
+          case ShaderType::vertex:   ((ID3D11VertexShader*)this->_handle)->Release(); break;
+          case ShaderType::tessCtrl: ((ID3D11HullShader*)this->_handle)->Release(); break;
+          case ShaderType::tessEval: ((ID3D11DomainShader*)this->_handle)->Release(); break;
+          case ShaderType::geometry: ((ID3D11GeometryShader*)this->_handle)->Release(); break;
+          case ShaderType::fragment: ((ID3D11PixelShader*)this->_handle)->Release(); break;
+          case ShaderType::compute:  ((ID3D11ComputeShader*)this->_handle)->Release(); break;
+          default: break;
         }
         this->_handle = nullptr;
       }
@@ -101,13 +103,13 @@ Implementation included in renderer.cpp
   // ---
 
   // Create input layout for shader object
-  ShaderInputLayout Shader::Builder::createInputLayout(Shader::DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const {
+  InputLayout Shader::Builder::createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const {
     ID3D11InputLayout* inputLayout = nullptr;
     HRESULT result = device->CreateInputLayout((D3D11_INPUT_ELEMENT_DESC*)layoutElements, (UINT)length, 
                                                                 (const void*)this->_data, (SIZE_T)this->_length, &inputLayout);
     if (FAILED(result) || inputLayout == nullptr)
       throwError(result, "Shader: layout creation error");
-    return ShaderInputLayout((ShaderInputLayout::Handle)inputLayout);
+    return InputLayout((InputLayoutHandle)inputLayout);
   }
 
 #endif

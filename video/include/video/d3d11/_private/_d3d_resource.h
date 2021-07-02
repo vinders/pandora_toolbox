@@ -5,13 +5,7 @@ License :     MIT
 #pragma once
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-# define NOMINMAX
-# define NODRAWTEXT
-# define NOGDI
-# define NOBITMAP
-# define NOMCX
-# define NOSERVICE
-# include "video/d3d11/api/d3d_11.h"
+# include "video/d3d11/api/types.h"
 
   namespace pandora {
     namespace video {
@@ -121,10 +115,4 @@ License :     MIT
       }
     }
   }
-
-# undef NODRAWTEXT
-# undef NOGDI
-# undef NOBITMAP
-# undef NOMCX
-# undef NOSERVICE
 #endif

@@ -7,32 +7,24 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstdint>
-# include "../shader_types.h"
-
-# define NOMINMAX
-# define NODRAWTEXT
-# define NOGDI
-# define NOBITMAP
-# define NOMCX
-# define NOSERVICE
-# include "video/d3d11/api/d3d_11.h"
+# include "../common_types.h"
+# include "./api/types.h"      // includes D3D11
 
   namespace pandora {
     namespace video {
       namespace d3d11 {
-        class ShaderInputLayout;
+        class InputLayout;
         
         /// @class Shader
         /// @brief GPU shading program/effects for Direct3D renderer
         class Shader final {
         public:
-          using DeviceHandle = ID3D11Device*;
           using Handle = void*; // ID3D11VertexShader*/ID3D11PixelShader*/ID3D11GeometryShader*
                                 // ID3D11ComputeShader*/ID3D11HullShader*/ID3D11DomainShader*
           
           /// @brief Create usable shader object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
-          Shader(Handle handle, pandora::video::ShaderType type) : _handle(handle), _type(type) {}
+          Shader(Handle handle, ShaderType type) : _handle(handle), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
           Shader(const Shader&) = delete;
@@ -49,7 +41,7 @@ License :     MIT
           /// @remarks Depending on shader type, cast to ID3D11VertexShader*/ID3D11PixelShader*/ID3D11GeometryShader*/
           ///                                            ID3D11ComputeShader*/ID3D11HullShader*/ID3D11DomainShader*.
           inline Handle handle() const noexcept { return this->_handle; }
-          inline pandora::video::ShaderType type() const noexcept { return this->_type; }///< Get shader category/model type
+          inline ShaderType type() const noexcept { return this->_type; }///< Get shader category/model type
           inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
 
 
@@ -67,7 +59,7 @@ License :     MIT
             /// @warning - 'binaryFileData' must remain available at least until the Builder is destroyed.
             ///          - 'binaryFileData' is NOT managed by the builder: if memory comes from a dynamic alloc, 
             ///            it won't be freed by the Builder -> needs to be freed manually (after destroying the Builder instance).
-            Builder(pandora::video::ShaderType type, const uint8_t* binaryFileData, size_t length)
+            Builder(ShaderType type, const uint8_t* binaryFileData, size_t length)
               : _shaderBuffer(nullptr), _data(binaryFileData), _length(length), _type(type) {}
             
             Builder(const Builder&) = delete;
@@ -91,7 +83,7 @@ License :     MIT
             /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
             /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
             /// @throws runtime_error on failure
-            static Builder compile(pandora::video::ShaderType type, const char* textContent, size_t length, 
+            static Builder compile(ShaderType type, const char* textContent, size_t length, 
                                    const char* entryPoint = "main", bool isStrict = true);
             /// @brief Compile shader from HLSL text file ("*.hlsl")
             /// @param type         Shader category/model.
@@ -99,7 +91,7 @@ License :     MIT
             /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
             /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
             /// @throws runtime_error on failure
-            static Builder compileFromFile(pandora::video::ShaderType type, const wchar_t* filePath, 
+            static Builder compileFromFile(ShaderType type, const wchar_t* filePath, 
                                            const char* entryPoint = "main", bool isStrict = true);
             
             // -- create shader objects --
@@ -122,10 +114,10 @@ License :     MIT
             /// @remarks - The input layout is validated against shared input signature.
             ///          - The input layout may be bound with any other shader that has the same input signature.
             /// @throws runtime_error on failure (or if layout doesn't match shader input signature)
-            ShaderInputLayout createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
+            InputLayout createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
             
           private:
-            Builder(pandora::video::ShaderType type, ID3DBlob* shaderBuffer)
+            Builder(ShaderType type, ID3DBlob* shaderBuffer)
               : _shaderBuffer(shaderBuffer),
                 _data(static_cast<const uint8_t*>(_shaderBuffer->GetBufferPointer())),
                 _length(static_cast<size_t>(_shaderBuffer->GetBufferSize())),
@@ -134,52 +126,44 @@ License :     MIT
             ID3DBlob* _shaderBuffer = nullptr;
             const uint8_t* _data = nullptr;
             size_t _length = 0;
-            pandora::video::ShaderType _type = pandora::video::ShaderType::vertex;
+            ShaderType _type = ShaderType::vertex;
           };
           
         private:
           Handle _handle = nullptr;
-          pandora::video::ShaderType _type = pandora::video::ShaderType::vertex;
+          ShaderType _type = ShaderType::vertex;
         };
         
         // ---
         
-        /// @class ShaderInputLayout
+        /// @class InputLayout
         /// @brief Data input layout for shader object(s)
-        class ShaderInputLayout final {
+        class InputLayout final {
         public:
-          using Handle = ID3D11InputLayout*;
-          
           /// @brief Create usable input layout object -- reserved for internal use or advanced usage
-          ShaderInputLayout(Handle handle) : _handle(handle) {}
+          InputLayout(InputLayoutHandle handle) : _handle(handle) {}
           
-          ShaderInputLayout() = default;
-          ShaderInputLayout(const ShaderInputLayout&) = delete;
-          ShaderInputLayout(ShaderInputLayout&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = nullptr; }
-          ShaderInputLayout& operator=(const ShaderInputLayout&) = delete;
-          ShaderInputLayout& operator=(ShaderInputLayout&& rhs) noexcept { 
+          InputLayout() = default;
+          InputLayout(const InputLayout&) = delete;
+          InputLayout(InputLayout&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = nullptr; }
+          InputLayout& operator=(const InputLayout&) = delete;
+          InputLayout& operator=(InputLayout&& rhs) noexcept { 
             this->_handle = rhs._handle; rhs._handle = nullptr; return *this; 
           }
-          ~ShaderInputLayout() noexcept { release(); }
+          ~InputLayout() noexcept { release(); }
           /// @brief Destroy input layout
           void release() noexcept {
             if (this->_handle)
               this->_handle->Release();
           }
           
-          inline Handle handle() const noexcept { return this->_handle; } ///< Get native handle
+          inline InputLayoutHandle handle() const noexcept { return this->_handle; }  ///< Get native handle
           inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
         
         private:
-          Handle _handle = nullptr;
+          InputLayoutHandle _handle = nullptr;
         };
       }
     }
   }
-  
-# undef NODRAWTEXT
-# undef NOGDI
-# undef NOBITMAP
-# undef NOMCX
-# undef NOSERVICE
 #endif

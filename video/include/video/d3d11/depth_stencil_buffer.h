@@ -6,8 +6,7 @@ License :     MIT
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
-# include "./_private/_depth_stencil_buffer_config.h"
-# include "./renderer.h"
+# include "./renderer.h" // includes D3D11
 
   namespace pandora {
     namespace video {
@@ -16,20 +15,15 @@ License :     MIT
         /// @brief Direct3D depth/stencil fragment verification buffer/view for output merger
         /// @warning - If the render-target is resized, a new DepthStencilBuffer must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new DepthStencilBuffer must be created.
-        ///          - handle() should be reserved for internal usage or for advanced features.
         /// @remarks - To use a depth/stencil buffer, call setActiveRenderTarget on Renderer with getDepthStencilView() and a target render view (same size).
         ///          - The same depth/stencil buffer may only be used with multiple/different render-targets if they have the same size.
         class DepthStencilBuffer final {
         public:
-          using Handle = ID3D11Texture2D*;
-        
           /// @brief Create depth/stencil buffer for existing renderer/render-target
-          /// @warning - Params 'width'/'height' should be the same as the associated render-target (swap-chain/texture buffer).
-          ///          - Param 'format' should be a depth/stencil format (d32_f, d32_f_s8_ui, d24_unorm_s8_ui, d16_unorm).
+          /// @warning Params 'width'/'height' should be the same as the associated render-target size (swap-chain/texture buffer).
           /// @throws - invalid_argument: if width/height is 0.
           ///         - runtime_error: creation failure.
-          DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
-                             uint32_t width, uint32_t height);
+          DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, uint32_t width, uint32_t height);
           ~DepthStencilBuffer() noexcept { release(); }
           /// @brief Destroy depth/stencil buffer
           void release() noexcept;
@@ -43,23 +37,29 @@ License :     MIT
           // -- accessors --
           
           /// @brief Get native Direct3D 11 compatible depth/stencil buffer handle (cast to ID3D11Texture2D*)
-          inline Handle handle() const noexcept { return this->_depthStencilBuffer; }
+          inline TextureHandle2D handle() const noexcept { return this->_depthStencilBuffer; }
           inline bool isEmpty() const noexcept { return (this->_depthStencilBuffer == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           
-          inline uint32_t width() const noexcept  { return this->_settings.width; } ///< Get depth/stencil buffer width
-          inline uint32_t height() const noexcept { return this->_settings.height; }///< Get depth/stencil buffer height
-          /// @brief Get depth/stencil buffer data format
-          pandora::video::ComponentFormat getFormat() const noexcept { return this->_settings.format; }
+          inline uint32_t width() const noexcept  { return _width(); } ///< Get depth/stencil buffer width
+          inline uint32_t height() const noexcept { return _height(); }///< Get depth/stencil buffer height
+          inline DepthStencilFormat getFormat() const noexcept { return this->_format; } ///< Get depth/stencil buffer data format
           
           /// @brief Get depth/stencil view of current DepthStencilBuffer
           /// @remarks - This value should be used to call 'Renderer.setActiveRenderTargets'.
           ///          - Activating the depth/stencil view is necessary for depth/stencil testing.
-          Renderer::DepthStencilViewHandle getDepthStencilView() const noexcept { return this->_depthStencilView; }
+          inline DepthStencilView getDepthStencilView() const noexcept { return this->_depthStencilView; }
+
 
         private:
-          Renderer::DepthStencilViewHandle _depthStencilView = nullptr; // ID3D11DepthStencilView*
-          Handle _depthStencilBuffer = nullptr;                         // ID3D11Texture2D*
-          _DepthStencilBufferConfig _settings{};
+          inline uint32_t _width() const noexcept { return (this->_pixelSize & 0xFFFFu); }
+          inline uint32_t _height() const noexcept { return (this->_pixelSize >> 16); }
+          static constexpr inline uint32_t _toPixelSize(uint32_t width, uint32_t height) noexcept { return (width | (height << 16)); }
+          
+        private:
+          DepthStencilView _depthStencilView = nullptr;  // ID3D11DepthStencilView*
+          TextureHandle2D _depthStencilBuffer = nullptr; // ID3D11Texture2D*
+          uint32_t _pixelSize; // width / height
+          DepthStencilFormat _format;
         };
       }
     }

@@ -13,17 +13,8 @@ Implementation included in renderer.cpp
 // static_buffer.h
 // -----------------------------------------------------------------------------
 
-  static D3D11_BIND_FLAG __toBindFlag(pandora::video::DataBufferType type) {
-    switch (type) {
-      case pandora::video::DataBufferType::constant:    return D3D11_BIND_CONSTANT_BUFFER;
-      case pandora::video::DataBufferType::vertexArray: return D3D11_BIND_VERTEX_BUFFER;
-      case pandora::video::DataBufferType::vertexIndex: return D3D11_BIND_INDEX_BUFFER;
-      default: return D3D11_BIND_SHADER_RESOURCE;
-    }
-  }
-
   // Create data buffer (to store data for shader stages)
-  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize) 
+  StaticBuffer::StaticBuffer(Renderer& renderer, BaseBufferType type, size_t bufferByteSize) 
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
       throw std::invalid_argument("Buffer: size is 0");
@@ -31,7 +22,7 @@ Implementation included in renderer.cpp
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
     bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
-    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.BindFlags = (D3D11_BIND_FLAG)type;
     bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
     
     auto result = renderer.device()->CreateBuffer(&bufferDescriptor, nullptr, &(this->_buffer));
@@ -40,8 +31,8 @@ Implementation included in renderer.cpp
   }
 
   // Create data buffer (to store data for shader stages) with initial value
-  StaticBuffer::StaticBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
-                             size_t bufferByteSize, const void* initData, bool isImmutable)
+  StaticBuffer::StaticBuffer(Renderer& renderer, BaseBufferType type, size_t bufferByteSize,
+                             const void* initData, bool isImmutable)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
       throw std::invalid_argument("Buffer: size is 0");
@@ -49,7 +40,7 @@ Implementation included in renderer.cpp
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
     bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
-    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.BindFlags = (D3D11_BIND_FLAG)type;
     
     if (isImmutable) {
       if (initData == nullptr)
@@ -73,7 +64,7 @@ Implementation included in renderer.cpp
 // -----------------------------------------------------------------------------
 
   // Create data buffer (to store data for shader stages)
-  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, size_t bufferByteSize)
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, BaseBufferType type, size_t bufferByteSize)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
       throw std::invalid_argument("Buffer: size is 0");
@@ -81,7 +72,7 @@ Implementation included in renderer.cpp
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
     bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
-    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.BindFlags = (D3D11_BIND_FLAG)type;
     bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
     bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     
@@ -91,8 +82,7 @@ Implementation included in renderer.cpp
   }
 
   // Create data buffer (to store data for shader stages) with initial value
-  DynamicBuffer::DynamicBuffer(Renderer& renderer, pandora::video::DataBufferType type, 
-                               size_t bufferByteSize, const void* initData)
+  DynamicBuffer::DynamicBuffer(Renderer& renderer, BaseBufferType type, size_t bufferByteSize, const void* initData)
     : _bufferSize(bufferByteSize), _type(type) {
     if (bufferByteSize == 0)
       throw std::invalid_argument("Buffer: size is 0");
@@ -100,7 +90,7 @@ Implementation included in renderer.cpp
     D3D11_BUFFER_DESC bufferDescriptor = {};
     ZeroMemory(&bufferDescriptor, sizeof(bufferDescriptor));
     bufferDescriptor.ByteWidth = (UINT)bufferByteSize;
-    bufferDescriptor.BindFlags = __toBindFlag(type);
+    bufferDescriptor.BindFlags = (D3D11_BIND_FLAG)type;
     bufferDescriptor.Usage = D3D11_USAGE_DYNAMIC;
     bufferDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     
@@ -128,12 +118,12 @@ Implementation included in renderer.cpp
     return true;
   }
   // Vertex/index buffers: write buffer data with no overwrite - recommended for subsequent writes of the buffer within same frame.
-  // Constant buffers: same as 'writeDiscard'.
+  // Constant/uniform buffers: same as 'writeDiscard'.
   bool DynamicBuffer::write(Renderer& renderer, const void* sourceData) {
     // lock GPU access
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-    auto writeMode = (this->_type != pandora::video::DataBufferType::constant) ? D3D11_MAP_WRITE_NO_OVERWRITE : D3D11_MAP_WRITE_DISCARD;
+    auto writeMode = (this->_type != BaseBufferType::uniform) ? D3D11_MAP_WRITE_NO_OVERWRITE : D3D11_MAP_WRITE_DISCARD;
     auto lockResult = renderer.context()->Map(this->_buffer, 0, writeMode, 0, &mappedResource);
     if (FAILED(lockResult) || mappedResource.pData == nullptr)
       return false;
@@ -149,7 +139,7 @@ Implementation included in renderer.cpp
 // -----------------------------------------------------------------------------
 
   // Create depth/stencil buffer for existing renderer/render-target
-  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, pandora::video::ComponentFormat format, 
+  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, 
                                          uint32_t width, uint32_t height) { // throws
     if (width == 0 || height == 0)
       throw std::invalid_argument("DepthStencil: width/height is 0");
@@ -161,7 +151,7 @@ Implementation included in renderer.cpp
     depthDescriptor.Height = (UINT)height;
     depthDescriptor.MipLevels = 1;
     depthDescriptor.ArraySize = 1;
-    depthDescriptor.Format = (DXGI_FORMAT)Renderer::toDxgiFormat(format);
+    depthDescriptor.Format = (DXGI_FORMAT)format;
     depthDescriptor.SampleDesc.Count = 1;
     depthDescriptor.SampleDesc.Quality = 0;
     depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
@@ -175,7 +165,7 @@ Implementation included in renderer.cpp
     // create depth/stencil view
     D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDescriptor;
     ZeroMemory(&depthViewDescriptor, sizeof(depthViewDescriptor));
-    depthViewDescriptor.Format = depthDescriptor.Format;
+    depthViewDescriptor.Format = (DXGI_FORMAT)format;
     depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     depthViewDescriptor.Texture2D.MipSlice = 0;
     
@@ -183,9 +173,8 @@ Implementation included in renderer.cpp
     if (FAILED(result) || this->_depthStencilView == nullptr)
       throwError(result, "DepthStencil: view not created");
     
-    this->_settings.width = width;
-    this->_settings.height = height;
-    this->_settings.format = format;
+    this->_pixelSize = _toPixelSize(width, height);
+    this->_format = format;
   }
 
   // Destroy depth/stencil buffer
@@ -204,16 +193,18 @@ Implementation included in renderer.cpp
   
   DepthStencilBuffer::DepthStencilBuffer(DepthStencilBuffer&& rhs) noexcept 
     : _depthStencilView(rhs._depthStencilView),
-      _depthStencilBuffer(rhs._depthStencilBuffer) {
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
+      _depthStencilBuffer(rhs._depthStencilBuffer),
+      _pixelSize(rhs._pixelSize),
+      _format(rhs._format) {
     rhs._depthStencilBuffer = nullptr;
     rhs._depthStencilView = nullptr;
   }
   DepthStencilBuffer& DepthStencilBuffer::operator=(DepthStencilBuffer&& rhs) noexcept {
     release();
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_DepthStencilBufferConfig));
     this->_depthStencilBuffer = rhs._depthStencilBuffer;
     this->_depthStencilView = rhs._depthStencilView;
+    this->_pixelSize = rhs._pixelSize;
+    this->_format = rhs._format;
     rhs._depthStencilBuffer = nullptr;
     rhs._depthStencilView = nullptr;
     return *this;

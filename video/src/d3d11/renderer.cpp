@@ -97,8 +97,8 @@ Includes hpp implementations at the end of the file
                                                                         IID_PPV_ARGS(adapter.address()))); ++i) {
           DXGI_ADAPTER_DESC1 description;
           if (SUCCEEDED(adapter->GetDesc1(&description)) && (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0) { // not "basic render" driver
-            if (target.attributes().id.empty()  // no target provided -> use first result
-            || targetDeviceString == description.Description          // adapter name available -> verify it
+            if (target.attributes().id.empty()               // no target provided -> use first result
+            || targetDeviceString == description.Description // adapter name available -> verify it
             || __isHardwareAdapterForMonitor(adapter.get(), target.attributes().id)) // no name or invalid -> verify if monitor connected to adapter
               break; // hardware adapter found -> exit loop
 
@@ -115,8 +115,8 @@ Includes hpp implementations at the end of the file
     for (UINT i = 0; SUCCEEDED(factory->EnumAdapters1(i, adapter.address())); ++i) {
       DXGI_ADAPTER_DESC1 description;
       if (SUCCEEDED(adapter->GetDesc1(&description)) && (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0) { // not "basic render" driver
-        if (target.attributes().id.empty()  // no target provided -> use first result
-        || targetDeviceString == description.Description          // adapter name available -> verify it
+        if (target.attributes().id.empty()               // no target provided -> use first result
+        || targetDeviceString == description.Description // adapter name available -> verify it
         || __isHardwareAdapterForMonitor(adapter.get(), target.attributes().id)) // no name or invalid -> verify if monitor connected to adapter
           break; // hardware adapter found -> exit loop
         
@@ -317,10 +317,10 @@ Includes hpp implementations at the end of the file
   }
 
   Renderer::Renderer(Renderer&& rhs) noexcept
-    : _dxgiFactory(rhs._dxgiFactory),
-      _device(rhs._device),
+    : _device(rhs._device),
       _context(rhs._context),
       _deviceLevel(rhs._deviceLevel),
+      _dxgiFactory(rhs._dxgiFactory),
       _dxgiLevel(rhs._dxgiLevel) {
     rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
@@ -328,14 +328,14 @@ Includes hpp implementations at the end of the file
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
-    this->_dxgiFactory = rhs._dxgiFactory;
     this->_device = rhs._device;
     this->_context = rhs._context;
     this->_deviceLevel = rhs._deviceLevel;
+    this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;
-    rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
     rhs._context = nullptr;
+    rhs._dxgiFactory = nullptr;
     return *this;
   }
 
@@ -362,6 +362,16 @@ Includes hpp implementations at the end of the file
     }
     catch (...) {}
     return isSuccess;
+  }
+  
+  // Convert standard sRGB(A) color to device RGB(A)
+  void Renderer::toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+    DirectX::XMFLOAT3 colorArray(colorRgba);
+    DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
+    outRgba[0] = colorArray.x;
+    outRgba[1] = colorArray.y;
+    outRgba[2] = colorArray.z;
+    outRgba[3] = colorRgba[3];
   }
 
 
@@ -395,6 +405,17 @@ Includes hpp implementations at the end of the file
 # else
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
 # endif
+
+  /// @brief Screen tearing supported (variable refresh rate display)
+  bool Renderer::isTearingAvailable() const noexcept { 
+    if (this->_dxgiLevel >= 5u) {
+      BOOL isSupported = FALSE;
+      auto factoryV5 = D3dResource<IDXGIFactory5>::tryFromInterface((IDXGIFactory1*)this->_dxgiFactory);
+      return (factoryV5 && SUCCEEDED(factoryV5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &isSupported, sizeof(isSupported))) 
+           && isSupported != FALSE);
+    }
+    return false;
+  }
  
 
 // -- render target operations -------------------------------------------------
@@ -437,73 +458,63 @@ Includes hpp implementations at the end of the file
   static FLOAT __defaultBlackColor[] = { 0.f,0.f,0.f,1.f };
   
   // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearViews(RenderTargetViewHandle* views, size_t numberViews, DepthStencilViewHandle depthBuffer, 
-                            const FLOAT clearColorRgba[4]) noexcept {
+  void Renderer::clearViews(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, 
+                            const ColorChannel clearColorRgba[4]) noexcept {
     auto it = views;
     for (size_t i = 0; i < numberViews; ++i, ++it) {
       if (*it != nullptr)
-        this->_context->ClearRenderTargetView(*it, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
+        this->_context->ClearRenderTargetView(*it, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     }
     if (depthBuffer != nullptr)
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     this->_context->Flush();
   }
   // Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearView(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, const FLOAT clearColorRgba[4]) noexcept {
+  void Renderer::clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4]) noexcept {
     if (view != nullptr)
-      this->_context->ClearRenderTargetView(view, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
+      this->_context->ClearRenderTargetView(view, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     this->_context->Flush();
   }
 
   // Bind/replace active render-target(s) in Renderer (multi-target)
-  void Renderer::setActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                        DepthStencilViewHandle depthBuffer) noexcept {
+  void Renderer::setActiveRenderTargets(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer) noexcept {
     if (views != nullptr && numberViews > 0) { // set active view(s)
       this->_context->OMSetRenderTargets((UINT)numberViews, views, depthBuffer);
-      this->_context->Flush();
-      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      this->_context->Flush();
-      this->_activeTargetCount = size_t{0u};
     }
+    this->_context->Flush();
   }
   
   // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
-  void Renderer::setCleanActiveRenderTargets(RenderTargetViewHandle* views, size_t numberViews, 
-                                        DepthStencilViewHandle depthBuffer, const FLOAT clearColorRgba[4]) noexcept {
+  void Renderer::setCleanActiveRenderTargets(RenderTargetView* views, size_t numberViews, 
+                                             DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4]) noexcept {
     if (views != nullptr && numberViews > 0) { // set active view(s)
       auto it = views;
       for (size_t i = 0; i < numberViews; ++i, ++it) {
         if (*it != nullptr)
-          this->_context->ClearRenderTargetView(*it, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
+          this->_context->ClearRenderTargetView(*it, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
       }
       if (depthBuffer != nullptr)
         this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
       this->_context->OMSetRenderTargets((UINT)numberViews, views, depthBuffer);
-      this->_activeTargetCount = (*views || numberViews > size_t{1u}) ? numberViews : size_t{0u};
-      this->_context->Flush();
     }
     else { // clear active views
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
-      this->_context->Flush();
-      this->_activeTargetCount = size_t{0u};
     }
+    this->_context->Flush();
   }
 
   // Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
-  void Renderer::setCleanActiveRenderTarget(RenderTargetViewHandle view, DepthStencilViewHandle depthBuffer, 
-                                       const FLOAT clearColorRgba[4]) noexcept {
-    if (view != nullptr) {
-      this->_activeTargetCount = size_t{1u};
-      this->_context->ClearRenderTargetView(view, (clearColorRgba != nullptr) ? &clearColorRgba[0] : __defaultBlackColor);
-    }
-    else { this->_activeTargetCount = size_t{0u}; }
+  void Renderer::setCleanActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer, 
+                                            const ColorChannel clearColorRgba[4]) noexcept {
+    if (view != nullptr)
+      this->_context->ClearRenderTargetView(view, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
             
@@ -514,127 +525,27 @@ Includes hpp implementations at the end of the file
 
 // -- primitive binding -- -----------------------------------------------------
 
-  // Create native topology flag - basic topologies
-  Renderer::TopologyFlag Renderer::createTopology(VertexTopology type, bool useAdjacency) noexcept {
-    D3D11_PRIMITIVE_TOPOLOGY flag;
-    switch (type) {
-      case VertexTopology::points:
-        flag = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST; break;
-      case VertexTopology::lines:
-        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST_ADJ : D3D11_PRIMITIVE_TOPOLOGY_LINELIST; break;
-      case VertexTopology::lineStrips:
-        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ : D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP; break;
-      case VertexTopology::triangles:
-        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST; break;
-      case VertexTopology::triangleStrip:
-        flag = useAdjacency ? D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP; break;
-      default: flag = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED; break;
-    }
-    return (Renderer::TopologyFlag)flag;
-  }
-  // Create native topology flag - patch topologies
-  Renderer::TopologyFlag Renderer::createPatchTopology(uint32_t controlPoints) noexcept {
+  // Set vertex patch topology for input stage (for vertex/tessellation shaders)
+  void Renderer::setVertexPatchTopology(uint32_t controlPoints) noexcept {
     if (controlPoints != 0u) {
       --controlPoints;
       if (controlPoints >= 32u)
         controlPoints = 31u;
     }
-    int32_t topologyValue = (int32_t)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int32_t)controlPoints;
-    return (Renderer::TopologyFlag)topologyValue;
+    int topologyValue = (int)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int)controlPoints;
+    this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topologyValue);
   }
 
 
 // -----------------------------------------------------------------------------
-// renderer.h/swap_chain.h : color management
+// swap_chain.h
 // -----------------------------------------------------------------------------
 
-  // Convert standard sRGB(A) color to device RGB(A)
-  void Renderer::toGammaCorrectColor(const float colorRgba[4], FLOAT outRgba[4]) noexcept {
-    DirectX::XMFLOAT3 colorArray(colorRgba);
-    DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
-    outRgba[0] = colorArray.x;
-    outRgba[1] = colorArray.y;
-    outRgba[2] = colorArray.z;
-    outRgba[3] = colorRgba[3];
-  }
-
-  // Convert portable component format to DXGI_FORMAT
-  DXGI_FORMAT Renderer::toDxgiFormat(ComponentFormat format) noexcept {
-    switch (format) {
-      case ComponentFormat::rgba8_sRGB: return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-      case ComponentFormat::rgba8_unorm: return DXGI_FORMAT_R8G8B8A8_UNORM;
-      case ComponentFormat::rgba8_snorm: return DXGI_FORMAT_R8G8B8A8_SNORM;
-      case ComponentFormat::rgba8_ui: return DXGI_FORMAT_R8G8B8A8_UINT;
-      case ComponentFormat::rgba8_i: return DXGI_FORMAT_R8G8B8A8_SINT;
-      
-      case ComponentFormat::d32_f: return DXGI_FORMAT_D32_FLOAT;
-      case ComponentFormat::d16_unorm: return DXGI_FORMAT_D16_UNORM;
-      case ComponentFormat::d32_f_s8_ui: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-      case ComponentFormat::d24_unorm_s8_ui: return DXGI_FORMAT_D24_UNORM_S8_UINT;
-      
-      case ComponentFormat::rgba16_f_hdr_scRGB: return DXGI_FORMAT_R16G16B16A16_FLOAT;
-      case ComponentFormat::rgba16_unorm: return DXGI_FORMAT_R16G16B16A16_UNORM;
-      case ComponentFormat::rgba16_snorm: return DXGI_FORMAT_R16G16B16A16_SNORM;
-      case ComponentFormat::rgba16_ui: return DXGI_FORMAT_R16G16B16A16_UINT;
-      case ComponentFormat::rgba16_i: return DXGI_FORMAT_R16G16B16A16_SINT;
-      case ComponentFormat::rgb10a2_unorm_hdr10: return DXGI_FORMAT_R10G10B10A2_UNORM;
-      case ComponentFormat::rgb10a2_ui: return DXGI_FORMAT_R10G10B10A2_UINT;
-      case ComponentFormat::rgba32_f: return DXGI_FORMAT_R32G32B32A32_FLOAT;
-      case ComponentFormat::rgba32_ui: return DXGI_FORMAT_R32G32B32A32_UINT;
-      case ComponentFormat::rgba32_i: return DXGI_FORMAT_R32G32B32A32_SINT;
-      
-      case ComponentFormat::bc6h_uf: return DXGI_FORMAT_BC6H_UF16;
-      case ComponentFormat::bc6h_f: return DXGI_FORMAT_BC6H_SF16;
-      case ComponentFormat::bc7_sRGB: return DXGI_FORMAT_BC7_UNORM_SRGB;
-      case ComponentFormat::bc7_unorm: return DXGI_FORMAT_BC7_UNORM;
-      
-      case ComponentFormat::bgra8_sRGB: return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-      case ComponentFormat::bgra8_unorm: return DXGI_FORMAT_B8G8R8A8_UNORM;
-      case ComponentFormat::r8_ui: return DXGI_FORMAT_R8_UINT;
-      case ComponentFormat::r8_i: return DXGI_FORMAT_R8_SINT;
-      case ComponentFormat::r8_unorm: return DXGI_FORMAT_R8_UNORM;
-      case ComponentFormat::r8_snorm: return DXGI_FORMAT_R8_SNORM;
-      case ComponentFormat::a8_unorm: return DXGI_FORMAT_A8_UNORM;
-      case ComponentFormat::rg8_unorm: return DXGI_FORMAT_R8G8_UNORM;
-      case ComponentFormat::rg8_snorm: return DXGI_FORMAT_R8G8_SNORM;
-      case ComponentFormat::rg8_ui: return DXGI_FORMAT_R8G8_UINT;
-      case ComponentFormat::rg8_i: return DXGI_FORMAT_R8G8_SINT;
-      case ComponentFormat::rgb5a1_unorm: return DXGI_FORMAT_B5G5R5A1_UNORM;
-      case ComponentFormat::r5g6b5_unorm: return DXGI_FORMAT_B5G6R5_UNORM;
-      
-      case ComponentFormat::rg16_f: return DXGI_FORMAT_R16G16_FLOAT;
-      case ComponentFormat::r16_f: return DXGI_FORMAT_R16_FLOAT;
-      case ComponentFormat::rg16_unorm: return DXGI_FORMAT_R16G16_UNORM;
-      case ComponentFormat::r16_unorm: return DXGI_FORMAT_R16_UNORM;
-      case ComponentFormat::rg16_snorm: return DXGI_FORMAT_R16G16_SNORM;
-      case ComponentFormat::r16_snorm: return DXGI_FORMAT_R16_SNORM;
-      case ComponentFormat::rg16_ui: return DXGI_FORMAT_R16G16_UINT;
-      case ComponentFormat::r16_ui: return DXGI_FORMAT_R16_UINT;
-      case ComponentFormat::rg16_i: return DXGI_FORMAT_R16G16_SINT;
-      case ComponentFormat::r16_i: return DXGI_FORMAT_R16_SINT;
-      case ComponentFormat::rgb32_f: return DXGI_FORMAT_R32G32B32_FLOAT;
-      case ComponentFormat::rg32_f: return DXGI_FORMAT_R32G32_FLOAT;
-      case ComponentFormat::r32_f: return DXGI_FORMAT_R32_FLOAT;
-      case ComponentFormat::rgb32_ui: return DXGI_FORMAT_R32G32B32_UINT;
-      case ComponentFormat::rg32_ui: return DXGI_FORMAT_R32G32_UINT;
-      case ComponentFormat::r32_ui: return DXGI_FORMAT_R32_UINT;
-      case ComponentFormat::rgb32_i: return DXGI_FORMAT_R32G32B32_SINT;
-      case ComponentFormat::rg32_i: return DXGI_FORMAT_R32G32_SINT;
-      case ComponentFormat::r32_i: return DXGI_FORMAT_R32_SINT;
-      case ComponentFormat::rg11b10_f: return DXGI_FORMAT_R11G11B10_FLOAT;
-      case ComponentFormat::rgb9e5_uf: return DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
-      
-#     if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
-        case ComponentFormat::rgba4_unorm: return DXGI_FORMAT_B4G4R4A4_UNORM;
-#     endif
-      case ComponentFormat::unknown: 
-      default: return DXGI_FORMAT_UNKNOWN;
-    }
-  }
+// -- color management --
 
 # if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
     // Find color space for a buffer format
-    static inline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
+    static __forceinline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
       switch (backBufferFormat) {
         case DXGI_FORMAT_R10G10B10A2_UNORM:
         case DXGI_FORMAT_R10G10B10A2_UINT:
@@ -668,7 +579,8 @@ Includes hpp implementations at the end of the file
   
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
-  static bool __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, bool isHdrPreferred, DXGI_COLOR_SPACE_TYPE& outColorSpace) { // throws
+  static __forceinline bool __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, 
+                                            bool isHdrPreferred, DXGI_COLOR_SPACE_TYPE& outColorSpace) { // throws
     // verify HDR support
     outColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
@@ -707,165 +619,135 @@ Includes hpp implementations at the end of the file
   }
 
 
-// -----------------------------------------------------------------------------
-// swap_chain.h
-// -----------------------------------------------------------------------------
-
 // -- swap-chain creation -- ---------------------------------------------------
 
-  // Verify if buffer format is supported by flip-swap (-> outIsFlipSwapAllowed) + return swap-chain format to use
-  static inline DXGI_FORMAT __verifyFlipSwapFormat(DXGI_FORMAT backBufferFormat, bool& outIsFlipSwapAllowed) noexcept {
+  // Get swap-chain format (based on buffer format + flip-swap request) + detect flip-swap support for format
+  // inOutUseFlipSwap: [in] = request flip-swap or not  /  [out] = requested and supported for format
+  static inline DXGI_FORMAT __getSwapChainFormat(DXGI_FORMAT backBufferFormat, bool& inOutUseFlipSwap) noexcept {
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
-      switch (backBufferFormat) {
-        case DXGI_FORMAT_R16G16B16A16_FLOAT: 
-        case DXGI_FORMAT_R8G8B8A8_UNORM:
-        case DXGI_FORMAT_B8G8R8A8_UNORM:
-        case DXGI_FORMAT_R10G10B10A2_UNORM:   outIsFlipSwapAllowed = true; return backBufferFormat;
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: outIsFlipSwapAllowed = true; return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: outIsFlipSwapAllowed = true; return DXGI_FORMAT_B8G8R8A8_UNORM;
-        default: break;
+      if (inOutUseFlipSwap) {
+        switch (backBufferFormat) {
+          case DXGI_FORMAT_R16G16B16A16_FLOAT: 
+          case DXGI_FORMAT_R8G8B8A8_UNORM:
+          case DXGI_FORMAT_B8G8R8A8_UNORM:
+          case DXGI_FORMAT_R10G10B10A2_UNORM:   inOutUseFlipSwap = true; return backBufferFormat;
+          case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: inOutUseFlipSwap = true; return DXGI_FORMAT_R8G8B8A8_UNORM;
+          case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: inOutUseFlipSwap = true; return DXGI_FORMAT_B8G8R8A8_UNORM;
+          default: inOutUseFlipSwap = false; break;
+        }
       }
 #   endif
-    outIsFlipSwapAllowed = false;
     return backBufferFormat;
-  }
-
-  // Convert portable params to Direct3D swap-chain params
-  void SwapChain::_convertSwapChainParams(const Renderer& renderer, const pandora::video::SwapChainParams& params, 
-                                          _SwapChainConfig& outConfig) noexcept {
-    // convert buffer formats
-    outConfig.backBufferFormat = (params.backBufferFormat() != pandora::video::ComponentFormat::custom)
-                                 ? Renderer::toDxgiFormat(params.backBufferFormat())
-                                 : (DXGI_FORMAT)params.customBackBufferFormat();
-    outConfig.frameBufferCount = params.frameBufferCount();
-    outConfig.isHdrPreferred = params.isHdrPreferred();
-    
-    // verify if flip-swap is applicable
-    outConfig.useFlipSwap = (renderer.isFlipSwapAvailable() 
-                        && params.renderTargetMode() == SwapChainTargetMode::uniqueOutput // only one render target view
-                        && (renderer.isTearingAvailable()   // tearing OFF or supported with flip-swap
-                           || (params.outputFlags() & SwapChainOutputFlag::variableRefresh) == SwapChainOutputFlag::none) );
-    outConfig.swapChainFormat = (outConfig.useFlipSwap)     // supported color format
-                              ? __verifyFlipSwapFormat((DXGI_FORMAT)outConfig.backBufferFormat, outConfig.useFlipSwap)
-                              : outConfig.backBufferFormat;
-    
-    // buffer usage
-    outConfig.bufferUsageMode = ((params.outputFlags() & SwapChainOutputFlag::shaderInput) == true)
-                              ? (DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT)
-                              : DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    outConfig.flags = params.outputFlags();
-    if ((outConfig.flags & SwapChainOutputFlag::localOutput) == true && !renderer.isLocalDisplayRestrictionAvailable())
-      outConfig.flags &= ~(SwapChainOutputFlag::localOutput);
   }
   
   // ---
+  
+  // Create DXGI swap-chain resource for existing renderer
+  void SwapChain::_createSwapChain(pandora::video::WindowHandle window, const SwapChain::RefreshRate& rate) { // throws
+    if (this->_renderer == nullptr || window == nullptr)
+      throw std::invalid_argument("SwapChain: NULL renderer/window");
+    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
 
-  // Create DXGI swap-chain resource
-  void* Renderer::_createSwapChain(const _SwapChainConfig& config, pandora::video::WindowHandle window,
-                                   uint32_t rateNumerator, uint32_t rateDenominator, 
-                                   D3D_FEATURE_LEVEL& outSwapChainLevel) { // throws
-    void* swapChain = nullptr;
-    __refreshDxgiFactory(this->_dxgiFactory);
-    
+    // build swap-chain
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      if (this->_dxgiLevel >= 2u) {
-        // Direct3D 11.1+
-        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_dxgiFactory, "Renderer: DXGI access error");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_device, "Renderer: device access error");
-        outSwapChainLevel = D3D_FEATURE_LEVEL_11_1;
+      if (this->_renderer->_dxgiLevel >= 2u) { // Direct3D 11.1+
+        bool useFlipSwap = ( (this->_flags & (SwapChain::OutputFlag::disableFlipSwap 
+                                            | SwapChain::OutputFlag::partialOutput)) == false  // * flip-swap not disabled + unique render-target view
+                          && this->_renderer->isFlipSwapAvailable()                            // * supported by device/API/system
+                          && ((this->_flags & SwapChain::OutputFlag::variableRefresh) == false // * no tearing or support with flip-swap
+                            || this->_renderer->isTearingAvailable()) );
+
+        DXGI_SWAP_CHAIN_DESC1 descriptor = {};
+        ZeroMemory(&descriptor, sizeof(DXGI_SWAP_CHAIN_DESC1));
+        descriptor.Width = _width();
+        descriptor.Height = _height();
+        descriptor.Format = __getSwapChainFormat(this->_backBufferFormat, useFlipSwap); // * verify color format supported with flip-swap (or unset useFlipSwap)
+        descriptor.BufferCount = (UINT)this->_framebufferCount;
+        descriptor.BufferUsage = ((this->_flags & SwapChain::OutputFlag::shaderInput) == true)
+                               ? (DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT) : DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        descriptor.Scaling = DXGI_SCALING_STRETCH;
+        descriptor.SampleDesc.Count = 1;
+        descriptor.Stereo = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? TRUE : FALSE;
         
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscnDescriptor = {};
         ZeroMemory(&fullscnDescriptor, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
-        DXGI_SWAP_CHAIN_DESC1 descriptor = {};
-        ZeroMemory(&descriptor, sizeof(DXGI_SWAP_CHAIN_DESC1));
-        fullscnDescriptor.Windowed = ((config.flags & SwapChainOutputFlag::stereo) == true) ? FALSE : TRUE;
-        descriptor.Width = config.width;
-        descriptor.Height = config.height;
-        descriptor.Format = config.swapChainFormat;
-        descriptor.BufferCount = (UINT)config.frameBufferCount;
-        descriptor.BufferUsage = config.bufferUsageMode;
-        descriptor.Scaling = DXGI_SCALING_STRETCH;
-        fullscnDescriptor.RefreshRate.Numerator = (UINT)rateNumerator;
-        fullscnDescriptor.RefreshRate.Denominator = (UINT)rateDenominator;
-        descriptor.SwapEffect = (config.useFlipSwap) ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD;
-        descriptor.SampleDesc.Count = 1;
-        descriptor.SampleDesc.Quality = 0;
-        descriptor.Stereo = ((config.flags & SwapChainOutputFlag::stereo) == true) ? TRUE : FALSE;
-        descriptor.Flags = (config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-        if ((config.flags & SwapChainOutputFlag::localOutput) == true)
-          descriptor.Flags |= DXGI_SWAP_CHAIN_FLAG_DISPLAY_ONLY;
+        fullscnDescriptor.RefreshRate.Numerator = (UINT)rate.numerator();
+        fullscnDescriptor.RefreshRate.Denominator = (UINT)rate.denominator();
+        
+        if (useFlipSwap) {
+          descriptor.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+          if ((this->_flags & SwapChain::OutputFlag::variableRefresh) == true) {
+            descriptor.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            this->_tearingSwapFlags = (UINT)DXGI_PRESENT_ALLOW_TEARING;
+          }
+          if (descriptor.Stereo == FALSE)
+            fullscnDescriptor.Windowed = TRUE;
+        }
+        else {
+          this->_flags |= SwapChain::OutputFlag::disableFlipSwap; // mark as disabled
+          descriptor.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+          if ((this->_flags & (SwapChain::OutputFlag::variableRefresh|SwapChain::OutputFlag::stereo)) == false)
+            fullscnDescriptor.Windowed = TRUE;
+        }
 
-        auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&swapChain);
-        if (FAILED(result) || swapChain == nullptr)
+        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_renderer->_dxgiFactory, "SwapChain: DXGI access error");
+        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_renderer->_device, "SwapChain: device access error");
+        auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&_swapChain);
+        if (FAILED(result) || this->_swapChain == nullptr)
           throwError(result, "Renderer: swap-chain not created");
+        this->_deviceContext11_1 = D3dResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context()).extract();
       }
       else
 #   endif
-    {
-      // Direct3D 11.0
-      outSwapChainLevel = D3D_FEATURE_LEVEL_11_0;
+    { // Direct3D 11.0
+      this->_flags |= SwapChain::OutputFlag::disableFlipSwap; // no flip-swap in 11.0
+    
       DXGI_SWAP_CHAIN_DESC descriptor = {};
       ZeroMemory(&descriptor, sizeof(DXGI_SWAP_CHAIN_DESC));
-      descriptor.BufferDesc.Width = config.width;
-      descriptor.BufferDesc.Height = config.height;
-      descriptor.BufferDesc.Format = (DXGI_FORMAT)config.swapChainFormat;
-      descriptor.BufferCount = (UINT)config.frameBufferCount;
-      descriptor.BufferUsage = config.bufferUsageMode;
+      descriptor.BufferDesc.Width = _width();
+      descriptor.BufferDesc.Height = _height();
+      descriptor.BufferDesc.Format = this->_backBufferFormat;
+      descriptor.BufferCount = (UINT)this->_framebufferCount;
+      descriptor.BufferUsage = ((this->_flags & SwapChain::OutputFlag::shaderInput) == true)
+                             ? (DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT) : DXGI_USAGE_RENDER_TARGET_OUTPUT;
       descriptor.BufferDesc.Scaling = DXGI_MODE_SCALING_STRETCHED;
-      descriptor.BufferDesc.RefreshRate.Numerator = (UINT)rateNumerator;
-      descriptor.BufferDesc.RefreshRate.Denominator = (UINT)rateDenominator;
       descriptor.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-      descriptor.OutputWindow = (HWND)window;
-      descriptor.Windowed = TRUE;
       descriptor.SampleDesc.Count = 1;
-      descriptor.SampleDesc.Quality = 0;
+      descriptor.OutputWindow = (HWND)window;
+      descriptor.BufferDesc.RefreshRate.Numerator = (UINT)rate.numerator();
+      descriptor.BufferDesc.RefreshRate.Denominator = (UINT)rate.denominator();
+      if ((this->_flags & SwapChain::OutputFlag::variableRefresh) == false)
+        descriptor.Windowed = TRUE;
 
-      auto result = ((IDXGIFactory1*)this->_dxgiFactory)->CreateSwapChain(this->_device, &descriptor, (IDXGISwapChain**)&swapChain);
-      if (FAILED(result) || swapChain == nullptr)
+      auto result = ((IDXGIFactory1*)this->_renderer->_dxgiFactory)->CreateSwapChain(this->_renderer->_device, &descriptor, (IDXGISwapChain**)&_swapChain);
+      if (FAILED(result) || this->_swapChain == nullptr)
         throwError(result, "Renderer: swap-chain not created");
     }
     
-    ((IDXGIFactory1*)this->_dxgiFactory)->MakeWindowAssociation((HWND)window, DXGI_MWA_NO_ALT_ENTER); // prevent DXGI from responding to the ALT+ENTER shortcut
-    if (!config.useFlipSwap && (config.flags & SwapChainOutputFlag::variableRefresh) == true)
-      ((IDXGISwapChain*)swapChain)->SetFullscreenState(TRUE, nullptr); // without flip-swap, screen tearing requires fullscreen state
-    
-    return swapChain;
+    ((IDXGIFactory1*)this->_renderer->_dxgiFactory)->MakeWindowAssociation((HWND)window, DXGI_MWA_NO_ALT_ENTER);// no DXGI response to ALT+ENTER
   }
   
   // ---
   
-  // Create rendering swap-chain for existing renderer
-  SwapChain::SwapChain(std::shared_ptr<Renderer> renderer, const pandora::video::SwapChainParams& params, 
-                       pandora::video::WindowHandle window, uint32_t width, uint32_t height)
-    : _renderer(std::move(renderer)) { // throws
-    if (this->_renderer == nullptr)
-      throw std::invalid_argument("SwapChain: NULL renderer");
-    if (window == nullptr)
-      throw std::invalid_argument("SwapChain: NULL window");
-    if (width == 0 || height == 0)
-      throw std::invalid_argument("SwapChain: width/height is 0");
-    
-    // build swap-chain
-    memset((void*)&this->_settings, 0, sizeof(_SwapChainConfig));
-    this->_settings.width = width;
-    this->_settings.height = height;
-    this->_presentFlags = ((this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) ? DXGI_PRESENT_ALLOW_TEARING : 0;
-    _convertSwapChainParams(*(this->_renderer), params, this->_settings);
-    
-    this->_swapChain = this->_renderer->_createSwapChain(this->_settings, window, params.rateNumerator(),
-                                                         params.rateDenominator(), this->_swapChainLevel); // throws
-
+  // Create/refresh swap-chain render-target view + color space
+  void SwapChain::_createOrRefreshTargetView() { // throws
     // find + set color space value (if supported)
-    DXGI_COLOR_SPACE_TYPE colorSpace;
-    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_settings.backBufferFormat,
-                    this->_settings.isHdrPreferred, colorSpace);
-    this->_settings.colorSpace = colorSpace;
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat,
+                    (this->_flags & SwapChain::OutputFlag::hdrPreferred) == true, this->_colorSpace);
 
-    _createSwapChainTargetView(); // create render-target-view
-#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      auto contextV1 = D3dResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context());
-      this->_deviceContext11_1 = contextV1.extract();
-#   endif
+    // create render-target view
+    if (this->_renderTargetView == nullptr) {
+      D3dResource<ID3D11Texture2D> renderTarget;
+      auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
+      if (FAILED(targetResult) || !renderTarget.hasValue()) {
+        throwError(targetResult, "SwapChain: render-target error"); return;
+      }
+      
+      CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_backBufferFormat);
+      targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
+      if (FAILED(targetResult) || this->_renderTargetView == nullptr)
+        throwError(targetResult, "SwapChain: view not created");
+    }
   }
 
 
@@ -882,13 +764,13 @@ Includes hpp implementations at the end of the file
         }
 #       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
           if (this->_deviceContext11_1)
-            this->_deviceContext11_1->Release();
+            ((ID3D11DeviceContext1*)this->_deviceContext11_1)->Release();
 #       endif
       } 
       catch (...) {}
         
       try {
-        if (this->_swapChainLevel == D3D_FEATURE_LEVEL_11_1) {
+        if (this->_renderer->_dxgiLevel >= 2u) {
           ((IDXGISwapChain1*)this->_swapChain)->SetFullscreenState(FALSE, nullptr); // fullscreen must be OFF, or Release will throw
           ((IDXGISwapChain1*)this->_swapChain)->Release();
         }
@@ -904,17 +786,21 @@ Includes hpp implementations at the end of the file
   }
 
   SwapChain::SwapChain(SwapChain&& rhs) noexcept
-    : _renderer(std::move(rhs._renderer)),
-      _renderTargetView(rhs._renderTargetView),
+    : _swapChain(rhs._swapChain),
+      _tearingSwapFlags(rhs._tearingSwapFlags),
+      _pixelSize(rhs._pixelSize),
+      _framebufferCount(rhs._framebufferCount),
+      _flags(rhs._flags),
+      _backBufferFormat(rhs._backBufferFormat),
+      _colorSpace(rhs._colorSpace),
+      _renderer(std::move(rhs._renderer)),
+      _renderTargetView(rhs._renderTargetView)
 #     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-        _deviceContext11_1(rhs._deviceContext11_1),
+        , _deviceContext11_1(rhs._deviceContext11_1)
 #     endif
-      _swapChain(rhs._swapChain),
-      _swapChainLevel(rhs._swapChainLevel),
-      _presentFlags(rhs._presentFlags) {
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
-    rhs._renderer = nullptr;
+  {
     rhs._swapChain = nullptr;
+    rhs._renderer = nullptr;
     rhs._renderTargetView = nullptr;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       rhs._deviceContext11_1 = nullptr;
@@ -922,17 +808,20 @@ Includes hpp implementations at the end of the file
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
     release();
-    memcpy((void*)&_settings, (void*)&rhs._settings, sizeof(_SwapChainConfig));
+    this->_swapChain = rhs._swapChain;
+    this->_tearingSwapFlags = rhs._tearingSwapFlags;
+    this->_pixelSize = rhs._pixelSize;
+    this->_framebufferCount = rhs._framebufferCount;
+    this->_flags = rhs._flags;
+    this->_backBufferFormat = rhs._backBufferFormat;
+    this->_colorSpace = rhs._colorSpace;
     this->_renderer = std::move(rhs._renderer);
     this->_renderTargetView = rhs._renderTargetView;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       this->_deviceContext11_1 = rhs._deviceContext11_1;
 #   endif
-    this->_swapChain = rhs._swapChain;
-    this->_swapChainLevel = rhs._swapChainLevel;
-    this->_presentFlags = rhs._presentFlags;
-    rhs._renderer = nullptr;
     rhs._swapChain = nullptr;
+    rhs._renderer = nullptr;
     rhs._renderTargetView = nullptr;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       rhs._deviceContext11_1 = nullptr;
@@ -945,69 +834,46 @@ Includes hpp implementations at the end of the file
 
   // Change back-buffer(s) size + refresh color space
   bool SwapChain::resize(uint32_t width, uint32_t height) { // throws
-    bool isResized = (width != this->_settings.width || height != this->_settings.height);
+    uint32_t pixelSize = _toPixelSize(width, height);
+    bool isResized = (this->_pixelSize != pixelSize);
+  
     if (isResized) {
-      if (width == 0 || height == 0)
-        throw std::invalid_argument("SwapChain: width/height is 0");
-      
       // clear previous size-specific context
       this->_renderer->setActiveRenderTarget(nullptr);
       this->_renderTargetView->Release();
-      this->_renderTargetView = nullptr;
+      this->_renderTargetView = nullptr; // set to NULL -> tells _createOrRefreshTargetView to re-create it
       ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(FALSE, nullptr);
       this->_renderer->context()->Flush();
       
       // resize swap-chain
-      DXGI_SWAP_CHAIN_FLAG flags = (this->_settings.useFlipSwap && (this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) 
-                                 ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : (DXGI_SWAP_CHAIN_FLAG)0;
-      auto result = ((IDXGISwapChain*)this->_swapChain)->ResizeBuffers((UINT)this->_settings.frameBufferCount, (UINT)width, (UINT)height, 
-                                                                       (DXGI_FORMAT)this->_settings.swapChainFormat, flags);
+      DXGI_SWAP_CHAIN_FLAG flags = (DXGI_SWAP_CHAIN_FLAG)0;
+      if ((this->_flags & (SwapChain::OutputFlag::variableRefresh|SwapChain::OutputFlag::disableFlipSwap)) == SwapChain::OutputFlag::variableRefresh)
+        flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+      bool useFlipSwap = ((this->_flags & SwapChain::OutputFlag::disableFlipSwap) == false);
+      DXGI_FORMAT swapChainFormat = __getSwapChainFormat(this->_backBufferFormat, useFlipSwap);
+      
+      auto result = ((IDXGISwapChain*)this->_swapChain)->ResizeBuffers(this->_framebufferCount, width, height, swapChainFormat, flags);
       if (FAILED(result)) {
         if (result == DXGI_ERROR_DEVICE_REMOVED || result == DXGI_ERROR_DEVICE_RESET || result == DXGI_ERROR_DEVICE_HUNG)
-          throw std::domain_error("Adapter changed: recreate Renderer/SwapChain");
+          throw std::domain_error("Adapter changed: Renderer/SwapChain must be recreated");
         throwError(result, "SwapChain: resize error");
       }
+      this->_pixelSize = pixelSize;
       
-      this->_settings.width = width;
-      this->_settings.height = height;
       // fullscreen required: tearing without flip-swap / stereo rendering
-      if ((!this->_settings.useFlipSwap && (this->_settings.flags & SwapChainOutputFlag::variableRefresh) == true) 
-      || (this->_settings.flags & SwapChainOutputFlag::stereo) == true)
+      if ((this->_flags & SwapChain::OutputFlag::stereo) == true || flags == DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)
         ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(TRUE, nullptr);
     }
 
-    // find + set color space value (if supported)
-    DXGI_COLOR_SPACE_TYPE colorSpace;
-    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_settings.backBufferFormat,
-                    this->_settings.isHdrPreferred, colorSpace);
-    this->_settings.colorSpace = colorSpace;
-    
-    if (isResized) // create render-target-view
-      _createSwapChainTargetView();
+    // create/refresh render-target-view (if not resized, will only verify color space (in case monitor changed))
+    _createOrRefreshTargetView();
     return isResized;
   }
   
   // ---
   
-  // Create swap-chain render-target-view
-  void SwapChain::_createSwapChainTargetView() { // throws
-    D3dResource<ID3D11Texture2D> renderTarget;
-    auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
-    if (FAILED(targetResult) || !renderTarget.hasValue()) {
-      throwError(targetResult, "SwapChain: render-target access error");
-      return;
-    }
-    
-    CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_settings.backBufferFormat);
-    targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
-    if (FAILED(targetResult) || this->_renderTargetView == nullptr)
-      throwError(targetResult, "SwapChain: target view not created");
-  }
-  
-  // ---
-  
   // Throw appropriate exception for 'swap buffers' error
-  void __processSwapBuffersError(HRESULT result) {
+  static void __processSwapError(HRESULT result) {
     switch (result) {
       // minor issues -> ignore
       case DXGI_ERROR_WAS_STILL_DRAWING:
@@ -1017,33 +883,36 @@ Includes hpp implementations at the end of the file
       // device lost
       case DXGI_ERROR_DEVICE_REMOVED:
       case DXGI_ERROR_DEVICE_RESET: throw std::domain_error("SwapChain: device lost");
-      // invalid option
-      case DXGI_ERROR_CANNOT_PROTECT_CONTENT: throw std::invalid_argument("SwapChain: display restriction not supported");
+      // invalid option / internal error
       default: throwError(result, "SwapChain: internal error"); break;
     }
   }
 
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen
   void SwapChain::swapBuffers(bool useVsync) {
-    auto result = ((IDXGISwapChain*)this->_swapChain)->Present(useVsync ? 1 : 0, this->_presentFlags);
+    auto result = useVsync
+                ? ((IDXGISwapChain*)this->_swapChain)->Present(1, 0) // no screen tearing with vsync
+                : ((IDXGISwapChain*)this->_swapChain)->Present(0, this->_tearingSwapFlags);
     if (FAILED(result))
-      __processSwapBuffersError(result);
+      __processSwapError(result);
     __refreshDxgiFactory(this->_renderer->_dxgiFactory);
   }
   
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen + discard render-target content after it
-  void SwapChain::swapBuffersDiscard(bool useVsync, Renderer::DepthStencilViewHandle depthBuffer) {
-    auto result = ((IDXGISwapChain*)this->_swapChain)->Present(useVsync ? 1 : 0, this->_presentFlags);
+  void SwapChain::swapBuffersDiscard(bool useVsync, DepthStencilView depthBuffer) {
+    auto result = useVsync
+                ? ((IDXGISwapChain*)this->_swapChain)->Present(1, 0) // no screen tearing with vsync
+                : ((IDXGISwapChain*)this->_swapChain)->Present(0, this->_tearingSwapFlags);
     if (FAILED(result))
-      __processSwapBuffersError(result);
+      __processSwapError(result);
     __refreshDxgiFactory(this->_renderer->_dxgiFactory);
     
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       // discard content of render target + depth/stencil buffer
       if (this->_deviceContext11_1) {
-        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView((ID3D11RenderTargetView*)this->_renderTargetView);
+        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(this->_renderTargetView);
         if (depthBuffer != nullptr)
-          ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView((ID3D11DepthStencilView*)depthBuffer);
+          ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(depthBuffer);
       }
 #   endif
   }
