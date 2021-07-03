@@ -12,7 +12,7 @@ namespace scene {
   enum class RenderingApi : uint32_t {
     none = 0,
     openGL4 = 1,
-    openGLES3 = 2,
+    vulkan = 2,
     d3d11 = 3
   };
   enum class RenderingMode : uint32_t {

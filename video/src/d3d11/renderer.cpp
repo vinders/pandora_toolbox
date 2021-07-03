@@ -408,12 +408,14 @@ Includes hpp implementations at the end of the file
 
   /// @brief Screen tearing supported (variable refresh rate display)
   bool Renderer::isTearingAvailable() const noexcept { 
-    if (this->_dxgiLevel >= 5u) {
-      BOOL isSupported = FALSE;
-      auto factoryV5 = D3dResource<IDXGIFactory5>::tryFromInterface((IDXGIFactory1*)this->_dxgiFactory);
-      return (factoryV5 && SUCCEEDED(factoryV5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &isSupported, sizeof(isSupported))) 
-           && isSupported != FALSE);
-    }
+#   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
+      if (this->_dxgiLevel >= 5u) {
+        BOOL isSupported = FALSE;
+        auto factoryV5 = D3dResource<IDXGIFactory5>::tryFromInterface((IDXGIFactory1*)this->_dxgiFactory);
+        return (factoryV5 && SUCCEEDED(factoryV5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &isSupported, sizeof(isSupported))) 
+             && isSupported != FALSE);
+      }
+#   endif
     return false;
   }
  

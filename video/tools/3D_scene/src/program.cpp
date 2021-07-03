@@ -8,7 +8,6 @@ License :     MIT
 # include <video/d3d11/renderer.h>
 #else
 # include <video/common_types.h>
-# include <video/render_options.h>
 #endif
 
 using namespace pandora::video;
@@ -70,7 +69,7 @@ std::unique_ptr<scene::Program> scene::Program::createProgram(std::shared_ptr<sc
         return std::unique_ptr<scene::Program>((scene::Program*)new scene::D3d11Program(std::make_shared<d3d11::Renderer>(primaryMonitor), params, menu, window));
 #   endif
     case scene::RenderingApi::openGL4: break;
-    case scene::RenderingApi::openGLES3: break;
+    case scene::RenderingApi::vulkan: break;
     default: break;
   }
   return nullptr;
