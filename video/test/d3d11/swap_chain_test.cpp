@@ -151,7 +151,7 @@
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
 
-    SwapChain chain1(renderer, window->handle(), SwapChain::Descriptor{ 600,400 });
+    SwapChain chain1(renderer, window->handle(), SwapChain::Descriptor(600,400));
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleHigherLevel() == nullptr || chain1.handleHigherLevel() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);

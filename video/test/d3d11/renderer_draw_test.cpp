@@ -165,7 +165,7 @@
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
 
-    SwapChain::Descriptor params{};
+    SwapChain::Descriptor params;
     params.width = __WIDTH;
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
@@ -228,7 +228,7 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChain::Descriptor params{};
+    SwapChain::Descriptor params;
     params.width = __WIDTH;
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
@@ -306,7 +306,7 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChain::Descriptor params{};
+    SwapChain::Descriptor params;
     params.width = __WIDTH;
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
@@ -392,7 +392,7 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChain::Descriptor params{};
+    SwapChain::Descriptor params;
     params.width = __WIDTH;
     params.height = __HEIGHT;
     params.framebufferCount = 2u;

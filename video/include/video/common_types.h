@@ -71,6 +71,15 @@ namespace pandora {
     /// @brief Swap-chain build params
     /// @remarks The same params can be used to build multiple SwapChain instances.
     struct SwapChainDescriptor final {
+      SwapChainDescriptor() noexcept = default;
+      SwapChainDescriptor(uint32_t width, uint32_t height, uint32_t framebufferCount = 2u, 
+                          RefreshRate refreshRate = RefreshRate{}, TargetOutputFlag outputFlags = TargetOutputFlag::none) noexcept
+        : width(width), height(height), framebufferCount(framebufferCount), refreshRate(refreshRate), outputFlags(outputFlags) {}
+
+      SwapChainDescriptor(const SwapChainDescriptor&) = default;
+      SwapChainDescriptor& operator=(const SwapChainDescriptor&) = default;
+      ~SwapChainDescriptor() noexcept = default;
+
       uint32_t width = 0;   ///< Framebuffer pixel width (usually the window client width, except in special cases (emulator with internal resolution...))
       uint32_t height = 0;  ///< Framebuffer pixel height (usually the window client height, except in special cases (emulator with internal resolution...))
       uint32_t framebufferCount = 2u; ///< number of framebuffers (back-buffers + front-buffer) -- default: 2 (minimum: 1).

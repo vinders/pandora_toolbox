@@ -7,9 +7,8 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/renderer.h>
 #else
-# include <video/component_format.h>
+# include <video/common_types.h>
 # include <video/render_options.h>
-# include <video/swap_chain_params.h>
 #endif
 
 using namespace pandora::video;
@@ -17,7 +16,7 @@ using namespace pandora::video;
 // -- common implementation --
 
 template <typename _Renderer, typename _SwapChain>
-static inline void __renderFrame(_Renderer& renderer, typename _SwapChain& swapChain, bool useVsync) {
+static inline void __renderFrame(_Renderer& renderer, _SwapChain& swapChain, bool useVsync) {
   renderer.setCleanActiveRenderTarget(swapChain.getRenderTargetView(), nullptr, nullptr);
 
   //...

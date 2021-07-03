@@ -198,6 +198,10 @@ License :     MIT
               srcAlphaFactor(srcAlphaFactor), destAlphaFactor(destAlphaFactor), alphaBlendOp(alphaBlendOp),
               isEnabled(isEnabled), targetWriteMask(targetWriteMask) {}
 
+          BlendTargetParams(const BlendTargetParams&) = default;
+          BlendTargetParams& operator=(const BlendTargetParams&) = default;
+          ~BlendTargetParams() noexcept = default;
+
           BlendFactor srcColorFactor  = BlendFactor::one;  ///< Pre-blend operation to perform on pixel shader output RGB value
           BlendFactor destColorFactor = BlendFactor::zero; ///< Pre-blend operation to perform on existing render-target RGB value
           BlendOp colorBlendOp        = BlendOp::add;      ///< Color blend operation (between srcColorFactor and destColorFactor)
