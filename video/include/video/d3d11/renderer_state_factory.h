@@ -190,14 +190,22 @@ License :     MIT
         /// @brief Blend operation state per render-target (color/alpha blend params for one render-target)
         /// @remarks To configure common blend params for all render-targets, prefer 'BlendParams' instead.
         struct BlendTargetParams final {
+          BlendTargetParams() noexcept = default;
+          BlendTargetParams(BlendFactor srcColorFactor, BlendFactor destColorFactor, BlendOp colorBlendOp,
+                            BlendFactor srcAlphaFactor, BlendFactor destAlphaFactor, BlendOp alphaBlendOp,
+                            bool isEnabled = true, ColorComponentFlag targetWriteMask = ColorComponentFlag::all) noexcept
+            : srcColorFactor(srcColorFactor), destColorFactor(destColorFactor), colorBlendOp(colorBlendOp),
+              srcAlphaFactor(srcAlphaFactor), destAlphaFactor(destAlphaFactor), alphaBlendOp(alphaBlendOp),
+              isEnabled(isEnabled), targetWriteMask(targetWriteMask) {}
+
           BlendFactor srcColorFactor  = BlendFactor::one;  ///< Pre-blend operation to perform on pixel shader output RGB value
           BlendFactor destColorFactor = BlendFactor::zero; ///< Pre-blend operation to perform on existing render-target RGB value
           BlendOp colorBlendOp        = BlendOp::add;      ///< Color blend operation (between srcColorFactor and destColorFactor)
           BlendFactor srcAlphaFactor  = BlendFactor::one;  ///< Pre-blend operation to perform on pixel shader output alpha value
           BlendFactor destAlphaFactor = BlendFactor::zero; ///< Pre-blend operation to perform on existing render-target alpha value
           BlendOp alphaBlendOp        = BlendOp::add;      ///< Alpha blend operation (between srcAlphaFactor and destAlphaFactor)
+          bool isEnabled = true;                           ///< Enable/disable blending
           ColorComponentFlag targetWriteMask = ColorComponentFlag::all; ///< Bit-mask specifying which RGBA components are enabled for writing
-          bool isEnabled = true; ///< Enable/disable blending
         };
         
         // ---
@@ -456,7 +464,7 @@ License :     MIT
           /// @brief Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
           /// @remarks The same FilterParams can be used to build multiple FilterState instances (if needed).
           /// @throws runtime_error on creation failure
-          FilterState createFilter(const FilterParams& params);
+          FilterState createFilterState(const FilterParams& params);
           
         private:
           DeviceHandle _device = nullptr;

@@ -165,11 +165,12 @@
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
 
-    SwapChainParams params{};
-    params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
-          .setFrameBufferNumber(2u).setHdrPreferred(false)
-          .setRefreshRate(60u, 1u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
-    SwapChain chain1(renderer, params, window->handle(), __WIDTH,__HEIGHT);
+    SwapChain::Descriptor params{};
+    params.width = __WIDTH;
+    params.height = __HEIGHT;
+    params.framebufferCount = 2u;
+    params.refreshRate = RefreshRate(60u, 1u);
+    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -193,7 +194,7 @@
       0.5f, -0.5f,  0.0f,  // point at bottom-right
       -0.5f, -0.5f,  0.0f, // point at bottom-left
     };
-    StaticBuffer vertexArray1(*renderer, DataBufferType::vertexArray, sizeof(vertices1), (const void*)vertices1, true);
+    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
 
     // drawing
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
@@ -207,7 +208,7 @@
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
+    renderer->setVertexTopology(VertexTopology::triangles);
 
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
@@ -227,11 +228,12 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChainParams params{};
-    params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
-          .setFrameBufferNumber(2u).setHdrPreferred(false)
-          .setRefreshRate(60u, 1u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
-    SwapChain chain1(renderer, params, window->handle(), __WIDTH,__HEIGHT);
+    SwapChain::Descriptor params{};
+    params.width = __WIDTH;
+    params.height = __HEIGHT;
+    params.framebufferCount = 2u;
+    params.refreshRate = RefreshRate(60u, 1u);
+    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
     
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -251,19 +253,17 @@
     ASSERT_FALSE(fragmentShader.isEmpty());
     
     // states
-    DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
-                                                                  DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
-                                                                  DepthComparison::less, true);
+    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
     
-    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
     EXPECT_TRUE(rasterState);
     
     FilterStateArray values;
-    TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
+    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -271,8 +271,8 @@
       {{0.0f,0.5f,0.f,1.f},{1.f,0.f,0.f,1.f}}, {{0.5f,-0.5f,0.f,1.f},{0.f,1.f,0.f,1.f}}, {{-0.5f,-0.5f,0.f,1.f},{0.f,0.f,1.f,1.f}}
     };
     uint32_t indices1[] = { 0,1,2 };
-    StaticBuffer vertexArray1(*renderer, DataBufferType::vertexArray, sizeof(vertices1), (const void*)vertices1, true);
-    StaticBuffer vertexIndex1(*renderer, DataBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
+    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
+    StaticBuffer vertexIndex1(*renderer, BaseBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
 
     // drawing
     renderer->setRasterizerState(rasterState);
@@ -285,10 +285,10 @@
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
+    renderer->setVertexTopology(VertexTopology::triangles);
    
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
-    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), IndexBufferFormat::r32_ui);
+    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawIndexed(sizeof(indices1)/sizeof(*indices1));
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
   }
@@ -306,11 +306,12 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChainParams params{};
-    params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
-      .setFrameBufferNumber(2u).setHdrPreferred(false)
-      .setRefreshRate(60u, 1u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
-    SwapChain chain1(renderer, params, window->handle(), __WIDTH,__HEIGHT);
+    SwapChain::Descriptor params{};
+    params.width = __WIDTH;
+    params.height = __HEIGHT;
+    params.framebufferCount = 2u;
+    params.refreshRate = RefreshRate(60u, 1u);
+    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -332,19 +333,17 @@
     ASSERT_FALSE(fragmentShader.isEmpty());
 
     // states
-    DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
-      DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
-      DepthComparison::less, true);
+    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
     EXPECT_TRUE(rasterState);
 
     FilterStateArray values;
-    TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
+    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -352,11 +351,11 @@
       {{0.0f,0.25f,0.f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.25f,-0.25f,0.f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.25f,-0.25f,0.f,1.f},{0.f,0.f,0.5f,1.f}}
     };
     uint32_t indices1[] = { 0,1,2 };
-    StaticBuffer vertexArray1(*renderer, DataBufferType::vertexArray, sizeof(vertices1), (const void*)vertices1, true);
-    StaticBuffer vertexIndex1(*renderer, DataBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
+    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
+    StaticBuffer vertexIndex1(*renderer, BaseBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
     InstanceData instances1[] = { {{-0.5f,-0.5f,0.f},{0.5f,0.f,0.f}}, {{-0.5f,0.5f,0.f},{0.f,0.5f,0.f}}, 
                                   {{0.5f,-0.5f,0.f}, {0.f,0.f,0.5f}}, {{0.5f,0.5f,0.f}, {0.25f,0.25f,0.25f}} };
-    StaticBuffer instanceArray1(*renderer, DataBufferType::vertexArray, sizeof(instances1), (const void*)instances1, true);
+    StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
 
     // drawing
     renderer->setRasterizerState(rasterState);
@@ -369,13 +368,13 @@
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
+    renderer->setVertexTopology(VertexTopology::triangles);
 
-    Renderer::DataBufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+    BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
-    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), IndexBufferFormat::r32_ui);
+    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
   }
@@ -393,11 +392,12 @@
     auto renderer = std::make_shared<Renderer>(monitor);
     RendererStateFactory factory(*renderer);
 
-    SwapChainParams params{};
-    params.setBackBufferFormat(ComponentFormat::rgba8_sRGB)
-      .setFrameBufferNumber(2u).setHdrPreferred(false)
-      .setRefreshRate(60u, 1u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
-    SwapChain chain1(renderer, params, window->handle(), __WIDTH,__HEIGHT);
+    SwapChain::Descriptor params{};
+    params.width = __WIDTH;
+    params.height = __HEIGHT;
+    params.framebufferCount = 2u;
+    params.refreshRate = RefreshRate(60u, 1u);
+    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -419,19 +419,17 @@
     ASSERT_FALSE(fragmentShader.isEmpty());
 
     // states
-    DepthStencilBuffer depthBuffer(*renderer, ComponentFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
-      DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
-      DepthComparison::less, true);
+    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(factory.createRasterizerState(CullMode::cullBack, true, DepthBias{}, false));
+    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
     EXPECT_TRUE(rasterState);
 
     FilterStateArray values;
-    TextureAddressMode addrModes[3] { TextureAddressMode::repeat, TextureAddressMode::repeat, TextureAddressMode::repeat };
-    values.append(factory.createFilter(MinificationFilter::linear, MagnificationFilter::linear, addrModes));
+    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
     ASSERT_EQ((size_t)1, values.size());
 
     // vertices
@@ -451,19 +449,19 @@
       {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}},
       {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}}
     };
-    StaticBuffer vertexArray1(*renderer, DataBufferType::vertexArray, sizeof(vertices1), (const void*)vertices1, true);
+    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
     InstanceData instances1[] = { 
       {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
       {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
       {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
       {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
     };
-    StaticBuffer instanceArray1(*renderer, DataBufferType::vertexArray, sizeof(instances1), (const void*)instances1, true);
+    StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
 
     // camera
     CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
     CamBuffer camData{ proj.projectionMatrix() };
-    StaticBuffer camBuffer(*renderer, DataBufferType::constant, sizeof(CamBuffer), &camData, true);
+    StaticBuffer camBuffer(*renderer, BaseBufferType::uniform, sizeof(CamBuffer), &camData, true);
 
     // drawing
     renderer->setRasterizerState(rasterState);
@@ -476,12 +474,12 @@
     renderer->bindInputLayout(inputLayout.handle());
     renderer->bindVertexShader(vertexShader.handle());
     renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(renderer->createTopology(VertexTopology::triangles));
+    renderer->setVertexTopology(VertexTopology::triangles);
 
-    Renderer::DataBufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+    BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexConstantBuffers(0, camBuffer.handleArray(), size_t{ 1u });
+    renderer->bindVertexUniforms(0, camBuffer.handleArray(), size_t{ 1u });
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());

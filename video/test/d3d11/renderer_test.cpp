@@ -39,16 +39,23 @@
     const char* falseVal = "false";
     printf("Direct3D context:\n > DXGI level: %u\n > Feature level: 11.%s\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
            " > Max render views: %u\n > Max sampler/filter states: %u\n > Max anisotropy: %u\n > Monitor HDR capable: %s\n"
-           " > HDR API available: %s\n > Flip swap available: %s\n > Tearing available: %s\n > Local display limit available: %s\n", 
+           " > HDR API available: %s\n > Flip swap available: %s\n > Tearing available: %s\n", 
            renderer.dxgiLevel(), ((uint32_t)renderer.featureLevel() > 0) ? "1+" : "0",
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            (uint32_t)renderer.maxRenderTargets(), (uint32_t)renderer.maxFilterStateSlots(), 
-           RendererStateFactory::maxAnisotropy(), 
+           FilterParams::maxAnisotropy(), 
            isMonitorHdr ? trueVal : falseVal,
            renderer.isHdrAvailable() ? trueVal : falseVal,
            renderer.isFlipSwapAvailable() ? trueVal : falseVal,
-           renderer.isTearingAvailable() ? trueVal : falseVal,
-           renderer.isLocalDisplayRestrictionAvailable() ? trueVal : falseVal);
+           renderer.isTearingAvailable() ? trueVal : falseVal);
+
+    ColorChannel gammaCorrectWhite[4];
+    float white[] { 1.f, 1.f, 1.f, 0.5f };
+    renderer.toGammaCorrectColor(white, gammaCorrectWhite);
+    EXPECT_TRUE(gammaCorrectWhite[0] >= 0.9f && gammaCorrectWhite[0] <= 1.2f);
+    EXPECT_TRUE(gammaCorrectWhite[1] >= 0.9f && gammaCorrectWhite[1] <= 1.2f);
+    EXPECT_TRUE(gammaCorrectWhite[2] >= 0.9f && gammaCorrectWhite[2] <= 1.2f);
+    EXPECT_EQ(0.5f, gammaCorrectWhite[3]);
 
     auto handle = renderer.device();
     auto dxgiLevel = renderer.dxgiLevel();
@@ -75,14 +82,10 @@
 
     RasterizerState emptyRaster = nullptr;
     renderer.setRasterizerState(emptyRaster);
-    RasterizerState value1 = factory.createRasterizerState(pandora::video::CullMode::none, true, 
-                                                           pandora::video::DepthBias{ 0, 0.f, 0.f, false }, false);
-    RasterizerState value2 = factory.createRasterizerState(pandora::video::CullMode::wireFrame, false, 
-                                                           pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false);
-    RasterizerState value3 = factory.createRasterizerState(pandora::video::CullMode::cullFront, false, 
-                                                           pandora::video::DepthBias{ -100, -0.5f, 0.1f, false }, true);
-    RasterizerState value4 = factory.createRasterizerState(pandora::video::CullMode::cullBack, true, 
-                                                           pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true);
+    RasterizerState value1 = factory.createRasterizerState(RasterizerParams(CullMode::none, FillMode::fill, true, false));
+    RasterizerState value2 = factory.createRasterizerState(RasterizerParams(CullMode::none, FillMode::lines, false, false));
+    RasterizerState value3 = factory.createRasterizerState(RasterizerParams(CullMode::cullFront, FillMode::fill, false, true));
+    RasterizerState value4 = factory.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::linesAA, true, true));
     renderer.setRasterizerState(value1);
     renderer.setRasterizerState(value2);
     renderer.setRasterizerState(value3);
@@ -95,11 +98,10 @@
     renderer.clearFragmentFilterStates();
     
     FilterStateArray valueContainer;
-    pandora::video::TextureAddressMode addrModes[3] { 
-      pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat 
+    TextureWrap addrModes[3] { 
+      TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat 
     };
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0.));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes, 0.f,0.f)));
     renderer.setFragmentFilterStates(1, valueContainer.get(), 1);
     renderer.clearFragmentFilterStates();
     renderer.setVertexFilterStates(1, valueContainer.get(), 1);
@@ -113,31 +115,19 @@
     renderer.setTesselEvalFilterStates(1, valueContainer.get(), 1);
     renderer.clearTesselEvalFilterStates();
 
-    Renderer::RenderTargetViewHandle emptyView = nullptr;
+    RenderTargetView emptyView = nullptr;
     renderer.setActiveRenderTargets(nullptr, 0, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTargets(&emptyView, 1, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTarget(nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setActiveRenderTarget(emptyView, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTargets(nullptr, 0, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTargets(&emptyView, 1, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTarget(nullptr, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.setCleanActiveRenderTarget(emptyView, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearViews(nullptr, 0, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearViews(&emptyView, 1, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearView(nullptr, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     renderer.clearView(emptyView, nullptr, nullptr);
-    EXPECT_EQ(size_t{0}, renderer.activeRenderTargets());
     
     pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
     renderer.setViewports(&viewport1, size_t{1u});
@@ -152,124 +142,96 @@
     RendererStateFactory factory(renderer);
 
     FilterStateArray valueContainer;
-    pandora::video::TextureAddressMode addrModes[3] { 
-      pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat 
+    TextureWrap addrModes[3] { 
+      TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat 
     };
-    float borderColor[4] = { 0.,0.,0.,1. };
     
     // base filters
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::nearest,
-                          pandora::video::MagnificationFilter::nearest, addrModes, 0.,0., 0.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::border;
-    borderColor[0] = borderColor[1] = borderColor[2] = 1.;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::linear,
-                          pandora::video::MagnificationFilter::nearest, addrModes, 0.,1., 1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::repeatMirror;
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.5;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::nearest,
-                          pandora::video::MagnificationFilter::linear, addrModes, 1.,8., -1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 1.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::linear,
-                          pandora::video::MagnificationFilter::linear, addrModes, 8.,8., 2.0, borderColor));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,0.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToBorder;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,1.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::repeatMirror;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 1.f,8.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 8.f,8.f)));
     valueContainer.clear();
     
-    addrModes[0] = pandora::video::TextureAddressMode::repeat;
-    addrModes[1] = pandora::video::TextureAddressMode::border;
-    addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 0.;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::linear_mipLinear,
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,4., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.; borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::nearest_mipNearest,
-                          pandora::video::MagnificationFilter::nearest, addrModes, 0.,0., 1.0, borderColor));
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 1.;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::nearest_mipLinear,
-                          pandora::video::MagnificationFilter::nearest, addrModes, 1.,1., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 0.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createFilter(pandora::video::MinificationFilter::linear_mipNearest,
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,1., -1.0, borderColor));
+    addrModes[0] = TextureWrap::repeat;
+    addrModes[1] = TextureWrap::clampToBorder;
+    addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear,
+                                                                 addrModes, 0.f,4.f)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,0.f)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::linear,
+                                                                 addrModes, 1.f,1.f)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 0.f,1.f)));
     valueContainer.clear();
     
     // comparison filters
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::nearest, pandora::video::MagnificationFilter::nearest,
-                                  addrModes, pandora::video::DepthComparison::always, 0.,0., 0.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::border;
-    borderColor[0] = borderColor[1] = borderColor[2] = 1.;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::linear, pandora::video::MagnificationFilter::nearest,
-                                  addrModes, pandora::video::DepthComparison::greater, 0.,1., 1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::repeatMirror;
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.5;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::nearest, pandora::video::MagnificationFilter::linear,
-                                  addrModes, pandora::video::DepthComparison::equal, 1.,8., -1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 1.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::linear, pandora::video::MagnificationFilter::linear,
-                                  addrModes, pandora::video::DepthComparison::notEqual, 8.,8., 2.0, borderColor));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,0.f, StencilCompare::always)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToBorder;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,1.f, StencilCompare::greater)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::repeatMirror;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 1.f,8.f, StencilCompare::equal)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 8.f,8.f, StencilCompare::notEqual)));
     valueContainer.clear();
     
-    addrModes[0] = pandora::video::TextureAddressMode::repeat;
-    addrModes[1] = pandora::video::TextureAddressMode::border;
-    addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 0.;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::linear_mipLinear, pandora::video::MagnificationFilter::linear,
-                                  addrModes, pandora::video::DepthComparison::never, 0.,4., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.; borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::nearest_mipNearest, pandora::video::MagnificationFilter::nearest,
-                                  addrModes, pandora::video::DepthComparison::less, 0.,0., 1.0, borderColor));
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 1.;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::nearest_mipLinear, pandora::video::MagnificationFilter::nearest,
-                                  addrModes, pandora::video::DepthComparison::lessEqual, 1.,1., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 0.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createComparedFilter(pandora::video::MinificationFilter::linear_mipNearest, pandora::video::MagnificationFilter::linear,
-                                  addrModes, pandora::video::DepthComparison::always, 0.,1., -1.0, borderColor));
+    addrModes[0] = TextureWrap::repeat;
+    addrModes[1] = TextureWrap::clampToBorder;
+    addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear,
+                                                                 addrModes, 0.f,4.f, StencilCompare::never)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
+                                                                 addrModes, 0.f,0.f, StencilCompare::less)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::linear,
+                                                                 addrModes, 1.f,1.f, StencilCompare::lessEqual)));
+    valueContainer.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
+                                                                 addrModes, 0.f,1.f, StencilCompare::always)));
     valueContainer.clear();
     
     // anisotropic filters
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createAnisotropicFilter(1u, addrModes, 0.,0., 0.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::border;
-    borderColor[0] = borderColor[1] = borderColor[2] = 1.;
-    valueContainer.append(factory.createAnisotropicFilter(2u, addrModes, 0.,1., 1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::repeatMirror;
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.5;
-    valueContainer.append(factory.createAnisotropicFilter(4u, addrModes, 1.,8., -1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 1.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createAnisotropicFilter(8u, addrModes, 8.,8., 2.0, borderColor));
+    valueContainer.append(factory.createFilterState(FilterParams(1u, addrModes, 0.f,0.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToBorder;
+    valueContainer.append(factory.createFilterState(FilterParams(2u, addrModes, 0.f,1.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::repeatMirror;
+    valueContainer.append(factory.createFilterState(FilterParams(4u, addrModes, 1.f,8.f)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(8u, addrModes, 8.f,8.f)));
     valueContainer.clear();
     
-    addrModes[0] = pandora::video::TextureAddressMode::repeat;
-    addrModes[1] = pandora::video::TextureAddressMode::border;
-    addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 0.;
-    valueContainer.append(factory.createAnisotropicFilter(factory.maxAnisotropy(), addrModes, 0.,4., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.; borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createAnisotropicFilter(factory.maxAnisotropy()/2u, addrModes, 0.,0., 1.0, borderColor));
+    addrModes[0] = TextureWrap::repeat;
+    addrModes[1] = TextureWrap::clampToBorder;
+    addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(FilterParams::maxAnisotropy(), addrModes, 0.f,4.f)));
+    valueContainer.append(factory.createFilterState(FilterParams(FilterParams::maxAnisotropy()/2u, addrModes, 0.f,0.f)));
     valueContainer.clear();
     
     // comparison anisotropic filters
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createComparedAnisotropicFilter(1u, addrModes, pandora::video::DepthComparison::always, 0.,0., 0.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::border;
-    borderColor[0] = borderColor[1] = borderColor[2] = 1.;
-    valueContainer.append(factory.createComparedAnisotropicFilter(2u, addrModes, pandora::video::DepthComparison::never, 0.,1., 1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::repeatMirror;
-    borderColor[0] = borderColor[1] = borderColor[2] = 0.5;
-    valueContainer.append(factory.createComparedAnisotropicFilter(4u, addrModes, pandora::video::DepthComparison::equal, 1.,8., -1.0, borderColor));
-    addrModes[0] = addrModes[1] = addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 0.; borderColor[1] = 0.5; borderColor[2] = 1.; borderColor[3] = 0.5;
-    valueContainer.append(factory.createComparedAnisotropicFilter(8u, addrModes, pandora::video::DepthComparison::notEqual, 8.,8., 2.0, borderColor));
+    valueContainer.append(factory.createFilterState(FilterParams(1u, addrModes, 0.f,0.f, StencilCompare::always)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToBorder;
+    valueContainer.append(factory.createFilterState(FilterParams(2u, addrModes, 0.f,1.f, StencilCompare::never)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::repeatMirror;
+    valueContainer.append(factory.createFilterState(FilterParams(4u, addrModes, 1.f,8.f, StencilCompare::equal)));
+    addrModes[0] = addrModes[1] = addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(8u, addrModes, 8.f,8.f, StencilCompare::notEqual)));
     valueContainer.clear();
     
-    addrModes[0] = pandora::video::TextureAddressMode::repeat;
-    addrModes[1] = pandora::video::TextureAddressMode::border;
-    addrModes[2] = pandora::video::TextureAddressMode::clamp;
-    borderColor[0] = 1.; borderColor[1] = 1.; borderColor[2] = 1.; borderColor[3] = 0.;
-    valueContainer.append(factory.createComparedAnisotropicFilter(factory.maxAnisotropy(), addrModes, pandora::video::DepthComparison::less, 0.,4., 0.0, borderColor));
-    borderColor[0] = 0.; borderColor[1] = 0.; borderColor[2] = 0.; borderColor[3] = 1.;
-    valueContainer.append(factory.createComparedAnisotropicFilter(factory.maxAnisotropy()/2u, addrModes, pandora::video::DepthComparison::greater, 0.,0., 1.0, borderColor));
+    addrModes[0] = TextureWrap::repeat;
+    addrModes[1] = TextureWrap::clampToBorder;
+    addrModes[2] = TextureWrap::clampToEdge;
+    valueContainer.append(factory.createFilterState(FilterParams(FilterParams::maxAnisotropy(), addrModes, 0.f,4.f, StencilCompare::less)));
+    valueContainer.append(factory.createFilterState(FilterParams(FilterParams::maxAnisotropy()/2u, addrModes, 0.f,0.f, StencilCompare::greater)));
     valueContainer.clear();
   }
 

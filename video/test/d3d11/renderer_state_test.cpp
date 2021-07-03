@@ -47,63 +47,45 @@
 
     RendererStateFactory factory(renderer);
 
-    DepthStencilState valD1 = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::incrementWrap, DepthStencilOperation::keep }, 
-                                                           DepthOperationGroup{ DepthStencilOperation::decrementWrap, DepthStencilOperation::keep }, 
-                                                           DepthComparison::less, true);
+    DepthStencilState valD1 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace, 
+                                                                                     StencilOp::decrementWrap, StencilOp::invert));
     EXPECT_TRUE(valD1);
     EXPECT_TRUE(valD1.isValid());
     EXPECT_TRUE(valD1.get() != nullptr);
     renderer.setDepthStencilState(valD1);
-    DepthStencilState valD2 = factory.createDepthTestState(DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::replace }, 
-                                                           DepthOperationGroup{ DepthStencilOperation::setZero, DepthStencilOperation::invert }, 
-                                                           DepthComparison::greaterEqual, false);
+    DepthStencilState valD2 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::greaterEqual, StencilOp::zero, StencilOp::replace, 
+                                                                                     StencilOp::zero, StencilOp::invert));
     EXPECT_TRUE(valD2);
     EXPECT_TRUE(valD2.isValid());
     EXPECT_TRUE(valD2.get() != nullptr);
     renderer.setDepthStencilState(valD2);
     
-    DepthStencilState valS1 = factory.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                               DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
-                                                               DepthComparison::greater }, 
-                                                             DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                               DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
-                                                               DepthComparison::less },
-                                                             (uint8_t)0xFF, (uint8_t)0xFF);
+    DepthStencilState valS1 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::greater, StencilCompare::less, 
+                                                                                     StencilOp::incrementWrap, StencilOp::replace, 
+                                                                                     StencilOp::decrementWrap, StencilOp::invert));
     EXPECT_TRUE(valS1);
     EXPECT_TRUE(valS1.isValid());
     EXPECT_TRUE(valS1.get() != nullptr);
     renderer.setDepthStencilState(valS1);
-    DepthStencilState valS2 = factory.createStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                               DepthStencilOperation::setZero, DepthStencilOperation::replace, 
-                                                               DepthComparison::always }, 
-                                                             DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                               DepthStencilOperation::setZero, DepthStencilOperation::invert, 
-                                                               DepthComparison::notEqual },
-                                                             (uint8_t)0x1, (uint8_t)0x1);
+    DepthStencilState valS2 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::always, StencilCompare::notEqual, 
+                                                                                     StencilOp::zero, StencilOp::replace, 
+                                                                                     StencilOp::zero, StencilOp::invert));
     EXPECT_TRUE(valS2);
     EXPECT_TRUE(valS2.isValid());
     EXPECT_TRUE(valS2.get() != nullptr);
     renderer.setDepthStencilState(valS2);
     
-    DepthStencilState valDS1 = factory.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                     DepthStencilOperation::incrementWrap, DepthStencilOperation::keep, 
-                                                                     DepthComparison::greater }, 
-                                                                   DepthStencilOperationGroup{ DepthStencilOperation::setZero,
-                                                                     DepthStencilOperation::decrementWrap, DepthStencilOperation::keep, 
-                                                                     DepthComparison::less },
-                                                                   DepthComparison::less, true, (uint8_t)0xFF, (uint8_t)0xFF);
+    DepthStencilState valDS1 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::less, StencilCompare::less, StencilCompare::greater, 
+                                                                                      StencilOp::zero, StencilOp::incrementWrap, StencilOp::keep, 
+                                                                                      StencilOp::zero, StencilOp::decrementClamp, StencilOp::keep));
     EXPECT_TRUE(valDS1);
     EXPECT_TRUE(valDS1.isValid());
     EXPECT_TRUE(valDS1.get() != nullptr);
     renderer.setDepthStencilState(valDS1);
     
-    DepthStencilState valDS2 = factory.createDepthStencilTestState(DepthStencilOperationGroup{ DepthStencilOperation::keep,
-                                                                     DepthStencilOperation::decrementWrap, DepthStencilOperation::replace, 
-                                                                     DepthComparison::always }, 
-                                                                   DepthStencilOperationGroup{ DepthStencilOperation::keep,
-                                                                     DepthStencilOperation::incrementWrap, DepthStencilOperation::invert, 
-                                                                     DepthComparison::always },
-                                                                   DepthComparison::greater, false, (uint8_t)0x1, (uint8_t)0x1);
+    DepthStencilState valDS2 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::greater, StencilCompare::always, StencilCompare::always, 
+                                                                                      StencilOp::keep, StencilOp::decrementClamp, StencilOp::replace, 
+                                                                                      StencilOp::keep, StencilOp::incrementClamp, StencilOp::invert));
     EXPECT_TRUE(valDS2);
     EXPECT_TRUE(valDS2.isValid());
     EXPECT_TRUE(valDS2.get() != nullptr);
@@ -161,14 +143,12 @@
     Renderer renderer(monitor);
     RendererStateFactory factory(renderer);
 
-    RasterizerState val1 = factory.createRasterizerState(pandora::video::CullMode::wireFrame, false, 
-                                   pandora::video::DepthBias{ 100, 0.5f, 0.5f, true }, false);
+    RasterizerState val1 = factory.createRasterizerState(RasterizerParams(CullMode::none, FillMode::lines, false, true, false));
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.isValid());
     EXPECT_TRUE(val1.get() != nullptr);
     renderer.setRasterizerState(val1);
-    RasterizerState val2(factory.createRasterizerState(pandora::video::CullMode::cullBack, true, 
-                                 pandora::video::DepthBias{ 0, -0.25f, 1.f, true }, true));
+    RasterizerState val2(factory.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, true, true)));
     EXPECT_TRUE(val2);
     EXPECT_TRUE(val2.isValid());
     EXPECT_TRUE(val2.get() != nullptr);
@@ -227,14 +207,15 @@
     RendererStateFactory factory(renderer);
     const FLOAT color[4] = { 0.f,0.f,0.f,1.f };
 
-    BlendState val1 = factory.createBlendState(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::add);
+    BlendState val1 = factory.createBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add, 
+                                                           BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add));
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.isValid());
     EXPECT_TRUE(val1.get() != nullptr);
     renderer.setBlendState(val1);
     renderer.setBlendState(val1, color);
-    BlendState val2(factory.createBlendState(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::revSubtract, 
-                                             BlendFactor::one, BlendFactor::zero, BlendOperator::maximum));
+    BlendState val2(factory.createBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::revSubtract, 
+                                                         BlendFactor::one, BlendFactor::zero, BlendOp::maximum)));
     EXPECT_TRUE(val2);
     EXPECT_TRUE(val2.isValid());
     EXPECT_TRUE(val2.get() != nullptr);
@@ -242,7 +223,8 @@
     renderer.setBlendState(val2, color);
     renderer.setBlendState(BlendState{});
 
-    BlendState val3(factory.createBlendState(BlendFactor::constantColor, BlendFactor::constantInvColor, BlendOperator::subtract));
+    BlendState val3(factory.createBlendState(BlendParams(BlendFactor::constantColor, BlendFactor::constantInvColor, BlendOp::subtract,
+                                                         BlendFactor::constantAlpha, BlendFactor::constantInvAlpha, BlendOp::subtract)));
     EXPECT_TRUE(val3);
     EXPECT_TRUE(val3.isValid());
     EXPECT_TRUE(val3.get() != nullptr);
@@ -250,9 +232,9 @@
     renderer.setBlendState(val3, color);
     renderer.setBlendState(BlendState{});
 
-    TargetBlendingParams params1[]{ {BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOperator::add}, 
-                                    {BlendFactor::sourceInvColor, BlendFactor::destColor, BlendOperator::subtract},
-                                    {BlendFactor::one, BlendFactor::zero, BlendOperator::none} };
+    BlendTargetParams params1[]{ BlendTargetParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add, BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add), 
+                                 BlendTargetParams(BlendFactor::sourceInvColor, BlendFactor::destColor, BlendOp::subtract, BlendFactor::sourceInvAlpha, BlendFactor::destAlpha, BlendOp::subtract),
+                                 BlendTargetParams(BlendFactor::one, BlendFactor::zero, BlendOp::add, BlendFactor::one, BlendFactor::zero, BlendOp::add, false) };
     BlendState val4(factory.createBlendStatePerTarget(params1, (size_t)3u));
     EXPECT_TRUE(val4);
     EXPECT_TRUE(val4.isValid());
@@ -261,8 +243,8 @@
     renderer.setBlendState(val4, color);
     renderer.setBlendState(BlendState{});
 
-    TargetBlendingSplitParams params2 = { BlendFactor::sourceColor, BlendFactor::destColor, BlendOperator::minimum, 
-                                          BlendFactor::one, BlendFactor::one, BlendOperator::maximum };
+    BlendTargetParams params2(BlendFactor::sourceColor, BlendFactor::destColor, BlendOp::minimum, 
+                              BlendFactor::one, BlendFactor::one, BlendOp::maximum);
     BlendState val5(factory.createBlendStatePerTarget(&params2, (size_t)1u));
     EXPECT_TRUE(val5);
     EXPECT_TRUE(val5.isValid());
@@ -402,29 +384,28 @@
     Renderer renderer(monitor);
     RendererStateFactory factory(renderer);
     
-    float borderColor[4] { 0.,0.,0.,1. };
-    pandora::video::TextureAddressMode addrModes[3] { 
-      pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat, pandora::video::TextureAddressMode::repeat
+    TextureWrap addrModes[3] { 
+      TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat
     };
 
     FilterStateArray values;
-    values.append(factory.createFilter(pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
+    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear,
+                                                         addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)1, values.size());
     auto val1 = values.at(0);
-    values.append(factory.createFilter(pandora::video::MinificationFilter::linear, 
-                          pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
+    values.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::linear, TextureFilter::linear,
+                                                         addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)2, values.size());
     EXPECT_EQ(val1, values.at(0));
     auto val2 = values.at(1);
-    values.insert(0, factory.createFilter(pandora::video::MinificationFilter::linear, 
-                             pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
+    values.insert(0, factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
+                                                            addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)3, values.size());
     EXPECT_EQ(val1, values.at(1));
     EXPECT_EQ(val2, values.at(2));
     auto val0 = values.at(0);
-    values.insert(1, factory.createFilter(pandora::video::MinificationFilter::linear, 
-                             pandora::video::MagnificationFilter::linear, addrModes, 0.,0., 0.0, borderColor));
+    values.insert(1, factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
+                                                            addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)4, values.size());
     EXPECT_EQ(val0, values.at(0));
     EXPECT_EQ(val1, values.at(2));

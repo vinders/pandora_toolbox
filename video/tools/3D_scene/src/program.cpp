@@ -16,8 +16,8 @@ using namespace pandora::video;
 
 // -- common implementation --
 
-template <typename _Renderer>
-static inline void __renderFrame(_Renderer& renderer, typename _Renderer::SwapChain& swapChain, bool useVsync) {
+template <typename _Renderer, typename _SwapChain>
+static inline void __renderFrame(_Renderer& renderer, typename _SwapChain& swapChain, bool useVsync) {
   renderer.setCleanActiveRenderTarget(swapChain.getRenderTargetView(), nullptr, nullptr);
 
   //...
@@ -32,10 +32,10 @@ namespace scene {
 # if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
     class D3d11Program final : scene::Program {
     public:
-      D3d11Program(std::shared_ptr<d3d11::Renderer> renderer, SwapChainParams& params,
+      D3d11Program(std::shared_ptr<d3d11::Renderer> renderer, SwapChainDescriptor& params,
                    std::shared_ptr<scene::MenuManager> menu, Window& window)
         : Program(), _menu(menu), _renderer(renderer), 
-          _swapChain(renderer, params, window.handle(), window.getClientSize().width, window.getClientSize().height) {
+          _swapChain(renderer, window.handle(), params, d3d11::DataFormat::rgba8_sRGB) {
         //init shaders + filters
       }
       virtual ~D3d11Program() noexcept = default;
@@ -44,12 +44,12 @@ namespace scene {
       void onSizeChange(uint32_t width, uint32_t height) override { this->_swapChain.resize(width, height); }
       void onViewportChange() override {}
 
-      void renderFrame() override { __renderFrame<d3d11::Renderer>(*_renderer, _swapChain, _menu->settings().useVsync); }
+      void renderFrame() override { __renderFrame(*_renderer, _swapChain, _menu->settings().useVsync); }
 
     private:
       std::shared_ptr<scene::MenuManager> _menu = nullptr;
       std::shared_ptr<d3d11::Renderer> _renderer = nullptr;
-      d3d11::Renderer::SwapChain _swapChain;
+      d3d11::SwapChain _swapChain;
     };
 # endif
 }
@@ -59,9 +59,11 @@ namespace scene {
 
 std::unique_ptr<scene::Program> scene::Program::createProgram(std::shared_ptr<scene::MenuManager> menu, pandora::video::Window& window) {
   pandora::hardware::DisplayMonitor primaryMonitor;
-  SwapChainParams params;
-  params.setBackBufferFormat(pandora::video::ComponentFormat::rgba8_sRGB)
-        .setFrameBufferNumber(2u).setRenderTargetMode(SwapChainTargetMode::uniqueOutput);
+  SwapChainDescriptor params;
+  auto windowSize = window.getClientSize();
+  params.width = windowSize.width;
+  params.height = windowSize.height;
+  params.framebufferCount = 2u;
 
   switch (menu->settings().api) {
 #   if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)

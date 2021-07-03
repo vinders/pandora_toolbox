@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.95.1.624
-2021-06-23 - 6882131a549227f319cf09af46ff43ae607fa97b
+## 0.98.1.659
+2021-07-02 - 44fa67c643a3c8860caa71a6e28e71cd50a9f05e
 ### features
-vinders (15):
+vinders (18):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
 * video: component format (color/depth/stencil): portable bindings for D3D/OpenGL/Vulkan
 * video: Direct3D11 rendering device/context
@@ -14,17 +14,23 @@ vinders (15):
 * video: Direct3D11 rendering device/context: filter/sampler builder (linear/anisotropic/compared)
 * video: Direct3D11 shader builder/compiler/binding + input layouts
 * video: rendering viewport (region for 3D projection + near/far clipping)
+* memory: light string/wstring implementations (to avoid STL overhead)
 * system: portable data alignment macro: __align_type(size,def)
+* video: Direct3D11 / OpenGL4 / Vulkan enum definitions (same labels)
 * video: Direct3D11 depth/stencil buffer and view + depth/stencil states
 * video: Direct3D11 constant data buffer (for shaders)
 * video: Direct3D11 static/dynamic vertex/index/constant buffers
 * video: Direct3D11 vertex buffer drawing (base/indexed/instances)
 * video: Direct3D11 camera screen projection (ratio, fov, near/far-planes)
+* video: Direct3D11 rendering device/context: blend state builder (grouped/separate/per-target)
 ### fixes
-vinders (3):
+vinders (6):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
 * video: Direct3D11: remove outdated multisampling mode
 * pattern: advanced type traits: fix move detection for new MSVC compiler
+* video: window manager + builder: remove scrollbar support (not very useful -> improve speed + reduce weight)
+* video: drop OpenGLES support + add Vulkan support
+* video: refactor Direct3D11 renderer/swap-chain/state factory: improve efficiency, reduce weight, make interface usable for vulkan/openGL easily
 
 ---
 

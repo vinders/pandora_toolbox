@@ -58,10 +58,10 @@
     char* binaryFileBuffer = new char[binaryFileSize];
     binaryFile.read(binaryFileBuffer, binaryFileSize);
     binaryFile.close();
-    Shader::Builder binaryBuilder(pandora::video::ShaderType::vertex, (const uint8_t*)binaryFileBuffer, (size_t)binaryFileSize);
+    Shader::Builder binaryBuilder(ShaderType::vertex, (const uint8_t*)binaryFileBuffer, (size_t)binaryFileSize);
     auto binaryShader = binaryBuilder.createShader(renderer.device());
     EXPECT_TRUE(binaryShader.handle() != nullptr);
-    EXPECT_TRUE(binaryShader.type() == pandora::video::ShaderType::vertex);
+    EXPECT_TRUE(binaryShader.type() == ShaderType::vertex);
     EXPECT_FALSE(binaryShader.isEmpty());
     
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
@@ -86,56 +86,56 @@
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
-    auto vertexBuilder = Shader::Builder::compileFromFile(pandora::video::ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
+    auto vertexBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
     auto vertexShader = vertexBuilder.createShader(renderer.device());
     auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(vertexShader.handle() != nullptr);
-    EXPECT_TRUE(vertexShader.type() == pandora::video::ShaderType::vertex);
+    EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
     EXPECT_FALSE(vertexShader.isEmpty());
     EXPECT_TRUE(inputLayout.handle() != nullptr);
     renderer.bindInputLayout(inputLayout.handle());
     renderer.bindVertexShader(vertexShader.handle());
     renderer.bindVertexShader(nullptr);
     
-    auto fragmentShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::fragment, __createPath(L"/d3d11/test_fragment.ps.hlsl"), "PSMain")
+    auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/d3d11/test_fragment.ps.hlsl"), "PSMain")
                           .createShader(renderer.device());
     EXPECT_TRUE(fragmentShader.handle() != nullptr);
-    EXPECT_TRUE(fragmentShader.type() == pandora::video::ShaderType::fragment);
+    EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
     EXPECT_FALSE(fragmentShader.isEmpty());
     renderer.bindFragmentShader(fragmentShader.handle());
     renderer.bindFragmentShader(nullptr);
     
-    auto geometryShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
+    auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
                           .createShader(renderer.device());
     EXPECT_TRUE(geometryShader.handle() != nullptr);
-    EXPECT_TRUE(geometryShader.type() == pandora::video::ShaderType::geometry);
+    EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
     EXPECT_FALSE(geometryShader.isEmpty());
     renderer.bindGeometryShader(geometryShader.handle());
     renderer.bindGeometryShader(nullptr);
 
-    auto computeShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
+    auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
                          .createShader(renderer.device());
     EXPECT_TRUE(computeShader.handle() != nullptr);
-    EXPECT_TRUE(computeShader.type() == pandora::video::ShaderType::compute);
+    EXPECT_TRUE(computeShader.type() == ShaderType::compute);
     EXPECT_FALSE(computeShader.isEmpty());
     renderer.bindComputeShader(computeShader.handle());
     renderer.bindComputeShader(nullptr);
     
-    auto controlShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::tesselControl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
+    auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
                          .createShader(renderer.device());
     EXPECT_TRUE(controlShader.handle() != nullptr);
-    EXPECT_TRUE(controlShader.type() == pandora::video::ShaderType::tesselControl);
+    EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
     EXPECT_FALSE(controlShader.isEmpty());
-    renderer.bindTesselControlShader(controlShader.handle());
-    renderer.bindTesselControlShader(nullptr);
+    renderer.bindTessCtrlShader(controlShader.handle());
+    renderer.bindTessCtrlShader(nullptr);
     
-    auto evalShader = Shader::Builder::compileFromFile(pandora::video::ShaderType::tesselEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
+    auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
                       .createShader(renderer.device());
     EXPECT_TRUE(evalShader.handle() != nullptr);
-    EXPECT_TRUE(evalShader.type() == pandora::video::ShaderType::tesselEval);
+    EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
     EXPECT_FALSE(evalShader.isEmpty());
-    renderer.bindTesselEvalShader(evalShader.handle());
-    renderer.bindTesselEvalShader(nullptr);
+    renderer.bindTessEvalShader(evalShader.handle());
+    renderer.bindTessEvalShader(nullptr);
     
     const char* vertexShaderText = "cbuffer MatrixBuffer {"
       "  matrix worldMatrix;"
@@ -159,11 +159,11 @@
       "  output.color = input.color;"
       "  return output;"
       "}";
-    auto vertexTextBuilder = Shader::Builder::compile(pandora::video::ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
+    auto vertexTextBuilder = Shader::Builder::compile(ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
     auto vertexShader2 = vertexTextBuilder.createShader(renderer.device());
     auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(vertexShader2.handle() != nullptr);
-    EXPECT_TRUE(vertexShader2.type() == pandora::video::ShaderType::vertex);
+    EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
     EXPECT_FALSE(vertexShader2.isEmpty());
     EXPECT_TRUE(inputLayout2.handle() != nullptr);
     renderer.bindInputLayout(inputLayout2.handle());

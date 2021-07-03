@@ -58,8 +58,8 @@ License :     MIT
         private:
           DepthStencilView _depthStencilView = nullptr;  // ID3D11DepthStencilView*
           TextureHandle2D _depthStencilBuffer = nullptr; // ID3D11Texture2D*
-          uint32_t _pixelSize; // width / height
-          DepthStencilFormat _format;
+          uint32_t _pixelSize = 0; // width / height
+          DepthStencilFormat _format = DepthStencilFormat::d32_f;
         };
       }
     }

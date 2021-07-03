@@ -110,7 +110,7 @@ Implementation included in renderer.cpp
     
     auto* last = arrayLength ? &(descriptor.RenderTarget[arrayLength - 1]) : nullptr;
     for (auto* it = &(descriptor.RenderTarget[0]); it <= last; ++it, ++perTargetParams) {
-      it->BlendEnable = perTargetParams->isEnabled;
+      it->BlendEnable = perTargetParams->isEnabled ? TRUE : FALSE;
       it->RenderTargetWriteMask = (UINT8)perTargetParams->targetWriteMask;
       
       it->SrcBlend  = (D3D11_BLEND)perTargetParams->srcColorFactor;
@@ -158,7 +158,7 @@ Implementation included in renderer.cpp
   // ---
 
   // Create sampler filter state - can be used to change sampler filter state when needed (setFilterState)
-  FilterState RendererStateFactory::createFilter(const FilterParams& params) {
+  FilterState RendererStateFactory::createFilterState(const FilterParams& params) {
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&(params.descriptor()), &stateData);
     if (FAILED(result) || stateData == nullptr)
