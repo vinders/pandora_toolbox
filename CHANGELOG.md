@@ -30,7 +30,7 @@ vinders (6):
 * pattern: advanced type traits: fix move detection for new MSVC compiler
 * video: window manager + builder: remove scrollbar support (not very useful -> improve speed + reduce weight)
 * video: drop OpenGLES support + add Vulkan support
-* video: refactor Direct3D11 renderer/swap-chain/state factory: improve efficiency, reduce weight, make interface usable for vulkan/openGL easily
+* video: refactor Direct3D11 renderer/swap-chain/state factory: improve efficiency, reduce weight, make interface usable for vulkan/openGL
 
 ---
 
