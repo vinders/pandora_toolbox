@@ -29,7 +29,7 @@ License :     MIT
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           inline Texture1DParams(uint32_t width, DataFormat format = DataFormat::rgba8_sRGB, uint32_t arraySize = 1u, 
-                                 uint32_t mipLevels = 0, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
+                                 uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE1D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
             
@@ -111,7 +111,7 @@ License :     MIT
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           inline Texture2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
-                                 uint32_t arraySize = 1u, uint32_t mipLevels = 0, uint32_t mostDetailedViewedMip = 0,
+                                 uint32_t arraySize = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
                                  ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
@@ -198,7 +198,7 @@ License :     MIT
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           inline TextureCube2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
-                                     uint32_t nbCubes = 1u, uint32_t mipLevels = 0, uint32_t mostDetailedViewedMip = 0,
+                                     uint32_t nbCubes = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
                                      ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
@@ -286,7 +286,7 @@ License :     MIT
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           inline Texture3DParams(uint32_t width, uint32_t height, uint32_t depth, DataFormat format = DataFormat::rgba8_sRGB, 
-                                 uint32_t mipLevels = 0, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
+                                 uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE3D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
             _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
@@ -573,7 +573,8 @@ License :     MIT
           /// @brief Create texture resource and view from params
           /// @param isShaderResource Allow directly using the rendered texture target also as a shader texture resource (for some polygons, for example).
           ///                         Without this, a copy to another texture (shader resource, not render-target) is required, and this texture can be used with polygons.
-          ///                         Note: allowing direct use as shader resource can lead to poor memory optimization and slow access -> not recommended.
+          ///                         This is also necessary to auto-generate mip levels with the renderer.
+          ///                         Note: allowing direct use as shader resource may lead to poor memory optimization and slower access.
           /// @warning Usage for TextureTarget2D can't be 'immutable' nor 'staging'. Default 'staticGpu' usage recommended.
           /// @throws runtime_error on creation failure
           inline TextureTarget2D(Renderer& renderer, Texture2DParams& params, const void* initData = nullptr, bool isShaderResource = false)
