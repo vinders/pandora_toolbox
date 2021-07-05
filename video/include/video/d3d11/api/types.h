@@ -15,6 +15,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
 #   define NOMCX
 #   define NOSERVICE
 # endif
+# include <cstdint>
 # include "./d3d_11.h"
 # include <system/_private/_enum_flags.h>
 
@@ -175,6 +176,12 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         }
         constexpr inline DXGI_FORMAT _getDataFormatComponents(DataFormat format) noexcept { return static_cast<DXGI_FORMAT>((uint32_t)format & 0x00FFFFu); }
         constexpr inline uint32_t _getDataFormatBytesPerPixel(DataFormat format) noexcept { return ((uint32_t)format >> 24); }
+        
+        template <typename _TextureDesc>
+        inline uint32_t _setTextureFormat(DataFormat format, _TextureDesc& outDesc, D3D11_SHADER_RESOURCE_VIEW_DESC& outView) {
+          outView.Format = outDesc.Format = _getDataFormatComponents(format);
+          return _getDataFormatBytesPerPixel(format);
+        }
 #       undef __P_D3D11_FORMAT
       
         /// @brief Primitive topology - vertex interpretation mode (tessellation patches excluded)
@@ -232,22 +239,38 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
                                                  ///  * optionally used with vertex array buffer(s), to improve speed and bandwidth.
                                                  ///  * contains indices to allow removal of redundant/common vertices from associated vertex array buffer(s).
         };
+        
+#       define __P_D3D11_RES_USAGE(usage, cpuAccess)  ((uint32_t)usage | (((uint32_t)cpuAccess) << 8))
+
         /// @brief Resource / texture memory usage - ResourceBuffer / Texture<...>
-        enum class ResourceUsage : int/*D3D11_USAGE*/ {
-          immutable = D3D11_USAGE_IMMUTABLE, ///< Immutable: GPU memory initialized at creation, not visible from CPU:
-                                             ///             - fastest GPU access: ideal for static resources that don't change (textures, geometry...);
-          staticGpu = D3D11_USAGE_DEFAULT,   ///< Static: GPU memory, not directly visible from CPU:
-                                             ///          - fast GPU access: ideal for static resources rarely updated or for small resources;
-                                             ///          - indirect CPU write access: should be used when NOT updated frequently (or if data is small).
-          dynamicCpu = D3D11_USAGE_DYNAMIC,  ///< Dynamic: CPU mappable memory, visible from GPU (through PCIe):
-                                             ///           - slow GPU read access: should be used when data isn't kept for multiple frames;
-                                             ///           - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
-          staging   = D3D11_USAGE_STAGING    ///< Staging: CPU-only mappable memory:
-                                             ///           - no GPU access: should not be used for display or render-targets;
-                                             ///           - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
-                                             ///           - staged content is usually used to populate/read/update static resources (textures, geometry...)
-                                             ///             -> copied with data transfers from/to staticGpu resources (which can be accessed by the GPU).
+        enum class ResourceUsage : uint32_t/*D3D11_USAGE + D3D11_CPU_ACCESS_FLAG*/ {
+          immutable  = __P_D3D11_RES_USAGE(D3D11_USAGE_IMMUTABLE, 0), ///< Immutable: GPU memory initialized at creation, not visible from CPU:
+                                                                      ///             - fastest GPU access: ideal for static resources that don't change (textures, geometry...);
+          staticGpu  = __P_D3D11_RES_USAGE(D3D11_USAGE_DEFAULT, 0),   ///< Static: GPU memory, not directly visible from CPU:
+                                                                      ///          - fast GPU access: ideal for static resources rarely updated or for small resources;
+                                                                      ///          - indirect CPU write access: should be used when NOT updated frequently (or if data is small).
+          dynamicCpu = __P_D3D11_RES_USAGE(D3D11_USAGE_DYNAMIC,
+                                           D3D11_CPU_ACCESS_WRITE),   ///< Dynamic: CPU mappable memory, visible from GPU (through PCIe):
+                                                                      ///           - slow GPU read access: should be used when data isn't kept for multiple frames;
+                                                                      ///           - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
+          staging    = __P_D3D11_RES_USAGE(D3D11_USAGE_STAGING,
+                       (D3D11_CPU_ACCESS_WRITE|D3D11_CPU_ACCESS_READ))///< Staging: CPU-only mappable memory:
+                                                                      ///           - no GPU access: should not be used for display or render-targets;
+                                                                      ///           - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
+                                                                      ///           - staged content is usually used to populate/read/update static resources (textures, geometry...)
+                                                                      ///             -> copied with data transfers from/to staticGpu resources (which can be accessed by the GPU).
         };
+
+        constexpr inline D3D11_USAGE _getResourceUsageType(ResourceUsage usage) noexcept { return static_cast<D3D11_USAGE>((uint32_t)usage & 0x00FFu); }
+        constexpr inline UINT _getResourceUsageCpuAccess(ResourceUsage usage) noexcept { return static_cast<UINT>((uint32_t)usage >> 8); }
+        
+        template <typename _TextureDesc>
+        inline void _setTextureUsage(ResourceUsage type, _TextureDesc& outDesc) {
+          outDesc.Usage = _getResourceUsageType(type);
+          outDesc.CPUAccessFlags = _getResourceUsageCpuAccess(type);
+          outDesc.BindFlags = (type != ResourceUsage::staging) ? D3D11_BIND_SHADER_RESOURCE : 0;
+        }
+#       undef __P_D3D11_RES_USAGE
         
         
         // -- color/alpha blending --

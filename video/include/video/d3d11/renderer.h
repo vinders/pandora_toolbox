@@ -24,7 +24,7 @@ License :     MIT
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer must be created.
         ///          - Accessors to native D3D11 resources should be reserved for internal usage or for advanced features.
         /// @remarks - To render on display output, create a SwapChain + setActiveRenderTarget with it and a depth buffer.
-        ///          - To render to a texture, create a TextureTarget + setActiveRenderTarget with it and a depth buffer.
+        ///          - To render to a texture, create a TextureTarget2D + setActiveRenderTarget with it and a depth buffer.
         ///          - Multiple active targets can be used simultaneously, to render the same image on multiple outputs/textures.
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
         ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.

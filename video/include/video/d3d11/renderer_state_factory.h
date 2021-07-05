@@ -17,7 +17,7 @@ License :     MIT
         /// @class RasterizerParams
         /// @brief Rasterizer state configuration (filling/culling/clipping/bias params)
         /// @remarks The same RasterizerParams can (and should) be used to build multiple RasterizerState instances (if needed).
-        class RasterizerParams {
+        class RasterizerParams final {
         public:
           /// @brief Create default rasterizer params: filled, back-face culling, clockwise order, depth clipping.
           RasterizerParams() noexcept;
@@ -281,7 +281,7 @@ License :     MIT
         /// @class FilterParams
         /// @brief Filter/sampler state configuration (texture filter/wrap, level-of-detail...)
         /// @remarks The same FilterParams can be used to build multiple FilterState instances (if needed).
-        class FilterParams {
+        class FilterParams final {
         public:
           static constexpr inline uint32_t maxAnisotropy() noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; } ///< Max anisotropy level value (usually 8 or 16)
           static constexpr inline float highestLod() noexcept { return 0.f; } ///< Highest / most detailed level-of-detail.

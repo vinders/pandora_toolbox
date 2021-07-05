@@ -1,0 +1,229 @@
+/*******************************************************************************
+Author  :     Romain Vinders
+License :     MIT
+--------------------------------------------------------------------------------
+Implementation included in renderer.cpp
+(grouped object improves compiler optimizations + greatly reduces executable size)
+*******************************************************************************/
+#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+// includes + namespaces: in renderer.cpp
+
+static constexpr inline const char* __error_resCreationFailed() noexcept { return "Texture: resource creation failure"; }
+static constexpr inline const char* __error_viewCreationFailed() noexcept { return "Texture: view creation failure"; }
+
+
+// -- texture params -- --------------------------------------------------------
+
+uint32_t Texture1DParams::maxMipLevels(uint32_t width) noexcept {
+  return 1u + (uint32_t)log2f((float)width + 0.01f);
+}
+uint32_t Texture2DParams::maxMipLevels(uint32_t width, uint32_t height) noexcept {
+  uint32_t maxSize = (width >= height) ? width : height;
+  return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
+}
+uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t depth) noexcept {
+  uint32_t maxSize = (width >= height) ? width : height;
+  if (depth > maxSize)
+    maxSize = depth;
+  return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
+}
+
+
+// -- texture containers -- ----------------------------------------------------
+
+  // Create 1D texture resource and view from params
+  Texture1D::Texture1D(DeviceHandle device, const D3D11_TEXTURE1D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
+                       uint32_t texelBytes, const void* initData)
+    : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
+                 ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
+                 : D3D11_MAP_WRITE),
+      _rowBytes((uint32_t)descriptor.Width * texelBytes),
+      _mipLevels((descriptor.MipLevels != 0)
+                 ? (uint8_t)descriptor.MipLevels
+                 : (uint8_t)Texture1DParams::maxMipLevels(descriptor.Width)) { // throws
+    HRESULT result;
+    if (initData != nullptr) {
+      D3D11_SUBRESOURCE_DATA subResData;
+      ZeroMemory(&subResData, sizeof(subResData));
+      subResData.pSysMem = initData;
+      result = device->CreateTexture1D(&descriptor, &subResData, &(this->_texture));
+    }
+    else
+      result = device->CreateTexture1D(&descriptor, nullptr, &(this->_texture));
+    
+    if (FAILED(result) || this->_texture == nullptr)
+      throwError(result, __error_resCreationFailed());
+    if (descriptor.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+      result = device->CreateShaderResourceView(this->_texture, &viewDescriptor, &(this->_resourceView));
+      if (FAILED(result) || this->_resourceView == nullptr)
+        throwError(result, __error_viewCreationFailed());
+    }
+  }
+  // Destroy 1D texture resource
+  void Texture1D::release() noexcept {
+    if (this->_resourceView) {
+      try { this->_resourceView->Release(); } catch(...) {}
+      this->_resourceView = nullptr;
+    }
+    if (this->_texture) {
+      try { this->_texture->Release(); } catch(...) {}
+      this->_texture = nullptr;
+    }
+  }
+  
+  // Create 2D texture resource and view from params
+  Texture2D::Texture2D(DeviceHandle device, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
+                       uint32_t texelBytes, const void* initData)
+    : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
+                 ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
+                 : D3D11_MAP_WRITE),
+      _rowBytes((uint32_t)descriptor.Width * texelBytes),
+      _height((uint32_t)descriptor.Height),
+      _mipLevels((descriptor.MipLevels != 0)
+                 ? (uint8_t)descriptor.MipLevels
+                 : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
+    HRESULT result;
+    if (initData != nullptr) {
+      D3D11_SUBRESOURCE_DATA subResData;
+      ZeroMemory(&subResData, sizeof(subResData));
+      subResData.pSysMem = initData;
+      subResData.SysMemPitch = (UINT)this->_rowBytes;
+      result = device->CreateTexture2D(&descriptor, &subResData, &(this->_texture));
+    }
+    else
+      result = device->CreateTexture2D(&descriptor, nullptr, &(this->_texture));
+    
+    if (FAILED(result) || this->_texture == nullptr)
+      throwError(result, __error_resCreationFailed());
+    if (descriptor.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+      result = device->CreateShaderResourceView(this->_texture, &viewDescriptor, &(this->_resourceView));
+      if (FAILED(result) || this->_resourceView == nullptr)
+        throwError(result, __error_viewCreationFailed());
+    }
+  }
+  // Destroy 2D texture resource
+  void Texture2D::release() noexcept {
+    if (this->_resourceView) {
+      try { this->_resourceView->Release(); } catch(...) {}
+      this->_resourceView = nullptr;
+    }
+    if (this->_texture) {
+      try { this->_texture->Release(); } catch(...) {}
+      this->_texture = nullptr;
+    }
+  }
+  
+  // Create 3D texture resource and view from params
+  Texture3D::Texture3D(DeviceHandle device, const D3D11_TEXTURE3D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
+                       uint32_t texelBytes, const void* initData)
+    : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
+                 ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
+                 : D3D11_MAP_WRITE),
+      _rowBytes((uint32_t)descriptor.Width * texelBytes),
+      _height((uint32_t)descriptor.Height),
+      _depth((uint32_t)descriptor.Depth),
+      _mipLevels((descriptor.MipLevels != 0)
+                 ? (uint8_t)descriptor.MipLevels 
+                 : (uint8_t)Texture3DParams::maxMipLevels(descriptor.Width, descriptor.Height, descriptor.Depth)) { // throws
+    HRESULT result;
+    if (initData != nullptr) {
+      D3D11_SUBRESOURCE_DATA subResData;
+      ZeroMemory(&subResData, sizeof(subResData));
+      subResData.pSysMem = initData;
+      subResData.SysMemPitch = (UINT)this->_rowBytes;
+      subResData.SysMemSlicePitch = static_cast<UINT>(this->_rowBytes * this->_height);
+      result = device->CreateTexture3D(&descriptor, &subResData, &(this->_texture));
+    }
+    else
+      result = device->CreateTexture3D(&descriptor, nullptr, &(this->_texture));
+    
+    if (FAILED(result) || this->_texture == nullptr)
+      throwError(result, __error_resCreationFailed());
+    if (descriptor.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
+      result = device->CreateShaderResourceView(this->_texture, &viewDescriptor, &(this->_resourceView));
+      if (FAILED(result) || this->_resourceView == nullptr)
+        throwError(result, __error_viewCreationFailed());
+    }
+  }
+  // Destroy 3D texture resource
+  void Texture3D::release() noexcept {
+    if (this->_resourceView) {
+      try { this->_resourceView->Release(); } catch(...) {}
+      this->_resourceView = nullptr;
+    }
+    if (this->_texture) {
+      try { this->_texture->Release(); } catch(...) {}
+      this->_texture = nullptr;
+    }
+  }
+  
+  // ---
+  
+  // Create 2D render-target texture resource and view from params
+  TextureTarget2D::TextureTarget2D(DeviceHandle device, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
+                                   uint32_t texelBytes, const void* initData)
+    : _writeMode((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD),
+      _rowBytes((uint32_t)descriptor.Width * texelBytes),
+      _width((uint32_t)descriptor.Width),
+      _height((uint32_t)descriptor.Height),
+      _mipLevels((descriptor.MipLevels != 0)
+                 ? (uint8_t)descriptor.MipLevels
+                 : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
+
+    D3D11_SUBRESOURCE_DATA subResData;
+    if (initData != nullptr) {
+      ZeroMemory(&subResData, sizeof(subResData));
+      subResData.pSysMem = initData;
+      subResData.SysMemPitch = (UINT)this->_rowBytes;
+    }
+    
+    if (viewDescriptor != nullptr) { // shader resource -> view created
+      auto originalBindFlags = descriptor.BindFlags;
+      auto originalMiscFlags = descriptor.MiscFlags;
+      descriptor.BindFlags = (D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+      if (this->_mipLevels != 1u)
+        descriptor.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+      
+      HRESULT result = device->CreateTexture2D(&descriptor, initData ? &subResData : nullptr, &(this->_texture));
+      descriptor.BindFlags = originalBindFlags;
+      descriptor.MiscFlags = originalMiscFlags;
+      if (FAILED(result) || this->_texture == nullptr)
+        throwError(result, __error_resCreationFailed());
+
+      result = device->CreateShaderResourceView(this->_texture, viewDescriptor, &(this->_resourceView));
+      if (FAILED(result) || this->_resourceView == nullptr)
+        throwError(result, __error_viewCreationFailed());
+    }
+    else {
+      auto originalBindFlags = descriptor.BindFlags;
+      descriptor.BindFlags = D3D11_BIND_RENDER_TARGET;
+      
+      HRESULT result = device->CreateTexture2D(&descriptor, initData ? &subResData : nullptr, &(this->_texture));
+      descriptor.BindFlags = originalBindFlags;
+      if (FAILED(result) || this->_texture == nullptr)
+        throwError(result, __error_resCreationFailed());
+    }
+    
+    D3D11_RTV_DIMENSION targetDim = (descriptor.ArraySize == 1) ? D3D11_RTV_DIMENSION_TEXTURE2D : D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+    CD3D11_RENDER_TARGET_VIEW_DESC targetDescriptor(targetDim, descriptor.Format);
+    HRESULT result = device->CreateRenderTargetView(this->_texture, &targetDescriptor, &(this->_renderTargetView));
+    if (FAILED(result) || this->_renderTargetView == nullptr)
+      throwError(result, "TextureTarget: render-target not created");
+  }
+  // Destroy 2D render-target texture resource
+  void TextureTarget2D::release() noexcept {
+    if (this->_renderTargetView) {
+      try { this->_renderTargetView->Release(); } catch(...) {}
+      this->_renderTargetView = nullptr;
+    }
+    if (this->_resourceView) {
+      try { this->_resourceView->Release(); } catch(...) {}
+      this->_resourceView = nullptr;
+    }
+    if (this->_texture) {
+      try { this->_texture->Release(); } catch(...) {}
+      this->_texture = nullptr;
+    }
+  }
+
+#endif

@@ -8,6 +8,7 @@ Includes hpp implementations at the end of the file
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstring>
+# include <cmath>
 # include <stdexcept>
 # include <memory/light_string.h>
 
@@ -58,6 +59,7 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/depth_stencil_buffer.h"
 # include "video/d3d11/dynamic_buffer.h"
 # include "video/d3d11/static_buffer.h"
+# include "video/d3d11/texture.h"
 # include "video/d3d11/camera.h"
 
   using namespace pandora::video::d3d11;
@@ -1027,6 +1029,7 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 # include "./renderer_state_factory.hpp"
 # include "./buffers.hpp"
+# include "./texture.hpp"
 # include "./shader.hpp"
 # include "./camera.hpp"
 

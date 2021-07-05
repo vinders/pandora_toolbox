@@ -21,7 +21,7 @@ License :     MIT
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleLevel1() should be reserved for internal usage or for advanced features.
         /// @remarks - To render on display output, call 'Renderer.setActiveRenderTarget' with getRenderTargetView() value + optional depth buffer.
-        ///          - Swap-chains are meant for display. To "render to texture", use TextureTarget instead.
+        ///          - Swap-chains are meant for display. To "render to texture", use TextureTarget2D instead.
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
         ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.
         ///          - Split-screen rendering (same window): alternate between different Viewport instances on the same SwapChain.

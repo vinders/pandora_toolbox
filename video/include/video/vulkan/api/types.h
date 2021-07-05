@@ -7,6 +7,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 #pragma once
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
+# include <cstdint>
 # include "./vulkan.h"
 # include <system/_private/_enum_flags.h>
 
