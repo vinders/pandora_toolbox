@@ -12,6 +12,7 @@ License :     MIT
       namespace d3d11 {
         /// @brief Texel coordinates (position)
         class TexelPosition final {
+        public:
           TexelPosition() noexcept = default;
           TexelPosition(uint32_t x) noexcept { _x=x; } ///< Create Texture1D texel position
           TexelPosition(uint32_t x, uint32_t y) noexcept { _x=x; _y=y; } ///< Create Texture2D texel position
@@ -24,11 +25,11 @@ License :     MIT
           inline void setX(uint32_t x) noexcept { _x=x; } ///< set X position
           inline void setY(uint32_t y) noexcept { _y=y; } ///< set Y position (0 if not a 2D/3D texture)
           inline void setZ(uint32_t z) noexcept { _z=z; } ///< set Z position (0 if not a 3D texture)
-          inline void getX() const noexcept { return _x; } ///< get X position
-          inline void getY() const noexcept { return _y; } ///< get Y position
-          inline void getZ() const noexcept { return _z; } ///< get Z position
+          inline uint32_t getX() const noexcept { return _x; } ///< get X position
+          inline uint32_t getY() const noexcept { return _y; } ///< get Y position
+          inline uint32_t getZ() const noexcept { return _z; } ///< get Z position
           
-        private
+        private:
           uint32_t _x = 0;
           uint32_t _y = 0;
           uint32_t _z = 0;
@@ -36,6 +37,7 @@ License :     MIT
         
         /// @brief Texture coordinates (region location)
         class TextureCoords final {
+        public:
           TextureCoords() noexcept = default;
           TextureCoords(uint32_t x, uint32_t width) noexcept { _coords.left=x; _coords.right=x+width; } ///< Create Texture1D coords
           TextureCoords(uint32_t x, uint32_t y, uint32_t width, uint32_t height) noexcept { ///< Create Texture2D coords
@@ -55,7 +57,7 @@ License :     MIT
           inline void setZ(uint32_t z, uint32_t depth) noexcept { _coords.front=z; _coords.back=z+depth; }  ///< set Z dimension
           const D3D11_BOX& coords() const noexcept { return _coords; } ///< native Direct3D box coords
           
-        private
+        private:
           D3D11_BOX _coords{ 0,0,0,1,1,1 };
         };
       }

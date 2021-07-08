@@ -60,6 +60,8 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/dynamic_buffer.h"
 # include "video/d3d11/static_buffer.h"
 # include "video/d3d11/texture.h"
+# include "video/d3d11/texture_reader.h"
+# include "video/d3d11/texture_writer.h"
 # include "video/d3d11/camera.h"
 
   using namespace pandora::video::d3d11;
@@ -1030,6 +1032,7 @@ Includes hpp implementations at the end of the file
 # include "./renderer_state_factory.hpp"
 # include "./buffers.hpp"
 # include "./texture.hpp"
+# include "./texture_reader_writer.hpp"
 # include "./shader.hpp"
 # include "./camera.hpp"
 
