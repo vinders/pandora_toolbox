@@ -18,6 +18,7 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
         using DeviceContext = GLuint;     ///< Device rendering context
         using SwapChainHandle = GLuint;   ///< Swap-chain (framebuffer container/swapper)
         
+        using TextureHandle = GLuint;     ///< Generic texture resource handle
         using TextureHandle1D = GLuint;   ///< 1D texture resource container
         using TextureHandle2D = GLuint;   ///< 2D texture resource container
         using TextureHandle3D = GLuint;   ///< 3D texture resource container

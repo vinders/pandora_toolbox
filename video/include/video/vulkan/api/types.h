@@ -18,6 +18,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using DeviceContext = VkDevice;         ///< Device rendering context
         using SwapChainHandle = VkSwapchainKHR;    ///< Swap-chain (framebuffer container/swapper)
         
+        using TextureHandle = VkImage;          ///< Generic texture resource handle
         using TextureHandle1D = VkImage;        ///< 1D texture resource container
         using TextureHandle2D = VkImage;        ///< 2D texture resource container
         using TextureHandle3D = VkImage;        ///< 3D texture resource container

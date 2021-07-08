@@ -350,7 +350,7 @@ License :     MIT
         /// @class Texture1D
         /// @brief One-dimensional texture data/view container, built from Texture1DParams
         /// @remarks Common usages: gradients, UI decorations, stats, particle effects...
-        /// @warning For texture arrays, prefer Texture1DArray instead (to be able to write data per sub-texture).
+        /// @warning For texture arrays, prefer Texture1DArray instead (to be able to get array size).
         class Texture1D {
         public:
           /// @brief Create texture resource and view from params
@@ -397,7 +397,7 @@ License :     MIT
         /// @class Texture2D
         /// @brief Two-dimensional texture data/view container, built from Texture2DParams (TextureCube2DParams must be used with Texture2DArray instead)
         /// @remarks Common usages: texture for polygons, sprites, backgrounds, fonts...
-        /// @warning For texture arrays, prefer Texture2DArray instead (to be able to write data per sub-texture).
+        /// @warning For texture arrays, prefer Texture2DArray instead (to be able to get array size).
         class Texture2D {
         public:
           /// @brief Create texture resource and view from params
