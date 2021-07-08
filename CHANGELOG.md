@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.98.1.659
-2021-07-02 - 44fa67c643a3c8860caa71a6e28e71cd50a9f05e
+## 0.100.1.669
+2021-07-08 - f166dede625d01d4cff8de3188f93db61c8802af
 ### features
-vinders (18):
+vinders (20):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
 * video: component format (color/depth/stencil): portable bindings for D3D/OpenGL/Vulkan
 * video: Direct3D11 rendering device/context
@@ -23,6 +23,8 @@ vinders (18):
 * video: Direct3D11 vertex buffer drawing (base/indexed/instances)
 * video: Direct3D11 camera screen projection (ratio, fov, near/far-planes)
 * video: Direct3D11 rendering device/context: blend state builder (grouped/separate/per-target)
+* video: Direct3D11 1D/2D/3D/target texture buffers + params
+* video: Direct3D11 texture data reader (staged) + writer (static/dynamic/staged) + copy/copyRegion
 ### fixes
 vinders (6):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
@@ -55,7 +57,7 @@ vinders (18):
 * io: INI config format serializer/deserializer
 * io: JSON format serializer/deserializer
 * io: encoder/decoder/converter/detection (UTF-8/UTF-16BE/UTF-16LE)
-* io: INI/JSON deserializers: support unicode characters (\x<hex*1-4>, \u<hex*4>, \U<hex*8>)
+* io: INI/JSON deserializers: support unicode characters (<backslash> x<hex*1-4>, u<hex*4>, U<hex*8>)
 ### fixes
 vinders (5):
 * video: window manager + builder for Windows: refactor + fix fullscreen issues
