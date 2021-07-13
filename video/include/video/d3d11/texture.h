@@ -28,6 +28,7 @@ License :     MIT
           ///                   With 'immutable', resource data can only be set when building texture (texture constructor with 'initData').
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture1DParams(uint32_t width, DataFormat format = DataFormat::rgba8_sRGB, uint32_t arraySize = 1u, 
                                  uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE1D_DESC));
@@ -52,17 +53,18 @@ License :     MIT
           /// @param arraySize  Number of sub-textures in texture array (if value > 1, params only usable to create Texture1DArray instances)
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture1DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
             _params.ArraySize = (UINT)arraySize;
             _params.MipLevels = (UINT)mipLevels;
             if (arraySize <= 1u) {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
-              _viewParams.Texture1D.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.Texture1D.MipLevels = UINT(-1);
               _viewParams.Texture1D.MostDetailedMip = (UINT)mostDetailedViewedMip;
             }
             else {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
-              _viewParams.Texture1DArray.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.Texture1DArray.MipLevels = UINT(-1);
               _viewParams.Texture1DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
               _viewParams.Texture1DArray.ArraySize = _params.ArraySize;
             }
@@ -110,6 +112,7 @@ License :     MIT
           ///                   With 'immutable', resource data can only be set when building texture (texture constructor with 'initData').
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
                                  uint32_t arraySize = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
                                  ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
@@ -139,17 +142,18 @@ License :     MIT
           /// @param arraySize  Number of sub-textures in texture array (if value > 1, params only usable to create Texture2DArray instances)
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture2DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
             _params.ArraySize = (UINT)arraySize;
             _params.MipLevels = (UINT)mipLevels;
             if (arraySize <= 1u) {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-              _viewParams.Texture2D.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.Texture2D.MipLevels = UINT(-1);
               _viewParams.Texture2D.MostDetailedMip = (UINT)mostDetailedViewedMip;
             }
             else {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-              _viewParams.Texture2DArray.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.Texture2DArray.MipLevels = UINT(-1);
               _viewParams.Texture2DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
               _viewParams.Texture2DArray.ArraySize = _params.ArraySize;
             }
@@ -197,12 +201,14 @@ License :     MIT
           ///                   With 'immutable', resource data can only be set when building texture (texture constructor with 'initData').
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline TextureCube2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
                                      uint32_t nbCubes = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
                                      ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
             _params.SampleDesc.Count = 1;
+            _params.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
             
             size(width, height);
             this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
@@ -226,17 +232,18 @@ License :     MIT
           /// @param nbCubes    Number of cubes in texture-cube array.
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline TextureCube2DParams& arrayLength(uint32_t nbCubes, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
             _params.ArraySize = (UINT)nbCubes * 6u;
             _params.MipLevels = (UINT)mipLevels;
             if (nbCubes <= 1u) {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-              _viewParams.TextureCube.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.TextureCube.MipLevels = UINT(-1);
               _viewParams.TextureCube.MostDetailedMip = (UINT)mostDetailedViewedMip;
             }
             else {
               _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
-              _viewParams.TextureCubeArray.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
+              _viewParams.TextureCubeArray.MipLevels = UINT(-1);
               _viewParams.TextureCubeArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
               _viewParams.TextureCubeArray.NumCubes = (UINT)nbCubes;
             }
@@ -251,7 +258,10 @@ License :     MIT
           ///        (staging content is typically copied to/from other 'staticGpu' texture).
           inline TextureCube2DParams& usage(ResourceUsage type) noexcept { _setTextureUsage(type, _params); return *this; }
           /// @brief Texture resource data can be shared between multiple Renderer/devices (should only be enabled for multi-device rendering).
-          inline TextureCube2DParams& flags(bool isShared) noexcept { _params.MiscFlags = isShared ? (UINT)D3D11_RESOURCE_MISC_SHARED : 0; return *this; }
+          inline TextureCube2DParams& flags(bool isShared) noexcept {
+            _params.MiscFlags = isShared ? (UINT)(D3D11_RESOURCE_MISC_SHARED|D3D11_RESOURCE_MISC_TEXTURECUBE) : D3D11_RESOURCE_MISC_TEXTURECUBE;
+            return *this;
+          }
           
           
           inline D3D11_TEXTURE2D_DESC& descriptor() noexcept { return this->_params; }             ///< Get native Direct3D descriptor
@@ -285,11 +295,13 @@ License :     MIT
           ///                   With 'immutable', resource data can only be set when building texture (texture constructor with 'initData').
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture3DParams(uint32_t width, uint32_t height, uint32_t depth, DataFormat format = DataFormat::rgba8_sRGB, 
                                  uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
             ZeroMemory(&_params, sizeof(D3D11_TEXTURE3D_DESC));
             ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
             _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+            _viewParams.Texture3D.MipLevels = UINT(-1);
             
             size(width, height, depth);
             this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
@@ -311,9 +323,9 @@ License :     MIT
           /// @brief Set number of generated mip-map levels + most detailed mip to use.
           /// @param mipLevels              Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
+          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
           inline Texture3DParams& mips(uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
             _params.MipLevels = (UINT)mipLevels;
-            _viewParams.Texture3D.MipLevels = _params.MipLevels ? (UINT)mipLevels - 1 : UINT(-1);
             _viewParams.Texture3D.MostDetailedMip = (UINT)mostDetailedViewedMip;
             return *this;
           }
@@ -354,9 +366,13 @@ License :     MIT
         class Texture1D {
         public:
           /// @brief Create texture resource and view from params
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1 or arraySize > 1, it must contain one index for each sub-resource
+          ///            (ordered from most detailed mip to smallest, then next array item, and so on).
+          ///          - To only initialize one level or item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture1D(Renderer& renderer, const Texture1DParams& params, const void* initData = nullptr)
+          inline Texture1D(Renderer& renderer, const Texture1DParams& params, const uint8_t** initData = nullptr)
             : Texture1D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
           
           Texture1D() noexcept = default;
@@ -385,7 +401,7 @@ License :     MIT
           
         protected:
           Texture1D(DeviceHandle device, const D3D11_TEXTURE1D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor, 
-                    uint32_t texelBytes, const void* initData);
+                    uint32_t texelBytes, const uint8_t** initData);
         protected:
           TextureHandle1D _texture = nullptr;
           TextureView _resourceView = nullptr;
@@ -401,9 +417,13 @@ License :     MIT
         class Texture2D {
         public:
           /// @brief Create texture resource and view from params
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1 or arraySize > 1, it must contain one index for each sub-resource
+          ///            (ordered from most detailed mip to smallest, then next array item, and so on).
+          ///          - To only initialize one level or item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture2D(Renderer& renderer, const Texture2DParams& params, const void* initData = nullptr)
+          inline Texture2D(Renderer& renderer, const Texture2DParams& params, const uint8_t** initData = nullptr)
             : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
           
           Texture2D() noexcept = default;
@@ -433,7 +453,7 @@ License :     MIT
         
         protected:
           Texture2D(DeviceHandle device, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
-                    uint32_t texelBytes, const void* initData);
+                    uint32_t texelBytes, const uint8_t** initData);
         protected:
           TextureHandle2D _texture = nullptr;
           TextureView _resourceView = nullptr;
@@ -449,9 +469,12 @@ License :     MIT
         class Texture3D final {
         public:
           /// @brief Create texture resource and view from params
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1, it must contain one index for each sub-resource (ordered from most detailed mip to smallest).
+          ///          - To only initialize one item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes*height*depth (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture3D(Renderer& renderer, const Texture3DParams& params, const void* initData = nullptr)
+          inline Texture3D(Renderer& renderer, const Texture3DParams& params, const uint8_t** initData = nullptr)
             : Texture3D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
           
           Texture3D() noexcept = default;
@@ -482,7 +505,7 @@ License :     MIT
         
         private:
           Texture3D(DeviceHandle device, const D3D11_TEXTURE3D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
-                    uint32_t texelBytes, const void* initData);
+                    uint32_t texelBytes, const uint8_t** initData);
         private:
           TextureHandle3D _texture = nullptr;
           TextureView _resourceView = nullptr;
@@ -502,9 +525,13 @@ License :     MIT
         class Texture1DArray final : public Texture1D {
         public:
           /// @brief Create texture resource array and view from params
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1 or arraySize > 1, it must contain one index for each sub-resource
+          ///            (ordered from most detailed mip to smallest, then next array item, and so on).
+          ///          - To only initialize one level or item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture1DArray(Renderer& renderer, const Texture1DParams& params, const void* initData = nullptr)
+          inline Texture1DArray(Renderer& renderer, const Texture1DParams& params, const uint8_t** initData = nullptr)
             : Texture1D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
               _arraySize((uint8_t)params.descriptor().ArraySize) {}
           
@@ -531,15 +558,23 @@ License :     MIT
         class Texture2DArray final : public Texture2D {
         public:
           /// @brief Create texture resource array and view from params - simple array of 2D textures
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1 or arraySize > 1, it must contain one index for each sub-resource
+          ///            (ordered from most detailed mip to smallest, then next array item, and so on).
+          ///          - To only initialize one level or item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture2DArray(Renderer& renderer, const Texture2DParams& params, const void* initData = nullptr)
+          inline Texture2DArray(Renderer& renderer, const Texture2DParams& params, const uint8_t** initData = nullptr)
             : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
               _arraySize((uint8_t)params.descriptor().ArraySize) {}
           /// @brief Create texture resource array and view from params - 2D cube texture (or array of 2D cubes)
-          /// @warning 'initData' is required with 'immutable' usage
+          /// @warning - 'initData' is required with 'immutable' usage.
+          ///          - 'initData' is an array: if mipLevels > 1 or arraySize > 1, it must contain one index for each sub-resource
+          ///            (ordered from most detailed mip to smallest, then next array item, and so on).
+          ///          - To only initialize one level or item, set 'initData' to NULL and use TextureWriter (note: mip levels can be generated with D3DXFilterTexture).
+          ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
-          inline Texture2DArray(Renderer& renderer, const TextureCube2DParams& params, const void* initData = nullptr)
+          inline Texture2DArray(Renderer& renderer, const TextureCube2DParams& params, const uint8_t** initData = nullptr)
             : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
               _arraySize((uint8_t)params.descriptor().ArraySize) {}
           
@@ -575,9 +610,13 @@ License :     MIT
           ///                         Without this, a copy to another texture (shader resource, not render-target) is required, and this texture can be used with polygons.
           ///                         This is also necessary to auto-generate mip levels with the renderer.
           ///                         Note: allowing direct use as shader resource may lead to poor memory optimization and slower access.
-          /// @warning Usage for TextureTarget2D can't be 'immutable' nor 'staging'. Default 'staticGpu' usage recommended.
+          /// @warning - Usage for TextureTarget2D can't be 'immutable' nor 'staging'. Default 'staticGpu' usage recommended.
+          ///          - 'initData' is an array: if arraySize > 1, it must contain one index for each sub-resource.
+          ///          - To only initialize one item, set 'initData' to NULL and use TextureWriter.
+          ///          - If mip level is different from '1' in params, 'initData' must be NULL.
+          ///          - The length of each entry in 'initData' must be rowBytes*height (no mips).
           /// @throws runtime_error on creation failure
-          inline TextureTarget2D(Renderer& renderer, Texture2DParams& params, const void* initData = nullptr, bool isShaderResource = false)
+          inline TextureTarget2D(Renderer& renderer, Texture2DParams& params, const uint8_t** initData = nullptr, bool isShaderResource = false)
             : TextureTarget2D(renderer.device(), params.descriptor(), isShaderResource ? &(params.viewDescriptor()) : nullptr, 
                               params.texelBytes(), initData) {}
           
@@ -619,7 +658,7 @@ License :     MIT
           
         private:
           TextureTarget2D(DeviceHandle device, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
-                          uint32_t texelBytes, const void* initData);
+                          uint32_t texelBytes, const uint8_t** initData);
         private:
           TextureHandle2D _texture = nullptr;
           RenderTargetView _renderTargetView = nullptr;

@@ -113,6 +113,7 @@ License :     MIT
             ///            { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }};
             /// @remarks - The input layout is validated against shared input signature.
             ///          - The input layout may be bound with any other shader that has the same input signature.
+            ///          - For engines with material shaders with different inputs, it's easier to verify shader params with D3DReflect, instead of hardcoding them.
             /// @throws runtime_error on failure (or if layout doesn't match shader input signature)
             InputLayout createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
             

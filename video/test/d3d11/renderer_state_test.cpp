@@ -426,4 +426,233 @@
     EXPECT_EQ((size_t)0, values.size());
   }
 
+  TEST_F(RendererStateTest, stateParamsAccessors) {
+    RasterizerParams raster;
+    raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(FillMode::lines).depthClipping(false).scissorClipping(true).depthBias(1, 2.f, 3.f);
+    EXPECT_EQ((BOOL)TRUE, raster.descriptor().FrontCounterClockwise);
+    EXPECT_EQ(D3D11_CULL_FRONT, raster.descriptor().CullMode);
+    EXPECT_EQ(D3D11_FILL_WIREFRAME, raster.descriptor().FillMode);
+    EXPECT_EQ((BOOL)FALSE, raster.descriptor().AntialiasedLineEnable);
+    EXPECT_EQ((BOOL)FALSE, raster.descriptor().DepthClipEnable);
+    EXPECT_EQ((BOOL)TRUE, raster.descriptor().ScissorEnable);
+    EXPECT_EQ((INT)1, raster.descriptor().DepthBias);
+    EXPECT_EQ((FLOAT)2.f, raster.descriptor().DepthBiasClamp);
+    EXPECT_EQ((FLOAT)3.f, raster.descriptor().SlopeScaledDepthBias);
+
+    RasterizerParams raster2(CullMode::none, FillMode::fill, false, true, true);
+    EXPECT_EQ((BOOL)TRUE, raster2.descriptor().FrontCounterClockwise);
+    EXPECT_EQ(D3D11_CULL_NONE, raster2.descriptor().CullMode);
+    EXPECT_EQ(D3D11_FILL_SOLID, raster2.descriptor().FillMode);
+    EXPECT_EQ((BOOL)FALSE, raster2.descriptor().AntialiasedLineEnable);
+    EXPECT_EQ((BOOL)TRUE, raster2.descriptor().DepthClipEnable);
+    EXPECT_EQ((BOOL)TRUE, raster2.descriptor().ScissorEnable);
+    EXPECT_EQ((INT)0, raster2.descriptor().DepthBias);
+    EXPECT_EQ((FLOAT)0.f, raster2.descriptor().DepthBiasClamp);
+    EXPECT_EQ((FLOAT)0.f, raster2.descriptor().SlopeScaledDepthBias);
+
+    DepthStencilParams depth;
+    depth.enableDepthTest(false).enableStencilTest(true).depthTest(StencilCompare::always)
+      .frontFaceStencilTest(StencilCompare::equal).backFaceStencilTest(StencilCompare::greater)
+      .frontFaceOp(StencilOp::decrementClamp, StencilOp::incrementClamp, StencilOp::replace).backFaceOp(StencilOp::invert, StencilOp::zero, StencilOp::incrementWrap)
+      .depthMask(false).stencilMask((uint8_t)0, (uint8_t)1);
+    EXPECT_EQ((BOOL)FALSE, depth.descriptor().DepthEnable);
+    EXPECT_EQ((BOOL)TRUE, depth.descriptor().StencilEnable);
+    EXPECT_EQ(D3D11_COMPARISON_ALWAYS, depth.descriptor().DepthFunc);
+    EXPECT_EQ(D3D11_COMPARISON_EQUAL, depth.descriptor().FrontFace.StencilFunc);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER, depth.descriptor().BackFace.StencilFunc);
+    EXPECT_EQ(D3D11_STENCIL_OP_DECR_SAT, depth.descriptor().FrontFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INCR_SAT, depth.descriptor().FrontFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_REPLACE, depth.descriptor().FrontFace.StencilPassOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INVERT, depth.descriptor().BackFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_ZERO, depth.descriptor().BackFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INCR, depth.descriptor().BackFace.StencilPassOp);
+    EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ZERO, depth.descriptor().DepthWriteMask);
+    EXPECT_EQ((UINT8)0, depth.descriptor().StencilReadMask);
+    EXPECT_EQ((UINT8)1, depth.descriptor().StencilWriteMask);
+
+    DepthStencilParams depth2(StencilCompare::greaterEqual, StencilOp::invert, StencilOp::replace, StencilOp::incrementClamp, StencilOp::decrementClamp);
+    EXPECT_EQ((BOOL)TRUE, depth2.descriptor().DepthEnable);
+    EXPECT_EQ((BOOL)FALSE, depth2.descriptor().StencilEnable);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, depth2.descriptor().DepthFunc);
+    EXPECT_EQ(D3D11_COMPARISON_ALWAYS, depth2.descriptor().FrontFace.StencilFunc);
+    EXPECT_EQ(D3D11_COMPARISON_ALWAYS, depth2.descriptor().BackFace.StencilFunc);
+    EXPECT_EQ(D3D11_STENCIL_OP_INVERT, depth2.descriptor().FrontFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_REPLACE, depth2.descriptor().FrontFace.StencilPassOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INCR_SAT, depth2.descriptor().BackFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_DECR_SAT, depth2.descriptor().BackFace.StencilPassOp);
+    EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth2.descriptor().DepthWriteMask);
+    EXPECT_EQ((UINT8)0xFF, depth2.descriptor().StencilReadMask);
+    EXPECT_EQ((UINT8)0xFF, depth2.descriptor().StencilWriteMask);
+
+    DepthStencilParams depth3(StencilCompare::notEqual, StencilCompare::lessEqual, StencilOp::replace, StencilOp::invert, StencilOp::decrementClamp, StencilOp::incrementClamp);
+    EXPECT_EQ((BOOL)FALSE, depth3.descriptor().DepthEnable);
+    EXPECT_EQ((BOOL)TRUE, depth3.descriptor().StencilEnable);
+    EXPECT_EQ(D3D11_COMPARISON_ALWAYS, depth3.descriptor().DepthFunc);
+    EXPECT_EQ(D3D11_COMPARISON_NOT_EQUAL, depth3.descriptor().FrontFace.StencilFunc);
+    EXPECT_EQ(D3D11_COMPARISON_LESS_EQUAL, depth3.descriptor().BackFace.StencilFunc);
+    EXPECT_EQ(D3D11_STENCIL_OP_REPLACE, depth3.descriptor().FrontFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INVERT, depth3.descriptor().FrontFace.StencilPassOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_DECR_SAT, depth3.descriptor().BackFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INCR_SAT, depth3.descriptor().BackFace.StencilPassOp);
+    EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth3.descriptor().DepthWriteMask);
+    EXPECT_EQ((UINT8)0xFF, depth3.descriptor().StencilReadMask);
+    EXPECT_EQ((UINT8)0xFF, depth3.descriptor().StencilWriteMask);
+
+    DepthStencilParams depth4(StencilCompare::greaterEqual, StencilCompare::equal, StencilCompare::notEqual, 
+                              StencilOp::replace, StencilOp::invert, StencilOp::zero, StencilOp::incrementClamp, StencilOp::decrementClamp, StencilOp::invert);
+    EXPECT_EQ((BOOL)TRUE, depth4.descriptor().DepthEnable);
+    EXPECT_EQ((BOOL)TRUE, depth4.descriptor().StencilEnable);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, depth4.descriptor().DepthFunc);
+    EXPECT_EQ(D3D11_COMPARISON_EQUAL, depth4.descriptor().FrontFace.StencilFunc);
+    EXPECT_EQ(D3D11_COMPARISON_NOT_EQUAL, depth4.descriptor().BackFace.StencilFunc);
+    EXPECT_EQ(D3D11_STENCIL_OP_REPLACE, depth4.descriptor().FrontFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INVERT, depth4.descriptor().FrontFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_ZERO, depth4.descriptor().FrontFace.StencilPassOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INCR_SAT, depth4.descriptor().BackFace.StencilFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_DECR_SAT, depth4.descriptor().BackFace.StencilDepthFailOp);
+    EXPECT_EQ(D3D11_STENCIL_OP_INVERT, depth4.descriptor().BackFace.StencilPassOp);
+    EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth4.descriptor().DepthWriteMask);
+    EXPECT_EQ((UINT8)0xFF, depth4.descriptor().StencilReadMask);
+    EXPECT_EQ((UINT8)0xFF, depth4.descriptor().StencilWriteMask);
+
+    BlendTargetParams blendTarget(BlendFactor::destInvColor, BlendFactor::destInvAlpha, BlendOp::subtract,
+                                  BlendFactor::constantInvAlpha, BlendFactor::constantAlpha, BlendOp::revSubtract, false, ColorComponentFlag::red);
+    EXPECT_EQ(BlendFactor::destInvColor, blendTarget.srcColorFactor);
+    EXPECT_EQ(BlendFactor::destInvAlpha, blendTarget.destColorFactor);
+    EXPECT_EQ(BlendOp::subtract, blendTarget.colorBlendOp);
+    EXPECT_EQ(BlendFactor::constantInvAlpha, blendTarget.srcAlphaFactor);
+    EXPECT_EQ(BlendFactor::constantAlpha, blendTarget.destAlphaFactor);
+    EXPECT_EQ(BlendOp::revSubtract, blendTarget.alphaBlendOp);
+    EXPECT_EQ(false, blendTarget.isEnabled);
+    EXPECT_EQ(ColorComponentFlag::red, blendTarget.targetWriteMask);
+
+    BlendParams blend;
+    blend.srcColorFactor(BlendFactor::destInvColor).destColorFactor(BlendFactor::destInvAlpha).colorBlendOp(BlendOp::subtract)
+      .srcAlphaFactor(BlendFactor::constantInvAlpha).destAlphaFactor(BlendFactor::constantAlpha).alphaBlendOp(BlendOp::revSubtract)
+      .targetWriteMask(ColorComponentFlag::red).enable(false);
+    EXPECT_EQ((BOOL)FALSE, blend.descriptor().IndependentBlendEnable);
+    EXPECT_EQ((BOOL)FALSE, blend.descriptor().RenderTarget->BlendEnable);
+    EXPECT_EQ((UINT8)D3D10_COLOR_WRITE_ENABLE_RED, blend.descriptor().RenderTarget->RenderTargetWriteMask);
+    EXPECT_EQ(D3D11_BLEND_INV_DEST_COLOR, blend.descriptor().RenderTarget->SrcBlend);
+    EXPECT_EQ(D3D11_BLEND_INV_DEST_ALPHA, blend.descriptor().RenderTarget->DestBlend);
+    EXPECT_EQ(D3D11_BLEND_OP_SUBTRACT, blend.descriptor().RenderTarget->BlendOp);
+    EXPECT_EQ(D3D11_BLEND_INV_BLEND_FACTOR, blend.descriptor().RenderTarget->SrcBlendAlpha);
+    EXPECT_EQ(D3D11_BLEND_BLEND_FACTOR, blend.descriptor().RenderTarget->DestBlendAlpha);
+    EXPECT_EQ(D3D11_BLEND_OP_REV_SUBTRACT, blend.descriptor().RenderTarget->BlendOpAlpha);
+
+    BlendParams blend2(BlendFactor::destInvColor, BlendFactor::destInvAlpha, BlendOp::subtract,
+                       BlendFactor::constantInvAlpha, BlendFactor::constantAlpha, BlendOp::revSubtract);
+    EXPECT_EQ((BOOL)FALSE, blend2.descriptor().IndependentBlendEnable);
+    EXPECT_EQ((BOOL)TRUE, blend2.descriptor().RenderTarget->BlendEnable);
+    EXPECT_EQ((UINT8)D3D11_COLOR_WRITE_ENABLE_ALL, blend2.descriptor().RenderTarget->RenderTargetWriteMask);
+    EXPECT_EQ(D3D11_BLEND_INV_DEST_COLOR, blend2.descriptor().RenderTarget->SrcBlend);
+    EXPECT_EQ(D3D11_BLEND_INV_DEST_ALPHA, blend2.descriptor().RenderTarget->DestBlend);
+    EXPECT_EQ(D3D11_BLEND_OP_SUBTRACT, blend2.descriptor().RenderTarget->BlendOp);
+    EXPECT_EQ(D3D11_BLEND_INV_BLEND_FACTOR, blend2.descriptor().RenderTarget->SrcBlendAlpha);
+    EXPECT_EQ(D3D11_BLEND_BLEND_FACTOR, blend2.descriptor().RenderTarget->DestBlendAlpha);
+    EXPECT_EQ(D3D11_BLEND_OP_REV_SUBTRACT, blend2.descriptor().RenderTarget->BlendOpAlpha);
+
+    ColorChannel border[4]{ 1.f, 2.f, 3.f, 4.f };
+    TextureWrap wrap[3]{ TextureWrap::repeatMirror, TextureWrap::mirrorOnce, TextureWrap::clampToEdge };
+    FilterParams filter;
+    filter.setFilter(TextureFilter::nearest, TextureFilter::linear, TextureFilter::nearest).textureWrap(wrap).borderColor(border).lod(1.f, 2.f).lodBias(3.f);
+    EXPECT_EQ(D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT, filter.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter.descriptor().AddressW);
+    EXPECT_EQ((FLOAT)1.f, filter.descriptor().BorderColor[0]);
+    EXPECT_EQ((FLOAT)2.f, filter.descriptor().BorderColor[1]);
+    EXPECT_EQ((FLOAT)3.f, filter.descriptor().BorderColor[2]);
+    EXPECT_EQ((FLOAT)4.f, filter.descriptor().BorderColor[3]);
+    EXPECT_EQ((UINT)1u, filter.descriptor().MaxAnisotropy);
+    EXPECT_EQ((FLOAT)1.f, filter.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)2.f, filter.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)3.f, filter.descriptor().MipLODBias);
+    FilterParams filter2;
+    filter2.setFilter(TextureFilter::linear, TextureFilter::nearest, TextureFilter::linear, StencilCompare::greaterEqual).textureWrap(wrap).lod(0.f, 1.f);
+    EXPECT_EQ(D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR, filter2.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter2.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter2.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter2.descriptor().AddressW);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().BorderColor[0]);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().BorderColor[1]);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().BorderColor[2]);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().BorderColor[3]);
+    EXPECT_EQ((UINT)1u, filter2.descriptor().MaxAnisotropy);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, filter2.descriptor().ComparisonFunc);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)1.f, filter2.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter2.descriptor().MipLODBias);
+
+    FilterParams filter3;
+    filter3.setAnisotropicFilter(1u).textureWrap(wrap).borderColor(border).lod(1.f, 2.f).lodBias(3.f);
+    EXPECT_EQ(D3D11_FILTER_ANISOTROPIC, filter3.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter3.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter3.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter3.descriptor().AddressW);
+    EXPECT_EQ((FLOAT)1.f, filter3.descriptor().BorderColor[0]);
+    EXPECT_EQ((FLOAT)2.f, filter3.descriptor().BorderColor[1]);
+    EXPECT_EQ((FLOAT)3.f, filter3.descriptor().BorderColor[2]);
+    EXPECT_EQ((FLOAT)4.f, filter3.descriptor().BorderColor[3]);
+    EXPECT_EQ((UINT)1u, filter3.descriptor().MaxAnisotropy);
+    EXPECT_EQ((FLOAT)1.f, filter3.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)2.f, filter3.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)3.f, filter3.descriptor().MipLODBias);
+    FilterParams filter4;
+    filter4.setAnisotropicFilter(8u, StencilCompare::greaterEqual).textureWrap(wrap).lod(0.f, 1.f);
+    EXPECT_EQ(D3D11_FILTER_COMPARISON_ANISOTROPIC, filter4.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter4.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter4.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter4.descriptor().AddressW);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().BorderColor[0]);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().BorderColor[1]);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().BorderColor[2]);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().BorderColor[3]);
+    EXPECT_EQ((UINT)8u, filter4.descriptor().MaxAnisotropy);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, filter4.descriptor().ComparisonFunc);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)1.f, filter4.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter4.descriptor().MipLODBias);
+
+    FilterParams filter5(TextureFilter::nearest, TextureFilter::linear, TextureFilter::nearest, wrap, 1.f, 2.f);
+    EXPECT_EQ(D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT, filter5.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter5.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter5.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter5.descriptor().AddressW);
+    EXPECT_EQ((UINT)1u, filter5.descriptor().MaxAnisotropy);
+    EXPECT_EQ((FLOAT)1.f, filter5.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)2.f, filter5.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter5.descriptor().MipLODBias);
+    FilterParams filter6(TextureFilter::linear, TextureFilter::nearest, TextureFilter::linear, wrap, 0.f, 1.f, StencilCompare::greaterEqual);
+    EXPECT_EQ(D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR, filter6.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter6.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter6.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter6.descriptor().AddressW);
+    EXPECT_EQ((UINT)1u, filter6.descriptor().MaxAnisotropy);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, filter6.descriptor().ComparisonFunc);
+    EXPECT_EQ((FLOAT)0.f, filter6.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)1.f, filter6.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter6.descriptor().MipLODBias);
+
+    FilterParams filter7(1u, wrap, 1.f, 2.f);
+    EXPECT_EQ(D3D11_FILTER_ANISOTROPIC, filter7.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter7.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter7.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter7.descriptor().AddressW);
+    EXPECT_EQ((UINT)1u, filter7.descriptor().MaxAnisotropy);
+    EXPECT_EQ((FLOAT)1.f, filter7.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)2.f, filter7.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter7.descriptor().MipLODBias);
+    FilterParams filter8(8u, wrap, 0.f, 1.f, StencilCompare::greaterEqual);
+    EXPECT_EQ(D3D11_FILTER_COMPARISON_ANISOTROPIC, filter8.descriptor().Filter);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR, filter8.descriptor().AddressU);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_MIRROR_ONCE, filter8.descriptor().AddressV);
+    EXPECT_EQ(D3D11_TEXTURE_ADDRESS_CLAMP, filter8.descriptor().AddressW);
+    EXPECT_EQ((UINT)8u, filter8.descriptor().MaxAnisotropy);
+    EXPECT_EQ(D3D11_COMPARISON_GREATER_EQUAL, filter8.descriptor().ComparisonFunc);
+    EXPECT_EQ((FLOAT)0.f, filter8.descriptor().MinLOD);
+    EXPECT_EQ((FLOAT)1.f, filter8.descriptor().MaxLOD);
+    EXPECT_EQ((FLOAT)0.f, filter8.descriptor().MipLODBias);
+  }
+
 #endif

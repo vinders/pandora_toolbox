@@ -33,7 +33,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
 
   // Create 1D texture resource and view from params
   Texture1D::Texture1D(DeviceHandle device, const D3D11_TEXTURE1D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
-                       uint32_t texelBytes, const void* initData)
+                       uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
                  ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
                  : D3D11_MAP_WRITE),
@@ -43,10 +43,17 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
                  : (uint8_t)Texture1DParams::maxMipLevels(descriptor.Width)) { // throws
     HRESULT result;
     if (initData != nullptr) {
-      D3D11_SUBRESOURCE_DATA subResData;
-      ZeroMemory(&subResData, sizeof(subResData));
-      subResData.pSysMem = initData;
-      result = device->CreateTexture1D(&descriptor, &subResData, &(this->_texture));
+      uint32_t dataCount = descriptor.ArraySize ? this->_mipLevels * descriptor.ArraySize : this->_mipLevels;
+      D3D11_SUBRESOURCE_DATA* subResData = (D3D11_SUBRESOURCE_DATA*)calloc(dataCount, sizeof(D3D11_SUBRESOURCE_DATA));
+      if (subResData == nullptr)
+        throw std::bad_alloc{};
+
+      initData = &initData[dataCount - 1u];
+      for (D3D11_SUBRESOURCE_DATA* it = &subResData[dataCount - 1u]; it >= subResData; --it, --initData) {
+        it->pSysMem = *initData;
+      }
+      result = device->CreateTexture1D(&descriptor, subResData, &(this->_texture));
+      free(subResData);
     }
     else
       result = device->CreateTexture1D(&descriptor, nullptr, &(this->_texture));
@@ -73,7 +80,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
   
   // Create 2D texture resource and view from params
   Texture2D::Texture2D(DeviceHandle device, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
-                       uint32_t texelBytes, const void* initData)
+                       uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
                  ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
                  : D3D11_MAP_WRITE),
@@ -84,11 +91,20 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
     HRESULT result;
     if (initData != nullptr) {
-      D3D11_SUBRESOURCE_DATA subResData;
-      ZeroMemory(&subResData, sizeof(subResData));
-      subResData.pSysMem = initData;
-      subResData.SysMemPitch = (UINT)this->_rowBytes;
-      result = device->CreateTexture2D(&descriptor, &subResData, &(this->_texture));
+      uint32_t dataCount = descriptor.ArraySize ? this->_mipLevels * descriptor.ArraySize : this->_mipLevels;
+      D3D11_SUBRESOURCE_DATA* subResData = (D3D11_SUBRESOURCE_DATA*)calloc(dataCount, sizeof(D3D11_SUBRESOURCE_DATA));
+      if (subResData == nullptr)
+        throw std::bad_alloc{};
+      
+      D3D11_SUBRESOURCE_DATA* it = subResData;
+      for (uint32_t i = 0, level = 0; i < dataCount; ++i, ++level, ++it, ++initData) {
+        if (level == this->_mipLevels)
+          level = 0;
+        it->pSysMem = *initData;
+        it->SysMemPitch = (UINT)this->_rowBytes >> level;
+      }
+      result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
+      free(subResData);
     }
     else
       result = device->CreateTexture2D(&descriptor, nullptr, &(this->_texture));
@@ -115,7 +131,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
   
   // Create 3D texture resource and view from params
   Texture3D::Texture3D(DeviceHandle device, const D3D11_TEXTURE3D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
-                       uint32_t texelBytes, const void* initData)
+                       uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
                  ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
                  : D3D11_MAP_WRITE),
@@ -127,12 +143,19 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
                  : (uint8_t)Texture3DParams::maxMipLevels(descriptor.Width, descriptor.Height, descriptor.Depth)) { // throws
     HRESULT result;
     if (initData != nullptr) {
-      D3D11_SUBRESOURCE_DATA subResData;
-      ZeroMemory(&subResData, sizeof(subResData));
-      subResData.pSysMem = initData;
-      subResData.SysMemPitch = (UINT)this->_rowBytes;
-      subResData.SysMemSlicePitch = static_cast<UINT>(this->_rowBytes * this->_height);
-      result = device->CreateTexture3D(&descriptor, &subResData, &(this->_texture));
+      D3D11_SUBRESOURCE_DATA* subResData = (D3D11_SUBRESOURCE_DATA*)calloc(this->_mipLevels, sizeof(D3D11_SUBRESOURCE_DATA));
+      if (subResData == nullptr)
+        throw std::bad_alloc{};
+
+      UINT depthPitch = static_cast<UINT>(this->_rowBytes * this->_height);
+      D3D11_SUBRESOURCE_DATA* it = subResData;
+      for (uint32_t i = 0; i < this->_mipLevels; ++i, ++it, ++initData) {
+        it->pSysMem = *initData;
+        it->SysMemPitch = (UINT)this->_rowBytes >> i;
+        it->SysMemSlicePitch = depthPitch >> (i+i);
+      }
+      result = device->CreateTexture3D(&descriptor, subResData, &(this->_texture));
+      free(subResData);
     }
     else
       result = device->CreateTexture3D(&descriptor, nullptr, &(this->_texture));
@@ -161,7 +184,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
   
   // Create 2D render-target texture resource and view from params
   TextureTarget2D::TextureTarget2D(DeviceHandle device, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
-                                   uint32_t texelBytes, const void* initData)
+                                   uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD),
       _rowBytes((uint32_t)descriptor.Width * texelBytes),
       _width((uint32_t)descriptor.Width),
@@ -170,11 +193,20 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
                  ? (uint8_t)descriptor.MipLevels
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
 
-    D3D11_SUBRESOURCE_DATA subResData;
+    D3D11_SUBRESOURCE_DATA* subResData = nullptr;
     if (initData != nullptr) {
-      ZeroMemory(&subResData, sizeof(subResData));
-      subResData.pSysMem = initData;
-      subResData.SysMemPitch = (UINT)this->_rowBytes;
+      uint32_t dataCount = descriptor.ArraySize ? descriptor.ArraySize : 1;
+      subResData = (D3D11_SUBRESOURCE_DATA*)calloc(dataCount, sizeof(D3D11_SUBRESOURCE_DATA));
+      if (subResData == nullptr)
+        throw std::bad_alloc{};
+      
+      D3D11_SUBRESOURCE_DATA* it = subResData;
+      for (uint32_t i = 0, level = 0; i < dataCount; ++i, ++level, ++it, ++initData) {
+        if (level == this->_mipLevels)
+          level = 0;
+        it->pSysMem = *initData;
+        it->SysMemPitch = (UINT)this->_rowBytes >> level;
+      }
     }
     
     if (viewDescriptor != nullptr) { // shader resource -> view created
@@ -184,9 +216,11 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       if (this->_mipLevels != 1u)
         descriptor.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
       
-      HRESULT result = device->CreateTexture2D(&descriptor, initData ? &subResData : nullptr, &(this->_texture));
+      HRESULT result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
       descriptor.BindFlags = originalBindFlags;
       descriptor.MiscFlags = originalMiscFlags;
+      if (subResData)
+        free(subResData);
       if (FAILED(result) || this->_texture == nullptr)
         throwError(result, __error_resCreationFailed());
 
@@ -198,8 +232,10 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       auto originalBindFlags = descriptor.BindFlags;
       descriptor.BindFlags = D3D11_BIND_RENDER_TARGET;
       
-      HRESULT result = device->CreateTexture2D(&descriptor, initData ? &subResData : nullptr, &(this->_texture));
+      HRESULT result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
       descriptor.BindFlags = originalBindFlags;
+      if (subResData)
+        free(subResData);
       if (FAILED(result) || this->_texture == nullptr)
         throwError(result, __error_resCreationFailed());
     }

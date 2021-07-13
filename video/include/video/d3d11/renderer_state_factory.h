@@ -297,11 +297,11 @@ License :     MIT
           /// @param magnifyFilter  Filter for magnification (upscaling).
           /// @param mipMapFilter   Filter between closest mip levels (mip-map).
           /// @param textureWrapUVW Texture out-of-range addressing modes (dimensions[3]: U/V/W). Default border color (with clampToBorder) is transparent.
-          /// @param lodMin         Minimum level-of-detail: lower end of mip-map range (value above 0, or 'highestLod()' for highest mip level).
+          /// @param lodMin         Minimum level-of-detail: lower end of mip-map range (value >= 0, or 'highestLod()' for highest mip level).
           /// @param lodMax         Maximum level-of-detail: upper end of mip-map range
           ///                       (lodMax >= lodMin, or 'highestLod()' for highest mip level, or 'infiniteLod()' to have no limit).
           inline FilterParams(TextureFilter minifyFilter, TextureFilter magnifyFilter, TextureFilter mipMapFilter,
-                              const TextureWrap textureWrapUVW[3], float lodMin = 1.f, float lodMax = highestLod()) noexcept {
+                              const TextureWrap textureWrapUVW[3], float lodMin = highestLod(), float lodMax = infiniteLod()) noexcept {
             _init(textureWrapUVW, lodMin, lodMax);
             setFilter(minifyFilter, magnifyFilter, mipMapFilter);
           }
@@ -316,10 +316,10 @@ License :     MIT
           /// @brief Initialize anisotropic filter/sampler config params
           /// @param maxAnisotropy  Max anisotropy level (clamping value: 1 to 'maxAnisotropy()')
           /// @param textureWrapUVW Texture out-of-range addressing modes (dimensions[3]: U/V/W). Default border color (with clampToBorder) is transparent.
-          /// @param lodMin         Minimum level-of-detail: lower end of mip-map range (value above 0, or 'highestLod()' for highest mip level).
+          /// @param lodMin         Minimum level-of-detail: lower end of mip-map range (value >= 0, or 'highestLod()' for highest mip level).
           /// @param lodMax         Maximum level-of-detail: upper end of mip-map range
           ///                       (lodMax >= lodMin, or 'highestLod()' for highest mip level, or 'infiniteLod()' to have no limit).
-          inline FilterParams(uint32_t maxAnisotropy, const TextureWrap textureWrapUVW[3], float lodMin = 1.f, float lodMax = highestLod()) noexcept {
+          inline FilterParams(uint32_t maxAnisotropy, const TextureWrap textureWrapUVW[3], float lodMin = highestLod(), float lodMax = infiniteLod()) noexcept {
             _init(textureWrapUVW, lodMin, lodMax);
             setAnisotropicFilter(maxAnisotropy);
           }
