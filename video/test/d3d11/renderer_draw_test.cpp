@@ -1,3 +1,4 @@
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # ifndef __MINGW32__
 #   pragma warning(push)
@@ -776,4 +777,5 @@
 # ifndef __MINGW32__
 #   pragma warning(pop)
 # endif
+#endif
 #endif
