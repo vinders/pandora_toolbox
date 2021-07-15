@@ -428,35 +428,16 @@ Includes hpp implementations at the end of the file
 
   // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
   void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
-    if (viewports != nullptr) {
+    if (numberViewports) {
       D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
       if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
         numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-      ZeroMemory(&values[0], numberViewports*sizeof(D3D11_VIEWPORT));
-
-      D3D11_VIEWPORT* out = &values[0];
-      const Viewport* end = &viewports[numberViewports - 1u];
-      for (const Viewport* it = &viewports[0]; it <= end; ++it, ++out) {
-        out->TopLeftX = (float)it->x();
-        out->TopLeftY = (float)it->y();
-        out->Width = (float)it->width();
-        out->Height = (float)it->height();
-        out->MinDepth = (float)it->nearClipping();
-        out->MaxDepth = (float)it->farClipping();
-      }
+    
+      D3D11_VIEWPORT* out = &values[numberViewports - 1u];
+      for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
+        memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_VIEWPORT));
       this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
     }
-  }
-  // Replace rasterizer viewport (3D -> 2D projection rectangle)
-  void Renderer::setViewport(const Viewport& viewport) noexcept {
-    D3D11_VIEWPORT data{};
-    data.TopLeftX = (float)viewport.x();
-    data.TopLeftY = (float)viewport.y();
-    data.Width = (float)viewport.width();
-    data.Height = (float)viewport.height();
-    data.MinDepth = (float)viewport.nearClipping();
-    data.MaxDepth = (float)viewport.farClipping();
-    this->_context->RSSetViewports(1u, &data);
   }
   
   // ---

@@ -129,7 +129,7 @@
     renderer.clearView(nullptr, nullptr, nullptr);
     renderer.clearView(emptyView, nullptr, nullptr);
     
-    pandora::video::Viewport viewport1(0,0, 640u,480u,0.,1.);
+    Viewport viewport1(0,0, 640u,480u,0.,1.);
     renderer.setViewports(&viewport1, size_t{1u});
     renderer.setViewport(viewport1);
   }

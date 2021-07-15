@@ -7,16 +7,15 @@ License :     MIT
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <hardware/display_monitor.h>
-# include "../viewport.h"
 # include "./api/types.h"      // includes D3D11
 # include "./renderer_state.h" // includes D3D11
+# include "./viewport.h"       // includes D3D11
 # include "./shader.h"         // includes D3D11
 
   namespace pandora {
     namespace video {
       namespace d3d11 {
         class SwapChain;
-        using ViewportBuilder = pandora::video::TopBasedViewportBuilder;
 
         /// @class Renderer
         /// @brief Direct3D rendering device and context (specific to adapter)
@@ -88,9 +87,9 @@ License :     MIT
           // -- render target operations --
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
-          void setViewports(const pandora::video::Viewport* viewports, size_t numberViewports) noexcept;
+          void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
-          void setViewport(const pandora::video::Viewport& viewport) noexcept;
+          inline void setViewport(const Viewport& viewport) noexcept { this->_context->RSSetViewports(1u, viewport.descriptor()); }
           
           // ---
 
