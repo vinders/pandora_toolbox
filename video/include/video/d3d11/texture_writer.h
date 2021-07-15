@@ -48,7 +48,7 @@ License :     MIT
           /// @param outputOffset        Offset of copy in output sub-resource.
           /// @warning Won't work if one of the textures is currently mapped (concurrent write/writeMapped call).
           static inline void copy(DeviceContext context, TextureHandle source, uint32_t srcSubResourceIndex,
-                           TextureHandle output, uint32_t outSubResourceIndex, const TexelPosition& outputOffset) noexcept {
+                                  TextureHandle output, uint32_t outSubResourceIndex, const TexelPosition& outputOffset) noexcept {
             context->CopySubresourceRegion(output, (UINT)outSubResourceIndex, outputOffset.getX(), outputOffset.getY(), outputOffset.getZ(), 
                                            source, (UINT)srcSubResourceIndex, nullptr);
           }
@@ -64,7 +64,7 @@ License :     MIT
           /// @param outputOffset        Offset of copy in output sub-resource.
           /// @warning Won't work if one of the textures is currently mapped (concurrent write/writeMapped call).
           static inline void copyRegion(DeviceContext context, TextureHandle source, uint32_t srcSubResourceIndex, const TextureCoords& sourceCoords,
-                                 TextureHandle output, uint32_t outSubResourceIndex, const TexelPosition& outputOffset) noexcept {
+                                        TextureHandle output, uint32_t outSubResourceIndex, const TexelPosition& outputOffset) noexcept {
             context->CopySubresourceRegion(output, (UINT)outSubResourceIndex, outputOffset.getX(), outputOffset.getY(), outputOffset.getZ(), 
                                                       source, (UINT)srcSubResourceIndex, &(sourceCoords.coords()));
           }
@@ -119,7 +119,7 @@ License :     MIT
           /// @remarks When targeting mip levels smaller than the most detailed one, adjust rowBytes (value >> mip level):
           ///          * rowAdjBytes = tx.rowBytes() >> mipLevel;
           static inline bool writeMapped(DeviceContext context, const void* sourceData, uint32_t rowBytes,
-                                        Texture1D& output, uint32_t subResourceIndex) noexcept {
+                                         Texture1D& output, uint32_t subResourceIndex) noexcept {
             D3D11_MAPPED_SUBRESOURCE mapped; // lock GPU access
             ZeroMemory(&mapped, sizeof(D3D11_MAPPED_SUBRESOURCE));
             if (FAILED(context->Map(output.handle(), (UINT)subResourceIndex, output.writeMode(), 0, &mapped)) || mapped.pData == nullptr)
@@ -140,7 +140,7 @@ License :     MIT
           ///          * rowAdjBytes = tx.rowBytes() >> mipLevel;
           ///          * sliceAdjBytes = rowAdjBytes * (tx.height() >> mipLevel);
           static inline bool writeMapped(DeviceContext context, const void* sourceData, uint32_t rowBytes, uint32_t sliceBytes,
-                                        Texture2D& output, uint32_t subResourceIndex) noexcept {
+                                         Texture2D& output, uint32_t subResourceIndex) noexcept {
             D3D11_MAPPED_SUBRESOURCE mapped; // lock GPU access
             ZeroMemory(&mapped, sizeof(D3D11_MAPPED_SUBRESOURCE));
             if (FAILED(context->Map(output.handle(), (UINT)subResourceIndex, output.writeMode(), 0, &mapped)) || mapped.pData == nullptr)
@@ -163,7 +163,7 @@ License :     MIT
           ///          * sliceAdjBytes = rowAdjBytes * (tx.height() >> mipLevel);
           ///          * depthSliceCount = tx.depth() >> mipLevel;
           static inline bool writeMapped(DeviceContext context, const void* sourceData, uint32_t rowBytes, uint32_t sliceBytes,
-                                        uint32_t depthSliceCount, Texture3D& output, uint32_t subResourceIndex) noexcept {
+                                         uint32_t depthSliceCount, Texture3D& output, uint32_t subResourceIndex) noexcept {
             D3D11_MAPPED_SUBRESOURCE mapped; // lock GPU access
             ZeroMemory(&mapped, sizeof(D3D11_MAPPED_SUBRESOURCE));
             if (FAILED(context->Map(output.handle(), (UINT)subResourceIndex, output.writeMode(), 0, &mapped)) || mapped.pData == nullptr)

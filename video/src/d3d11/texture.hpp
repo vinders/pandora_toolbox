@@ -6,6 +6,10 @@ Implementation included in renderer.cpp
 (grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+# ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 6387)
+# endif
 // includes + namespaces: in renderer.cpp
 
 static constexpr inline const char* __error_resCreationFailed() noexcept { return "Texture: resource creation failure"; }
@@ -262,4 +266,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
     }
   }
 
+# ifdef _MSC_VER
+#   pragma warning(pop)
+# endif
 #endif

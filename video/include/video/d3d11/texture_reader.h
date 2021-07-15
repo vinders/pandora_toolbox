@@ -99,24 +99,24 @@ License :     MIT
           /// @param context          Device context of renderer used to create texture (renderer.context()).
           /// @param source           Source 1D/2D/3D texture containing the sub-resource to read.
           /// @param subResourceIndex Source texture sub-resource index (mip level, array index): see toSubResourceIndex.
-          /// @param rowBytes         Byte size of one row of texels: adjusted for mip level.
+          /// @param regionRowBytes   Byte size of one region-row of texels (based on reading width specified in 'sourceCoords').
           /// @param outputData       Data output: must have 'sliceBytes' byte size: adjusted for mip level.
           /// @param sourceCoords     X/Y/Z offsets and sizes to read in 'source': adjusted for mip level.
           /// @warning - Boundaries aren't verified: make sure x+width, y+height and z+depth aren't above texture size.
           ///          - outputData must be rowBytes*height*depth bytes.
-          ///          - width in 'sourceCoords' must be the same as adjusted texture width (rowBytes / bytes per texel).
-          /// @remarks When targeting mip levels smaller than the most detailed one, adjust rowBytes/height (value >> mip level):
-          ///          * rowAdjBytes = tx.rowBytes() >> mipLevel;
-          ///          * adjHeight = tx.height() >> mipLevel; (only for 2D/3D textures: for 1D, adjHeight=1).
-          ///          * adjDepth = tx.depth() >> mipLevel; (only for 3D textures: for 1D/2D, adjDepth=1).
+          ///          - width in 'sourceCoords' must be the same as adjusted texture width (readRowBytes / bytes per texel).
+          /// @remarks When targeting mip levels smaller than the most detailed one, adjust readRowBytes/height (value >> mip level):
+          ///          * regionRowAdjBytes = (tx.rowBytes()/fullWidth*readWidth) >> mipLevel;
+          ///          * adjHeight = height >> mipLevel; (only for 2D/3D textures: for 1D, adjHeight=1).
+          ///          * adjDepth = depth >> mipLevel; (only for 3D textures: for 1D/2D, adjDepth=1).
           static inline bool readRegionMapped(DeviceContext context, TextureHandle source, uint32_t subResourceIndex,
-                                              uint32_t rowBytes, const TextureCoords& sourceCoords, void* outputData) noexcept {
+                                              uint32_t regionRowBytes, const TextureCoords& sourceCoords, void* outputData) noexcept {
             D3D11_MAPPED_SUBRESOURCE mapped; // lock GPU access
             ZeroMemory(&mapped, sizeof(D3D11_MAPPED_SUBRESOURCE));
             if (FAILED(context->Map(source, (UINT)subResourceIndex, D3D11_MAP_READ, 0, &mapped)) || mapped.pData == nullptr)
               return false;
 
-            _readRegionMapped(mapped, rowBytes, sourceCoords, (char*)outputData);
+            _readRegionMapped(mapped, regionRowBytes, sourceCoords, (char*)outputData);
             context->Unmap(source, (UINT)subResourceIndex);
             return true;
           }

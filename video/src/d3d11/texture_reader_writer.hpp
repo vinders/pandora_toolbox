@@ -47,7 +47,7 @@ Implementation included in renderer.cpp
     else { // no padding -> straight copy
       if (sliceBytes > mapped.DepthPitch)
         sliceBytes = mapped.DepthPitch; // protect against user calculation errors -> avoids crashes
-      memcpy(outputData, mapped.pData, static_cast<size_t>(sliceBytes*depthSliceCount));
+      memcpy(outputData, mapped.pData, (size_t)sliceBytes*(size_t)depthSliceCount);
     }
   }
   
