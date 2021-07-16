@@ -18,7 +18,7 @@ Implementation included in renderer.cpp
   void TextureReader::_readMapped2D(const D3D11_MAPPED_SUBRESOURCE& mapped, uint32_t rowBytes, uint32_t sliceBytes, char* outputData) noexcept {
     if (mapped.RowPitch > rowBytes) { // resource extra row padding
       char* outEnd = outputData + sliceBytes;
-      for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += rowBytes, src += mapped.RowPitch)
+      for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += (intptr_t)rowBytes, src += (intptr_t)mapped.RowPitch)
         memcpy(outputData, src, (size_t)rowBytes);
     }
     else { // no padding -> straight copy
@@ -35,13 +35,13 @@ Implementation included in renderer.cpp
       uint32_t depthPadding = (uint32_t)mapped.DepthPitch - sliceBytes;
       
       for (const char* src = (const char*)mapped.pData; depthSliceCount; --depthSliceCount, src += depthPadding) {
-        for (const char* outEnd = outputData + sliceBytes; outputData < outEnd; outputData += rowBytes, src += mapped.RowPitch)
+        for (const char* outEnd = outputData + sliceBytes; outputData < outEnd; outputData += (intptr_t)rowBytes, src += (intptr_t)mapped.RowPitch)
           memcpy(outputData, src, (size_t)rowBytes);
       }
     }
     else if (mapped.DepthPitch > sliceBytes) { // resource padding per slice
       const char* outEnd = outputData + sliceBytes*depthSliceCount;
-      for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += sliceBytes, src += mapped.DepthPitch)
+      for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += (intptr_t)sliceBytes, src += (intptr_t)mapped.DepthPitch)
         memcpy(outputData, src, (size_t)rowBytes);
     }
     else { // no padding -> straight copy
@@ -59,18 +59,21 @@ Implementation included in renderer.cpp
     uint32_t texelBytes = rowBytes/(sourceCoords.coords().right - sourceCoords.coords().left);
     
     if (sourceCoords.coords().back > 1) { // 3D
-      const char* srcEndSlice = (const char*)mapped.pData + sourceCoords.coords().back*mapped.DepthPitch;
-      for (const char* srcSlice = (const char*)mapped.pData + sourceCoords.coords().front*mapped.DepthPitch; srcSlice < srcEndSlice; srcSlice += mapped.DepthPitch) {
+      const char* srcEndSlice = (const char*)mapped.pData + (intptr_t)sourceCoords.coords().back*(intptr_t)mapped.DepthPitch;
+      for (const char* srcSlice = (const char*)mapped.pData + (intptr_t)sourceCoords.coords().front*(intptr_t)mapped.DepthPitch;
+           srcSlice < srcEndSlice; srcSlice += (intptr_t)mapped.DepthPitch) {
         
-        const char* srcEndRow = srcSlice + sourceCoords.coords().bottom*mapped.RowPitch;
-        for (const char* srcRow = srcSlice + sourceCoords.coords().top*mapped.RowPitch; srcRow < srcEndRow; srcRow += mapped.RowPitch, outputData += rowBytes)
-          memcpy(outputData, srcRow + sourceCoords.coords().left*texelBytes, (size_t)rowBytes);
+        const char* srcEndRow = srcSlice + (intptr_t)sourceCoords.coords().bottom*(intptr_t)mapped.RowPitch;
+        for (const char* srcRow = srcSlice + (intptr_t)sourceCoords.coords().top*(intptr_t)mapped.RowPitch;
+             srcRow < srcEndRow; srcRow += (intptr_t)mapped.RowPitch, outputData += (intptr_t)rowBytes)
+          memcpy(outputData, srcRow + (intptr_t)sourceCoords.coords().left*(intptr_t)texelBytes, (size_t)rowBytes);
       }
     }
     else { // 2D
-      const char* srcEndRow = (const char*)mapped.pData + sourceCoords.coords().bottom*mapped.RowPitch;
-      for (const char* srcRow = (const char*)mapped.pData + sourceCoords.coords().top*mapped.RowPitch; srcRow < srcEndRow; srcRow += mapped.RowPitch, outputData += rowBytes)
-        memcpy(outputData, srcRow + sourceCoords.coords().left*texelBytes, (size_t)rowBytes);
+      const char* srcEndRow = (const char*)mapped.pData + (intptr_t)sourceCoords.coords().bottom*(intptr_t)mapped.RowPitch;
+      for (const char* srcRow = (const char*)mapped.pData + (intptr_t)sourceCoords.coords().top*(intptr_t)mapped.RowPitch;
+           srcRow < srcEndRow; srcRow += (intptr_t)mapped.RowPitch, outputData += (intptr_t)rowBytes)
+        memcpy(outputData, srcRow + (intptr_t)sourceCoords.coords().left*(intptr_t)texelBytes, (size_t)rowBytes);
     }
   }
 
@@ -84,8 +87,8 @@ Implementation included in renderer.cpp
   void TextureWriter::_writeMapped2D(const char* sourceData, uint32_t rowBytes, uint32_t sliceBytes, 
                                      D3D11_MAPPED_SUBRESOURCE& mapped) noexcept {
     if (mapped.RowPitch > rowBytes) { // resource extra row padding
-      const char* srcEnd = sourceData + sliceBytes;
-      for (char* dest = (char*)mapped.pData; sourceData < srcEnd; sourceData += rowBytes, dest += mapped.RowPitch)
+      const char* srcEnd = sourceData + (intptr_t)sliceBytes;
+      for (char* dest = (char*)mapped.pData; sourceData < srcEnd; sourceData += (intptr_t)rowBytes, dest += (intptr_t)mapped.RowPitch)
         memcpy(dest, sourceData, (size_t)rowBytes);
     }
     else { // no padding -> straight copy
@@ -102,20 +105,20 @@ Implementation included in renderer.cpp
         sliceBytes = (mapped.DepthPitch / mapped.RowPitch) * rowBytes; // protect against user calculation errors -> avoids crashes
       uint32_t depthPadding = (uint32_t)mapped.DepthPitch - sliceBytes;
       
-      for (char* dest = (char*)mapped.pData; depthSliceCount; --depthSliceCount, dest += depthPadding) {
-        for (const char* srcEnd = sourceData + sliceBytes; sourceData < srcEnd; sourceData += rowBytes, dest += mapped.RowPitch)
+      for (char* dest = (char*)mapped.pData; depthSliceCount; --depthSliceCount, dest += (intptr_t)depthPadding) {
+        for (const char* srcEnd = sourceData + (intptr_t)sliceBytes; sourceData < srcEnd; sourceData += (intptr_t)rowBytes, dest += (intptr_t)mapped.RowPitch)
           memcpy(dest, sourceData, (size_t)rowBytes);
       }
     }
     else if (mapped.DepthPitch > sliceBytes) { // resource padding per slice
-      const char* srcEnd = sourceData + sliceBytes*depthSliceCount;
-      for (char* dest = (char*)mapped.pData; sourceData < srcEnd; sourceData += sliceBytes, dest += mapped.DepthPitch)
+      const char* srcEnd = sourceData + (intptr_t)sliceBytes*(intptr_t)depthSliceCount;
+      for (char* dest = (char*)mapped.pData; sourceData < srcEnd; sourceData += (intptr_t)sliceBytes, dest += (intptr_t)mapped.DepthPitch)
         memcpy(dest, sourceData, (size_t)rowBytes);
     }
     else { // no padding -> straight copy
       if (sliceBytes > mapped.DepthPitch)
         sliceBytes = mapped.DepthPitch; // protect against user calculation errors -> avoids crashes
-      memcpy(mapped.pData, sourceData, static_cast<size_t>(sliceBytes*depthSliceCount));
+      memcpy(mapped.pData, sourceData, (size_t)sliceBytes*(size_t)depthSliceCount);
     }
   }
 
