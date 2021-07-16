@@ -311,22 +311,22 @@
     EXPECT_EQ((size_t)1, values.size());
     EXPECT_ANY_THROW(values.at(1));
     EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_TRUE(values.at(0) == nullptr);
+    EXPECT_FALSE(values.at(0).isValid());
     EXPECT_TRUE(values.get()[0] == nullptr);
     values.erase(0);
     EXPECT_EQ((size_t)0, values.size());
     EXPECT_TRUE(values.append(FilterState(nullptr)));
     EXPECT_EQ((size_t)1, values.size());
     EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_TRUE(values.at(0) == nullptr);
+    EXPECT_FALSE(values.at(0).isValid());
     EXPECT_TRUE(values.get()[0] == nullptr);
     EXPECT_TRUE(values.insert(0, FilterState(nullptr)));
     EXPECT_EQ((size_t)2, values.size());
     EXPECT_ANY_THROW(values.at(2));
     EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_TRUE(values.at(0) == nullptr);
+    EXPECT_FALSE(values.at(0).isValid());
     EXPECT_TRUE(values.get()[0] == nullptr);
-    EXPECT_TRUE(values.at(1) == nullptr);
+    EXPECT_FALSE(values.at(1).isValid());
     EXPECT_TRUE(values.get()[1] == nullptr);
 
     size_t length = values.size();
@@ -392,36 +392,36 @@
     values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear,
                                                          addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)1, values.size());
-    auto val1 = values.at(0);
+    auto val1 = values.at(0).extract();
     values.append(factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::linear, TextureFilter::linear,
                                                          addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)2, values.size());
-    EXPECT_EQ(val1, values.at(0));
-    auto val2 = values.at(1);
+    EXPECT_EQ(val1, values.at(0).extract());
+    auto val2 = values.at(1).extract();
     values.insert(0, factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::nearest,
                                                             addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)3, values.size());
-    EXPECT_EQ(val1, values.at(1));
-    EXPECT_EQ(val2, values.at(2));
-    auto val0 = values.at(0);
+    EXPECT_EQ(val1, values.at(1).extract());
+    EXPECT_EQ(val2, values.at(2).extract());
+    auto val0 = values.at(0).extract();
     values.insert(1, factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest,
                                                             addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)4, values.size());
-    EXPECT_EQ(val0, values.at(0));
-    EXPECT_EQ(val1, values.at(2));
-    EXPECT_EQ(val2, values.at(3));
+    EXPECT_EQ(val0, values.at(0).extract());
+    EXPECT_EQ(val1, values.at(2).extract());
+    EXPECT_EQ(val2, values.at(3).extract());
     values.erase(1);
     ASSERT_EQ((size_t)3, values.size());
-    EXPECT_EQ(val0, values.at(0));
-    EXPECT_EQ(val1, values.at(1));
-    EXPECT_EQ(val2, values.at(2));
+    EXPECT_EQ(val0, values.at(0).extract());
+    EXPECT_EQ(val1, values.at(1).extract());
+    EXPECT_EQ(val2, values.at(2).extract());
     values.erase(0);
     ASSERT_EQ((size_t)2, values.size());
-    EXPECT_EQ(val1, values.at(0));
-    EXPECT_EQ(val2, values.at(1));
+    EXPECT_EQ(val1, values.at(0).extract());
+    EXPECT_EQ(val2, values.at(1).extract());
     values.erase(1);
     ASSERT_EQ((size_t)1, values.size());
-    EXPECT_EQ(val1, values.at(0));
+    EXPECT_EQ(val1, values.at(0).extract());
     values.clear();
     EXPECT_EQ((size_t)0, values.size());
   }

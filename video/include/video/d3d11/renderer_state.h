@@ -19,15 +19,16 @@ License :     MIT
         class RendererState final {
         public:
           RendererState() = default; ///< Create empty state
-          RendererState(_Type* state) : _state(state) {} ///< Initialize state
+          /// @brief Initialize state (isManaged should always be true, except when using an array value that should not be destroyed)
+          RendererState(_Type* state, bool isManaged = true) : _state(state), _isManaged(isManaged) {}
           RendererState(const RendererState&) = delete;
-          RendererState(RendererState&& rhs) noexcept : _state(rhs._state) { rhs._state = nullptr; }
+          RendererState(RendererState&& rhs) noexcept : _state(rhs._state), _isManaged(rhs._isManaged) { rhs._state = nullptr; }
           RendererState& operator=(const RendererState&) = delete;
-          RendererState& operator=(RendererState&& rhs) noexcept { this->_state = rhs._state; rhs._state = nullptr; return *this; }
+          RendererState& operator=(RendererState&& rhs) noexcept { this->_state=rhs._state; this->_isManaged=rhs._isManaged; rhs._state=nullptr; return *this; }
           ~RendererState() noexcept { release(); }
           
           inline void release() noexcept { ///< Destroy state resource
-            if (this->_state) {
+            if (this->_isManaged && this->_state) {
               try { this->_state->Release(); } catch (...) {}
               this->_state = nullptr;
             }
@@ -44,6 +45,7 @@ License :     MIT
           
         private:
           _Type* _state = nullptr;
+          bool _isManaged = true;
         };
         
         /// @brief Configured depth/stencil state resource - can be used with Renderer.setDepthStencilState
@@ -96,10 +98,15 @@ License :     MIT
           inline _Type** get() noexcept { return this->_states; } ///< Get entire collection, to bind all (or first) states to Renderer instance
           inline const _Type** get() const noexcept { return this->_states; }  ///< Get entire constant collection
 
-          inline _Type* at(uint32_t index) const { ///< Get state located at index
+          inline _Type** getFrom(uint32_t index) const { ///< Get state located at index
             if (index >= this->_length)
               throw std::out_of_range("RendererStateArray.at: index out of range");
-            return this->_states[index];
+            return &(this->_states[index]);
+          }
+          inline RendererState<_Type> at(uint32_t index) const { ///< Get state located at index
+            if (index >= this->_length)
+              throw std::out_of_range("RendererStateArray.at: index out of range");
+            return RendererState<_Type>(this->_states[index], false);
           }
           
           // -- operations --
