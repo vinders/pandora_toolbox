@@ -20,6 +20,7 @@ _build
 CMakeLists/
 _cmake/CMakeLists/
 _coverage/
+_examples/*/_libs
 _libs/.cache/
 _libs/*/.cache/
 _libs/*/
