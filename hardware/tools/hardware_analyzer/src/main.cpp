@@ -38,7 +38,7 @@ void displaySpecs(const CpuSpecs& specs) {
       instructionSets += std::string(" - ") + toString(instSet) + "\n";
   }
 
-  std::string architecture = toString(specs.archType()).c_str();
+  std::string architecture = toString(specs.archType());
   if (pandora::system::getCpuRegisterSize() > 32)
     architecture += std::string("_") + std::to_string(pandora::system::getCpuRegisterSize());
 

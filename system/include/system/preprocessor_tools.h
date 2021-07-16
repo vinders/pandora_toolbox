@@ -20,7 +20,6 @@ Code generators : _P_SERIALIZABLE_ENUM,
 #endif
 #include <cstddef>
 #include <cstring>
-#include <string>
 #include <array>
 #include "./_private/_preprocessor_tools.h"
 
@@ -63,7 +62,7 @@ Code generators : _P_SERIALIZABLE_ENUM,
 
 #define __P_CONCAT_ENUM(type, value)            type :: value
 #define __P_SERIALIZE_ENUM_CASE(type, value)    case (__P_CONCAT_ENUM(type,value)): { return _P_STRINGIFY_SEMICOLON(value) }
-#define __P_DESERIALIZE_ENUM_CASE(type, value)  else if (_val == _P_STRINGIFY(value)) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
+#define __P_DESERIALIZE_ENUM_CASE(type, value)  else if (strcmp(_val, _P_STRINGIFY(value)) == 0) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
 #define __P_SERIALIZE_ENUM_CASE_BUFFER(type, value)    case (__P_CONCAT_ENUM(type,value)): { strncpy(_out, _P_STRINGIFY(value), _bufferSize); _out[_bufferSize - 1u] = '\0'; break; }
 #define __P_DESERIALIZE_ENUM_CASE_BUFFER(type, value)  else if (strncmp(_val, _P_STRINGIFY(value), _length) == 0) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
 #define __P_EXPAND_ENUM_VALUE(type, value)      , __P_CONCAT_ENUM(type,value)
@@ -76,7 +75,7 @@ Code generators : _P_SERIALIZABLE_ENUM,
 
 // make an enum serializable/deserializable
 #define _P_SERIALIZABLE_ENUM(type, ...) \
-        inline std::string toString(type _val) { \
+        inline const char* toString(type _val) { \
           switch (_val) { \
             _P_PARAM_FOREACH(__P_SERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
             default: return ""; \
@@ -89,8 +88,8 @@ Code generators : _P_SERIALIZABLE_ENUM,
             default: return ""; \
           } \
         } \
-        inline bool fromString(const std::string& _val, type& _out) noexcept { \
-          if (_val.empty()) { return false; } \
+        inline bool fromString(const char* _val, type& _out) noexcept { \
+          if (_val == nullptr || *_val == '\0') { return false; } \
           _P_PARAM_FOREACH(__P_DESERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
           return false; \
         } \

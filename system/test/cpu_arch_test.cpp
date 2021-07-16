@@ -37,10 +37,10 @@ TEST_F(CpuArchTest, functionVersion) {
 // -- enumeration --
 
 TEST_F(CpuArchTest, cpuArchSerializer) {
-  EXPECT_FALSE(toString(CpuArchitecture::unknown).empty());
-  EXPECT_FALSE(toString(CpuArchitecture::x86).empty());
-  EXPECT_FALSE(toString(CpuArchitecture::powerpc).empty());
-  EXPECT_FALSE(toString(CpuArchitecture::arm).empty());
+  EXPECT_TRUE(*toString(CpuArchitecture::unknown));
+  EXPECT_TRUE(*toString(CpuArchitecture::x86));
+  EXPECT_TRUE(*toString(CpuArchitecture::powerpc));
+  EXPECT_TRUE(*toString(CpuArchitecture::arm));
   EXPECT_TRUE(CpuArchitecture_size() > 0);
 
   CpuArchitecture converted = CpuArchitecture::unknown;

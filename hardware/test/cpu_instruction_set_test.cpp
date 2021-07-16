@@ -17,11 +17,11 @@ protected:
 // -- enumerations --
 
 TEST_F(CpuInstructionSetTest, instructionFamilySerializer) {
-  EXPECT_FALSE(toString(CpuInstructionFamily::assembly).empty());
-  EXPECT_FALSE(toString(CpuInstructionFamily::mmx).empty());
-  EXPECT_FALSE(toString(CpuInstructionFamily::sse).empty());
-  EXPECT_FALSE(toString(CpuInstructionFamily::avx).empty());
-  EXPECT_FALSE(toString(CpuInstructionFamily::neon).empty());
+  EXPECT_TRUE(*toString(CpuInstructionFamily::assembly));
+  EXPECT_TRUE(*toString(CpuInstructionFamily::mmx));
+  EXPECT_TRUE(*toString(CpuInstructionFamily::sse));
+  EXPECT_TRUE(*toString(CpuInstructionFamily::avx));
+  EXPECT_TRUE(*toString(CpuInstructionFamily::neon));
   EXPECT_TRUE(CpuInstructionFamily_size() > 0);
 
   CpuInstructionFamily converted = CpuInstructionFamily::assembly;
@@ -68,18 +68,18 @@ TEST_F(CpuInstructionSetTest, instructionFamilyFlagOps) {
 TEST_F(CpuInstructionSetTest, instructionSetSerializer) {
   CpuInstructionSet converted = CpuInstructionSet::cpp;
 
-  EXPECT_FALSE(toString(CpuInstructionSet::cpp).empty());
+  EXPECT_TRUE(*toString(CpuInstructionSet::cpp));
   EXPECT_TRUE(fromString(toString(CpuInstructionSet::cpp), converted));
   EXPECT_EQ(CpuInstructionSet::cpp, converted);
   EXPECT_TRUE(CpuInstructionSet_size() > 0);
 
   for (auto instSet : CpuInstructionSet_x86_values()) {
-    EXPECT_FALSE(toString(instSet).empty());
+    EXPECT_TRUE(*toString(instSet));
     EXPECT_TRUE(fromString(toString(instSet), converted));
     EXPECT_EQ(instSet, converted);
   }
   for (auto instSet : CpuInstructionSet_arm_values()) {
-    EXPECT_FALSE(toString(instSet).empty());
+    EXPECT_TRUE(*toString(instSet));
     EXPECT_TRUE(fromString(toString(instSet), converted));
     EXPECT_EQ(instSet, converted);
   }
