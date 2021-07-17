@@ -62,6 +62,7 @@ Code generators : _P_SERIALIZABLE_ENUM,
 
 #define __P_CONCAT_ENUM(type, value)            type :: value
 #define __P_SERIALIZE_ENUM_CASE(type, value)    case (__P_CONCAT_ENUM(type,value)): { return _P_STRINGIFY_SEMICOLON(value) }
+#define __P_WSERIALIZE_ENUM_CASE(type, value)   case (__P_CONCAT_ENUM(type,value)): { return L"" _P_STRINGIFY_SEMICOLON(value) }
 #define __P_DESERIALIZE_ENUM_CASE(type, value)  else if (strcmp(_val, _P_STRINGIFY(value)) == 0) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
 #define __P_SERIALIZE_ENUM_CASE_BUFFER(type, value)    case (__P_CONCAT_ENUM(type,value)): { strncpy(_out, _P_STRINGIFY(value), _bufferSize); _out[_bufferSize - 1u] = '\0'; break; }
 #define __P_DESERIALIZE_ENUM_CASE_BUFFER(type, value)  else if (strncmp(_val, _P_STRINGIFY(value), _length) == 0) { _out=(__P_CONCAT_ENUM(type,value)); return true; }
@@ -79,6 +80,12 @@ Code generators : _P_SERIALIZABLE_ENUM,
           switch (_val) { \
             _P_PARAM_FOREACH(__P_SERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
             default: return ""; \
+          } \
+        } \
+        inline const wchar_t* toWideString(type _val) { \
+          switch (_val) { \
+            _P_PARAM_FOREACH(__P_WSERIALIZE_ENUM_CASE, type, __VA_ARGS__) \
+            default: return L""; \
           } \
         } \
         template < type _val> \
