@@ -374,6 +374,14 @@ License :     MIT
           /// @throws runtime_error on creation failure
           inline Texture1D(Renderer& renderer, const Texture1DParams& params, const uint8_t** initData = nullptr)
             : Texture1D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
+
+          /// @brief Store texture resource and view created with external tool (such as DDSTextureLoader in DirectXTK)
+          inline Texture1D(TextureHandle texture, TextureView resourceView, uint32_t rowBytes, uint8_t mipLevels,
+                           ResourceUsage usage = ResourceUsage::staticGpu)
+            : _texture((TextureHandle1D)texture), _resourceView(resourceView), _rowBytes(rowBytes), _mipLevels(mipLevels) {
+            if (usage == ResourceUsage::dynamicCpu)   _writeMode = D3D11_MAP_WRITE_DISCARD;
+            else if (usage == ResourceUsage::staging) _writeMode = D3D11_MAP_WRITE;
+          }
           
           Texture1D() noexcept = default;
           Texture1D(const Texture1D&) = delete;
@@ -425,6 +433,14 @@ License :     MIT
           /// @throws runtime_error on creation failure
           inline Texture2D(Renderer& renderer, const Texture2DParams& params, const uint8_t** initData = nullptr)
             : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
+
+          /// @brief Store texture resource and view created with external tool (such as DDSTextureLoader in DirectXTK)
+          inline Texture2D(TextureHandle texture, TextureView resourceView, uint32_t rowBytes, uint32_t height,
+                           uint8_t mipLevels, ResourceUsage usage = ResourceUsage::staticGpu)
+            : _texture((TextureHandle2D)texture), _resourceView(resourceView), _rowBytes(rowBytes), _height(height), _mipLevels(mipLevels) {
+            if (usage == ResourceUsage::dynamicCpu)   _writeMode = D3D11_MAP_WRITE_DISCARD;
+            else if (usage == ResourceUsage::staging) _writeMode = D3D11_MAP_WRITE;
+          }
           
           Texture2D() noexcept = default;
           Texture2D(const Texture2D&) = delete;
@@ -476,6 +492,15 @@ License :     MIT
           /// @throws runtime_error on creation failure
           inline Texture3D(Renderer& renderer, const Texture3DParams& params, const uint8_t** initData = nullptr)
             : Texture3D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
+
+          /// @brief Store texture resource and view created with external tool (such as DDSTextureLoader in DirectXTK)
+          inline Texture3D(TextureHandle texture, TextureView resourceView, uint32_t rowBytes, uint32_t height,
+                           uint32_t depth, uint8_t mipLevels, ResourceUsage usage = ResourceUsage::staticGpu)
+            : _texture((TextureHandle3D)texture), _resourceView(resourceView),
+              _rowBytes(rowBytes), _height(height), _depth(depth), _mipLevels(mipLevels) {
+            if (usage == ResourceUsage::dynamicCpu)   _writeMode = D3D11_MAP_WRITE_DISCARD;
+            else if (usage == ResourceUsage::staging) _writeMode = D3D11_MAP_WRITE;
+          }
           
           Texture3D() noexcept = default;
           Texture3D(const Texture3D&) = delete;
