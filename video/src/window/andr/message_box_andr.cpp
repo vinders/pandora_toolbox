@@ -93,6 +93,11 @@ Description : Message box - JNI implementation (Android)
   }
   
   // ---
+  
+  // flush system events
+  void MessageBox::flushEvents() noexcept {}
+  
+  // ---
 
   // show modal message box
   MessageBox::Result MessageBox::show(const char* caption, const char* message, MessageBox::ActionType actions, 

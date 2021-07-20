@@ -113,6 +113,15 @@ Description : Message box - Win32 implementation (Windows)
                                (_toNativeAction(actions, actionFlags) | _toNativeStyle(icon, isTopMost, parent)) );
     return _toDialogResult(resultId, actionFlags);
   }
+
+  // flush system events
+  void MessageBox::flushEvents() noexcept {
+    MSG msg;
+    while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE) && msg.message != WM_QUIT) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+  }
   
   // ---
   

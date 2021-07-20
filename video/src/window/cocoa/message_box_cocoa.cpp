@@ -50,6 +50,11 @@ Description : Message box - Cocoa implementation (Mac OS)
   
   // ---
   
+  // flush system events
+  void MessageBox::flushEvents() noexcept {}
+  
+  // ---
+  
   // get last error message (in case of Result::failure)
   pandora::memory::LightString MessageBox::getLastError() noexcept { 
     return __MessageBox::getLastError();

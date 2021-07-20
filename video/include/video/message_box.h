@@ -80,6 +80,10 @@ namespace pandora {
                            bool isTopMost = false, WindowHandle parent = (WindowHandle)0) noexcept;
 #     endif
 
+      /// @brief Cleanup system events that may interfere with the message box (or prevent it to display)
+      /// @remarks Typically used before showing a message box inside a catch(){ ... } statement.
+      static void flushEvents() noexcept;
+
       /// @brief Get last error message (in case of Result::failure)
       /// @returns Last error (if available) or empty string
       static pandora::memory::LightString getLastError() noexcept;
