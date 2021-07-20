@@ -77,5 +77,5 @@ float4 main(PS_INPUT input) : SV_TARGET
   float4 directionalLight = computeDirectionalLight(input.position, input.normal, viewDirection);
   float4 pointLight = computePointLight(input.position, input.normal, viewDirection);
 
-  return (directionalLight + pointLight);
+  return (directionalLight + pointLight) * (1.0 - 0.6*input.projection.w); // multiply by depth to obtain gradient to black (when distance increases)
 }

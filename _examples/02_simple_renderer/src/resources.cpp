@@ -107,7 +107,7 @@ void loadMaterial(Renderer&, MaterialId id, ResourceStorage& out) {
   switch (id) {
     case MaterialId::floor:
       out.materials[id] = Material{
-        {0.01f, 0.011f, 0.012f},   // diffuse
+        {0.012f, 0.014f, 0.017f},// diffuse
         {0.f, 0.f, 0.f},         // ambient
         {0.4f, 0.4f, 0.4f}, 16.f // specular, shininess
       };

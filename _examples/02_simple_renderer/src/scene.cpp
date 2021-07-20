@@ -52,16 +52,16 @@ static void __generateCrate(Renderer& renderer, ResourceStorage& outStorage) {
     loadTexture(renderer, TextureMapId::woodCrate, outStorage);
 
   const float vertices[] = {
-    -0.25f,0.25f,0.25f,   LEFT,BACK,DOWN,  0.f,0.f,  -0.25f,0.25f,-0.25f,  LEFT,BACK,DOWN,  1.f,0.f, // left
-    -0.25f,-0.25f,0.25f,  LEFT,BACK,DOWN,  0.f,1.f,  -0.25f,-0.25f,-0.25f, LEFT,BACK,DOWN,  1.f,1.f,
+    -0.25f,0.25f,0.25f,   LEFT,BACK,DOWN,  0.f,0.f,  -0.25f,0.25f,-0.25f,  LEFT,BACK,DOWN, 1.f,0.f, // left
+    -0.25f,-0.25f,0.25f,  LEFT,BACK,DOWN,  0.f,1.f,  -0.25f,-0.25f,-0.25f, LEFT,BACK,DOWN, 1.f,1.f,
     -0.25f,0.25f,0.25f,   UP,RIGHT,FORWD, 0.f,0.f,    0.25f,0.25f,0.25f,   UP,RIGHT,FORWD, 1.f,0.f, // top
     -0.25f,0.25f,-0.25f,  UP,RIGHT,FORWD, 0.f,1.f,    0.25f,0.25f,-0.25f,  UP,RIGHT,FORWD, 1.f,1.f,
-    -0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN,  0.f,0.f,   0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN,  1.f,0.f, // front
-    -0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN,  0.f,1.f,   0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN,  1.f,1.f,
-    0.25f,0.25f,-0.25f,   RIGHT,FORWD,UP,0.f,0.f,   0.25f,0.25f,0.25f,   RIGHT,FORWD,UP,1.f,0.f, // right
-    0.25f,-0.25f,-0.25f,  RIGHT,FORWD,UP,0.f,1.f,   0.25f,-0.25f,0.25f,  RIGHT,FORWD,UP,1.f,1.f,
-    0.25f,0.25f,0.25f,    FORWD,LEFT,UP,0.f,0.f,  -0.25f,0.25f,0.25f,   FORWD,LEFT,UP, 1.f,0.f, // back
-    0.25f,-0.25f,0.25f,   FORWD,LEFT,UP,0.f,1.f,  -0.25f,-0.25f,0.25f,  FORWD,LEFT,UP, 1.f,1.f,
+    -0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN,  0.f,0.f,   0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN, 1.f,0.f, // front
+    -0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN,  0.f,1.f,   0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN, 1.f,1.f,
+    0.25f,0.25f,-0.25f,   RIGHT,FORWD,UP,0.f,0.f,     0.25f,0.25f,0.25f,   RIGHT,FORWD,UP, 1.f,0.f, // right
+    0.25f,-0.25f,-0.25f,  RIGHT,FORWD,UP,0.f,1.f,     0.25f,-0.25f,0.25f,  RIGHT,FORWD,UP, 1.f,1.f,
+    0.25f,0.25f,0.25f,    FORWD,LEFT,UP,0.f,0.f,     -0.25f,0.25f,0.25f,   FORWD,LEFT,UP,  1.f,0.f, // back
+    0.25f,-0.25f,0.25f,   FORWD,LEFT,UP,0.f,1.f,     -0.25f,-0.25f,0.25f,  FORWD,LEFT,UP,  1.f,1.f,
   };
   const uint32_t indices[] = { 0,1,2, 1,3,2,  4,5,6, 5,7,6,  8,9,10, 9,11,10,  12,13,14, 13,15,14,  16,17,18, 17,19,18 };
 
