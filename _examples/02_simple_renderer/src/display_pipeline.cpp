@@ -36,10 +36,13 @@ DisplayPipeline::DisplayPipeline(const pandora::hardware::DisplayMonitor& monito
   TextureWrap addressMode[3] = { TextureWrap::repeatMirror, TextureWrap::repeatMirror, TextureWrap::repeatMirror };
   _samplers.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addressMode)));
   _samplers.append(factory.createFilterState(FilterParams(FilterParams::maxAnisotropy()/2, addressMode)));
-  _rasterizer = RasterizerState(factory.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, true, false)));
+  _rasterizer = factory.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, true, false));
+  _blend = factory.createBlendState(BlendParams(BlendFactor::sourceAlpha, BlendFactor::sourceInvAlpha, BlendOp::add,
+                                                BlendFactor::one, BlendFactor::zero, BlendOp::add));
 
   _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
   _renderer->setRasterizerState(_rasterizer);
+  _renderer->setBlendState(_blend);
   _renderer->setDepthStencilState(_depthTests.at(0));
   _renderer->setFragmentFilterStates(0, _samplers.getFrom(useAnisotropy ? 1 : 0), 1);
   _renderer->setViewport(_viewport);
@@ -80,11 +83,6 @@ void DisplayPipeline::enableRenderTarget(bool isCleaned) {
     _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
   else
     _renderer->setActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
-
-  _renderer->setRasterizerState(_rasterizer);
-  _renderer->setDepthStencilState(_depthTests.at(0));
-  _renderer->setFragmentFilterStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
-  _renderer->setViewport(_viewport);
 }
 
 void DisplayPipeline::swapBuffers() {

@@ -14,7 +14,7 @@ public:
   // Create rendering scene components
   Scene(DisplayPipeline& renderer, uint32_t width, uint32_t height, float sensitivity)
     : _camera(width, height, sensitivity) {
-    init(renderer);
+    init(renderer, width, height);
   }
 
   Scene() = default;
@@ -24,7 +24,7 @@ public:
 
   // Re-initialize rendering scene components (must be called if the DisplayPipeline instance is re-created)
   // --> throws on scene creation failure
-  void init(DisplayPipeline& renderer);
+  void init(DisplayPipeline& renderer, uint32_t width, uint32_t height);
   // Destroy scene components (should be called before destroying associated DisplayPipeline)
   void release() noexcept;
 
@@ -42,6 +42,9 @@ public:
     _camera.move((float)deltaX, (float)deltaY);
     _isUpdated = true;
   }
+  // Report size change -> update UI
+  void resizeScreen(uint32_t width, uint32_t height) noexcept;
+
   bool isUpdated() const noexcept { return _isUpdated; }
   void refreshScreen() noexcept { _isUpdated = true; }
 

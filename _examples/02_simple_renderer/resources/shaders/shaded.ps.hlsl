@@ -4,7 +4,8 @@
 // Camera position
 cbuffer CameraView : register(b0)
 {
-  matrix modelViewMatrix;
+  matrix worldMatrix;
+  matrix viewMatrix;
   matrix projectionMatrix;
   float4 cameraPosition;
 }

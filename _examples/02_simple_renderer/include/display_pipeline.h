@@ -100,6 +100,7 @@ private:
   __RENDER_API(DepthStencilStateArray<2>) _depthTests;
   __RENDER_API(FilterStateArray) _samplers;
   __RENDER_API(RasterizerState) _rasterizer;
+  __RENDER_API(BlendState) _blend;
   __RENDER_API(Viewport) _viewport;
   pandora::time::Timer<pandora::time::HighResolutionClock,
                        pandora::time::HighResolutionAuxClock,

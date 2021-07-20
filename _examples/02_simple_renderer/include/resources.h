@@ -44,10 +44,11 @@ Description : Example - rendering resources (materials, textures, meshes)
 // -- identifiers --
 
 enum class ShaderProgramId : int {
+  tx2d,
   shaded,
   textured
 };
-_P_SERIALIZABLE_ENUM(ShaderProgramId, shaded, textured);
+_P_SERIALIZABLE_ENUM(ShaderProgramId, tx2d, shaded, textured);
 
 enum class MaterialId : int {
   none = 0,
@@ -57,7 +58,13 @@ enum class TextureMapId : int {
   none = 0,
   woodCrate
 };
-_P_SERIALIZABLE_ENUM(TextureMapId, woodCrate);
+_P_SERIALIZABLE_ENUM(TextureMapId, none, woodCrate);
+
+enum class SpriteId : int {
+  title,
+  commands
+};
+_P_SERIALIZABLE_ENUM(SpriteId, title, commands);
 
 
 // -- types --
@@ -134,6 +141,12 @@ struct Entity final {
   float yaw;
 };
 
+// 2D/UI sprite entity
+struct SpriteEntity final {
+  std::shared_ptr<__RENDER_API(StaticBuffer)> vertices;
+  SpriteId image;
+};
+
 // ---
 
 // Display resource storage
@@ -141,17 +154,24 @@ struct Entity final {
 struct ResourceStorage final {
   std::map<MaterialId, Material> materials;
   std::map<TextureMapId, TextureMap> textureMaps;
+  std::map<SpriteId, __RENDER_API(Texture2D)> sprites;
   std::map<ShaderProgramId, ShaderProgram> shaders;
   std::vector<Entity> entities;
+  std::vector<SpriteEntity> spriteEntities;
+  ShaderProgram spriteShader;
   __RENDER_API(StaticBuffer) cameraViewProjection;
   __RENDER_API(StaticBuffer) activeMaterial;
   __RENDER_API(StaticBuffer) activeLights;
 
   void clear() {
     entities.clear();
+    sprites.clear();
     materials.clear();
     textureMaps.clear();
     shaders.clear();
+    spriteShader.vertex.release();
+    spriteShader.fragment.release();
+    spriteShader.layout.release();
     cameraViewProjection.release();
     activeMaterial.release();
     activeLights.release();
@@ -165,6 +185,7 @@ struct ResourceStorage final {
 void loadShader(__RENDER_API(Renderer)& renderer, ShaderProgramId id, ResourceStorage& out);
 void loadMaterial(__RENDER_API(Renderer)& renderer, MaterialId id, ResourceStorage& out);
 void loadTexture(__RENDER_API(Renderer)& renderer, TextureMapId id, ResourceStorage& out);
+void loadSprite(__RENDER_API(Renderer)& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out);
 
 // -- world matrix --
 

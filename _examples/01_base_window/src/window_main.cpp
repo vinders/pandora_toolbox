@@ -148,6 +148,7 @@ inline void mainAppLoop() {
     }
   }
   catch (const std::exception& exc) {
+    MessageBox::flushEvents();
     MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok, MessageBox::IconType::error, true);
     exit(-1);
   }

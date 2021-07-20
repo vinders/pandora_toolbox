@@ -85,12 +85,14 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
         // adapt framebuffer size
         try {
           g_renderer->resize(sizeX, sizeY);
+          if (g_currentScene)
+            g_currentScene->resizeScreen(sizeX, sizeY);
         }
         catch (...) { // device lost -> recreate renderer (on failure, exits)
           if (g_currentScene) g_currentScene->release();
           *g_renderer = DisplayPipeline(pandora::hardware::DisplayMonitor{}, sender->handle(), sizeX, sizeY,
                                          pandora::video::RefreshRate{}, g_renderer->hasAnisotropy(), g_renderer->hasVsync());
-          if (g_currentScene) g_currentScene->init(*g_renderer);
+          if (g_currentScene) g_currentScene->init(*g_renderer, sizeX, sizeY);
           // --> note: on failure, a message-box could be used to ask the user what to do (in fullscreen, don't forget to minimize first)
         }
         // adapt camera size
@@ -191,6 +193,7 @@ inline void mainAppLoop() {
     defaultScene.release(); // --> make sure resources are freed before the renderer
   }
   catch (const std::exception& exc) {
+    MessageBox::flushEvents();
     MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok, MessageBox::IconType::error, true);
     exit(-1);
   }

@@ -7,8 +7,43 @@ Description : Example - rendering scene
 
 using namespace __RENDER_API_NS;
 
+// directional vectors (to simply vertex normal/tangent/bitangent declaration)
+#define LEFT   -1.f,0.f,0.f
+#define UP     0.f,1.f,0.f
+#define BACK   0.f,0.f,-1.f
+#define RIGHT  1.f,0.f,0.f
+#define DOWN   0.f,-1.f,0.f
+#define FORWD  0.f,0.f,1.f
+
 
 // -- geometry generators -- ---------------------------------------------------
+
+static void __generateUi(Renderer& renderer, uint32_t clientWidth, uint32_t clientHeight, ResourceStorage& outStorage) {
+  if (outStorage.shaders.find(ShaderProgramId::tx2d) == outStorage.shaders.end())
+    loadShader(renderer, ShaderProgramId::tx2d, outStorage);
+  if (outStorage.sprites.find(SpriteId::title) == outStorage.sprites.end())
+    loadSprite(renderer, SpriteId::title, 160, 32, outStorage);
+  if (outStorage.sprites.find(SpriteId::commands) == outStorage.sprites.end())
+    loadSprite(renderer, SpriteId::commands, 128, 48, outStorage);
+
+  float texelWidth  = 2.f/(float)clientWidth;
+  float texelHeight = 2.f/(float)clientHeight;
+
+  const float titleArea[] = { -0.9f, -0.9f + 32.f*texelHeight, -0.9f + 160.f*texelWidth, -0.9f };
+  const float titleVertices[] = { titleArea[0],titleArea[1],0.f,0.f, titleArea[2],titleArea[1],1.f,0.f, titleArea[0],titleArea[3],0.f,1.f,
+                                  titleArea[2],titleArea[1],1.f,0.f, titleArea[2],titleArea[3],1.f,1.f, titleArea[0],titleArea[3],0.f,1.f };
+  outStorage.spriteEntities.push_back(SpriteEntity{
+    std::make_shared<StaticBuffer>(renderer, BaseBufferType::vertex, sizeof(titleVertices), &titleVertices[0], true),
+    SpriteId::title
+  });
+  const float commandsArea[] = { 0.9f - 128.f*texelWidth, -0.9f + 48.f*texelHeight, 0.9f, -0.9f };
+  const float commandsVertices[] = { commandsArea[0],commandsArea[1],0.f,0.f, commandsArea[2],commandsArea[1],1.f,0.f, commandsArea[0],commandsArea[3],0.f,1.f,
+                                     commandsArea[2],commandsArea[1],1.f,0.f, commandsArea[2],commandsArea[3],1.f,1.f, commandsArea[0],commandsArea[3],0.f,1.f };
+  outStorage.spriteEntities.push_back(SpriteEntity{
+    std::make_shared<StaticBuffer>(renderer, BaseBufferType::vertex, sizeof(commandsVertices), &commandsVertices[0], true),
+    SpriteId::commands
+  });
+}
 
 static void __generateCrate(Renderer& renderer, ResourceStorage& outStorage) {
   if (outStorage.shaders.find(ShaderProgramId::textured) == outStorage.shaders.end())
@@ -17,20 +52,18 @@ static void __generateCrate(Renderer& renderer, ResourceStorage& outStorage) {
     loadTexture(renderer, TextureMapId::woodCrate, outStorage);
 
   const float vertices[] = {
-    -0.25f,0.25f,0.25f,  -1.f,0.f,0.f,  0.f,0.f,  -0.25f,0.25f,-0.25f, -1.f,0.f,0.f,  1.f,0.f, // left
-    -0.25f,-0.25f,0.25f, -1.f,0.f,0.f,  0.f,1.f,  -0.25f,-0.25f,-0.25f,-1.f,0.f,0.f,  1.f,1.f,
-    -0.25f,0.25f,0.25f,   0.f,1.f,0.f,  0.f,0.f,   0.25f,0.25f,0.25f,   0.f,1.f,0.f,  1.f,0.f, // top
-    -0.25f,0.25f,-0.25f,  0.f,1.f,0.f,  0.f,1.f,   0.25f,0.25f,-0.25f,  0.f,1.f,0.f,  1.f,1.f,
-    -0.25f,0.25f,-0.25f,  0.f,0.f,-1.f, 0.f,0.f,   0.25f,0.25f,-0.25f,  0.f,0.f,-1.f, 1.f,0.f, // front
-    -0.25f,-0.25f,-0.25f, 0.f,0.f,-1.f, 0.f,1.f,   0.25f,-0.25f,-0.25f, 0.f,0.f,-1.f, 1.f,1.f,
-    0.25f,0.25f,-0.25f,  -1.f,0.f,0.f,  0.f,0.f,   0.25f,0.25f,0.25f,  -1.f,0.f,0.f,  1.f,0.f, // right
-    0.25f,-0.25f,-0.25f, -1.f,0.f,0.f,  0.f,1.f,   0.25f,-0.25f,0.25f, -1.f,0.f,0.f,  1.f,1.f,
-    0.25f,-0.25f,-0.25f,  0.f,1.f,0.f,  0.f,0.f,   0.25f,-0.25f,0.25f,  0.f,1.f,0.f,  1.f,0.f, // bottom
-    -0.25f,-0.25f,-0.25f, 0.f,1.f,0.f,  0.f,1.f,  -0.25f,-0.25f,0.25f,  0.f,1.f,0.f,  1.f,1.f,
-    0.25f,0.25f,0.25f,    0.f,0.f,-1.f, 0.f,0.f,  -0.25f,0.25f,0.25f,   0.f,0.f,-1.f, 1.f,0.f, // back
-    0.25f,-0.25f,0.25f,   0.f,0.f,-1.f, 0.f,1.f,  -0.25f,-0.25f,0.25f,  0.f,0.f,-1.f, 1.f,1.f,
+    -0.25f,0.25f,0.25f,   LEFT,BACK,DOWN,  0.f,0.f,  -0.25f,0.25f,-0.25f,  LEFT,BACK,DOWN,  1.f,0.f, // left
+    -0.25f,-0.25f,0.25f,  LEFT,BACK,DOWN,  0.f,1.f,  -0.25f,-0.25f,-0.25f, LEFT,BACK,DOWN,  1.f,1.f,
+    -0.25f,0.25f,0.25f,   UP,RIGHT,FORWD, 0.f,0.f,    0.25f,0.25f,0.25f,   UP,RIGHT,FORWD, 1.f,0.f, // top
+    -0.25f,0.25f,-0.25f,  UP,RIGHT,FORWD, 0.f,1.f,    0.25f,0.25f,-0.25f,  UP,RIGHT,FORWD, 1.f,1.f,
+    -0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN,  0.f,0.f,   0.25f,0.25f,-0.25f,  BACK,LEFT,DOWN,  1.f,0.f, // front
+    -0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN,  0.f,1.f,   0.25f,-0.25f,-0.25f, BACK,LEFT,DOWN,  1.f,1.f,
+    0.25f,0.25f,-0.25f,   RIGHT,FORWD,UP,0.f,0.f,   0.25f,0.25f,0.25f,   RIGHT,FORWD,UP,1.f,0.f, // right
+    0.25f,-0.25f,-0.25f,  RIGHT,FORWD,UP,0.f,1.f,   0.25f,-0.25f,0.25f,  RIGHT,FORWD,UP,1.f,1.f,
+    0.25f,0.25f,0.25f,    FORWD,LEFT,UP,0.f,0.f,  -0.25f,0.25f,0.25f,   FORWD,LEFT,UP, 1.f,0.f, // back
+    0.25f,-0.25f,0.25f,   FORWD,LEFT,UP,0.f,1.f,  -0.25f,-0.25f,0.25f,  FORWD,LEFT,UP, 1.f,1.f,
   };
-  const uint32_t indices[] = { 0,1,2, 1,3,2,  4,5,6, 5,7,6,  8,9,10, 9,11,10,  12,13,14, 13,15,14,  16,17,18, 17,19,18,  20,21,22, 21,23,22 };
+  const uint32_t indices[] = { 0,1,2, 1,3,2,  4,5,6, 5,7,6,  8,9,10, 9,11,10,  12,13,14, 13,15,14,  16,17,18, 17,19,18 };
 
   outStorage.entities.push_back(Entity{
     {std::make_shared<Mesh>(
@@ -77,18 +110,19 @@ static void __generateFloor(Renderer& renderer, ResourceStorage& outStorage) {
       MaterialId::floor, TextureMapId::none, ShaderProgramId::shaded
     )},
     {0.f,0.f,0.f}, // position
-    0.f           // rotation
+    0.f            // rotation
   });
 }
 
 
 // -- rendering scene components -- --------------------------------------------
 
-void Scene::init(DisplayPipeline& renderer) {
+void Scene::init(DisplayPipeline& renderer, uint32_t width, uint32_t height) {
   release();
   _renderer = &renderer;
   _isUpdated = true;
 
+  __generateUi(renderer.renderer(), width, height, _resources);
   __generateFloor(renderer.renderer(), _resources);
   __generateCrate(renderer.renderer(), _resources);
 
@@ -97,16 +131,16 @@ void Scene::init(DisplayPipeline& renderer) {
 
   struct {
     PointLight pointLight = {
-      {0.0f, 0.0f, 1.0f, 1.0f},
-      {0.0f, 0.0f, 0.2f, 0.0f},
-      {0.0f, 0.0f, 1.0f, 32.0f},
-      {0.0f, 2.5f, 2.0f, 1.0f}
+      {0.0f, 0.2f, 0.8f, 1.0f},
+      {0.0f, 0.05f, 0.2f, 0.0f},
+      {0.0f, 0.2f, 0.8f, 32.0f},
+      {-1.0f, 2.5f, -1.5f, 1.0f}
     };
     DirectionalLight directionalLight = {
       {1.0f, 1.0f, 0.75f, 1.0f},
       {0.15f, 0.15f, 0.12f, 0.0f},
-      {0.2f, 0.2f, 0.1f, 32.0f},
-      {-0.8f, -0.5f, 0.5f, 1.0f}
+      {0.2f, 0.2f, 0.1f, 16.0f},
+      {0.2f, -0.6f, 0.6f, 1.0f}
     };
   } lights;
   _resources.activeLights = StaticBuffer(renderer.renderer(), BaseBufferType::uniform, sizeof(lights), &lights, true);
@@ -119,16 +153,26 @@ void Scene::release() noexcept {
   }
 }
 
+void Scene::resizeScreen(uint32_t width, uint32_t height) noexcept {
+  if (_renderer != nullptr) {
+    _resources.spriteEntities.clear();
+    __generateUi(_renderer->renderer(), width, height, _resources);
+    _isUpdated = true;
+  }
+}
+
 // ---
 
 void Scene::_setCameraViewProjection(bool isInit, Renderer& renderer, MatrixFloat4 modelWorldMatrix) {
   struct {
-    MatrixFloat4 modelView;
+    MatrixFloat4 world;
+    MatrixFloat4 view;
     MatrixFloat4 projection;
     float position[4];
   } cameraBuffer;
 
-  cameraBuffer.modelView = modelWorldMatrix * _camera.viewMatrix();
+  cameraBuffer.world = modelWorldMatrix;
+  cameraBuffer.view = _camera.viewMatrix();
   cameraBuffer.projection = _camera.projectionMatrix();
   memcpy(cameraBuffer.position, _camera.position(), 4*sizeof(float));
   if (isInit)
@@ -150,6 +194,7 @@ void Scene::render() {
     TextureMapId curTexture = (TextureMapId)-1;
     renderer.setVertexTopology(VertexTopology::triangles);
 
+    // meshes
     for (auto& model : _resources.entities) {
       _setCameraViewProjection(false, renderer, getWorldMatrix(model.position, model.yaw));
 
@@ -198,6 +243,29 @@ void Scene::render() {
         renderer.bindVertexIndexBuffer(mesh->indices.handle(), VertexIndexFormat::r32_ui);
         renderer.drawIndexed(mesh->indexCount);
       }
+    }
+
+    // UI/sprites
+    renderer.clearVertexUniforms();
+    renderer.clearFragmentUniforms();
+    renderer.clearFragmentTextures();
+    renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui);
+
+    auto& uiShaders = _resources.shaders[ShaderProgramId::tx2d];
+    renderer.bindInputLayout(uiShaders.layout.handle());
+    renderer.bindVertexShader(uiShaders.vertex.handle());
+    renderer.bindFragmentShader(uiShaders.fragment.handle());
+
+    SpriteId curSprite = (SpriteId)-1;
+    for (auto& sprite : _resources.spriteEntities) {
+      if (sprite.image != curSprite) {
+        curSprite = sprite.image;
+        TextureView spriteView = _resources.sprites[curSprite].resourceView();
+        renderer.bindFragmentTextures(0, &spriteView, 1);
+      }
+
+      renderer.bindVertexArrayBuffer(0, sprite.vertices->handle(), uiShaders.strideBytes);
+      renderer.draw(6);
     }
   }
 }
