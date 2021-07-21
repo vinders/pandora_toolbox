@@ -89,8 +89,9 @@ Some common resources are shared by all libraries. They're located in the Pandor
 ### Library docs
 
 ![Code comments](./_img/project_docs.png)
-Every feature is documented in the source code headers (that can be included), in the *'include'* directory of each library.
-To discover the possibilities of a specific feature, the simplest approach is to take a lot at the comments present in the header file.
+
+Every feature is documented in the source code headers in the *'include'* directory of each library.
+To discover the possibilities of a specific feature, the simplest approach is to take a look at the comments present in the header file.
 It also provides a quick overview of the available methods, and also remarks/advices on how to use them efficiently.
 However, this approach can be complex when you're not sure about which feature file to use.
 
@@ -115,16 +116,17 @@ They can also be used as boilerplate projects. They use the same structure as th
 * *'resources'* (textures, sprites, icons, shaders...).
 * *'../_img'* (shared resources: app icon, cursors...).
 
-After [generating the project with Cmake](#generating-project-with-cmake) by copying _scripts or using GUI/IDE, the project can be opened.
-Before building anything, select the example project as active target:
-![Example02](./_img/project_start.jpg)
+After [generating the project with Cmake](#generating-project-with-cmake) (by copying *'_scripts'* or using GUI/IDE), the project can be open.
+Before building anything, select the example project as active startup target:
+
+![Select startup project](./_img/project_start.png)
 
 The project can the be built, executed and debugged. Note that additional [Cmake options](../README.md#cmake-options) can be set.
 
 
 ### Example 1 - Basic window
 
-[Project files](./01_base_window)
+> [Project files](./01_base_window)
 
 A simple window, with homothety (when resized), and a background color that changes on click.
 Good entry point to understand the window and event system.
@@ -133,14 +135,17 @@ Good entry point to understand the window and event system.
 ### Example 2 - Simple renderer
 
 ![Example02](./_img/02_simple_renderer.jpg)
-[Project files](./02_simple_renderer)
+
+> [Project files](./02_simple_renderer)
 
 Simple 3D renderer, with third-person camera view rotating around a wooden box.
 The window features mouse capture, simple models, sprites (title/commands), fixed lights, and a simple material management system.
 
 Note: shaders are included as raw text files. Unfortunately, most IDEs fail at properly detecting shader models and types.
 To avoid errors, shader management is disabled in the *'CmakeLists.txt'* file, with the line:
+
 > set_source_files_properties(${_shaderFile} PROPERTIES VS_TOOL_OVERRIDE "None")
+
 This line can be commented (*'#'*) to allow shader debugging/compilation.
 However, the shader type and model will need to be configured in the IDE properties of EACH shader file.
 They'll also need to be reconfigured everytime the project is regenerated (when the Cmake file changes).
