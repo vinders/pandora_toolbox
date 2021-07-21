@@ -11,7 +11,7 @@
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
 Libraries (video/io/hardware...) can be included separately.
 
-![Preview](_img/renderer_preview.jpg)
+![Preview](_img/renderer_preview.jpg)![Preview2](_examples/_img/02_simple_renderer.jpg)
 
 **Feature overview:**
 * Window, renderer, user input, video filters...
