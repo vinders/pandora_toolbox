@@ -19,7 +19,17 @@ Implementation included in renderer.cpp
   }
 
 
-// -- camera view helpers -- ---------------------------------------------------
+// -- camera world/view helpers -- ---------------------------------------------
+
+  MatrixFloat4x4 CameraUtils::computeWorldMatrix(float modelPosition[3], float yaw) noexcept {
+    DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(modelPosition[0], modelPosition[1], modelPosition[2]);
+    if (yaw) {
+      DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationAxis(DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f), DirectX::XMConvertToRadians(yaw));
+      return translation * rotation;
+    }
+    return translation;
+  }
+
 
 //https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/june/directx-factor-the-canvas-and-the-camera
 //https://www.gamedev.net/tutorials/programming/graphics/directx-11-c-game-camera-r2978/

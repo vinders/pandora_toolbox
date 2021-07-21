@@ -62,7 +62,7 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/texture.h"
 # include "video/d3d11/texture_reader.h"
 # include "video/d3d11/texture_writer.h"
-# include "video/d3d11/camera.h"
+# include "video/d3d11/camera_utils.h"
 
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
@@ -1015,6 +1015,6 @@ Includes hpp implementations at the end of the file
 # include "./texture.hpp"
 # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"
-# include "./camera.hpp"
+# include "./camera_utils.hpp"
 
 #endif

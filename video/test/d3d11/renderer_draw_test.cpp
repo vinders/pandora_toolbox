@@ -9,7 +9,7 @@
 # include <video/d3d11/api/d3d_11.h>
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/renderer_state_factory.h>
-# include <video/d3d11/camera.h>
+# include <video/d3d11/camera_utils.h>
 # include <video/d3d11/texture.h>
 # include <video/d3d11/static_buffer.h>
 # include <video/d3d11/depth_stencil_buffer.h>

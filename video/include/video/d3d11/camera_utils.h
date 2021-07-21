@@ -20,9 +20,7 @@ License :     MIT
     namespace video {
       namespace d3d11 {
         using MatrixFloat4x4 = DirectX::XMMATRIX; ///< 4x4 floating-point matrix (requires 16-bit memory alignment)
-        using Position = DirectX::XMFLOAT3; ///< left-hand position: x=right / y=up / z=into
-        using Angles = DirectX::XMFLOAT3; ///< Angles: x=yaw (left->right) / y=pitch (down->up) / z=roll (tilt clockwise)
-        
+
         // -- camera projection --
         
         /// @class Camera
@@ -125,125 +123,46 @@ License :     MIT
           float _nearPlane = 0.25f;
           float _farPlane = 100.0f;
         } __align_suffix(16);
-        
-        
-        // -- camera view helpers --
-        
-        //TODO right-hand ???
-        
-        /// @class CameraViewUtils
-        /// @brief Utilities to help implement camera views
-        /// @remarks - Computations can be costly, so a tailored implementation is more efficient than a generic one.
-        ///            These utilities provide most of the tools needed to implement and optimize camera views specific to each app.
-        ///          - Left-hand position: x=right / y=up / z=into
-        ///          - Angles: x=yaw (left->right) / y=pitch (down->up) / z=roll (tilt clockwise)
-        /*class CameraViewUtils final {
+
+
+        // -- camera view/world helpers --
+
+        class CameraUtils final {
         public:
-          CameraViewUtils() = delete;
-          
+          CameraUtils() = delete;
+
           static inline float toRadians(float degrees) noexcept { return DirectX::XMConvertToRadians(degrees); } ///< Degrees to radians
           static inline float toDegrees(float radians) noexcept { return DirectX::XMConvertToDegrees(radians); } ///< Radians to degrees
-          
-          /// @brief Constrain pitch angle position to avoid reversal (maxed at vertical view) - degrees
-          static inline float constrainPitchDegrees(float pitch) noexcept {
-            if (pitch > 89.0f)       return 89.0f;
-            else if (pitch < -89.0f) return -89.0f;
-            return pitch;
-          }
-          /// @brief Constrain pitch angle position to avoid reversal (maxed at vertical view) - radians
-          static inline float constrainPitchRadians(float pitch) noexcept {
-            if (pitch > 1.55335f)       return 1.55335f;
-            else if (pitch < -1.55335f) return -1.55335f;
-            return pitch;
-          }
-          
-          // -- translations --
-          
-          /// @brief Transform relative translation offset into absolute XYZ offset - yaw angle only (radians)
-          /// @remarks Useful for first-person/third-person walking offsets (where camera pitch doesn't affect the movements). 
-          ///          Can be used even if the camera has "pitch"/"roll" angles, as long as the translation is not relative to them.
-          static Position toAbsoluteOffset(float frontOffset, float rightOffset, float yaw) noexcept {return Position{};}
-          /// @brief Transform relative translation offset into absolute XYZ offset - yaw/pitch angles (radians)
-          /// @remarks Useful for first-person/third-person walking/swimming offsets, affected by pitch angle. 
-          ///          Can be used even if the camera has a "roll" angle, as long as the translation is not relative to it.
-          static Position toAbsoluteOffset(float frontOffset, float rightOffset, float yaw, float pitch) noexcept {return Position{};}
-          /// @brief Transform relative translation offset into absolute XYZ offset - yaw/pitch/roll angles (radians)
-          /// @warning Slower computation: only used when translation is relative to the 'roll' angle too (example: plane turning left).
-          static Position toAbsoluteOffset(float frontOffset, float rightOffset, const Angles& yawPitchRoll) noexcept {return Position{};}
 
-          /// @brief Transform relative translation offset into absolute XYZ offset - yaw/pitch angles (radians)
-          /// @remarks Useful for first-person/third-person offsets with a vertical component and affected by pitch angle (example: character with jet-packs). 
-          ///          Can be used even if the camera has a "roll" angle, as long as the translation is not relative to it.
-          /// @warning Slower computation: only used when translation has a relative vertical component (not for jumps that are always vertical).
-          static Position toAbsoluteOffset(const Position& offsetFromEyeDirection, float yaw, float pitch) noexcept {return Position{};}
-          /// @brief Transform relative translation offset into absolute XYZ offset - yaw/pitch/roll angles (radians)
-          /// @warning Slower computation: only used when translation has a relative vertical component and is relative to the 'roll' angle (example: helicopter).
-          static Position toAbsoluteOffset(const Position& offsetFromEyeDirection, const Angles& yawPitchRoll) noexcept {return Position{};}
-          
-          // -- rotations --
-          
-          /// @brief Rotate position horizontally around an axis (keep same radius from different angle)
-          static inline Position rotateAround(const Position& position, float yaw, const Position& origin) noexcept {
-            return Position{};
+          static constexpr inline float maxPitchDegrees() noexcept { return 89.f; }     ///< Max value for pitch angle (to avoid reversal) - degrees
+          static constexpr inline float maxPitchRadians() noexcept { return 1.55335f; } ///< Max value for pitch angle (to avoid reversal) - radians
+
+          // -- matrix transformation --
+
+          /// @brief Compute world translation/rotation matrix for a model (single-axis rotation)
+          static MatrixFloat4x4 computeWorldMatrix(float modelPosition[3], float yaw) noexcept;
+
+          /// @brief Transpose matrix (to invert order of factors when multiplying)
+          static inline MatrixFloat4x4 transposeMatrix(MatrixFloat4x4& source) noexcept { 
+            return DirectX::XMMatrixTranspose(source); 
           }
-          /// @brief Rotate position around an origin/focal-point (keep same radius from different angles)
-          static inline Position rotateAround(const Position& position, float yaw, float pitch, const Position& origin) noexcept {
-            return Position{};
-          }
-          
-          /// @brief Create view rotation matrix from yaw angle (radians)
-          static inline MatrixFloat4x4 computeRotationMatrix(float yaw) noexcept {
-            return MatrixFloat4x4{};
-          }
-          /// @brief Create view rotation matrix from yaw/pitch angles (radians)
-          static inline MatrixFloat4x4 computeRotationMatrix(float yaw, float pitch) noexcept {
-            return MatrixFloat4x4{};
-          }
-          /// @brief Create view rotation matrix from yaw/pitch/roll angles (radians)
-          static inline MatrixFloat4x4 computeRotationMatrix(float yaw, float pitch, float roll) noexcept {
-            return DirectX::XMMatrixRotationRollPitchYaw(yaw, pitch, roll);
-          }
-          
-          // -- camera view matrix --
-          
-          /// @brief Create camera view matrix looking at a focal-point (not transposed -> transposeMatrix required to use it in shaders)
+
+          /*/// @brief Create camera view matrix looking at a focal-point (not transposed)
           /// @remarks Useful for third-person views and for rotating/show-room cameras.
           static inline MatrixFloat4x4 lookAtViewMatrix(const Position& eyePosition, const Position& focalPoint, const Position& originUp) noexcept {
             return DirectX::XMMatrixLookAtLH(eyePosition, focalPoint, originUp);
           }
-          /// @brief Create camera view matrix from eye position/direction (not transposed -> transposeMatrix required to use it in shaders).
+          /// @brief Create camera view matrix from eye position/direction (not transposed)
           /// @remarks Useful for first-person views implemented with direction unit vectors (eyeFront/eyeRight/eyeUp, for example).
           static inline MatrixFloat4x4 lookToViewMatrix(const Position& eyePosition, const Position& frontEyeDirection, const Position& originUp) noexcept {
             return DirectX::XMMatrixLookToLH(eyePosition, frontEyeDirection, originUp);
-          }
-          
-          /// @brief Create camera view matrix from eye position/rotation (not transposed -> transposeMatrix required to use it in shaders)
-          /// @remarks Useful for first-person/cinematic views implemented with absolute rotation angles (yaw/pitch/roll, for example).
-          static inline MatrixFloat4x4 rotationToViewMatrix(const Position& eyePosition, const MatrixFloat4x4& rotationMatrix) noexcept {
-            return rotationMatrix * DirectX::XMMatrixTranslation(eyePosition);
-          }
-          /// @brief Create camera view matrix from eye position/rotation (not transposed -> transposeMatrix required to use it in shaders)
-          /// @remarks Useful for first-person/cinematic views implemented with absolute rotation angles (yaw/pitch/roll, for example).
-          static inline MatrixFloat4x4 rotationScalingToViewMatrix(const Position& eyePositionconst MatrixFloat4x4& rotationMatrix, float scale) noexcept {
-            return DirectX::XMMatrixScaling(scale,scale,scale) * rotationMatrix * DirectX::XMMatrixTranslation(eyePosition);
-          }
-          /// @brief Create camera view matrix from eye position/rotation (not transposed -> transposeMatrix required to use it in shaders)
-          /// @remarks Useful for first-person/cinematic views implemented with absolute rotation angles (yaw/pitch/roll, for example).
-          static inline MatrixFloat4x4 rotationScalingToViewMatrix(const Position& eyePositionconst MatrixFloat4x4& rotationMatrix, const Position& scale) noexcept {
-            return DirectX::XMMatrixScaling(scale.x,scale.y,scale.z) * rotationMatrix * DirectX::XMMatrixTranslation(eyePosition);
-          }
-          
-          /// @brief Transpose camera view matrix (or model world matrix) to use it in shaders
-          /// @returns Shader camera-view matrix (or model-world matrix)
-          static inline MatrixFloat4x4 transposeMatrix(MatrixFloat4x4& source) noexcept { return DirectX::XMMatrixTranspose(source); }
-          /// @brief Combine camera view matrix with model world matrix, then transpose result to use it in shaders
-          /// @remarks - Recommended for high-poly meshes with many vertices, to speed up GPU processing of each vertex.
-          ///          - Should be avoided for low-poly meshes (CPU calculations may cost more than the benefit for GPU).
-          /// @returns Shader model-view matrix
-          static inline MatrixFloat4x4 combineTransposeMatrices(MatrixFloat4x4& cameraView, MatrixFloat4x4& modelWorld) noexcept { 
-            return DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(cameraView, modelWorld)); 
-          }
-        };*/
+          }*/
+
+          //roadmap:
+          // - right hand / left hand
+          // - quaternion/rotate
+          // - lookAt/lookTo/rotateAround
+        };
       }
     }
   }

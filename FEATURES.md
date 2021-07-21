@@ -8,8 +8,9 @@
 ![wln](_img/badges/system_wln.png) *Linux (Wayland)*</sub>
 
 <sub>![OK](_img/badges/feat_done.png) : done<br>
-![BUG](_img/badges/feat_issues.png) : minor issue(s)<br>
+![BUG](_img/badges/feat_issues.png) : known issue(s)<br>
 ![TEST](_img/badges/feat_not_tested.png) : not fully tested<br>
+![PART](_img/badges/feat_part_impl.png) : partially implemented<br>
 ![NOT](_img/badges/feat_not_impl.png) : not implemented yet<br>
 ![NA](_img/badges/feat_empty.png) : not applicable</sub>
 
@@ -112,7 +113,7 @@
 | *video/common_types.h*           | Common: swap-chain build params/flags/rate  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/d3d11/api/d3d_11.h*       | Direct3D11 API includes                     | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/api/types.h*        | Direct3D11 type/enum bind. (common labels)  | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
-| *video/d3d11/camera.h*           | Direct3D11: camera projection + view utils  | ![NOT](_img/badges/feat_not_impl.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
+| *video/d3d11/camera_utils.h*     | Direct3D11: camera projection + view utils  | ![PART](_img/badges/feat_part_impl.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/depth_stencil_buffer.h*| Direct3D11: depth/stencil testing buffer | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/dynamic_buffer.h*   | Direct3D11: mapped data (const/vertex/index)| ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/renderer.h*         | Direct3D11: rendering device/context/state  | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
