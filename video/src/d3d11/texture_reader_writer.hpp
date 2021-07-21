@@ -17,7 +17,7 @@ Implementation included in renderer.cpp
   
   void TextureReader::_readMapped2D(const D3D11_MAPPED_SUBRESOURCE& mapped, uint32_t rowBytes, uint32_t sliceBytes, char* outputData) noexcept {
     if (mapped.RowPitch > rowBytes) { // resource extra row padding
-      char* outEnd = outputData + sliceBytes;
+      char* outEnd = outputData + (intptr_t)sliceBytes;
       for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += (intptr_t)rowBytes, src += (intptr_t)mapped.RowPitch)
         memcpy(outputData, src, (size_t)rowBytes);
     }
@@ -40,7 +40,7 @@ Implementation included in renderer.cpp
       }
     }
     else if (mapped.DepthPitch > sliceBytes) { // resource padding per slice
-      const char* outEnd = outputData + sliceBytes*depthSliceCount;
+      const char* outEnd = outputData + (intptr_t)sliceBytes*(intptr_t)depthSliceCount;
       for (const char* src = (const char*)mapped.pData; outputData < outEnd; outputData += (intptr_t)sliceBytes, src += (intptr_t)mapped.DepthPitch)
         memcpy(outputData, src, (size_t)rowBytes);
     }
