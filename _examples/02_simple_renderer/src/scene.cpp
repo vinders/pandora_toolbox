@@ -126,7 +126,7 @@ void Scene::init(DisplayPipeline& renderer, uint32_t width, uint32_t height) {
   __generateFloor(renderer.renderer(), _resources);
   __generateCrate(renderer.renderer(), _resources);
 
-  _setCameraViewProjection(true, renderer.renderer(), MatrixFloat4{});
+  _setCameraViewProjection(true, renderer.renderer(), MatrixFloat4x4{});
   _resources.activeMaterial = StaticBuffer(renderer.renderer(), BaseBufferType::uniform, sizeof(Material));
 
   struct {
@@ -163,11 +163,11 @@ void Scene::resizeScreen(uint32_t width, uint32_t height) noexcept {
 
 // ---
 
-void Scene::_setCameraViewProjection(bool isInit, Renderer& renderer, MatrixFloat4 modelWorldMatrix) {
+void Scene::_setCameraViewProjection(bool isInit, Renderer& renderer, MatrixFloat4x4 modelWorldMatrix) {
   struct {
-    MatrixFloat4 world;
-    MatrixFloat4 view;
-    MatrixFloat4 projection;
+    MatrixFloat4x4 world;
+    MatrixFloat4x4 view;
+    MatrixFloat4x4 projection;
     float position[4];
   } cameraBuffer;
 
@@ -196,7 +196,7 @@ void Scene::render() {
 
     // meshes
     for (auto& model : _resources.entities) {
-      _setCameraViewProjection(false, renderer, getWorldMatrix(model.position, model.yaw));
+      _setCameraViewProjection(false, renderer, CameraUtils::computeWorldMatrix(model.position, model.yaw));
 
       for (auto& mesh : model.meshes) {
         auto& shaders = _resources.shaders[mesh->shaders];

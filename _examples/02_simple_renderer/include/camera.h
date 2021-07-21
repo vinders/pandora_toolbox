@@ -6,18 +6,21 @@ Note : this example is fine for third-person views and fixed/rotating cameras,
 #pragma once
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-# include <video/d3d11/camera.h>
-  using CamProjection = pandora::video::d3d11::CameraProjection;
-  using MatrixFloat4 = DirectX::XMMATRIX;
+# include <video/d3d11/camera_utils.h>
+  using pandora::video::d3d11::MatrixFloat4x4;
+  using pandora::video::d3d11::CameraProjection;
+  using pandora::video::d3d11::CameraUtils;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
-# include <video/vulkan/camera.h>
+# include <video/vulkan/camera_utils.h>
 # include <glm/glm.hpp>
-  using CamProjection = pandora::video::vulkan::CameraProjection;
-  using MatrixFloat4 = glm::mat4;
+  using pandora::video::vulkan::MatrixFloat4x4;
+  using pandora::video::vulkan::CameraProjection;
+  using pandora::video::vulkan::CameraUtils;
 #else
-# include <video/openGL4/camera.h>
-  using CamProjection = pandora::video::openGL4::CameraProjection;
-  using MatrixFloat4 = glm::mat4;
+# include <video/openGL4/camera_utils.h>
+  using pandora::video::openGL4::MatrixFloat4x4;
+  using pandora::video::openGL4::CameraProjection;
+  using pandora::video::openGL4::CameraUtils;
 #endif
 
 
@@ -48,15 +51,15 @@ public:
 
   // -- accessors --
 
-  MatrixFloat4 projectionMatrix() const noexcept { return _projection.projectionMatrix(); }
-  MatrixFloat4 viewMatrix() const noexcept { return _viewMatrix; }
+  MatrixFloat4x4 projectionMatrix() const noexcept { return _projection.projectionMatrix(); }
+  MatrixFloat4x4 viewMatrix() const noexcept { return _viewMatrix; }
   const float* position() const noexcept { return _position; }
 
 
 private:
   void _computeView() noexcept {
-	if (_pitch > 89.f)
-	  _pitch = 89.f;
+	if (_pitch > CameraUtils::maxPitchDegrees())
+	  _pitch = CameraUtils::maxPitchDegrees();
 	else if (_pitch < 1.f)
 	  _pitch = 1.f;
 
@@ -73,8 +76,8 @@ private:
   }
 
 private:
-  CamProjection _projection;
-  MatrixFloat4 _viewMatrix;
+  CameraProjection _projection;
+  MatrixFloat4x4 _viewMatrix;
   float _position[4];
   float _pitch = 32.f;
   float _yaw = 0.f;

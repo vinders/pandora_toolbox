@@ -186,7 +186,3 @@ void loadShader(__RENDER_API(Renderer)& renderer, ShaderProgramId id, ResourceSt
 void loadMaterial(__RENDER_API(Renderer)& renderer, MaterialId id, ResourceStorage& out);
 void loadTexture(__RENDER_API(Renderer)& renderer, TextureMapId id, ResourceStorage& out);
 void loadSprite(__RENDER_API(Renderer)& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out);
-
-// -- world matrix --
-
-MatrixFloat4 getWorldMatrix(float modelPosition[3], float yaw);

@@ -177,19 +177,3 @@ void loadSprite(Renderer& renderer, SpriteId id, uint32_t width, uint32_t height
 # endif
   out.sprites[id] = Texture2D(image, imageView, width*4, height, 1);
 }
-
-
-// -- world matrix --
-
-MatrixFloat4 getWorldMatrix(float modelPosition[3], float yaw) {
-# if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-    DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(modelPosition[0], modelPosition[1], modelPosition[2]);
-    if (yaw) {
-      DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationAxis(DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f), DirectX::XMConvertToRadians(yaw));
-      return translation * rotation;
-    }
-    return translation;
-# else
-    //...
-# endif
-}
