@@ -1,8 +1,8 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.100.1.669
-2021-07-08 - f166dede625d01d4cff8de3188f93db61c8802af
+## 0.100.5.694
+2021-07-21 - b363e2ac4eeea8442a42f2b656f9e121ab7b4b04
 ### features
 vinders (20):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
@@ -26,13 +26,18 @@ vinders (20):
 * video: Direct3D11 1D/2D/3D/target texture buffers + params
 * video: Direct3D11 texture data reader (staged) + writer (static/dynamic/staged) + copy/copyRegion
 ### fixes
-vinders (6):
+vinders (11):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
 * video: Direct3D11: remove outdated multisampling mode
 * pattern: advanced type traits: fix move detection for new MSVC compiler
 * video: window manager + builder: remove scrollbar support (not very useful -> improve speed + reduce weight)
 * video: drop OpenGLES support + add Vulkan support
 * video: refactor Direct3D11 renderer/swap-chain/state factory: improve efficiency, reduce weight, make interface usable for vulkan/openGL
+* video: Direct3D11 viewport: reimplement viewport per API
+* cwork: custom cmake framework: fix child solution system: always include child libs
+* video: Direct3D11 render state arrays: avoid auto-release when reading with at(index)
+* video: Direct3D11 texture containers: allow creation with external data (created with loaders such as DDSTextureLoader)
+* video: modal message-box: add event flush method
 
 ---
 
