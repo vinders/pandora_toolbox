@@ -329,7 +329,7 @@ if(NOT DEFINED CWORK_SUBPROJECTS_FOUND)
         if(${build_type} STREQUAL "dynamic" OR ${build_type} STREQUAL "executable" OR ${build_type} STREQUAL "console")
             if(${CWORK_PROJECT_NAME}_RESOURCE_DIRS)
                 message("> copying project resources...")
-                cwork_copy_resource_files(${PROJECT_BINARY_DIR} ${${CWORK_PROJECT_NAME}_RESOURCE_DIRS})
+                cwork_copy_resource_files("${PROJECT_BINARY_DIR}" ${${CWORK_PROJECT_NAME}_RESOURCE_DIRS})
             endif()
             
             # android app tree: manifest + build script + java modules
@@ -350,7 +350,7 @@ if(NOT DEFINED CWORK_SUBPROJECTS_FOUND)
                 else()
                     set(__ANDROID_MANIFEST_RES "false")
                 endif()
-                cwork_android_create_manifest(${cwork_path} ${CWORK_PROJECT_NAME} ${PROJECT_VERSION} ${PROJECT_BINARY_DIR} 
+                cwork_android_create_manifest(${cwork_path} ${CWORK_PROJECT_NAME} ${PROJECT_VERSION} "${PROJECT_BINARY_DIR}" 
                                               ${__ANDROID_MANIFEST_TYPE} ${__ANDROID_MANIFEST_JAVA_LIBS} ${__ANDROID_MANIFEST_RES})
                 unset(__ANDROID_MANIFEST_JAVA_LIBS)
                 unset(__ANDROID_MANIFEST_RES)
