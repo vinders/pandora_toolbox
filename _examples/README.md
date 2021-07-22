@@ -77,6 +77,10 @@ Each Pandora library and example is structured the same way :
 
 For each feature exposed in *'include'*, [check development status and compatibility here](../FEATURES.md).
 
+Note: resource files are copied into the build directory at generation, and refreshed after each compilation.
+If no compilation occurs (no C++ source changed), resources won't be refreshed!
+To test shader files after changing them, you may need to change a C++ file (adding then removing a space does the trick).
+
 Some common resources are shared by all libraries. They're located in the Pandora toolbox root directory :
 |  directory  |            content            |
 |-------------|-------------------------------|
@@ -149,6 +153,10 @@ To avoid errors, shader management is disabled in the *'CmakeLists.txt'* file, w
 This line can be commented (*'#'*) to allow shader debugging/compilation.
 However, the shader type and model will need to be configured in the IDE properties of EACH shader file.
 They'll also need to be reconfigured everytime the project is regenerated (when the Cmake file changes).
+
+Note: resource files are copied into the build directory at generation, and refreshed after each compilation.
+If no compilation occurs (no C++ source changed), resources won't be refreshed!
+To test shader files after changing them, you may need to change a C++ file (adding then removing a space does the trick).
 
 ---
 
