@@ -96,6 +96,9 @@ using namespace pandora::time;
     MultimediaTimerClock::_clockPeriod = std::chrono::milliseconds(usedPeriod);
     return MultimediaTimerClock::_clockPeriod;
   }
+  void MultimediaTimerClock::cancelPeriod(const std::chrono::milliseconds& actualCurrentPeriod) noexcept {
+    timeEndPeriod((UINT)actualCurrentPeriod.count());
+  }
           
   int64_t MultimediaTimerClock::countTicks() noexcept {
     static MultimediaTime timeValue;

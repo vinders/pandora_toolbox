@@ -67,7 +67,13 @@ TEST_F(SystemClocksTest, highResolutionClock) {
 }
 
 TEST_F(SystemClocksTest, highResolutionAuxClock) {
-  _validateClockTimes<HighResolutionAuxClock>();
+# ifdef _WINDOWS
+    auto actualPeriod = HighResolutionAuxClock::setPeriod(std::chrono::milliseconds(8));
+    _validateClockTimes<HighResolutionAuxClock>();
+    HighResolutionAuxClock::cancelPeriod(actualPeriod);
+# else
+    _validateClockTimes<HighResolutionAuxClock>();
+# endif
 }
 
 TEST_F(SystemClocksTest, steadyClock) {

@@ -87,7 +87,7 @@ namespace pandora {
         using duration = std::chrono::milliseconds;
         using time_point = std::chrono::time_point<MultimediaTimerClock>;
 
-        static inline bool init() noexcept { setPeriod(std::chrono::milliseconds(5)); return true; } ///< Initialize clock frequency
+        static inline bool init() noexcept { return true; } ///< Initialize clock frequency
         
         static constexpr bool is_steady = true; ///< Verify if clock is monotonic
         static constexpr inline bool isSupported() noexcept { return true; } ///< Check if clock works on current system
@@ -100,8 +100,14 @@ namespace pandora {
         /// @returns Success retrieving values (or failure if period customization not supported)
         static bool getValidPeriodRange(std::chrono::milliseconds& outMin, std::chrono::milliseconds& outMax) noexcept;
         /// @brief Configure the clock with a period as close as possible to 'preferredPeriodMs'
+        /// @warning Each call to 'setPeriod' should be associated with a call to 'cancelPeriod' when the timer isn't used anymore.
+        ///          The value in 'cancelPeriod' should be the value returned by 'setPeriod'.
+        ///          Using a very short period can result in poor performance due to context changes happening more often.
         /// @returns The period value accepted by the clock
         static std::chrono::milliseconds setPeriod(const std::chrono::milliseconds& preferredPeriod) noexcept;
+        /// @brief Cancel a period previously configured, and restore system default value
+        /// @warning 'actualCurrentPeriod' must have the value that was returned by the call to setPeriod. 
+        static void cancelPeriod(const std::chrono::milliseconds& actualCurrentPeriod) noexcept;
 
         static inline time_point now() noexcept { return toTimePoint<time_point>(countTicks()); } ///< Read current time
         static int64_t countTicks() noexcept; ///< Read current ticks
