@@ -31,7 +31,7 @@ project("${CWORK_SOLUTION_NAME}.simple_renderer" VERSION ${CWORK_BUILD_VERSION} 
 
 # --> internal toolbox dependencies
 # --> try to keep order of (sub)dependencies when linking libs, to improve build time (and avoid Cmake failures)
-cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF
+cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF # ON OFF for solution, OFF OFF for projects
     system
     thread
     time
