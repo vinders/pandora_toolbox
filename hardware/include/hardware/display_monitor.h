@@ -46,8 +46,8 @@ namespace pandora {
           using Handle = uint64_t;
           using WindowHandle = int32_t;
 #       endif
-        using DeviceId = LightString;
-        using String = LightString;
+        using DeviceId = pandora::memory::LightString;
+        using String = pandora::memory::LightString;
 #     endif
 
       /// @brief Attributes of a display monitor on a system
