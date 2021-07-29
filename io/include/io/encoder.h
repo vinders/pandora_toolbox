@@ -40,7 +40,12 @@ namespace pandora {
         static size_t encode(uint32_t charCode, char outBuffer[_P_UTF8_MAX_CODE_SIZE]) noexcept;
         /// @brief Decode unicode character code (value must not be NULL)
         /// @returns Unicode character code
-        static uint32_t decode(const char value[_P_UTF8_MAX_CODE_SIZE]) noexcept;
+        static inline uint32_t decode(const char value[_P_UTF8_MAX_CODE_SIZE]) noexcept {
+          size_t codeSize = 0;
+          return decode((const char*)value, size_t{_P_UTF8_MAX_CODE_SIZE}, codeSize);
+        }
+        /// @brief Decode first character of unicode string (value must not be NULL, length >= 1) + get source char-code size
+        static uint32_t decode(const char* value, size_t length, size_t& outCodeSize) noexcept;
         
         /// @brief Convert file data (from specified encoding) to UTF-8 string (+ remove byte-order-mark)
         static std::string fromFile(const char* fileData, size_t length, Encoding fileEncoding = Encoding::any);
@@ -66,7 +71,12 @@ namespace pandora {
         static size_t encode(uint32_t charCode, char16_t outBuffer[_P_UTF16_MAX_CODE_SIZE]) noexcept;
         /// @brief Decode unicode character code (value must not be NULL)
         /// @returns Unicode character code
-        static uint32_t decode(const char16_t value[_P_UTF16_MAX_CODE_SIZE]) noexcept;
+        static inline uint32_t decode(const char16_t value[_P_UTF16_MAX_CODE_SIZE]) noexcept {
+          size_t codeSize = 0;
+          return decode((const char16_t*)value, size_t{_P_UTF16_MAX_CODE_SIZE}, codeSize);
+        }
+        /// @brief Decode first character of unicode string (value must not be NULL, length >= 1) + get source char-code size (number of char16_t indexes)
+        static uint32_t decode(const char16_t* value, size_t length, size_t& outCodeSize) noexcept;
         
         /// @brief Convert file data (from specified encoding) to UTF-16 string (+ remove byte-order-mark)
         static std::u16string fromFile(const char* fileData, size_t length, Encoding fileEncoding = Encoding::any);

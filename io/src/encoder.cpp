@@ -53,41 +53,41 @@ static __forceinline size_t __encodeUtf8(uint32_t charCode, char* outBuffer) noe
 }
 // Decode unicode character code from UTF-8 
 // (returned size must never be 0 -> would result in infinite loops for calling functions)
-static __forceinline uint32_t __decodeUtf8(const char* value, size_t indexesAfterCurrent, size_t& outLength) noexcept {
+uint32_t Encoder::Utf8::decode(const char* value, size_t length, size_t& outCodeSize) noexcept {
   // multi-word
   if (*value & 0x80) {
     if ((*value & 0xE0) != 0xC0) {
       if ((*value & 0xF0) != 0xE0) {
-        if ((*value & 0xF8) != 0xF0 || indexesAfterCurrent < size_t{3u}) {
-          outLength = size_t{1u};
+        if ((*value & 0xF8) != 0xF0 || length < size_t{4u}) {
+          outCodeSize = size_t{1u};
           return __P_UNKNOWN_CHAR;
         }
-        outLength = size_t{4u};
+        outCodeSize = size_t{4u};
         return ( ((static_cast<uint32_t>(*value)   & 0x07u) << 18) 
                | ((static_cast<uint32_t>(value[1]) & 0x3Fu) << 12) 
                | ((static_cast<uint32_t>(value[2]) & 0x3Fu) << 6) 
                |  (static_cast<uint32_t>(value[3]) & 0x3Fu) );
       }
       
-      if (indexesAfterCurrent < size_t{2u}) {
-        outLength = size_t{1u};
+      if (length < size_t{3u}) {
+        outCodeSize = size_t{1u};
         return __P_UNKNOWN_CHAR;
       }
-      outLength = size_t{3u};
+      outCodeSize = size_t{3u};
       return ( ((static_cast<uint32_t>(*value)   & 0x0Fu) << 12) 
              | ((static_cast<uint32_t>(value[1]) & 0x3Fu) << 6) 
              |  (static_cast<uint32_t>(value[2]) & 0x3Fu) );
     }
     
-    if (indexesAfterCurrent < size_t{1u}) {
-      outLength = size_t{1u};
+    if (length < size_t{2u}) {
+      outCodeSize = size_t{1u};
       return __P_UNKNOWN_CHAR;
     }
-    outLength = size_t{2u};
+    outCodeSize = size_t{2u};
     return ( ((static_cast<uint32_t>(*value) & 0x1Fu) << 6) | (static_cast<uint32_t>(value[1]) & 0x3Fu) );
   }
   // single word
-  outLength = size_t{1u};
+  outCodeSize = size_t{1u};
   return (static_cast<uint32_t>(*value) & 0x00FFu); // mask: to avoid duplication of most-significant-bit
 }
 
@@ -112,37 +112,40 @@ static __forceinline size_t __encodeUtf16(uint32_t charCode, char16_t* outBuffer
 // Decode unicode character code from UTF-16
 // (returned size must never be 0 -> would result in infinite loops for calling functions)
 static __forceinline uint32_t __decodeUtf16(char highBitsWord1, char lowBitsWord1, 
-                                            char highBitsWord2, char lowBitsWord2, size_t& outLength) noexcept {
+                                            char highBitsWord2, char lowBitsWord2, size_t& outByteLength) noexcept {
   // multi-word
   if ((highBitsWord1 & 0xFC) == 0xD8) {
     if ((highBitsWord2 & 0xFC) != 0xDC) {
-      outLength = size_t{2u};
+      outByteLength = size_t{2u};
       return __P_UNKNOWN_CHAR; // report invalid value
     }
-    outLength = size_t{4u};
+    outByteLength = size_t{4u};
     return ( (((uint32_t)highBitsWord1 & 0x3u) << 18) | (((uint32_t)lowBitsWord1 & 0xFF) << 10) 
            | (((uint32_t)highBitsWord2 & 0x3u) << 8)  | ((uint32_t)lowBitsWord2 & 0xFF) )
            + 0x10000u;
   }
   // single word
-  outLength = size_t{2u};
+  outByteLength = size_t{2u};
   return ((((uint32_t)highBitsWord1 & 0xFF) << 8) | ((uint32_t)lowBitsWord1 & 0xFF)); // masks: to avoid duplication of most-significant-bit
 }
 // Decode unicode character code from UTF-16
 // (returned size must never be 0 -> would result in infinite loops for calling functions)
-static __forceinline uint32_t __decodeUtf16(uint32_t word1, uint32_t word2, size_t& outLength) noexcept {
+uint32_t Encoder::Utf16::decode(const char16_t* value, size_t length, size_t& outCodeSize) noexcept {
+  uint32_t word1 = (uint32_t)value[0];
+  
   // multi-word
   if ((word1 & 0xFC00) == 0xD800) {
+    uint32_t word2 = (length > size_t{1u}) ? (uint32_t)value[1] : 0;
     if ((word2 & 0xFC00) != 0xDC00) {
-      outLength = size_t{2u};
+      outCodeSize = size_t{1u};
       return __P_UNKNOWN_CHAR; // report invalid value
     }
-    outLength = size_t{4u};
+    outCodeSize = size_t{2u};
     return ( ((word1 & 0x3FFu) << 10) | (word2 & 0x3FFu) ) + 0x10000u;
   }
   // single word
-  outLength = size_t{2u};
-  return word1;
+  outCodeSize = size_t{1u};
+  return (word1 & 0xFFFF); // protect against type-cast MSB duplication
 }
 
 
@@ -234,11 +237,6 @@ static std::string __utf16LE_toUtf8(const char* data, size_t length) {
 size_t Encoder::Utf8::encode(uint32_t charCode, char outBuffer[_P_UTF8_MAX_CODE_SIZE]) noexcept {
   return __encodeUtf8(charCode, (char*)outBuffer);
 }
-// Decode unicode character code (value must not be NULL)
-uint32_t Encoder::Utf8::decode(const char value[_P_UTF8_MAX_CODE_SIZE]) noexcept {
-  size_t length = 0;
-  return __decodeUtf8((const char*)value, size_t{_P_UTF8_MAX_CODE_SIZE - 1}, length);
-}
 
 // ---
 
@@ -329,8 +327,8 @@ static std::u16string __utf8_toUtf16(const char* data, size_t length) {
   size_t sourceCharLength = 0, outputCharLength = 0;
   
   while (length) {
-    // decode UTF-16
-    charCode = __decodeUtf8(data, length - 1u, sourceCharLength);
+    // decode UTF-8
+    charCode = Encoder::Utf8::decode(data, length - 1u, sourceCharLength);
     data += sourceCharLength;
     length -= sourceCharLength;
     
@@ -355,11 +353,6 @@ static std::u16string __utf8_toUtf16(const char* data, size_t length) {
 // Encode unicode character code (outBuffer must not be NULL)
 size_t Encoder::Utf16::encode(uint32_t charCode, char16_t outBuffer[_P_UTF16_MAX_CODE_SIZE]) noexcept {
   return __encodeUtf16(charCode, (char16_t*)outBuffer);
-}
-// Decode unicode character code (value must not be NULL)
-uint32_t Encoder::Utf16::decode(const char16_t value[_P_UTF16_MAX_CODE_SIZE]) noexcept {
-  size_t length = 0;
-  return __decodeUtf16((uint32_t)value[0] & 0xFFFF, (uint32_t)value[1] & 0xFFFF, length);
 }
 
 // ---
