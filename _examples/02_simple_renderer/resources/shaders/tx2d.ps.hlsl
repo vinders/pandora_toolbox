@@ -1,5 +1,11 @@
 // 2D/sprites -- fragment shader
 // -------------------------------------
+// Pandora Toolbox examples by Romain Vinders
+
+// To the extent possible under law, the person who associated CC0 with
+// Pandora Toolbox examples has waived all copyright and related or neighboring rights
+// to Pandora Toolbox examples.
+// CC0 legalcode: see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
 // Input data
 struct PS_INPUT
