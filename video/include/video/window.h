@@ -167,6 +167,17 @@ namespace pandora {
       bool setBackgroundColorBrush(std::shared_ptr<WindowResource> colorBrush) noexcept;///< Change background color brush (will not affect display -> call clearClientArea())
       
       
+      // -- external/user data reference --
+      
+      /// @brief Store reference to user data related to current Window instance
+      /// @remarks Useful to access user data from event handlers (sender->getUserData()).
+      void setUserData(void* objectRef) noexcept { this->_userData = objectRef; }
+      /// @brief Get reference to user data related to current Window instance
+      /// @remarks - Returns NULL if setUserData has not been set in current instance.
+      ///          - The pointer should be cast to the pointer type used when calling setUserData.
+      void* getUserData() const noexcept { return this->_userData; }
+      
+      
       // -- input events --
       
       void setWindowHandler(WindowEventHandler handler) noexcept;     ///< Set/replace window/hardware event handler (NULL to unregister)
@@ -310,6 +321,7 @@ namespace pandora {
       
       // window manager
       __WindowImpl* _impl = nullptr; // system-specific implementation
+      void* _userData = nullptr;
     };
   }
 }

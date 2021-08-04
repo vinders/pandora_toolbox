@@ -105,6 +105,11 @@ uint32_t WindowTest::_lastSizeY = 0;
     int32_t offsetX = (params.mode == WindowType::fullscreen || params.mode == WindowType::borderless) ? 0 : workArea.x;
     int32_t offsetY = (params.mode == WindowType::fullscreen || params.mode == WindowType::borderless) ? 0 : workArea.y;
     
+    int userData = 42;
+    EXPECT_TRUE(window->getUserData() == nullptr);
+    window->setUserData(&userData);
+    EXPECT_TRUE(window->getUserData() != nullptr && *((int*)window->getUserData()) == userData);
+    
     //set handlers
     window->setWindowHandler(&WindowTest::_onWindowEvent);
     window->setPositionHandler(&WindowTest::_onPositionEvent);
