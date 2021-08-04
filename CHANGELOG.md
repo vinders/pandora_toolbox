@@ -1,8 +1,8 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.100.5.702
-2021-07-29 - 2dd513045fe4660e1c83a0f813d72536873b2b08
+## 0.100.5.707
+2021-08-04 - 89d8a0e02078a6e1bfa82fe1fbb0f42398c92c6e
 ### features
 vinders (20):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
