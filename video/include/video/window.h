@@ -289,7 +289,8 @@ namespace pandora {
         /// @remarks Useful to turn a splash/GUI window (from another lib) into the app window, then restore original window on exit.
         /// @param[in] existingHandle         Handle of existing window to update (required)
         /// @param[in] callExistingEventProc  Use event processor of original window as default (only for input/command events)
-        /// @warning It is recommended to enable DPI awareness before creating window or monitor instance.
+        /// @warning - It is recommended to enable DPI awareness before creating window or monitor instance.
+        ///          - If the existing window is a pandora::video::Window instance too, callExistingEventProc can NOT be true (it would result in infinite recursion)
         /// @returns Valid window instance (visible)
         /// @throws runtime_error/logic_error/bad_alloc on window update failure
         std::unique_ptr<Window> update(WindowHandle existingHandle, bool callExistingEventProc = false); // throws
