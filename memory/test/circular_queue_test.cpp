@@ -34,6 +34,7 @@ protected:
 
 // -- constructors/accessors --
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 TEST_F(CircularQueueTest, accessors) {
   CircularQueue<int, 2> baseType;
   CircularQueue<CopyObject, 2> copyType;
@@ -799,6 +800,7 @@ TEST_F(CircularQueueTest, swapFullQueues) {
   EXPECT_FALSE(copyMoveType2.empty());
   EXPECT_TRUE(copyMoveType2.full());
 }
+#endif
 
 
 // -- operations --
@@ -1085,6 +1087,7 @@ void _pushClearMultipleInQueue(int val1, int val2) {
 }
 
 TEST_F(CircularQueueTest, pushPop) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _pushPopOneQueue<int>(5);
   _pushPopMultipleInQueue<CircularQueue<int,2>, int>(5, 7);
   _pushPopMultipleInQueue<CircularQueue<int,20>, int>(5, 7);
@@ -1096,12 +1099,14 @@ TEST_F(CircularQueueTest, pushPop) {
   _pushPopOneQueue<MoveObject>(5);
   _pushPopMultipleInQueue<CircularQueue<MoveObject,2>, MoveObject>(5, 7);
   _pushPopMultipleInQueue<CircularQueue<MoveObject,20>, MoveObject>(5, 7);
+# endif
 
   _pushPopOneQueue<CopyMoveObject>(5);
   _pushPopMultipleInQueue<CircularQueue<CopyMoveObject,2>, CopyMoveObject>(5, 7);
   _pushPopMultipleInQueue<CircularQueue<CopyMoveObject,20>, CopyMoveObject>(5, 7);
 }
 TEST_F(CircularQueueTest, emplacePop) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _emplacePopOneQueue<int>(5);
   _emplacePopMultipleInQueue<CircularQueue<int, 2>, int>(5, 7);
   _emplacePopMultipleInQueue<CircularQueue<int, 20>, int>(5, 7);
@@ -1113,12 +1118,14 @@ TEST_F(CircularQueueTest, emplacePop) {
   _emplacePopOneQueue<MoveObject>(5);
   _emplacePopMultipleInQueue<CircularQueue<MoveObject, 2>, MoveObject>(5, 7);
   _emplacePopMultipleInQueue<CircularQueue<MoveObject, 20>, MoveObject>(5, 7);
+# endif
 
   _emplacePopOneQueue<CopyMoveObject>(5);
   _emplacePopMultipleInQueue<CircularQueue<CopyMoveObject, 2>, CopyMoveObject>(5, 7);
   _emplacePopMultipleInQueue<CircularQueue<CopyMoveObject, 20>, CopyMoveObject>(5, 7);
 }
 TEST_F(CircularQueueTest, pushClear) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _pushClearOneQueue<int>(5);
   _pushClearMultipleInQueue<CircularQueue<int, 2>, int>(5, 7);
   _pushClearMultipleInQueue<CircularQueue<int, 20>, int>(5, 7);
@@ -1130,6 +1137,7 @@ TEST_F(CircularQueueTest, pushClear) {
   _pushClearOneQueue<MoveObject>(5);
   _pushClearMultipleInQueue<CircularQueue<MoveObject, 2>, MoveObject>(5, 7);
   _pushClearMultipleInQueue<CircularQueue<MoveObject, 20>, MoveObject>(5, 7);
+# endif
 
   _pushClearOneQueue<CopyMoveObject>(5);
   _pushClearMultipleInQueue<CircularQueue<CopyMoveObject, 2>, CopyMoveObject>(5, 7);
@@ -1407,6 +1415,7 @@ void _iterateMultipleInQueue() {
 }
 
 TEST_F(CircularQueueTest, iterateEmpty) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _iterateEmptyQueue<int, 1>();
   _iterateEmptyQueue<int, 2>();
   _iterateEmptyQueue<int, 20>();
@@ -1421,9 +1430,11 @@ TEST_F(CircularQueueTest, iterateEmpty) {
 
   _iterateEmptyQueue<CopyMoveObject, 1>();
   _iterateEmptyQueue<CopyMoveObject, 2>();
+# endif
   _iterateEmptyQueue<CopyMoveObject, 20>();
 }
 TEST_F(CircularQueueTest, iterateOne) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _iterateOneQueue<int, 1>();
   _iterateOneQueue<int, 2>();
   _iterateOneQueue<int, 20>();
@@ -1438,9 +1449,11 @@ TEST_F(CircularQueueTest, iterateOne) {
 
   _iterateOneQueue<CopyMoveObject, 1>();
   _iterateOneQueue<CopyMoveObject, 2>();
+# endif
   _iterateOneQueue<CopyMoveObject, 20>();
 }
 TEST_F(CircularQueueTest, iterateMultiple) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _iterateMultipleInQueue<int, 2>();
   _iterateMultipleInQueue<int, 20>();
 
@@ -1451,5 +1464,6 @@ TEST_F(CircularQueueTest, iterateMultiple) {
   _iterateMultipleInQueue<MoveObject, 20>();
 
   _iterateMultipleInQueue<CopyMoveObject, 2>();
+# endif
   _iterateMultipleInQueue<CopyMoveObject, 20>();
 }
