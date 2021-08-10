@@ -40,6 +40,7 @@ protected:
 
 // -- clock timing --
 
+#ifndef _P_CI_DISABLE_SLOW_TESTS
 template <typename _ClockType>
 void _validateClockTimes() {
   EXPECT_TRUE(_ClockType::init());
@@ -97,6 +98,7 @@ TEST_F(SystemClocksTest, highResolutionAuxClock) {
 TEST_F(SystemClocksTest, steadyClock) {
   _validateClockTimes<SteadyClock>();
 }
+#endif
 
 
 // -- clock specs --
