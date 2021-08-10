@@ -713,46 +713,53 @@ void _testBidirectionalReversedIteration() {
 // ---
 
 TEST_F(IteratorTest, constructorsAccessors) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _testBaseIterator<Iterator<MonodirectionalCollection<int>, int, false, false, std::forward_iterator_tag>, MonodirectionalCollection<int>, int>();
-  _testBaseIterator<Iterator<MonodirectionalCollection<ObjectMock>, ObjectMock, false, false, std::forward_iterator_tag>, MonodirectionalCollection<ObjectMock>, ObjectMock>();
-
   _testBaseIterator<Iterator<BidirectionalCollection<int>, int, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
-  _testBaseIterator<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
   _testBaseReversedIterator<Iterator<BidirectionalCollection<int>, int, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
-  _testBaseReversedIterator<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
-
   _testBaseIterator<Iterator<RandomAccessCollection<int>, int, false, false, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
-  _testBaseIterator<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, false, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
   _testBaseReversedIterator<Iterator<RandomAccessCollection<int>, int, false, true, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
+# endif
+
+  _testBaseIterator<Iterator<MonodirectionalCollection<ObjectMock>, ObjectMock, false, false, std::forward_iterator_tag>, MonodirectionalCollection<ObjectMock>, ObjectMock>();
+  _testBaseIterator<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
+  _testBaseReversedIterator<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
+  _testBaseIterator<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, false, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
   _testBaseReversedIterator<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, true, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
 }
 
 TEST_F(IteratorTest, forwardIterator) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _testForwardIteration<Iterator<MonodirectionalCollection<int>, int, false, false, std::forward_iterator_tag>, MonodirectionalCollection<int>, int>();
-  _testForwardIteration<Iterator<MonodirectionalCollection<ObjectMock>, ObjectMock, false, false, std::forward_iterator_tag>, MonodirectionalCollection<ObjectMock>, ObjectMock>();
-
   _testForwardIteration<Iterator<MonodirectionalCollection<int>, int, true, false, std::forward_iterator_tag>, MonodirectionalCollection<int>, int>();
+# endif
+
+  _testForwardIteration<Iterator<MonodirectionalCollection<ObjectMock>, ObjectMock, false, false, std::forward_iterator_tag>, MonodirectionalCollection<ObjectMock>, ObjectMock>();
   _testForwardIteration<Iterator<MonodirectionalCollection<ObjectMock>, ObjectMock, true, false, std::forward_iterator_tag>, MonodirectionalCollection<ObjectMock>, ObjectMock>();
 }
 
 TEST_F(IteratorTest, bidirectionalIterator) {
+# ifndef _P_CI_DISABLE_SLOW_TESTS
   _testBidirectionalIteration<Iterator<BidirectionalCollection<int>, int, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
-  _testBidirectionalIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
   _testBidirectionalReversedIteration<Iterator<BidirectionalCollection<int>, int, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
-  _testBidirectionalReversedIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
-
   _testBidirectionalIteration<Iterator<RandomAccessCollection<int>, int, false, false, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
-  _testBidirectionalIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, false, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
   _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<int>, int, false, true, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
-  _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, true, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
   
   _testBidirectionalIteration<Iterator<BidirectionalCollection<int>, int, true, false, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
-  _testBidirectionalIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, true, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
   _testBidirectionalReversedIteration<Iterator<BidirectionalCollection<int>, int, true, true, std::bidirectional_iterator_tag>, BidirectionalCollection<int>, int>();
+  
+  _testBidirectionalIteration<Iterator<RandomAccessCollection<int>, int, true, false, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
+  _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<int>, int, true, true, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
+# endif
+
+  _testBidirectionalIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
+  _testBidirectionalReversedIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, false, true, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
+  _testBidirectionalIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, false, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
+  _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, false, true, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
+  
+  _testBidirectionalIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, true, false, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
   _testBidirectionalReversedIteration<Iterator<BidirectionalCollection<ObjectMock>, ObjectMock, true, true, std::bidirectional_iterator_tag>, BidirectionalCollection<ObjectMock>, ObjectMock>();
 
-  _testBidirectionalIteration<Iterator<RandomAccessCollection<int>, int, true, false, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
   _testBidirectionalIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, true, false, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
-  _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<int>, int, true, true, std::random_access_iterator_tag>, RandomAccessCollection<int>, int>();
   _testBidirectionalReversedIteration<Iterator<RandomAccessCollection<ObjectMock>, ObjectMock, true, true, std::random_access_iterator_tag>, RandomAccessCollection<ObjectMock>, ObjectMock>();
 }
