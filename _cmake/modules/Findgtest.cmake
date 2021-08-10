@@ -47,6 +47,7 @@ if(NOT TARGET gtest AND NOT IOS AND NOT ANDROID)
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Include project                                                 │
     # └──────────────────────────────────────────────────────────────────┘
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     add_subdirectory(${GTEST__PATH} ${CMAKE_BINARY_DIR}/gtest)
     set(gtest__INCLUDE ${GTEST__PATH}/include ${GTEST__PATH}/src)
     
