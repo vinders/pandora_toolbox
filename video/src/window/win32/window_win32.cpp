@@ -2295,7 +2295,7 @@ Includes hpp implementations at the end of the file
     }
     
     if ((window->_statusFlags & __P_FLAG_USE_ORIG_EVENT_PROC) && isCommandEvent) // call original event proc if requested
-      return window->_originalStyle->_eventProcessor(handle, message, wParam, lParam);
+      return CallWindowProc(window->_originalStyle->_eventProcessor, handle, message, wParam, lParam);
     return DefWindowProcW(handle, message, wParam, lParam); // system window processor
   }
 
