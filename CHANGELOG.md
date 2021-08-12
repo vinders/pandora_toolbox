@@ -1,8 +1,8 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.100.6.710
-2021-08-10 - fbf781c719a1a11468b03b846835da192bdf2759
+## 0.100.7.716
+2021-08-12 - 0d74d5a2327cde50b726c2929791df3d498ba34e
 ### features
 vinders (20):
 * video: window resource: menu/sub-menu/text-item/checkbox/radio-item creation + state/check change support
@@ -26,7 +26,7 @@ vinders (20):
 * video: Direct3D11 1D/2D/3D/target texture buffers + params
 * video: Direct3D11 texture data reader (staged) + writer (static/dynamic/staged) + copy/copyRegion
 ### fixes
-vinders (12):
+vinders (13):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
 * video: Direct3D11: remove outdated multisampling mode
 * pattern: advanced type traits: fix move detection for new MSVC compiler
@@ -38,6 +38,7 @@ vinders (12):
 * video: Direct3D11 render state arrays: avoid auto-release when reading with at(index)
 * video: Direct3D11 texture containers: allow creation with external data (created with loaders such as DDSTextureLoader)
 * video: modal message-box: add event flush method
+* video: window manager + builder for Windows: allow ANSI parent window event handler
 * cwork: custom cmake framework: use MD build (shared-CRT) on Windows + relative addresses for libs on Linux
 
 ---
