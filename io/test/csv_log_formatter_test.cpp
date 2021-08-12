@@ -175,8 +175,8 @@ TEST_F(CsvLogFormatterTest, logCsvCommaMessageWithoutHeaders) {
     ",0,nowhere(12),hello world !\n"
     "EVENT,1,sherlock(44),this\",\" is not an event;\n"
     "INFO,2,mib(21),code 257 -\t1 alien to remove\n"
-    "WARNING,3,irobot(0),AI will save the world\n"
-    "ERROR,4,mars-attacks(8), \n"), logger.status().stream().str());
+    "WARNING,4,irobot(0),AI will save the world\n"
+    "ERROR,5,mars-attacks(8), \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvSemicolonMessageWithoutHeaders) {
   Logger<_CsvFormatter<';'> > logger(_CsvFormatter<';'>(std::ostringstream{}, false), LogLevel::none);
@@ -193,8 +193,8 @@ TEST_F(CsvLogFormatterTest, logCsvSemicolonMessageWithoutHeaders) {
     ";0;nowhere(12);hello world !\n"
     "EVENT;1;sherlock(44);this, is not an event\";\"\n"
     "INFO;2;mib(21);code 257 -\t1 alien to remove\n"
-    "WARNING;3;irobot(0);AI will save the world\n"
-    "ERROR;4;mars-attacks(8); \n"), logger.status().stream().str());
+    "WARNING;4;irobot(0);AI will save the world\n"
+    "ERROR;5;mars-attacks(8); \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvTabMessageWithoutHeaders) {
   Logger<_CsvFormatter<'\t'> > logger(_CsvFormatter<'\t'>(std::ostringstream{}, false), LogLevel::none);
@@ -211,8 +211,8 @@ TEST_F(CsvLogFormatterTest, logCsvTabMessageWithoutHeaders) {
     "\t0\tnowhere(12)\thello world !\n"
     "EVENT\t1\tsherlock(44)\tthis, is not an event;\n"
     "INFO\t2\tmib(21)\tcode 257 -\"\t\"1 alien to remove\n"
-    "WARNING\t3\tirobot(0)\tAI will save the world\n"
-    "ERROR\t4\tmars-attacks(8)\t \n"), logger.status().stream().str());
+    "WARNING\t4\tirobot(0)\tAI will save the world\n"
+    "ERROR\t5\tmars-attacks(8)\t \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvSpaceMessageWithoutHeaders) {
   Logger<_CsvFormatter<' '> > logger(_CsvFormatter<' '>(std::ostringstream{}, false), LogLevel::none);
@@ -229,8 +229,8 @@ TEST_F(CsvLogFormatterTest, logCsvSpaceMessageWithoutHeaders) {
     " 0 nowhere(12) hello\" \"world\" \"!\n"
     "EVENT 1 sherlock(44) this,\" \"is\" \"not\" \"an\" \"event;\n"
     "INFO 2 mib(21) code\" \"257\" \"-\t1\" \"alien\" \"to\" \"remove\n"
-    "WARNING 3 irobot(0) AI\" \"will\" \"save\" \"the\" \"world\n"
-    "ERROR 4 mars-attacks(8) \" \"\n"), logger.status().stream().str());
+    "WARNING 4 irobot(0) AI\" \"will\" \"save\" \"the\" \"world\n"
+    "ERROR 5 mars-attacks(8) \" \"\n"), logger.status().stream().str());
 }
 
 TEST_F(CsvLogFormatterTest, logCsvMessageWithHeaders) {
@@ -249,8 +249,8 @@ TEST_F(CsvLogFormatterTest, logCsvMessageWithHeaders) {
     ",0,nowhere(12),hello world !\n"
     "EVENT,1,sherlock(44),this\",\" is not an event;\n"
     "INFO,2,mib(21),code 257 -\t1 alien to remove\n"
-    "WARNING,3,irobot(0),AI will save the world\n"
-    "ERROR,4,mars-attacks(8), \n"), logger.status().stream().str());
+    "WARNING,4,irobot(0),AI will save the world\n"
+    "ERROR,5,mars-attacks(8), \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvSemicolonMessageWithHeaders) {
   Logger<_CsvFormatter<';'> > logger(_CsvFormatter<';'>(std::ostringstream{}, true), LogLevel::none);
@@ -268,8 +268,8 @@ TEST_F(CsvLogFormatterTest, logCsvSemicolonMessageWithHeaders) {
     ";0;nowhere(12);hello world !\n"
     "EVENT;1;sherlock(44);this, is not an event\";\"\n"
     "INFO;2;mib(21);code 257 -\t1 alien to remove\n"
-    "WARNING;3;irobot(0);AI will save the world\n"
-    "ERROR;4;mars-attacks(8); \n"), logger.status().stream().str());
+    "WARNING;4;irobot(0);AI will save the world\n"
+    "ERROR;5;mars-attacks(8); \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvTabMessageWithHeaders) {
   Logger<_CsvFormatter<'\t'> > logger(_CsvFormatter<'\t'>(std::ostringstream{}, true), LogLevel::none);
@@ -287,8 +287,8 @@ TEST_F(CsvLogFormatterTest, logCsvTabMessageWithHeaders) {
     "\t0\tnowhere(12)\thello world !\n"
     "EVENT\t1\tsherlock(44)\tthis, is not an event;\n"
     "INFO\t2\tmib(21)\tcode 257 -\"\t\"1 alien to remove\n"
-    "WARNING\t3\tirobot(0)\tAI will save the world\n"
-    "ERROR\t4\tmars-attacks(8)\t \n"), logger.status().stream().str());
+    "WARNING\t4\tirobot(0)\tAI will save the world\n"
+    "ERROR\t5\tmars-attacks(8)\t \n"), logger.status().stream().str());
 }
 TEST_F(CsvLogFormatterTest, logCsvSpaceMessageWithHeaders) {
   Logger<_CsvFormatter<' '> > logger(_CsvFormatter<' '>(std::ostringstream{}, true), LogLevel::none);
@@ -306,8 +306,8 @@ TEST_F(CsvLogFormatterTest, logCsvSpaceMessageWithHeaders) {
     " 0 nowhere(12) hello\" \"world\" \"!\n"
     "EVENT 1 sherlock(44) this,\" \"is\" \"not\" \"an\" \"event;\n"
     "INFO 2 mib(21) code\" \"257\" \"-\t1\" \"alien\" \"to\" \"remove\n"
-    "WARNING 3 irobot(0) AI\" \"will\" \"save\" \"the\" \"world\n"
-    "ERROR 4 mars-attacks(8) \" \"\n"), logger.status().stream().str());
+    "WARNING 4 irobot(0) AI\" \"will\" \"save\" \"the\" \"world\n"
+    "ERROR 5 mars-attacks(8) \" \"\n"), logger.status().stream().str());
 }
 
 TEST_F(CsvLogFormatterTest, logCsvIgnoredMessage) {
@@ -331,9 +331,9 @@ TEST_F(CsvLogFormatterTest, logCsvIgnoredMessage) {
   logger.flush();
   EXPECT_EQ(std::string(
     "TYPE,LEVEL,SOURCE,MESSAGE\n"
-    "INFO,4,abc(42),blabla\n"
-    "EVENT,3,def(24),trololololo\n"
-    "EVENT,4,def(24),trololololo\n"), logger.status().stream().str());
+    "INFO,5,abc(42),blabla\n"
+    "EVENT,4,def(24),trololololo\n"
+    "EVENT,5,def(24),trololololo\n"), logger.status().stream().str());
 }
 
 TEST_F(CsvLogFormatterTest, logCsvCommaMessageNotEscaped) {
@@ -352,8 +352,8 @@ TEST_F(CsvLogFormatterTest, logCsvCommaMessageNotEscaped) {
     ",0,nowhere(12),hello world !\n"
     "EVENT,1,sherlock(44),this, is not an event,\n"
     "INFO,2,mib(21),code 257, 1 alien to remove\n"
-    "WARNING,3,irobot(0),AI will save the world\n"
-    "ERROR,4,mars-attacks(8), \n"), logger.status().stream().str());
+    "WARNING,4,irobot(0),AI will save the world\n"
+    "ERROR,5,mars-attacks(8), \n"), logger.status().stream().str());
 }
 
 

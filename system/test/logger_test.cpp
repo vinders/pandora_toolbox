@@ -76,11 +76,11 @@ public:
 
   void write(LogLevel level, LogCategory category, const char* origin, uint32_t line, const char* format, va_list& args) {
     char buffer[_LOG_BUFFER_SIZE + 1u] = { 0 };
-    char levelBuffer[12]{ 0 };
+    std::string levelBuffer = std::to_string((uint32_t)level);
     char categoryBuffer[8]{ 0 };
 
     int writtenLength = snprintf(buffer, _LOG_BUFFER_SIZE, "<tr><td>%s</td><td>%s</td><td>%s(%d)</td><td>", 
-                                 toString(levelBuffer, size_t{ 12u }, level), toString(categoryBuffer, size_t{ 8u }, category), origin, line);
+                                 levelBuffer.c_str(), toString(categoryBuffer, size_t{ 8u }, category), origin, line);
     if (writtenLength >= 0 && writtenLength < static_cast<int>(_LOG_BUFFER_SIZE)) {
       vsnprintf(buffer + writtenLength, _LOG_BUFFER_SIZE - static_cast<size_t>(writtenLength), format, args);
       *(this->_logStream) << buffer << "</td></tr>" << std::endl;
@@ -195,11 +195,11 @@ TEST_F(LoggerTest, movedLogger) {
 
   logger.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
   logger.flush();
-  EXPECT_EQ(std::string(" EVENT(lv.4) [def:24]: trololololo\n"), logger.status().stream().str());
+  EXPECT_EQ(std::string(" EVENT(lv.5) [def:24]: trololololo\n"), logger.status().stream().str());
 
   loggerHtml.log(LogLevel::critical, LogCategory::EVENT, "def", 24, "trololololo");
   loggerHtml.flush();
-  EXPECT_EQ(std::string("<table>\n<tr><td>critical</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
+  EXPECT_EQ(std::string("<table>\n<tr><td>5</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
 }
 
 
@@ -228,8 +228,8 @@ TEST_F(LoggerTest, logMessageWithoutHeaders) {
     " (lv.0) [nowhere:12]: hello world !\n"
     " EVENT(lv.1) [sherlock:44]: this is not an event\n"
     " INFO(lv.2) [mib:21]: code 257 - 1 alien to remove\n"
-    " WARNING(lv.3) [irobot:0]: AI will save the world\n"
-    " ERROR(lv.4) [mars-attacks:8]:  \n"), logger.status().stream().str());
+    " WARNING(lv.4) [irobot:0]: AI will save the world\n"
+    " ERROR(lv.5) [mars-attacks:8]:  \n"), logger.status().stream().str());
 }
 TEST_F(LoggerTest, logMessageWithHeaders) {
   Logger<_BasicFormatterNoDate> logger(_BasicFormatterNoDate(std::ostringstream{}, "head-line"), LogLevel::none);
@@ -245,8 +245,8 @@ TEST_F(LoggerTest, logMessageWithHeaders) {
     " (lv.0) [nowhere:12]: hello world !\n"
     " EVENT(lv.1) [sherlock:44]: this is not an event\n"
     " INFO(lv.2) [mib:21]: code 257 - 1 alien to remove\n"
-    " WARNING(lv.3) [irobot:0]: AI will save the world\n"
-    " ERROR(lv.4) [mars-attacks:8]:  \n"), logger.status().stream().str());
+    " WARNING(lv.4) [irobot:0]: AI will save the world\n"
+    " ERROR(lv.5) [mars-attacks:8]:  \n"), logger.status().stream().str());
 }
 TEST_F(LoggerTest, logIgnoredMessage) {
   Logger<_BasicFormatterNoDate> logger(_BasicFormatterNoDate(std::ostringstream{}), LogLevel::critical);
@@ -267,10 +267,10 @@ TEST_F(LoggerTest, logIgnoredMessage) {
 
   logger.flush();
   EXPECT_EQ(std::string(
-    " INFO(lv.4) [abc:42]: blabla\n"
+    " INFO(lv.5) [abc:42]: blabla\n"
     " EVENT(lv.2) [def:24]: trololololo\n"
-    " EVENT(lv.3) [def:24]: trololololo\n"
-    " EVENT(lv.4) [def:24]: trololololo\n"), logger.status().stream().str());
+    " EVENT(lv.4) [def:24]: trololololo\n"
+    " EVENT(lv.5) [def:24]: trololololo\n"), logger.status().stream().str());
 }
 
 TEST_F(LoggerTest, logHtmlMessageWithoutHeaders) {
@@ -285,11 +285,11 @@ TEST_F(LoggerTest, logHtmlMessageWithoutHeaders) {
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n"
-            "<tr><td>none</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
-            "<tr><td>verbose</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
-            "<tr><td>debug</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
-            "<tr><td>standard</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
-            "<tr><td>critical</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
+            "<tr><td>0</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
+            "<tr><td>1</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
+            "<tr><td>2</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
+            "<tr><td>4</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
+            "<tr><td>5</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
 }
 TEST_F(LoggerTest, logHtmlMessageWithHeaders) {
   std::ostringstream stream;
@@ -303,11 +303,11 @@ TEST_F(LoggerTest, logHtmlMessageWithHeaders) {
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n<tr><th>Level</th><th>Category</th><th>Source</th><th>Message</th></tr>\n"
-            "<tr><td>none</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
-            "<tr><td>verbose</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
-            "<tr><td>debug</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
-            "<tr><td>standard</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
-            "<tr><td>critical</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
+            "<tr><td>0</td><td></td><td>nowhere(12)</td><td>hello world !</td></tr>\n"
+            "<tr><td>1</td><td>EVENT</td><td>sherlock(44)</td><td>this is not an event</td></tr>\n"
+            "<tr><td>2</td><td>INFO</td><td>mib(21)</td><td>code 257 - 1 alien to remove</td></tr>\n"
+            "<tr><td>4</td><td>WARNING</td><td>irobot(0)</td><td>AI will save the world</td></tr>\n"
+            "<tr><td>5</td><td>ERROR</td><td>mars-attacks(8)</td><td> </td></tr>\n"), stream.str());
 }
 TEST_F(LoggerTest, logHtmlIgnoredMessage) {
   std::ostringstream stream;
@@ -329,9 +329,9 @@ TEST_F(LoggerTest, logHtmlIgnoredMessage) {
 
   logger.flush();
   EXPECT_EQ(std::string("<table>\n"
-            "<tr><td>critical</td><td>INFO</td><td>abc(42)</td><td>blabla</td></tr>\n"
-            "<tr><td>standard</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"
-            "<tr><td>critical</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
+            "<tr><td>5</td><td>INFO</td><td>abc(42)</td><td>blabla</td></tr>\n"
+            "<tr><td>4</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"
+            "<tr><td>5</td><td>EVENT</td><td>def(24)</td><td>trololololo</td></tr>\n"), stream.str());
 }
 
 

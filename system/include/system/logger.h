@@ -44,22 +44,23 @@ namespace pandora {
     /// @brief Log level type
     enum class LogLevel: uint32_t {
       none = 0u,
-      verbose = 1u,
-      debug = 2u,
-      standard = 3u,
-      critical = 4u
+      verbose = 1u,  // only intended for debug builds
+      debug = 2u,    // only intended for debug builds
+      informative = 3u,
+      standard = 4u,
+      critical = 5u
     };
-    _P_SERIALIZABLE_ENUM_BUFFER(LogLevel, none, critical, standard, debug, verbose);
 
     /// @brief Log content category
     enum class LogCategory: uint32_t {
       none = 0u,
-      INFO = 1u,
-      EVENT = 2u,
-      WARNING = 3u,
-      ERROR = 4u
+      TRACE = 1u,
+      INFO = 2u,
+      EVENT = 3u,
+      WARNING = 4u,
+      ERROR = 5u
     };
-    _P_SERIALIZABLE_ENUM_BUFFER(LogCategory, INFO, EVENT, WARNING, ERROR);
+    _P_SERIALIZABLE_ENUM_BUFFER(LogCategory, TRACE, INFO, EVENT, WARNING, ERROR);
 
 
     // -- log utility --
@@ -111,6 +112,12 @@ namespace pandora {
           _output.write(level, flag, origin, line, format, args);
           va_end(args);
         }
+      }
+
+      /// @brief Log new entry (only written if 'level' >= minimum active level) - external variadic args
+      inline void logArgs(LogLevel level, LogCategory flag, const char* origin, uint32_t line, const char* format, va_list& args) {
+        if (level >= this->_level)
+          _output.write(level, flag, origin, line, format, args);
       }
 
       /// @brief Flush log stream buffer
