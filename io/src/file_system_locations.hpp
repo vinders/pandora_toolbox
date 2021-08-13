@@ -43,7 +43,7 @@ pandora::io::SystemPath FileSystemLocationFinder::currentLocation() {
     if (buffer != nullptr)
       return pandora::io::SystemPath(buffer);
     char curdir[_MAX_PATH_SIZE+1];
-    return (getcwd(curdir, _MAX_PATH_SIZE+1) == 0) ? pandora::io::SystemPath(curdir) : pandora::io::SystemPath{};
+    return (getcwd(curdir, _MAX_PATH_SIZE+1) != nullptr) ? pandora::io::SystemPath(curdir) : pandora::io::SystemPath{};
 # endif
 }
 
