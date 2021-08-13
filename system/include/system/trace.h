@@ -57,7 +57,7 @@ Macros : TRACE(<format>,...)             : write message in standard console out
 #   define __noop ((void)0)
 # endif
 # ifndef __FILE_NAME__
-#   define __FILE_NAME__
+#   define __FILE_NAME__ __FILE__
 # endif
 # define __DEBUG_ARG__(arg)
 
