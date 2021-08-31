@@ -773,6 +773,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setFragmentFilterStates(0, values.get(), values.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->setViewport(viewport);
+    renderer->setScissorRectangles(nullptr, 0);
 
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
     renderer->bindInputLayout(inputLayout.handle());

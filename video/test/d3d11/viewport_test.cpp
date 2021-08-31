@@ -163,6 +163,48 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(1.6f, vp1.farClipping());
   }
 
+  TEST_F(ViewportTest, viewportFPSettersTest) {
+    Viewport vp1(0.f,0.f,640.f,480.f);
+    EXPECT_EQ((int32_t)0, vp1.x());
+    EXPECT_EQ((int32_t)0, vp1.y());
+    EXPECT_EQ((uint32_t)640u, vp1.width());
+    EXPECT_EQ((uint32_t)480u, vp1.height());
+    EXPECT_EQ(0.f, vp1.nearClipping());
+    EXPECT_EQ(1.f, vp1.farClipping());
+
+    vp1.resize(10.f,20.f, 240.f,180.f);
+    EXPECT_EQ((int32_t)10, vp1.x());
+    EXPECT_EQ((int32_t)20, vp1.y());
+    EXPECT_EQ((uint32_t)240u, vp1.width());
+    EXPECT_EQ((uint32_t)180u, vp1.height());
+    EXPECT_EQ(0.f, vp1.nearClipping());
+    EXPECT_EQ(1.f, vp1.farClipping());
+
+    vp1.resizeFromBottomLeft(200u, 40.f,50.f, 260.f,120.f);
+    EXPECT_EQ((int32_t)40, vp1.x());
+    EXPECT_EQ((int32_t)30, vp1.y());
+    EXPECT_EQ((uint32_t)260u, vp1.width());
+    EXPECT_EQ((uint32_t)120u, vp1.height());
+    EXPECT_EQ(0.f, vp1.nearClipping());
+    EXPECT_EQ(1.f, vp1.farClipping());
+
+    vp1.resizeFromTopLeft(800u, 40.f,50.f, 260.f,120.f);
+    EXPECT_EQ((int32_t)40, vp1.x());
+    EXPECT_EQ((int32_t)50, vp1.y());
+    EXPECT_EQ((uint32_t)260u, vp1.width());
+    EXPECT_EQ((uint32_t)120u, vp1.height());
+    EXPECT_EQ(0.f, vp1.nearClipping());
+    EXPECT_EQ(1.f, vp1.farClipping());
+
+    vp1.setDepthRange(0.4, 1.6);
+    EXPECT_EQ((int32_t)40, vp1.x());
+    EXPECT_EQ((int32_t)50, vp1.y());
+    EXPECT_EQ((uint32_t)260u, vp1.width());
+    EXPECT_EQ((uint32_t)120u, vp1.height());
+    EXPECT_EQ(0.4f, vp1.nearClipping());
+    EXPECT_EQ(1.6f, vp1.farClipping());
+  }
+
 
   // -- viewport builder --
 
@@ -172,6 +214,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     auto reverted1 = Viewport::fromBottomLeft(800u, 320,240, 640u,480u, 0.1f,1.2f);
     auto reverted2 = Viewport::fromTopLeft(800u, 320,80, 640u,480u, 0.1f,1.2f);
+    EXPECT_TRUE(reverted1 == reverted2);
+    EXPECT_EQ((int32_t)320, reverted1.x());
+    EXPECT_EQ((int32_t)80, reverted1.y());
+    EXPECT_EQ((uint32_t)640u, reverted1.width());
+    EXPECT_EQ((uint32_t)480u, reverted1.height());
+    EXPECT_EQ(0.1f, reverted1.nearClipping());
+    EXPECT_EQ(1.2f, reverted1.farClipping());
+  }
+  TEST_F(ViewportTest, viewportFPBuildersTest) {
+    Viewport vpRef1(320.f,240.f, 640.f,480.f, 0.1f,1.2f);
+    EXPECT_TRUE(Viewport::fromTopLeft(800u, 320.f,240.f, 640.f,480.f, 0.1f,1.2f) == vpRef1);
+
+    auto reverted1 = Viewport::fromBottomLeft(800u, 320.f,240.f, 640.f,480.f, 0.1f,1.2f);
+    auto reverted2 = Viewport::fromTopLeft(800u, 320.f,80.f, 640.f,480.f, 0.1f,1.2f);
     EXPECT_TRUE(reverted1 == reverted2);
     EXPECT_EQ((int32_t)320, reverted1.x());
     EXPECT_EQ((int32_t)80, reverted1.y());
