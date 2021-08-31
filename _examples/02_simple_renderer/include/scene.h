@@ -61,7 +61,7 @@ public:
 
 
 private:
-  void _setCameraViewProjection(bool isInit, __RENDER_API(Renderer)& renderer, MatrixFloat4x4 modelWorldMatrix);
+  void _setCameraViewProjection(bool isInit, video_api::Renderer& renderer, MatrixFloat4x4 modelWorldMatrix);
 
 private:
   DisplayPipeline* _renderer = nullptr;

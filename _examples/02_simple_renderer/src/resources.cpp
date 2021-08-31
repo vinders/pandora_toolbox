@@ -19,7 +19,7 @@ Description : Example - rendering scene
 #endif
 #include "resources.h"
 
-using namespace __RENDER_API_NS;
+using namespace video_api;
 
 static const char* __getResourceDir() noexcept {
   static const char* dir = (!pandora::io::verifyFileSystemAccessMode("logo_big.png", pandora::io::FileSystemAccessMode::read)

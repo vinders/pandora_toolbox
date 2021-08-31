@@ -12,7 +12,7 @@ Description : Example - rendering scene
 #include "resources.h"
 #include "scene.h"
 
-using namespace __RENDER_API_NS;
+using namespace video_api;
 
 // directional vectors (to simply vertex normal/tangent/bitangent declaration)
 #define LEFT   -1.f,0.f,0.f

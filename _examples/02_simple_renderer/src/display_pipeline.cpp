@@ -20,7 +20,7 @@ Description : Example - renderer pipeline
 #endif
 #include "display_pipeline.h"
 
-using namespace __RENDER_API_NS;
+using namespace video_api;
 
 // Initialize pipeline (throws on failure)
 DisplayPipeline::DisplayPipeline(const pandora::hardware::DisplayMonitor& monitor, pandora::video::WindowHandle window,

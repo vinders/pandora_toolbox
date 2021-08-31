@@ -17,28 +17,17 @@ Description : Example - renderer pipeline
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/depth_stencil_buffer.h>
 # include <video/d3d11/texture.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::d3d11:: className
-#   define __RENDER_API_NS pandora::video::d3d11
-# endif
-
+  namespace video_api = pandora::video::d3d11;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
 # include <video/vulkan/renderer.h>
 # include <video/vulkan/depth_stencil_buffer.h>
 # include <video/vulkan/texture.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::vulkan:: className
-#   define __RENDER_API_NS pandora::video::vulkan
-# endif
-
+  namespace video_api = pandora::video::vulkan;
 #else
 # include <video/openGL4/renderer.h>
 # include <video/openGL4/depth_stencil_buffer.h>
 # include <video/openGL4/texture.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::openGL4:: className
-#   define __RENDER_API_NS pandora::video::openGL4
-# endif
+  namespace video_api = pandora::video::openGL4;
 #endif
 
 
@@ -88,7 +77,7 @@ public:
   // -- operations --
 
   // Get renderer context to bind resources (shaders, layout, textures, uniform/constant buffers...) or draw (draw, clear...)
-  __RENDER_API(Renderer)& renderer() noexcept { return *_renderer; }
+  video_api::Renderer& renderer() noexcept { return *_renderer; }
 
   // Enable render target for drawing
   // --> isCleaned is only useful if some areas have no polygons
@@ -101,14 +90,14 @@ public:
 
 
 private:
-  std::shared_ptr<__RENDER_API(Renderer)> _renderer = nullptr;
-  __RENDER_API(SwapChain) _swapChain;
-  __RENDER_API(DepthStencilBuffer) _depthBuffer;
-  __RENDER_API(DepthStencilStateArray<2>) _depthTests;
-  __RENDER_API(FilterStateArray) _samplers;
-  __RENDER_API(RasterizerState) _rasterizer;
-  __RENDER_API(BlendState) _blend;
-  __RENDER_API(Viewport) _viewport;
+  std::shared_ptr<video_api::Renderer> _renderer = nullptr;
+  video_api::SwapChain _swapChain;
+  video_api::DepthStencilBuffer _depthBuffer;
+  video_api::DepthStencilStateArray<2> _depthTests;
+  video_api::FilterStateArray _samplers;
+  video_api::RasterizerState _rasterizer;
+  video_api::BlendState _blend;
+  video_api::Viewport _viewport;
   pandora::time::Timer<pandora::time::HighResolutionClock,
                        pandora::time::HighResolutionAuxClock,
                        pandora::time::DelayHandling::none, true> _timer;

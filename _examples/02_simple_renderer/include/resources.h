@@ -20,30 +20,19 @@ Description : Example - rendering resources (materials, textures, meshes)
 # include <video/d3d11/shader.h>
 # include <video/d3d11/texture.h>
 # include <video/d3d11/static_buffer.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::d3d11:: className
-#   define __RENDER_API_NS pandora::video::d3d11
-# endif
-
+  namespace video_api = pandora::video::d3d11;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
 # include <video/vulkan/renderer.h>
 # include <video/vulkan/shader.h>
 # include <video/vulkan/texture.h>
 # include <video/vulkan/static_buffer.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::vulkan:: className
-#   define __RENDER_API_NS pandora::video::vulkan
-# endif
-
+  namespace video_api = pandora::video::vulkan;
 #else
 # include <video/openGL4/renderer.h>
 # include <video/openGL4/shader.h>
 # include <video/openGL4/texture.h>
 # include <video/openGL4/static_buffer.h>
-# ifndef __RENDER_API
-#   define __RENDER_API(className) pandora::video::openGL4:: className
-#   define __RENDER_API_NS pandora::video::openGL4
-# endif
+  namespace video_api = pandora::video::openGL4;
 #endif
 #include "camera.h"
 
@@ -87,16 +76,16 @@ struct Material final {
 
 // material texture maps
 struct TextureMap final {
-  __RENDER_API(Texture2D) diffuseMap;  // base texture
-  __RENDER_API(Texture2D) normalMap;   // texel normal map
-  __RENDER_API(Texture2D) specularMap; // specular light map
+  video_api::Texture2D diffuseMap;  // base texture
+  video_api::Texture2D normalMap;   // texel normal map
+  video_api::Texture2D specularMap; // specular light map
 };
 
 // vertex/fragment shader program
 struct ShaderProgram final {
-  __RENDER_API(InputLayout) layout;
-  __RENDER_API(Shader) vertex;
-  __RENDER_API(Shader) fragment;
+  video_api::InputLayout layout;
+  video_api::Shader vertex;
+  video_api::Shader fragment;
   uint32_t strideBytes = 0;
 };
 
@@ -121,15 +110,15 @@ struct DirectionalLight final {
 
 // group of joined vertices (with same material)
 struct Mesh final {
-  __RENDER_API(StaticBuffer) vertices;
-  __RENDER_API(StaticBuffer) indices;
+  video_api::StaticBuffer vertices;
+  video_api::StaticBuffer indices;
   uint32_t indexCount = 0;
   MaterialId material = MaterialId::none;
   TextureMapId texture = TextureMapId::none;
   ShaderProgramId shaders = ShaderProgramId::textured;
 
   Mesh() = default;
-  Mesh(__RENDER_API(StaticBuffer)&& vertices, __RENDER_API(StaticBuffer)&& indices, uint32_t indexCount,
+  Mesh(video_api::StaticBuffer&& vertices, video_api::StaticBuffer&& indices, uint32_t indexCount,
     MaterialId material, TextureMapId texture, ShaderProgramId shaders)
     : vertices(std::move(vertices)), indices(std::move(indices)), indexCount(indexCount),
       material(material), texture(texture), shaders(shaders) {}
@@ -150,7 +139,7 @@ struct Entity final {
 
 // 2D/UI sprite entity
 struct SpriteEntity final {
-  std::shared_ptr<__RENDER_API(StaticBuffer)> vertices;
+  std::shared_ptr<video_api::StaticBuffer> vertices;
   SpriteId image;
 };
 
@@ -161,14 +150,14 @@ struct SpriteEntity final {
 struct ResourceStorage final {
   std::map<MaterialId, Material> materials;
   std::map<TextureMapId, TextureMap> textureMaps;
-  std::map<SpriteId, __RENDER_API(Texture2D)> sprites;
+  std::map<SpriteId, video_api::Texture2D> sprites;
   std::map<ShaderProgramId, ShaderProgram> shaders;
   std::vector<Entity> entities;
   std::vector<SpriteEntity> spriteEntities;
   ShaderProgram spriteShader;
-  __RENDER_API(StaticBuffer) cameraViewProjection;
-  __RENDER_API(StaticBuffer) activeMaterial;
-  __RENDER_API(StaticBuffer) activeLights;
+  video_api::StaticBuffer cameraViewProjection;
+  video_api::StaticBuffer activeMaterial;
+  video_api::StaticBuffer activeLights;
 
   void clear() {
     entities.clear();
@@ -189,7 +178,7 @@ struct ResourceStorage final {
 
 // -- resource loaders --
 
-void loadShader(__RENDER_API(Renderer)& renderer, ShaderProgramId id, ResourceStorage& out);
-void loadMaterial(__RENDER_API(Renderer)& renderer, MaterialId id, ResourceStorage& out);
-void loadTexture(__RENDER_API(Renderer)& renderer, TextureMapId id, ResourceStorage& out);
-void loadSprite(__RENDER_API(Renderer)& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out);
+void loadShader(video_api::Renderer& renderer, ShaderProgramId id, ResourceStorage& out);
+void loadMaterial(video_api::Renderer& renderer, MaterialId id, ResourceStorage& out);
+void loadTexture(video_api::Renderer& renderer, TextureMapId id, ResourceStorage& out);
+void loadSprite(video_api::Renderer& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out);
