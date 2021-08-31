@@ -453,6 +453,22 @@ Includes hpp implementations at the end of the file
       this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
     }
   }
+
+  // Set rasterizer scissor-test rectangle(s)
+  void Renderer::setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept {
+    if (numberRectangles) {
+      D3D11_RECT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
+      if (numberRectangles > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
+        numberRectangles = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+
+      D3D11_RECT* out = &values[numberRectangles - 1u];
+      for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
+        memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_RECT));
+      this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
+    }
+    else
+      this->_context->RSSetScissorRects(0, nullptr);
+  }
   
   // ---
 

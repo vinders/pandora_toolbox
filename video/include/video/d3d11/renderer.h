@@ -23,6 +23,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <hardware/display_monitor.h>
 # include "./api/types.h"      // includes D3D11
 # include "./renderer_state.h" // includes D3D11
+# include "./scissor.h"        // includes D3D11
 # include "./viewport.h"       // includes D3D11
 # include "./shader.h"         // includes D3D11
 
@@ -104,6 +105,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
           inline void setViewport(const Viewport& viewport) noexcept { this->_context->RSSetViewports(1u, viewport.descriptor()); }
+
+          /// @brief Set rasterizer scissor-test rectangle(s)
+          void setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept;
+          /// @brief Set rasterizer scissor-test rectangle
+          inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept { this->_context->RSSetScissorRects(1u, rectangle.descriptor()); }
           
           // ---
 
