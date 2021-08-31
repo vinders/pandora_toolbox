@@ -1,6 +1,17 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.101.1.724
+2021-08-31 - b61ec92a276d4d0600a8da99e6a568585f96794e
+### features
+vinders (1):
+* video: Direct3D11 scissor-test rectangle + apply methods in renderer
+### fixes
+vinders (1):
+* video: Direct3D viewport: support fractional size
+
+---
+
 ## 0.100.7.720
 2021-08-13 - cdc8d60671667ab83e49011a47c5ab31a583bbf6
 ### features
