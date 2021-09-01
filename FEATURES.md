@@ -134,3 +134,7 @@
 | *video/vulkan/api/vulkan.h*      | Vulkan API includes                         | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/vulkan/api/types.h*       | Vulkan type/enum bindings (common labels)   | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/vulkan/...*               | Vulkan: rendering utils                     | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
+
+---
+
+[Go to TOP](#features-and-compatibility)
