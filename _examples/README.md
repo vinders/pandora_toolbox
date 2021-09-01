@@ -1,3 +1,5 @@
+> [Features](../FEATURES.md) - | - [Cmake options](../README.md#cmake-options) - | - Project examples - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
+
 # Examples
 
 * [Building projects](#building-projects)

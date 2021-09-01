@@ -1,18 +1,15 @@
+> Features - | - [Cmake options](./README.md#cmake-options) - | - [Project examples](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
+
 # Features and compatibility
 
-<sub>![win](_img/badges/system_win.png) *Windows* , 
-![mac](_img/badges/system_mac.png) *MacOS* , 
-![ios](_img/badges/system_ios.png) *iOS* , 
-![and](_img/badges/system_and.png) *Android* , 
-![x11](_img/badges/system_x11.png) *Linux/Unix/BSD (X11)* , 
-![wln](_img/badges/system_wln.png) *Linux (Wayland)*</sub>
-
-<sub>![OK](_img/badges/feat_done.png) : done<br>
-![BUG](_img/badges/feat_issues.png) : known issue(s)<br>
-![TEST](_img/badges/feat_not_tested.png) : not fully tested<br>
-![PART](_img/badges/feat_part_impl.png) : partially implemented<br>
-![NOT](_img/badges/feat_not_impl.png) : not implemented yet<br>
-![NA](_img/badges/feat_empty.png) : not applicable</sub>
+|  |  |  |  |  |
+|--|--|--|--|--|
+| ![OK](_img/badges/feat_done.png)         | <sub>done</sub>                  | | ![win](_img/badges/system_win.png) | <sub>*Windows*</sub>              |
+| ![BUG](_img/badges/feat_issues.png)      | <sub>known issue(s)</sub>        | | ![mac](_img/badges/system_mac.png) | <sub>*MacOS*</sub>                |
+| ![TEST](_img/badges/feat_not_tested.png) | <sub>not fully tested</sub>      | | ![ios](_img/badges/system_ios.png) | <sub>*iOS*</sub>                  |
+| ![PART](_img/badges/feat_part_impl.png)  | <sub>partially implemented</sub> | | ![and](_img/badges/system_and.png) | <sub>*Android*</sub>              |
+| ![NOT](_img/badges/feat_not_impl.png)    | <sub>not implemented yet</sub>   | | ![x11](_img/badges/system_x11.png) | <sub>*Linux/Unix/BSD (X11)*</sub> |
+| ![NA](_img/badges/feat_empty.png)        | <sub>not applicable</sub>        | | ![wln](_img/badges/system_wln.png) | <sub>*Linux (Wayland)*</sub>      |
 
 |           include files          |                 description                 |     |     |     |     |     |     |
 |----------------------------------|---------------------------------------------|-----|-----|-----|-----|-----|-----|
@@ -101,6 +98,7 @@
 | *time/timer.h*                   | High-precision dual timer (clock sync)      | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | | | | | | | | |
 | >          **video**             |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
+| *video/common_types.h*           | Common: swap-chain build params/flags/rate  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/message_box.h*            | Alert message-box: standard/custom buttons  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | *video/screensaver.h*            | Screen-saver disable/restore/ping activity  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) | ![TEST](_img/badges/feat_not_tested.png) | ![OK](_img/badges/feat_done.png) | ![TEST](_img/badges/feat_not_tested.png) |
 | *video/window.h*                 | System window manager + builder             | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
@@ -109,8 +107,7 @@
 | *video/window_keycodes.h*        | OS-specific virtual-keycode bindings        | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | *video/window_resource.h*        | Resource builders: icon/cursor/brush/menu   | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
 | | | | | | | | |
-| >    **video - rendering**       |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
-| *video/common_types.h*           | Common: swap-chain build params/flags/rate  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
+| >    **video/d3d11**             |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 | *video/d3d11/api/d3d_11.h*       | Direct3D11 API includes                     | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/api/types.h*        | Direct3D11 type/enum bind. (common labels)  | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/camera_utils.h*     | Direct3D11: camera projection + view utils  | ![PART](_img/badges/feat_part_impl.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
@@ -127,9 +124,13 @@
 | *video/d3d11/texture_reader.h*   | Direct3D11: texture data reader (staged)    | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/texture_writer.h*   | Direct3D11: texture updater (write/copy)    | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
 | *video/d3d11/viewport.h*         | Direct3D11: 3D to 2D projection rectangle   | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) |
+| | | | | | | | |
+| >    **video/openGL4**           |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 | *video/openGL4/api/opengl.h*     | OpenGL4 API includes/extensions             | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/openGL4/api/types.h*      | OpenGL4 type/enum bindings (common labels)  | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/openGL4/...*              | OpenGL4: rendering utils                    | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NA](_img/badges/feat_empty.png) | ![NA](_img/badges/feat_empty.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |
+| | | | | | | | |
+| >    **video/vulkan**            |                                             | ![win](_img/badges/system_win.png) | ![mac](_img/badges/system_mac.png) | ![ios](_img/badges/system_ios.png) | ![and](_img/badges/system_and.png) | ![x11](_img/badges/system_x11.png) | ![wln](_img/badges/system_wln.png) |
 | *video/vulkan/api/vulkan.h*      | Vulkan API includes                         | ![OK](_img/badges/feat_done.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/vulkan/api/types.h*       | Vulkan type/enum bindings (common labels)   | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) | ![OK](_img/badges/feat_done.png) |
 | *video/vulkan/...*               | Vulkan: rendering utils                     | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) | ![NOT](_img/badges/feat_not_impl.png) |

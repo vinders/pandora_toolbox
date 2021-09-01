@@ -1,3 +1,5 @@
+> [Features](./FEATURES.md) - | - [Cmake options](./README.md#cmake-options) - | - [Project examples](./_examples) - | - [Changelog](./CHANGELOG.md) - | - Issue reporting &amp; contribution
+
 # Contributing
 
 * [Foreword](#foreword)

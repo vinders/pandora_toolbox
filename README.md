@@ -11,6 +11,8 @@
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
 Libraries (video/io/hardware...) can be included separately.
 
+> [Features](./FEATURES.md) - | - [Cmake options](#cmake-options) - | - [Project examples](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
+
 ![Preview](_img/renderer_preview.jpg)![Preview2](_examples/_img/02_simple_renderer.jpg)
 
 **Feature overview:**
@@ -21,8 +23,6 @@ Libraries (video/io/hardware...) can be included separately.
 * Design patterns, search/sort algorithms, math/string utils...
 * File utils, UTF-8/UTF-16 encoders, ini/json, logger, location finder...
 * See [detailed list of features and compatibility](./FEATURES.md).
-
-> [Cmake options](#cmake-options) - | - [Project examples](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
 
 ## Build status
 ![cmake 3.14](_img/badges/build_cmake_3_14.svg)
