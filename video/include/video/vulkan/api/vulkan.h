@@ -18,14 +18,34 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #pragma once
 
-// Mac OS / iOS
-#if !defined(_WINDOWS) && defined(__APPLE__)
-  // TODO - moltenVK
-  //...
+#define VK_NO_PROTOTYPES 1 // dynamic linking
 
-// Windows / Linux / Android
+#ifdef _P_VK_NATIVE_PLATFORM
+# if defined(_WINDOWS)
+#   define VK_USE_PLATFORM_WIN32_KHR
+# elif defined(__ANDROID__)
+#   define VK_USE_PLATFORM_ANDROID_KHR
+# elif defined(__APPLE__)
+#   include <TargetConditionals.h>
+#   define VK_USE_PLATFORM_METAL_EXT
+#   if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#     define VK_USE_PLATFORM_IOS_MVK
+#   else
+#     define VK_USE_PLATFORM_MACOS_MVK
+#   endif
+# elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
+#   if defined(_P_ENABLE_LINUX_WAYLAND)
+#     define VK_USE_PLATFORM_WAYLAND_KHR
+#   else
+#     define VK_USE_PLATFORM_XCB_KHR
+#     define VK_USE_PLATFORM_XLIB_KHR
+#   endif
+# endif
+#endif
+
+#include <cstdint>
+#if !defined(_WINDOWS) && defined(__APPLE__)
+# include <MoltenVK/vulkan/vulkan.h> // MacOS / iOS
 #else
-//#define VK_NO_PROTOTYPES 1 // only when dynamic linking
-# include <cstdint>
-# include <vulkan/vulkan.h>
+# include <vulkan/vulkan.h> // Windows / Linux / Android
 #endif
