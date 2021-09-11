@@ -27,7 +27,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #     pragma warning(push)
 #     pragma warning(disable: 26812) // disable warnings about vulkan enums
 #   endif
-#   define NOMINMAX
 #   define NODRAWTEXT
 #   define NOGDI
 #   define NOBITMAP

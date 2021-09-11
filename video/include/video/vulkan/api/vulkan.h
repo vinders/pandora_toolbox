@@ -18,9 +18,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #pragma once
 
-#ifndef _P_VK_STATIC_LINK
-# define VK_NO_PROTOTYPES 1 // dynamic linking
-#endif
+//# define VK_NO_PROTOTYPES 1 // for dynamic linking
 
 #if defined(_WINDOWS)
 # ifndef VK_USE_PLATFORM_WIN32_KHR
