@@ -5,7 +5,7 @@
 ![lang - C++17](_img/badges/lang_cpp17.svg)
 ![tests - Gtest](_img/badges/tests_gtest.svg)
 ![docs - Doxygen](_img/badges/docs_doxygen.svg)<br>
-![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-6c4.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-ongoing-28b.svg) ![Vulkan](https://img.shields.io/badge/Vulkan_1.2-ongoing-28b.svg)
+![Direct3D11](https://img.shields.io/badge/Direct3D_11-supported-6c4.svg) ![Vulkan](https://img.shields.io/badge/Vulkan_1.2-ongoing-28b.svg) ![OpenGL4](https://img.shields.io/badge/OpenGL_4-planned-28b.svg)
 
 **Pandora Toolbox** is a collection of portable C++ libraries useful to create **video/real-time projects**: video processing, video games, emulators, simple AI, screensavers...
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.

@@ -108,7 +108,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         endif()
     endif()
 
-    if("$ENV{VULKAN_SDK}" STREQUAL "" AND NOT ANDROID)
+    if("$ENV{VULKAN_SDK}" STREQUAL "")
         set(CWORK_VIDEO_VULKAN OFF CACHE BOOL "not supported (SDK not found)")
         set(_VIDEO_VULKAN_NOT_SUPPORTED ON CACHE INTERNAL "" FORCE)
     else()

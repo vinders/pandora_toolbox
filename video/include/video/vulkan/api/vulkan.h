@@ -18,26 +18,42 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #pragma once
 
-#define VK_NO_PROTOTYPES 1 // dynamic linking
+#ifndef _P_VK_STATIC_LINK
+# define VK_NO_PROTOTYPES 1 // dynamic linking
+#endif
 
-#ifdef _P_VK_NATIVE_PLATFORM
-# if defined(_WINDOWS)
+#if defined(_WINDOWS)
+# ifndef VK_USE_PLATFORM_WIN32_KHR
 #   define VK_USE_PLATFORM_WIN32_KHR
-# elif defined(__ANDROID__)
+# endif
+#elif defined(__ANDROID__)
+# ifndef VK_USE_PLATFORM_ANDROID_KHR
 #   define VK_USE_PLATFORM_ANDROID_KHR
-# elif defined(__APPLE__)
-#   include <TargetConditionals.h>
+# endif
+#elif defined(__APPLE__)
+# include <TargetConditionals.h>
+# ifndef VK_USE_PLATFORM_METAL_EXT
 #   define VK_USE_PLATFORM_METAL_EXT
-#   if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+# endif
+# if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#   ifndef VK_USE_PLATFORM_IOS_MVK
 #     define VK_USE_PLATFORM_IOS_MVK
-#   else
+#   endif
+# else
+#   ifndef VK_USE_PLATFORM_MACOS_MVK
 #     define VK_USE_PLATFORM_MACOS_MVK
 #   endif
-# elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
-#   if defined(_P_ENABLE_LINUX_WAYLAND)
+# endif
+#elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
+# if defined(_P_ENABLE_LINUX_WAYLAND)
+#   ifndef VK_USE_PLATFORM_WAYLAND_KHR
 #     define VK_USE_PLATFORM_WAYLAND_KHR
-#   else
+#   endif
+# else
+#   ifndef VK_USE_PLATFORM_XCB_KHR
 #     define VK_USE_PLATFORM_XCB_KHR
+#   endif
+#   ifndef VK_USE_PLATFORM_XLIB_KHR
 #     define VK_USE_PLATFORM_XLIB_KHR
 #   endif
 # endif
