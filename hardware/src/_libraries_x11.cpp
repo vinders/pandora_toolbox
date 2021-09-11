@@ -187,6 +187,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       _bindXinerama();
     }
     
+    // load XCB library
+#   if defined(__CYGWIN__)
+      this->xcb.instance = _loadLibrary("libX11-xcb-1.so");
+#   else
+      this->xcb.instance = _loadLibrary("libX11-xcb.so.1");
+#   endif
+    if (this->xcb.instance == nullptr)
+      this->xcb.instance = _loadLibrary("libX11-xcb.so");
+    
+    if (this->xcb.instance != nullptr) {
+      this->xcb.GetXCBConnection_ = _getSymbolAddress<__x11_XGetXCBConnection>(this->xcb.instance, "XGetXCBConnection");
+      this->xcb.isAvailable = (this->xcb.GetXCBConnection_ != nullptr);
+    }
+    
     // load XSS library
 #   if defined(__CYGWIN__)
       this->xss.instance = _loadLibrary("libXss-1.so");
@@ -218,6 +232,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (this->displayServer != nullptr) {
       this->xlib.CloseDisplay_(this->displayServer);
       this->displayServer = nullptr;
+    }
+    if (this->xss.instance != nullptr) {
+      this->xss.isAvailable = false;
+      _freeLibrary(this->xss.instance);
+      this->xss.instance = nullptr;
+    }
+    if (this->xcb.instance != nullptr) {
+      this->xcb.isAvailable = false;
+      _freeLibrary(this->xcb.instance);
+      this->xcb.instance = nullptr;
     }
     if (this->randr.instance != nullptr) {
       this->randr.isAvailable = false;

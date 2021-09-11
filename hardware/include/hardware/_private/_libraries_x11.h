@@ -181,8 +181,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       // xf86vm functions
       typedef Bool (* __x11_XF86VidModeQueryExtension)(Display*,int*,int*);
       
+      // xcb functions
+      typedef xcb_connection_t* (* __x11_XGetXCBConnection)(Display*);
+      
       // xss functions
-      typedef void        (* __x11_XScreenSaverSuspend)(Display*,Bool);
+      typedef void (* __x11_XScreenSaverSuspend)(Display*,Bool);
       
       
       // library loader - X11
@@ -351,6 +354,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           __x11_XineramaQueryVersion   QueryVersion_ = nullptr;
           __x11_XineramaQueryScreens   QueryScreens_ = nullptr;
         } xinerama;
+        struct {
+          bool isAvailable = false;
+          LibHandle instance = nullptr;
+          __x11_XGetXCBConnection GetXCBConnection_ = nullptr;
+        } xcb;
         struct {
           bool isAvailable   = false;
           LibHandle instance = nullptr;
