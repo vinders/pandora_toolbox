@@ -136,7 +136,7 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 }
 
 // mouse event handler
-bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t) {
+bool onMouseEvent(Window* sender, MouseEvent event, int32_t, int32_t, int32_t index, uint8_t) {
   switch (event) {
     case MouseEvent::buttonDown:
       if ((MouseButton)index == MouseButton::left && !g_windowState.isMouseLeftDown) {

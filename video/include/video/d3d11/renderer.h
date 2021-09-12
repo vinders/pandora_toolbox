@@ -67,6 +67,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
           
+          /// @brief Flush command buffer
+          /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
+          ///                                 - to wait for object destruction
+          inline void flush() noexcept { this->_context->Flush(); }
+          
           // -- accessors --
           
           inline DeviceHandle device() const noexcept { return this->_device; }    ///< Get Direct3D rendering device
@@ -148,7 +153,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - Calling it with a NULL view disables active render-targets.
           inline void setActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer = nullptr) noexcept {
             this->_context->OMSetRenderTargets((UINT)1u, &view, depthBuffer);
-            this->_context->Flush();
           }
           
           /// @brief Bind/replace active render-target(s) in Renderer (multi-target) + clear render-targets/buffers

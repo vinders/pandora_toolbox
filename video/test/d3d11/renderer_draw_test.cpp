@@ -233,6 +233,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
     chain1.swapBuffersDiscard(true, nullptr);
+    renderer->flush();
   }
 
   TEST_F(RendererDrawTest, vertexIndexedDrawingWithStatesTest) {
@@ -311,6 +312,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawIndexed(sizeof(indices1)/sizeof(*indices1));
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
+    renderer->flush();
   }
 
   TEST_F(RendererDrawTest, vertexInstanceIndexedDrawingWithStatesTest) {
@@ -397,6 +399,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
+    renderer->flush();
   }
 
   TEST_F(RendererDrawTest, vertexInstanceDrawingWithStatesCamTest) {
@@ -503,6 +506,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
+    renderer->flush();
   }
 
 
@@ -790,7 +794,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
     chain1.swapBuffersDiscard(true, depthBuffer.getDepthStencilView());
-    renderer->context()->Flush();
+    renderer->flush();
   }
 
 # ifndef __MINGW32__

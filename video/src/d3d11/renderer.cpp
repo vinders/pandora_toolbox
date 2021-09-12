@@ -484,7 +484,6 @@ Includes hpp implementations at the end of the file
     }
     if (depthBuffer != nullptr)
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    this->_context->Flush();
   }
   // Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4]) noexcept {
@@ -492,7 +491,6 @@ Includes hpp implementations at the end of the file
       this->_context->ClearRenderTargetView(view, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    this->_context->Flush();
   }
 
   // Bind/replace active render-target(s) in Renderer (multi-target)
@@ -504,7 +502,6 @@ Includes hpp implementations at the end of the file
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
     }
-    this->_context->Flush();
   }
   
   // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
@@ -524,7 +521,6 @@ Includes hpp implementations at the end of the file
       ID3D11RenderTargetView* emptyViews[] { nullptr };
       this->_context->OMSetRenderTargets(_countof(emptyViews), emptyViews, nullptr);
     }
-    this->_context->Flush();
   }
 
   // Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
@@ -536,7 +532,6 @@ Includes hpp implementations at the end of the file
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
             
     this->_context->OMSetRenderTargets((UINT)1u, &view, depthBuffer);
-    this->_context->Flush();
   }
 
 
@@ -776,6 +771,7 @@ Includes hpp implementations at the end of the file
       try {
         if (this->_renderTargetView) {
           this->_renderer->setActiveRenderTarget(nullptr);
+          this->_renderer->context()->Flush();
           this->_renderTargetView->Release();
           this->_renderTargetView = nullptr;
         }
