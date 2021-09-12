@@ -424,7 +424,7 @@ Includes hpp implementations at the end of the file
     bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
 # endif
 
-  /// @brief Screen tearing supported (variable refresh rate display)
+  // Screen tearing supported (variable refresh rate display)
   bool Renderer::isTearingAvailable() const noexcept { 
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
       if (this->_dxgiLevel >= 5u) {
