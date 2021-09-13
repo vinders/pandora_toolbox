@@ -66,7 +66,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # endif
   using namespace pandora::video::vulkan;
 
-  pandora::video::vulkan::VulkanLoader pandora::video::vulkan::VulkanLoader::_libs{};
+  VulkanLoader VulkanLoader::_libs{};
 
 
   // -- library binding utilities -- -------------------------------------------
@@ -242,6 +242,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   
   // ---
   
+  const char* VulkanLoader::getPlatformSurfaceExtensionId() const noexcept {
+    if (this->vk.platformExtension == __P_VULKAN_PLATFORM_EXT)
+      return __P_VULKAN_PLATFORM_EXT_NAME;
+#   ifdef __P_VULKAN_PLATFORM_EXT_ALT
+    else if (this->vk.platformExtension == __P_VULKAN_PLATFORM_EXT_ALT)
+      return __P_VULKAN_PLATFORM_EXT_ALT_NAME;
+#   endif
+    return ""; // should not happen (verified during init)
+  }
+  
   FunctionPtr VulkanLoader::getVulkanInstanceFunction(VkInstance instance, const char* functionName) noexcept {
     FunctionPtr func = (FunctionPtr)this->vk.GetInstanceProcAddr_(instance, functionName);
     if (func == nullptr)
@@ -327,9 +337,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         VkWin32SurfaceCreateInfoKHR params;
         memset(&params, 0, sizeof(params));
         params.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        params.hinstance = WindowsApp::instance().isInitialized()
-                         ? (HINSTANCE)WindowsApp::instance().handle()
-                         : (HINSTANCE)GetModuleHandle(NULL);
+        params.hinstance = (HINSTANCE)GetWindowLongPtrW((HWND)window, GWLP_HINSTANCE);
+        if (!params.hinstance) {
+          params.hinstance = WindowsApp::instance().isInitialized()
+                           ? (HINSTANCE)WindowsApp::instance().handle()
+                           : (HINSTANCE)GetModuleHandle(NULL);
+        }
         params.hwnd = (HWND)window;
         return surfaceCreator(instance, &params, allocator, &outSurface);
       }

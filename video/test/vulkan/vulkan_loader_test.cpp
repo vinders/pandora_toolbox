@@ -41,6 +41,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(loader.vk.platformExtension != PlatformExtension::unknown);
     EXPECT_TRUE(loader.vk.GetInstanceProcAddr_ != nullptr);
     EXPECT_TRUE(loader.vk.EnumerateInstanceExtensionProperties_ != nullptr);
+    EXPECT_STRNE("", loader.getPlatformSurfaceExtensionId());
     loader.shutdown();
   }
 

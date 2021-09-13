@@ -90,6 +90,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return _libs;
           }
           
+          /// @brief Get extension ID used for current platform surface (ex: "VK_KHR_win32_surface")
+          const char* getPlatformSurfaceExtensionId() const noexcept;
           /// @brief Get Vulkan function binding to dynamic library
           /// @returns Function pointer (or NULL if not supported)
           /// @remarks If the function is used more than once, this binding should be stored to be reusable efficiently.
@@ -98,7 +100,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Verify if vulkan is supported on current system
           /// @remarks Vulkan will be initialized by the call. If you don't intend to use it in your program,
           ///          you might want to call 'VulkanLoader::instance().shutdown()' after this.
-          static inline bool isSupported() {
+          static inline bool isSupported() noexcept {
             try {
               _libs.init();
               return true;
