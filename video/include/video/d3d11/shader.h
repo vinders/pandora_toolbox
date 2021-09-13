@@ -55,7 +55,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @remarks Depending on shader type, cast to ID3D11VertexShader*/ID3D11PixelShader*/ID3D11GeometryShader*/
           ///                                            ID3D11ComputeShader*/ID3D11HullShader*/ID3D11DomainShader*.
           inline Handle handle() const noexcept { return this->_handle; }
-          inline ShaderType type() const noexcept { return this->_type; }///< Get shader category/model type
+          inline ShaderType type() const noexcept { return this->_type; } ///< Get shader category/model type
           inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
 
 

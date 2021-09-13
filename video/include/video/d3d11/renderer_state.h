@@ -92,6 +92,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             : _states(std::move(rhs._states)), _length(rhs._length) { rhs._states = nullptr; rhs._length = 0; }
           RendererStateArray& operator=(const RendererStateArray&) = delete;
           RendererStateArray& operator=(RendererStateArray&& rhs) noexcept { 
+            if (this->_states) {
+              clear();
+              free(this->_states);
+            }
             this->_states = std::move(rhs._states); this->_length = rhs._length; rhs._states = nullptr; rhs._length = 0;
             return *this; 
           }

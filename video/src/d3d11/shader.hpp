@@ -26,7 +26,7 @@ Implementation included in renderer.cpp
 // -- create/compile shaders -- ------------------------------------------------
 
   // Get D3D11 shader model ID
-  static const char* __getShaderModel(ShaderType type) {
+  static const char* __getShaderModel(ShaderType type) noexcept {
     switch (type) {
       case ShaderType::vertex:   return "vs_5_0";
       case ShaderType::tessCtrl: return "hs_5_0";
@@ -39,7 +39,8 @@ Implementation included in renderer.cpp
   }
 
   // Compile shader from text content
-  Shader::Builder Shader::Builder::compile(ShaderType type, const char* textContent, size_t length, const char* entryPoint, bool isStrict) {
+  Shader::Builder Shader::Builder::compile(ShaderType type, const char* textContent, size_t length,
+                                           const char* entryPoint, bool isStrict) {
     ID3DBlob* errorMessage = nullptr;
     ID3DBlob* shaderBuffer = nullptr;
     const char* shaderModel = __getShaderModel(type);
@@ -50,8 +51,8 @@ Implementation included in renderer.cpp
     return Shader::Builder(type, shaderBuffer);
   }
   // Compile shader from text file
-  Shader::Builder Shader::Builder::compileFromFile(ShaderType type, const wchar_t* filePath, const char* entryPoint, bool isStrict) {
-    
+  Shader::Builder Shader::Builder::compileFromFile(ShaderType type, const wchar_t* filePath,
+                                                   const char* entryPoint, bool isStrict) {
     ID3DBlob* errorMessage = nullptr;
     ID3DBlob* shaderBuffer = nullptr;
     const char* shaderModel = __getShaderModel(type);

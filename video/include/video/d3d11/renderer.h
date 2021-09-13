@@ -119,7 +119,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
 
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
-          static constexpr inline size_t maxRenderTargets() noexcept { return (size_t)D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
+          static constexpr inline size_t maxRenderTargets() noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
           
           /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
@@ -421,7 +421,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
           
           /// @brief Max slots (or array size from first slot) for sample filters
-          static constexpr inline size_t maxFilterStateSlots() noexcept { return (size_t)D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+          static constexpr inline size_t maxFilterStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
@@ -496,7 +496,4 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 # include "./swap_chain.h" // includes D3D11
-
-# undef __P_DEFAULT_D3D11_LEVELS
-# undef __P_DEFAULT_D3D11_LEVELS_SIZE
 #endif

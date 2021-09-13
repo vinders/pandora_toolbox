@@ -20,6 +20,10 @@ Includes hpp implementations at the end of the file
 (grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+# ifndef __MINGW32__
+#   pragma warning(push)
+#   pragma warning(disable: 4100)  // disable warnings about unused params
+# endif
 # include <cstddef>
 # include <cstring>
 # include <cmath>
@@ -264,7 +268,7 @@ Includes hpp implementations at the end of the file
         featureLevelCount = size_t{ 2u };
       }
       else if (featureLevelCount == 0)
-        throw std::out_of_range("Renderer: no feat-levels");
+        throw std::out_of_range("Renderer: no feature-levels");
 #   else
       D3D_FEATURE_LEVEL defaultLevel[] { D3D_FEATURE_LEVEL_11_0 };
       if (featureLevels == nullptr) {
@@ -277,7 +281,7 @@ Includes hpp implementations at the end of the file
           --featureLevelCount;
         }
         if (featureLevelCount == 0)
-          throw std::out_of_range("Renderer: no feat-levels/above max supported");
+          throw std::out_of_range("Renderer: no feature-levels/above max supported");
       }
 #   endif
 
@@ -1043,4 +1047,7 @@ Includes hpp implementations at the end of the file
 # include "./shader.hpp"
 # include "./camera_utils.hpp"
 
+# ifndef __MINGW32__
+#   pragma warning(pop)
+# endif
 #endif
