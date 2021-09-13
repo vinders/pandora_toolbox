@@ -71,4 +71,3 @@ Examples:
 | Enable Direct3D 11 features.<br><sub>*Default: ON if MSVC/clang-cl compiler*</sub>           | CWORK_VIDEO_D3D11          | ON<br>OFF     | only windows systems<br>(MSVC/LLVM required)  |
 | Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "110"*</sub>  | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all systems<br>(environment variable *VULKAN_SDK* required)  |
-| Maximum Vulkan feature level (1.2).<br><sub>*Default: "12"*</sub>                                  | CWORK_VULKAN_VERSION       | "12"          | all systems    |
