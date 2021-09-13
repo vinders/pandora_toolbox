@@ -67,7 +67,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return Viewport(topLeftX, topLeftY, width, height, nearClipping, farClipping);
           }
           /// @brief Build fractional viewport from top-left coordinates (API-independant coords)
-          static inline Viewport fromTopLeft(uint32_t /*windowHeight*/, float topLeftX, float topLeftY, float width, float height,
+          static inline Viewport fromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float width, float height,
                                              float nearClipping = 0.f, float farClipping = 1.f) noexcept {
             return Viewport(topLeftX, topLeftY, width, height, nearClipping, farClipping);
           }
@@ -78,9 +78,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return Viewport(bottomLeftX, (int32_t)windowHeight - bottomLeftY - (int32_t)height, width, height, nearClipping, farClipping);
           }
           /// @brief Build fractional viewport from bottom-left coordinates (API-independant coords)
-          static inline Viewport fromBottomLeft(uint32_t windowHeight, float bottomLeftX, float bottomLeftY, float width, float height,
+          static inline Viewport fromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float width, float height,
                                                 float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            return Viewport(bottomLeftX, (float)windowHeight - bottomLeftY - height, width, height, nearClipping, farClipping);
+            return Viewport(bottomLeftX, windowHeight - bottomLeftY - height, width, height, nearClipping, farClipping);
           }
 
           // -- operations --
@@ -109,16 +109,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _params.Width = (FLOAT)width; _params.Height = (FLOAT)height; 
           }
           /// @brief Change fractional viewport size and position - from top-left coordinates (API-independant coords)
-          inline void resizeFromTopLeft(uint32_t /*windowHeight*/, float topLeftX, float topLeftY, float width, float height) noexcept { 
+          inline void resizeFromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float width, float height) noexcept { 
             resize(topLeftX, topLeftY, width, height);
           }
           /// @brief Change fractional viewport size and position - from bottom-left coordinates (API-independant coords)
-          inline void resizeFromBottomLeft(uint32_t windowHeight, float bottomLeftX, float bottomLeftY, float width, float height) noexcept { 
-            resize(bottomLeftX, (float)windowHeight - bottomLeftY - height, width, height);
+          inline void resizeFromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float width, float height) noexcept { 
+            resize(bottomLeftX, windowHeight - bottomLeftY - height, width, height);
           }
 
-          /// @brief Change fractional viewport depth-clipping range
-          inline void setDepthRange(double nearClipping, double farClipping) noexcept { 
+          /// @brief Change viewport depth-clipping range
+          inline void setDepthRange(float nearClipping, float farClipping) noexcept { 
             _params.MinDepth=(FLOAT)nearClipping; _params.MaxDepth=(FLOAT)farClipping;
           }
 
@@ -126,10 +126,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
           /// @brief Verify if x()/y() coords are based on top-left corner (true: D3D/Vulkan) or bottom-left corner (false: OpenGL)
           constexpr inline bool isFromTopLeft() const noexcept { return true; }
-          constexpr inline int32_t x() const noexcept { return (int32_t)this->_params.TopLeftX; }  ///< X coord
-          constexpr inline int32_t y() const noexcept  { return (int32_t)this->_params.TopLeftY; } ///< Y coord
-          constexpr inline uint32_t width() const noexcept  { return (uint32_t)this->_params.Width; }  ///< Viewport width
-          constexpr inline uint32_t height() const noexcept { return (uint32_t)this->_params.Height; } ///< Viewport height
+          constexpr inline float x() const noexcept { return (float)this->_params.TopLeftX; }  ///< X coord
+          constexpr inline float y() const noexcept  { return (float)this->_params.TopLeftY; } ///< Y coord
+          constexpr inline float width() const noexcept  { return (float)this->_params.Width; }  ///< Viewport width
+          constexpr inline float height() const noexcept { return (float)this->_params.Height; } ///< Viewport height
         
           constexpr inline float nearClipping() const noexcept { return (float)this->_params.MinDepth; }///< Near clipping plane (min depth)
           constexpr inline float farClipping() const noexcept  { return (float)this->_params.MaxDepth; } ///< Far clipping plane (max depth)
