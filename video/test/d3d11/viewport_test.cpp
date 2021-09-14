@@ -52,7 +52,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
-    Viewport vp2(0,0, 640u,480u);
+    Viewport vp2(0.f,0.f, 640.f,480.f);
     EXPECT_EQ(0.f, vp2.x());
     EXPECT_EQ(0.f, vp2.y());
     EXPECT_EQ(640.f, vp2.width());
@@ -60,7 +60,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.f, vp2.nearClipping());
     EXPECT_EQ(1.f, vp2.farClipping());
     
-    Viewport vp3(320,240, 640u,480u);
+    Viewport vp3(320.f,240.f, 640.f,480.f);
     EXPECT_EQ(320.f, vp3.x());
     EXPECT_EQ(240.f, vp3.y());
     EXPECT_EQ(640.f, vp3.width());
@@ -68,7 +68,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.f, vp3.nearClipping());
     EXPECT_EQ(1.f, vp3.farClipping());
 
-    Viewport vp4(0,0, 640u,480u, 0.5f,1.2f);
+    Viewport vp4(0.f,0.f, 640.f,480.f, 0.5f,1.2f);
     EXPECT_EQ(0.f, vp4.x());
     EXPECT_EQ(0.f, vp4.y());
     EXPECT_EQ(640.f, vp4.width());
@@ -76,7 +76,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.5f, vp4.nearClipping());
     EXPECT_EQ(1.2f, vp4.farClipping());
     
-    Viewport vp5(320,240, 640u,480u, 0.1f,1.2f);
+    Viewport vp5(320.f,240.f, 640.f,480.f, 0.1f,1.2f);
     EXPECT_EQ(320.f, vp5.x());
     EXPECT_EQ(240.f, vp5.y());
     EXPECT_EQ(640.f, vp5.width());
@@ -130,7 +130,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
-    vp1.resize(10,20, 240u,180u);
+    vp1.resize(10.f,20.f, 240.f,180.f);
     EXPECT_EQ(10.f, vp1.x());
     EXPECT_EQ(20.f, vp1.y());
     EXPECT_EQ(240.f, vp1.width());

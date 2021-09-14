@@ -44,14 +44,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _params.TopLeftX=_params.TopLeftY=_params.MinDepth=0.f; _params.MaxDepth=1.f;
             _params.Width=(FLOAT)width; _params.Height=(FLOAT)height;
           }
-          /// @brief Create viewport at specific position - native
-          /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
-          ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
-          Viewport(int32_t x, int32_t y, uint32_t width, uint32_t height, float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            _params.TopLeftX=(FLOAT)x; _params.TopLeftY=(FLOAT)y; _params.Width=(FLOAT)width; _params.Height=(FLOAT)height;
-            _params.MinDepth=(FLOAT)nearClipping; _params.MaxDepth=(FLOAT)farClipping;
-          }
-          /// @brief Create fractional viewport at specific position - native
+          /// @brief Create viewport (or fractional viewport) at specific position - native
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
           Viewport(float x, float y, float width, float height, float nearClipping = 0.f, float farClipping = 1.f) noexcept {
@@ -64,7 +57,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Build viewport from top-left coordinates (API-independant coords)
           static inline Viewport fromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY, uint32_t width, uint32_t height,
                                              float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            return Viewport(topLeftX, topLeftY, width, height, nearClipping, farClipping);
+            return Viewport((float)topLeftX, (float)topLeftY, (float)width, (float)height, nearClipping, farClipping);
           }
           /// @brief Build fractional viewport from top-left coordinates (API-independant coords)
           static inline Viewport fromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float width, float height,
@@ -75,7 +68,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Build viewport from bottom-left coordinates (API-independant coords)
           static inline Viewport fromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY, uint32_t width, uint32_t height,
                                                 float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            return Viewport(bottomLeftX, (int32_t)windowHeight - bottomLeftY - (int32_t)height, width, height, nearClipping, farClipping);
+            int32_t topY = (int32_t)windowHeight - bottomLeftY - (int32_t)height;
+            return Viewport((float)bottomLeftX, (float)topY, (float)width, (float)height, nearClipping, farClipping);
           }
           /// @brief Build fractional viewport from bottom-left coordinates (API-independant coords)
           static inline Viewport fromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float width, float height,
@@ -85,32 +79,27 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- operations --
 
-          /// @brief Change viewport size and position - native
-          /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
-          ///          - For API-independant coords, prefer 'resizeFromTopLeft'/'resizeFromBottomLeft' builders.
-          inline void resize(int32_t x, int32_t y, uint32_t width, uint32_t height) noexcept { 
-            _params.TopLeftX = (FLOAT)x; _params.TopLeftY = (FLOAT)y;
-            _params.Width = (FLOAT)width; _params.Height = (FLOAT)height; 
-          }
-          /// @brief Change viewport size and position - from top-left coordinates (API-independant coords)
-          inline void resizeFromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY, uint32_t width, uint32_t height) noexcept { 
-            resize(topLeftX, topLeftY, width, height);
-          }
-          /// @brief Change viewport size and position - from bottom-left coordinates (API-independant coords)
-          inline void resizeFromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY, uint32_t width, uint32_t height) noexcept { 
-            resize(bottomLeftX, (int32_t)windowHeight - bottomLeftY - (int32_t)height, width, height);
-          }
-        
-          /// @brief Change fractional viewport size and position - native
+          /// @brief Change viewport size (or fractional size) and position - native
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'resizeFromTopLeft'/'resizeFromBottomLeft' builders.
           inline void resize(float x, float y, float width, float height) noexcept { 
             _params.TopLeftX = (FLOAT)x; _params.TopLeftY = (FLOAT)y;
             _params.Width = (FLOAT)width; _params.Height = (FLOAT)height; 
           }
+
+          /// @brief Change viewport size and position - from top-left coordinates (API-independant coords)
+          inline void resizeFromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY, uint32_t width, uint32_t height) noexcept { 
+            resize((float)topLeftX, (float)topLeftY, (float)width, (float)height);
+          }
           /// @brief Change fractional viewport size and position - from top-left coordinates (API-independant coords)
           inline void resizeFromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float width, float height) noexcept { 
             resize(topLeftX, topLeftY, width, height);
+          }
+
+          /// @brief Change viewport size and position - from bottom-left coordinates (API-independant coords)
+          inline void resizeFromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY, uint32_t width, uint32_t height) noexcept { 
+            int32_t topY = (int32_t)windowHeight - bottomLeftY - (int32_t)height;
+            resize((float)bottomLeftX, (float)topY, (float)width, (float)height);
           }
           /// @brief Change fractional viewport size and position - from bottom-left coordinates (API-independant coords)
           inline void resizeFromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float width, float height) noexcept { 
