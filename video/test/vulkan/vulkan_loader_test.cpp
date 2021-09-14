@@ -42,6 +42,29 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(loader.vk.GetInstanceProcAddr_ != nullptr);
     EXPECT_TRUE(loader.vk.EnumerateInstanceExtensionProperties_ != nullptr);
     EXPECT_STRNE("", loader.getPlatformSurfaceExtensionId());
+    
+    bool results1[2];
+    const char* ext1[2] = { "VK_KHR_surface", loader.getPlatformSurfaceExtensionId() };
+    EXPECT_EQ((size_t)2, loader.findExtensions(ext1, 2, results1));
+    EXPECT_TRUE(results1[0]);
+    EXPECT_TRUE(results1[1]);
+    
+    bool results2[4];
+    const char* ext2[4] = { "VK_KHR_surface", "-dummy-1", loader.getPlatformSurfaceExtensionId(), "-dummy-2" };
+    EXPECT_EQ((size_t)2, loader.findExtensions(ext2, 4, results2));
+    EXPECT_TRUE(results2[0]);
+    EXPECT_FALSE(results2[1]);
+    EXPECT_TRUE(results2[2]);
+    EXPECT_FALSE(results2[3]);
+    
+    bool results3[2];
+    const char* ext3[2] = { "-dummy-1", "-dummy-2" };
+    EXPECT_EQ((size_t)0, loader.findExtensions(ext3, 2, results3));
+    EXPECT_FALSE(results3[0]);
+    EXPECT_FALSE(results3[1]);
+
+    EXPECT_TRUE(loader.findLayer("VK_LAYER_KHRONOS_validation"));
+    
     loader.shutdown();
   }
 

@@ -25,6 +25,10 @@ cwork_set_default_solution("pandora" "${CMAKE_CURRENT_SOURCE_DIR}/..")
 cwork_read_version_from_file("${CMAKE_CURRENT_SOURCE_DIR}/../build_version.txt" OFF)
 project("${CWORK_SOLUTION_NAME}.video" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
+add_definitions(-D__P_PANDORA_VIDEO_LIB_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
+add_definitions(-D__P_PANDORA_VIDEO_LIB_VERSION_MINOR=${PROJECT_VERSION_MINOR})
+add_definitions(-D__P_PANDORA_VIDEO_LIB_VERSION_PATCH=${PROJECT_VERSION_PATCH})
+
 # ┌──────────────────────────────────────────────────────────────────┐
 # │  Dependencies                                                    │
 # └──────────────────────────────────────────────────────────────────┘

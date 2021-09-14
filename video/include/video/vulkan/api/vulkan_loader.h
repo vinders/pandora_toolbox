@@ -24,10 +24,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include "video/vulkan/api/vulkan.h"
 
 # ifndef APIENTRY
-#   ifdef _WINDOWS
+#   if defined(_WINDOWS)
 #     define APIENTRY __stdcall
+#   elif defined(VKAPI_ATTR)
+#     define APIENTRY VKAPI_ATTR
 #   else
-#     define APIENTRY
+#     define APIENTRY 
 #   endif
 # endif
 
@@ -54,7 +56,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         typedef void (APIENTRY* __vk_voidFunction)(void);
         typedef __vk_voidFunction (APIENTRY* __vk_GetInstanceProcAddr)(VkInstance,const char*);
         typedef VkResult (APIENTRY* __vk_EnumerateInstanceExtensionProperties)(const char*,uint32_t*,VkExtensionProperties*);
-        
+        typedef VkResult (APIENTRY* __vk_EnumerateInstanceLayerProperties)(uint32_t*,VkLayerProperties*);
+
         
         /// @brief library loader - Vulkan
         /// @remarks Vulkan libs are already properly initialized by the Renderer class.
@@ -69,9 +72,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           struct {
             LibHandle instance = nullptr;
             PlatformExtension platformExtension = PlatformExtension::unknown;
+            bool isKhrDisplaySupported = false;
 
             __vk_GetInstanceProcAddr                  GetInstanceProcAddr_ = nullptr;
             __vk_EnumerateInstanceExtensionProperties EnumerateInstanceExtensionProperties_ = nullptr;
+            __vk_EnumerateInstanceLayerProperties     EnumerateInstanceLayerProperties_ = nullptr;
           } vk;
 
           /// @brief Initialize libraries (called automatically by 'instance()')
@@ -89,14 +94,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               _libs.init();
             return _libs;
           }
-          
-          /// @brief Get extension ID used for current platform surface (ex: "VK_KHR_win32_surface")
-          const char* getPlatformSurfaceExtensionId() const noexcept;
-          /// @brief Get Vulkan function binding to dynamic library
-          /// @returns Function pointer (or NULL if not supported)
-          /// @remarks If the function is used more than once, this binding should be stored to be reusable efficiently.
-          FunctionPtr getVulkanInstanceFunction(VkInstance instance, const char* functionName) noexcept;
-          
           /// @brief Verify if vulkan is supported on current system
           /// @remarks Vulkan will be initialized by the call. If you don't intend to use it in your program,
           ///          you might want to call 'VulkanLoader::instance().shutdown()' after this.
@@ -107,8 +104,29 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
             catch (...) { return false; }
           }
+
+          // -- extension / layer support --
           
+          /// @brief Get extension ID used for current platform surface (ex: "VK_KHR_win32_surface")
+          /// @warning The returned value is a constant: it must not be freed!
+          const char* getPlatformSurfaceExtensionId() const noexcept;
+          /// @brief Detect presence of a list of extensions on current system
+          /// @param extensions  Array of extensions to find.
+          /// @param length      Length of 'extensions' and 'outResults'.
+          /// @param outResults  Array to store results (must be preallocated).
+          /// @returns Number of extensions (from the 'extensions' array) found.
+          /// @throws runtime_error if the list of extensions can't be read from driver.
+          size_t findExtensions(const char** extensions, size_t length, bool* outResults) const;
+          /// @brief Detect presence of an API layer
+          /// @throws runtime_error if the list of API layers can't be read.
+          bool findLayer(const char* layerName) const;
           
+          /// @brief Get Vulkan function binding to dynamic library
+          /// @returns Function pointer (or NULL if not supported)
+          /// @remarks If the function is used more than once, this binding should be stored to be reusable efficiently.
+          FunctionPtr getVulkanInstanceFunction(VkInstance instance, const char* functionName) const noexcept;
+
+
           // -- device / window management --
           
           /// @brief Determine whether a queue family of a physical device supports presentation on system display

@@ -19,6 +19,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdlib>
 # include <cstring>
+# include <memory>
 # include <stdexcept>
 # include "video/vulkan/api/vulkan_loader.h"
 
@@ -141,8 +142,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   
   // Try to find preferred available platform surface extension
   // -> throws on failure
-  static PlatformExtension _findPlatformExtension(__vk_EnumerateInstanceExtensionProperties enumerator) {
+  static PlatformExtension _findPlatformSurfaceExtension(__vk_EnumerateInstanceExtensionProperties enumerator,
+                                                         bool& outHasKhrDisplay) {
     bool hasBaseKhr = false;
+    outHasKhrDisplay = false;
     PlatformExtension platformExt = PlatformExtension::unknown;
 
     // query extensions
@@ -150,20 +153,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (enumerator(nullptr, &extCount, nullptr) != VK_SUCCESS || extCount == 0)
       throw std::runtime_error("Vulkan: failed to count extensions");
 
-    VkExtensionProperties* allExt = (VkExtensionProperties*)calloc(extCount, sizeof(VkExtensionProperties));
-    if (allExt == nullptr)
-      throw std::bad_alloc();
-    if (enumerator(nullptr, &extCount, allExt)) {
-      free(allExt);
+    auto allExt = std::unique_ptr<VkExtensionProperties[]>(new VkExtensionProperties[extCount]);
+    if (enumerator(nullptr, &extCount, allExt.get()))
       throw std::runtime_error("Vulkan: failed to query extensions");
-    }
     
     // search for platform extension
-    for (uint32_t i = 0; i < extCount; ++i) {
-      if (!hasBaseKhr && strcmp(allExt[i].extensionName, "VK_KHR_surface") == 0) {
+    VkExtensionProperties* endIt = allExt.get() + (intptr_t)extCount;
+    for (VkExtensionProperties* it = allExt.get(); it < endIt; ++it) {
+      if (!hasBaseKhr && strcmp(it->extensionName, "VK_KHR_surface") == 0) {
         hasBaseKhr = true;
       }
-      else if (strcmp(allExt[i].extensionName, __P_VULKAN_PLATFORM_EXT_NAME) == 0) { // preferred platform extension
+      else if (!outHasKhrDisplay && strcmp(it->extensionName, "VK_KHR_display") == 0) {
+        outHasKhrDisplay = true;
+      }
+      else if (strcmp(it->extensionName, __P_VULKAN_PLATFORM_EXT_NAME) == 0) { // preferred platform extension
 #       ifdef __P_IF_VULKAN_PREFERRED_PLATFORM_AVAILABLE
           __P_IF_VULKAN_PREFERRED_PLATFORM_AVAILABLE {
             platformExt = __P_VULKAN_PLATFORM_EXT;
@@ -176,12 +179,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
 #     ifdef __P_VULKAN_PLATFORM_EXT_ALT // other platform extension (if preferred not available)
         else if (platformExt == PlatformExtension::unknown) {
-          if (strcmp(allExt[i].extensionName, __P_VULKAN_PLATFORM_EXT_ALT_NAME) == 0)
+          if (strcmp(it->extensionName, __P_VULKAN_PLATFORM_EXT_ALT_NAME) == 0)
             platformExt = __P_VULKAN_PLATFORM_EXT_ALT;
         }
 #     endif
     }
-    free(allExt);
     
     if (!hasBaseKhr || platformExt == PlatformExtension::unknown)
       throw std::runtime_error("Vulkan: missing platform surface extensions");
@@ -189,7 +191,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
   
 
-  // -- access / bindings -- ---------------------------------------------------
+  // -- init / access / bindings -- --------------------------------------------
   
   void VulkanLoader::init() {
     if (this->_isInit)
@@ -220,10 +222,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       shutdown();
       throw std::runtime_error("Vulkan: vkEnumerateInstanceExtensionProperties not found");
     }
+
+    this->vk.EnumerateInstanceLayerProperties_ = (__vk_EnumerateInstanceLayerProperties)
+                                                 this->vk.GetInstanceProcAddr_(nullptr, "vkEnumerateInstanceLayerProperties");
+    if (this->vk.EnumerateInstanceLayerProperties_ == nullptr) {
+      shutdown();
+      throw std::runtime_error("Vulkan: vkEnumerateInstanceLayerProperties not found");
+    }
     
     // find preferred platform surface extension
     try {
-      this->vk.platformExtension = _findPlatformExtension(this->vk.EnumerateInstanceExtensionProperties_);
+      this->vk.platformExtension = _findPlatformSurfaceExtension(this->vk.EnumerateInstanceExtensionProperties_, this->vk.isKhrDisplaySupported);
     }
     catch (...) { shutdown(); throw; }
 
@@ -240,7 +249,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     this->_isInit = false;
   }
   
-  // ---
+
+  // -- extension / layer support -- -------------------------------------------
   
   const char* VulkanLoader::getPlatformSurfaceExtensionId() const noexcept {
     if (this->vk.platformExtension == __P_VULKAN_PLATFORM_EXT)
@@ -252,7 +262,53 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return ""; // should not happen (verified during init)
   }
   
-  FunctionPtr VulkanLoader::getVulkanInstanceFunction(VkInstance instance, const char* functionName) noexcept {
+  size_t VulkanLoader::findExtensions(const char** extensions, size_t length, bool* outResults) const {
+    uint32_t availableExtCount = 0;
+    if (this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, nullptr) != VK_SUCCESS || availableExtCount == 0)
+      throw std::runtime_error("Vulkan: failed to count extensions");
+
+    auto availableExt = std::unique_ptr<VkExtensionProperties[]>(new VkExtensionProperties[availableExtCount]);
+    VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.get());
+    if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
+      throw std::runtime_error("Vulkan: failed to query extensions");
+
+    size_t numberFound = 0;
+    memset(outResults, 0, length*sizeof(*outResults)); // set all results to false
+    
+    VkExtensionProperties* endIt = availableExt.get() + (intptr_t)availableExtCount;
+    for (const char** currentExt = extensions; length; --length, ++currentExt, ++outResults) {
+      for (VkExtensionProperties* it = availableExt.get(); it < endIt; ++it) {
+        if (strcmp(*currentExt, it->extensionName) == 0) {
+          it->extensionName[0] = '\0'; // remove from list -> faster comparison
+          
+          *outResults = true;
+          ++numberFound;
+          break;
+        }
+      }
+    }
+    return numberFound;
+  }
+
+  bool VulkanLoader::findLayer(const char* layerName) const {
+    uint32_t availableLayerCount = 0;
+    if (this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, nullptr) != VK_SUCCESS || availableLayerCount == 0)
+      throw std::runtime_error("Vulkan: failed to count layers");
+
+    auto availableLayers = std::unique_ptr<VkLayerProperties[]>(new VkLayerProperties[availableLayerCount]);
+    VkResult queryResult = this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, availableLayers.get());
+    if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
+      throw std::runtime_error("Vulkan: failed to query layers");
+
+    VkLayerProperties* endIt = availableLayers.get() + (intptr_t)availableLayerCount;
+    for (VkLayerProperties* it = availableLayers.get(); it < endIt; ++it) {
+      if (strcmp(layerName, it->layerName) == 0)
+        return true;
+    }
+    return false;
+  }
+  
+  FunctionPtr VulkanLoader::getVulkanInstanceFunction(VkInstance instance, const char* functionName) const noexcept {
     FunctionPtr func = (FunctionPtr)this->vk.GetInstanceProcAddr_(instance, functionName);
     if (func == nullptr)
       func = _getSymbolAddress<FunctionPtr>(this->vk.instance, functionName);
