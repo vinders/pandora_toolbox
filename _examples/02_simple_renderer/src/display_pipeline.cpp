@@ -29,7 +29,7 @@ DisplayPipeline::DisplayPipeline(const pandora::hardware::DisplayMonitor& monito
   : _renderer(std::make_shared<Renderer>(monitor)),
     _swapChain(_renderer, window, SwapChain::Descriptor(clientWidth, clientHeight, 2u, rate)),
     _depthBuffer(*_renderer, DepthStencilFormat::d24_unorm_s8_ui, clientWidth, clientHeight),
-    _viewport(0, 0, clientWidth, clientHeight),
+    _viewport(clientWidth, clientHeight),
     _timer(pandora::time::Rate(rate.numerator(), rate.denominator())),
     _useAnisotropy(useAnisotropy),
     _useVsync(useVsync) {
@@ -77,7 +77,7 @@ void DisplayPipeline::release() noexcept {
 void DisplayPipeline::resize(uint32_t clientWidth, uint32_t clientHeight) {
   _swapChain.resize(clientWidth, clientHeight);
   _depthBuffer = DepthStencilBuffer(*_renderer, DepthStencilFormat::d24_unorm_s8_ui, clientWidth, clientHeight);
-  _viewport.resize(0, 0, clientWidth, clientHeight);
+  _viewport.resize(0, 0, (float)clientWidth, (float)clientHeight);
 
   _renderer->setViewport(_viewport);
   _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
