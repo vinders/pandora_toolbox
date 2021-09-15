@@ -22,7 +22,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class ViewportTest : public testing::Test {
+  class D3d11ViewportTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -35,7 +35,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- viewport container --
 
-  TEST_F(ViewportTest, createCopyMoveTest) {
+  TEST_F(D3d11ViewportTest, createCopyMoveTest) {
     Viewport vp0;
     EXPECT_EQ(0.f, vp0.x());
     EXPECT_EQ(0.f, vp0.y());
@@ -121,7 +121,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(vp5 != vp1);
   }
 
-  TEST_F(ViewportTest, viewportSettersTest) {
+  TEST_F(D3d11ViewportTest, viewportSettersTest) {
     Viewport vp1(640u,480u);
     EXPECT_EQ(0.f, vp1.x());
     EXPECT_EQ(0.f, vp1.y());
@@ -163,7 +163,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(1.6f, vp1.farClipping());
   }
 
-  TEST_F(ViewportTest, viewportFPSettersTest) {
+  TEST_F(D3d11ViewportTest, viewportFPSettersTest) {
     Viewport vp1(0.f,0.f,640.f,480.f);
     EXPECT_EQ(0.f, vp1.x());
     EXPECT_EQ(0.f, vp1.y());
@@ -208,7 +208,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- viewport builder --
 
-  TEST_F(ViewportTest, viewportBuildersTest) {
+  TEST_F(D3d11ViewportTest, viewportBuildersTest) {
     Viewport vpRef1(320,240, 640u,480u, 0.1f,1.2f);
     EXPECT_TRUE(Viewport::fromTopLeft(800u, 320,240, 640u,480u, 0.1f,1.2f) == vpRef1);
 
@@ -222,7 +222,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.1f, reverted1.nearClipping());
     EXPECT_EQ(1.2f, reverted1.farClipping());
   }
-  TEST_F(ViewportTest, viewportFPBuildersTest) {
+  TEST_F(D3d11ViewportTest, viewportFPBuildersTest) {
     Viewport vpRef1(320.f,240.f, 640.f,480.f, 0.1f,1.2f);
     EXPECT_TRUE(Viewport::fromTopLeft(800.f, 320.f,240.f, 640.f,480.f, 0.1f,1.2f) == vpRef1);
 

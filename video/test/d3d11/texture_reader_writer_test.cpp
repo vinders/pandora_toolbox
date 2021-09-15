@@ -27,7 +27,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
-  class TextureReaderWriterTest : public testing::Test {
+  class D3d11TextureReaderWriterTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -396,7 +396,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // ---
 
-  TEST_F(TextureReaderWriterTest, copyReadTexture) {
+  TEST_F(D3d11TextureReaderWriterTest, copyReadTexture) {
     const uint8_t* image1Ddata[] = { textureLine128_A(), textureLine64_A() };
     const uint8_t* image1Darray[] = { textureLine128_A(), textureLine128_A() };
 
@@ -451,7 +451,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                     TextureCoords(_REGION_SRC_OFFSET_X,_REGION_SRC_OFFSET_Y,_REGION_SRC_OFFSET_Z,_REGION_SIZE,_REGION_SIZE,_REGION_SIZE), tex3Dreader);
   }
 
-  TEST_F(TextureReaderWriterTest, writeTexture) {
+  TEST_F(D3d11TextureReaderWriterTest, writeTexture) {
     const uint8_t* image1Ddata[] = { textureLine128_A(), textureLine64_A() };
     const uint8_t* image1Darray[] = { textureLine128_A(), textureLine128_A() };
 

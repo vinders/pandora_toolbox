@@ -22,7 +22,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class ScissorTest : public testing::Test {
+  class D3d11ScissorTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -35,7 +35,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- scissor test rectangle container --
 
-  TEST_F(ScissorTest, createCopyMoveTest) {
+  TEST_F(D3d11ScissorTest, createCopyMoveTest) {
     ScissorRectangle vp0;
     EXPECT_EQ((int32_t)0, vp0.x());
     EXPECT_EQ((int32_t)0, vp0.y());

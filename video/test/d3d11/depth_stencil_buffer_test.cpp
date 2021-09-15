@@ -23,7 +23,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class DepthStencilBufferTest : public testing::Test {
+  class D3d11DepthStencilBufferTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -36,7 +36,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- depth/stencil buffer creation/binding --
 
-  TEST_F(DepthStencilBufferTest, depthStencilBufferCreationTest) {
+  TEST_F(D3d11DepthStencilBufferTest, depthStencilBufferCreationTest) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     

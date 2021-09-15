@@ -35,7 +35,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
-  class RendererDrawTest : public testing::Test {
+  class D3d11RendererDrawTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -173,7 +173,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- create window/renderer/swap-chain/buffers + draw simple shapes --
 
-  TEST_F(RendererDrawTest, vertexBaseDrawingTest) {
+  TEST_F(D3d11RendererDrawTest, vertexBaseDrawingTest) {
     auto window = pandora::video::Window::Builder{}
       .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
         ResizeMode::fixed)
@@ -236,7 +236,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->flush();
   }
 
-  TEST_F(RendererDrawTest, vertexIndexedDrawingWithStatesTest) {
+  TEST_F(D3d11RendererDrawTest, vertexIndexedDrawingWithStatesTest) {
     auto window = pandora::video::Window::Builder{}
                     .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
                                     ResizeMode::fixed)
@@ -315,7 +315,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->flush();
   }
 
-  TEST_F(RendererDrawTest, vertexInstanceIndexedDrawingWithStatesTest) {
+  TEST_F(D3d11RendererDrawTest, vertexInstanceIndexedDrawingWithStatesTest) {
     auto window = pandora::video::Window::Builder{}
       .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
         ResizeMode::fixed)
@@ -402,7 +402,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->flush();
   }
 
-  TEST_F(RendererDrawTest, vertexInstanceDrawingWithStatesCamTest) {
+  TEST_F(D3d11RendererDrawTest, vertexInstanceDrawingWithStatesCamTest) {
     auto window = pandora::video::Window::Builder{}
       .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
         ResizeMode::fixed)
@@ -666,7 +666,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     DirectX::XMFLOAT4 lightDirection;
   });
 
-  TEST_F(RendererDrawTest, vertexInstanceTextureLightDrawingTest) {
+  TEST_F(D3d11RendererDrawTest, vertexInstanceTextureLightDrawingTest) {
     auto window = pandora::video::Window::Builder{}
       .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
         ResizeMode::fixed)

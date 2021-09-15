@@ -23,7 +23,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class RendererTest : public testing::Test {
+  class D3d11RendererTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -36,7 +36,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- create rendering device/context --
 
-  TEST_F(RendererTest, createRenderer) {
+  TEST_F(D3d11RendererTest, createRenderer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     EXPECT_TRUE(renderer.device() != nullptr);
@@ -91,7 +91,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(isMonitorHdr, renderer.isMonitorHdrCapable(monitor));
   }
 
-  TEST_F(RendererTest, createSetRendererStates) {
+  TEST_F(D3d11RendererTest, createSetRendererStates) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
@@ -152,7 +152,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer.setViewport(viewport1);
   }
   
-  TEST_F(RendererTest, createFilterStateParams) {
+  TEST_F(D3d11RendererTest, createFilterStateParams) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);

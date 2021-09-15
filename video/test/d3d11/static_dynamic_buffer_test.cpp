@@ -25,7 +25,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class StaticDynamicBufferTest : public testing::Test {
+  class D3d11StaticDynamicBufferTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -42,7 +42,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- constant buffer creation/binding --
 
-  TEST_F(StaticDynamicBufferTest, constantBufferCreationTest) {
+  TEST_F(D3d11StaticDynamicBufferTest, constantBufferCreationTest) {
     uint64_t data1a[2] = { 42, 0 };
     uint64_t data1b[2] = { 0, 22 };
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
@@ -216,7 +216,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
-  TEST_F(StaticDynamicBufferTest, vertexBufferCreationTest) {
+  TEST_F(D3d11StaticDynamicBufferTest, vertexBufferCreationTest) {
     uint64_t data1a[4] = { 42, 0, 42, 0 };
     uint64_t data1b[2] = { 0, 22 };
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };

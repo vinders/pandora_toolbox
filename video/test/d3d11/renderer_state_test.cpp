@@ -25,7 +25,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
-  class RendererStateTest : public testing::Test {
+  class D3d11RendererStateTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -38,7 +38,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- depth/stencil state management --
 
-  TEST_F(RendererStateTest, emptyDepthContainer) {
+  TEST_F(D3d11RendererStateTest, emptyDepthContainer) {
     DepthStencilState empty;
     EXPECT_FALSE(empty);
     EXPECT_FALSE(empty.isValid());
@@ -59,7 +59,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
-  TEST_F(RendererStateTest, filledDepthContainer) {
+  TEST_F(D3d11RendererStateTest, filledDepthContainer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
 
@@ -135,7 +135,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   
   // -- rasterizer state management --
 
-  TEST_F(RendererStateTest, emptyRasterContainer) {
+  TEST_F(D3d11RendererStateTest, emptyRasterContainer) {
     RasterizerState empty;
     EXPECT_FALSE(empty);
     EXPECT_FALSE(empty.isValid());
@@ -156,7 +156,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
-  TEST_F(RendererStateTest, filledRasterContainer) {
+  TEST_F(D3d11RendererStateTest, filledRasterContainer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     RendererStateFactory factory(renderer);
@@ -198,7 +198,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- blend state management --
 
-  TEST_F(RendererStateTest, emptyBlendContainer) {
+  TEST_F(D3d11RendererStateTest, emptyBlendContainer) {
     BlendState empty;
     EXPECT_FALSE(empty);
     EXPECT_FALSE(empty.isValid());
@@ -219,7 +219,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
-  TEST_F(RendererStateTest, filledBlendContainer) {
+  TEST_F(D3d11RendererStateTest, filledBlendContainer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     RendererStateFactory factory(renderer);
@@ -296,7 +296,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- sampler/filter state management --
 
-  TEST_F(RendererStateTest, emptyFilterContainer) {
+  TEST_F(D3d11RendererStateTest, emptyFilterContainer) {
     FilterStateArray empty;
     EXPECT_FALSE(empty);
     EXPECT_EQ((size_t)0, empty.size());
@@ -313,7 +313,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((size_t)0, empty3.size());
   }
 
-  TEST_F(RendererStateTest, emptyValuesFilterContainer) {
+  TEST_F(D3d11RendererStateTest, emptyValuesFilterContainer) {
     FilterStateArray values;
     EXPECT_FALSE(values);
     EXPECT_TRUE(values.empty());
@@ -397,7 +397,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(values.maxSize() - 2u, values.size());
   }
 
-  TEST_F(RendererStateTest, filledFilterContainer) {
+  TEST_F(D3d11RendererStateTest, filledFilterContainer) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     RendererStateFactory factory(renderer);
@@ -444,7 +444,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((size_t)0, values.size());
   }
 
-  TEST_F(RendererStateTest, stateParamsAccessors) {
+  TEST_F(D3d11RendererStateTest, stateParamsAccessors) {
     RasterizerParams raster;
     raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(FillMode::lines).depthClipping(false).scissorClipping(true).depthBias(1, 2.f, 3.f);
     EXPECT_EQ((BOOL)TRUE, raster.descriptor().FrontCounterClockwise);

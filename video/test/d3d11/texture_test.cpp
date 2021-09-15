@@ -25,7 +25,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
 
-  class TextureTest : public testing::Test {
+  class D3d11TextureTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -105,7 +105,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- texture params/buffer --
 
-  TEST_F(TextureTest, textureParamsAccessors) {
+  TEST_F(D3d11TextureTest, textureParamsAccessors) {
     EXPECT_EQ((uint32_t)1u, Texture1DParams::maxMipLevels(1u));
     EXPECT_EQ((uint32_t)2u, Texture1DParams::maxMipLevels(2u));
     EXPECT_EQ((uint32_t)4u, Texture1DParams::maxMipLevels(8u));
@@ -210,7 +210,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((uint32_t)4u, tex3D.texelBytes());
   }
 
-  TEST_F(TextureTest, textureNoInit) {
+  TEST_F(D3d11TextureTest, textureNoInit) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
 
@@ -318,7 +318,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((uint8_t)2u, tex2DArray.arraySize());
   }
 
-  TEST_F(TextureTest, textureWithInit) {
+  TEST_F(D3d11TextureTest, textureWithInit) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
 

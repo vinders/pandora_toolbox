@@ -25,7 +25,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class SwapChainTest : public testing::Test {
+  class D3d11SwapChainTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -38,7 +38,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- create/manage swap-chain --
 
-  TEST_F(SwapChainTest, invalidSwapChain) {
+  TEST_F(D3d11SwapChainTest, invalidSwapChain) {
     EXPECT_ANY_THROW(SwapChain(nullptr, nullptr, SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
 
     pandora::hardware::DisplayMonitor monitor;
@@ -49,7 +49,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(defaultInit.isEmpty());
   }
 
-  TEST_F(SwapChainTest, createSwapChain) {
+  TEST_F(D3d11SwapChainTest, createSwapChain) {
     auto window = pandora::video::Window::Builder{}
                     .setDisplayMode(pandora::video::WindowType::window, pandora::video::WindowBehavior::globalContext, 
                                     pandora::video::ResizeMode::fixed)
@@ -159,7 +159,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setActiveRenderTarget(chain4.getRenderTargetView(), depthBuffer.getDepthStencilView());
   }
 
-  TEST_F(SwapChainTest, createSwapChainResized) {
+  TEST_F(D3d11SwapChainTest, createSwapChainResized) {
     auto window = pandora::video::Window::Builder{}
                     .setDisplayMode(pandora::video::WindowType::window, pandora::video::WindowBehavior::globalContext, 
                                     pandora::video::ResizeMode::fixed)

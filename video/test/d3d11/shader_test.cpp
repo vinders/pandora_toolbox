@@ -34,7 +34,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   using namespace pandora::video::d3d11;
 
-  class ShaderTest : public testing::Test {
+  class D3d11ShaderTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -58,7 +58,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- create/bind shaders --
 
-  TEST_F(ShaderTest, compileBindFromBinaryFile) {
+  TEST_F(D3d11ShaderTest, compileBindFromBinaryFile) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
@@ -95,7 +95,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // ---
   
-  TEST_F(ShaderTest, compileBindFromTextFiles) {
+  TEST_F(D3d11ShaderTest, compileBindFromTextFiles) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
