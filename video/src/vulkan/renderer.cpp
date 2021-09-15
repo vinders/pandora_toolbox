@@ -133,22 +133,24 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const char* instanceBaseExt[] = {
       "VK_KHR_surface",
       loader.getPlatformSurfaceExtensionId(),
-      // below: no longer needed in V1.2
-      "VK_KHR_get_physical_device_properties2", // part of vulkan core 1.1+
-      "VK_KHR_driver_properties"                // part of vulkan core 1.2+
+      // below: no longer needed in V1.1+
+      "VK_KHR_get_physical_device_properties2" // part of vulkan core 1.1+
     };
     size_t baseExtCount = sizeof(instanceBaseExt)/sizeof(*instanceBaseExt);
-    if (featureLevel >= VK_API_VERSION_1_2) // V1.2+: remove extensions not needed anymore
-      baseExtCount -= 2;
+    if (featureLevel >= VK_API_VERSION_1_1) { // V1.1+: remove extensions not needed anymore
+      baseExtCount -= 1;
+    }
     if (instanceAdditionalExts == nullptr)
       additionalExtCount = 0;
 
     size_t enabledExtCount = baseExtCount + additionalExtCount;
     if (loader.vk.isKhrDisplaySupported)
       ++enabledExtCount;
+
     auto enabledExtensions = std::unique_ptr<const char*[]>(new const char*[enabledExtCount]);
     memcpy(enabledExtensions.get(), instanceBaseExt, baseExtCount*sizeof(*instanceBaseExt));
-    memcpy(&enabledExtensions[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
+    if (additionalExtCount != 0)
+      memcpy(&enabledExtensions[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
     if (loader.vk.isKhrDisplaySupported)
       enabledExtensions[enabledExtCount - 1] = "VK_KHR_display";
 

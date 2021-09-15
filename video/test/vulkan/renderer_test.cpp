@@ -21,14 +21,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #   ifndef __MINGW32__
 #     pragma warning(push)
 #     pragma warning(disable: 26812) // disable warnings about vulkan enums
+#     pragma warning(disable: 4100)  // disable warnings about unused params
 #   endif
 # endif
 # include <gtest/gtest.h>
-# include <video/vulkan/api/vulkan_loader.h>
+# include <video/vulkan/renderer.h>
 
   using namespace pandora::video::vulkan;
 
-  class VulkanLoaderTest : public testing::Test {
+  class VulkanRendererTest : public testing::Test {
   public:
   protected:
     //static void SetUpTestCase() {}
@@ -39,39 +40,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   };
 
 
-  TEST_F(VulkanLoaderTest, vulkanLoaderInitTest) {
-    ASSERT_TRUE(VulkanLoader::isSupported());
-
-    VulkanLoader& loader = VulkanLoader::instance();
-    EXPECT_TRUE(loader.vk.instance != nullptr);
-    EXPECT_TRUE(loader.vk.platformExtension != PlatformExtension::unknown);
-    EXPECT_TRUE(loader.vk.GetInstanceProcAddr_ != nullptr);
-    EXPECT_TRUE(loader.vk.EnumerateInstanceExtensionProperties_ != nullptr);
-    EXPECT_STRNE("", loader.getPlatformSurfaceExtensionId());
-    
-    bool results1[2];
-    const char* ext1[2] = { "VK_KHR_surface", loader.getPlatformSurfaceExtensionId() };
-    EXPECT_EQ((size_t)2, loader.findExtensions(ext1, 2, results1));
-    EXPECT_TRUE(results1[0]);
-    EXPECT_TRUE(results1[1]);
-    
-    bool results2[4];
-    const char* ext2[4] = { "VK_KHR_surface", "-dummy-1", loader.getPlatformSurfaceExtensionId(), "-dummy-2" };
-    EXPECT_EQ((size_t)2, loader.findExtensions(ext2, 4, results2));
-    EXPECT_TRUE(results2[0]);
-    EXPECT_FALSE(results2[1]);
-    EXPECT_TRUE(results2[2]);
-    EXPECT_FALSE(results2[3]);
-    
-    bool results3[2];
-    const char* ext3[2] = { "-dummy-1", "-dummy-2" };
-    EXPECT_EQ((size_t)0, loader.findExtensions(ext3, 2, results3));
-    EXPECT_FALSE(results3[0]);
-    EXPECT_FALSE(results3[1]);
-
-    EXPECT_TRUE(loader.findLayer("VK_LAYER_KHRONOS_validation"));
-    
-    loader.shutdown();
+  TEST_F(VulkanRendererTest, vulkanInstanceTest) {
+    {
+      auto defaultInstance = VulkanInstance::create();
+      EXPECT_TRUE(defaultInstance->vkInstance() != VK_NULL_HANDLE);
+      EXPECT_TRUE(defaultInstance->featureLevel() == VK_API_VERSION_1_2);
+    }
+    {
+      const char* addedExt = "VK_KHR_get_surface_capabilities2";
+      auto customInstance = VulkanInstance::create("ABC -  Test1", VK_MAKE_VERSION(2,3,4), VK_API_VERSION_1_1, NULL, 1);
+      EXPECT_TRUE(customInstance->vkInstance() != VK_NULL_HANDLE);
+      EXPECT_TRUE(customInstance->featureLevel() == VK_API_VERSION_1_1);
+    }
   }
 
 # if defined(_WINDOWS) && !defined(__MINGW32__)
