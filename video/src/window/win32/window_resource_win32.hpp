@@ -315,6 +315,88 @@ Implementation included in window_win32.cpp
   std::shared_ptr<WindowResource> WindowResource::buildMenu(MenuHandle handle) {
     return (handle != nullptr) ? __P_MAKE_SHARED_RES(handle, WindowResource::Category::menu) : nullptr;
   }
+  
+  
+// -- System string converter -- -----------------------------------------------
+
+# define __P_UTF8_BUFFER_SIZE 128
+# define __P_UNKNOWN_CHAR 0xFFFDu
+
+  static __forceinline uint32_t __decodeUtf16(char highBitsWord1, char lowBitsWord1, 
+                                              char highBitsWord2, char lowBitsWord2, size_t& outWordLength) noexcept {
+    if ((highBitsWord1 & 0xFC) == 0xD8) {
+      if ((highBitsWord2 & 0xFC) != 0xDC) {
+        outWordLength = size_t{1u};
+        return __P_UNKNOWN_CHAR; // report invalid character
+      }
+      outWordLength = size_t{2u};
+      return ( (((uint32_t)highBitsWord1 & 0x3u) << 18) | (((uint32_t)lowBitsWord1 & 0xFF) << 10) 
+             | (((uint32_t)highBitsWord2 & 0x3u) << 8)  | ((uint32_t)lowBitsWord2 & 0xFF) ) + 0x10000u;
+    }
+    outWordLength = size_t{1u};
+    return ((((uint32_t)highBitsWord1 & 0xFF) << 8) | ((uint32_t)lowBitsWord1 & 0xFF)); // masks: to avoid duplication of most-significant-bit
+  }
+  static __forceinline size_t __encodeUtf8(uint32_t charCode, char* outBuffer) noexcept {
+    if (charCode > (uint32_t)0x7Fu) {
+      if (charCode > (uint32_t)0x7FFu) {
+        if (charCode > (uint32_t)0xFFFFu) {
+          outBuffer[0] = static_cast<char>(0xF0u | ((charCode >> 18) & 0x07)); // truncate values out of range
+          outBuffer[1] = static_cast<char>(0x80u | ((charCode >> 12) & 0x3F));
+          outBuffer[2] = static_cast<char>(0x80u | ((charCode >> 6) & 0x3F));
+          outBuffer[3] = static_cast<char>(0x80u | (charCode & 0x3F));
+          return size_t{4u};
+        }
+        outBuffer[0] = static_cast<char>(0xE0u | (charCode >> 12));
+        outBuffer[1] = static_cast<char>(0x80u | ((charCode >> 6) & 0x3F));
+        outBuffer[2] = static_cast<char>(0x80u | (charCode & 0x3F));
+        return size_t{3u};
+      }
+      outBuffer[0] = static_cast<char>(0xC0u | (charCode >> 6));
+      outBuffer[1] = static_cast<char>(0x80u | (charCode & 0x3F));
+      return size_t{2u};
+    }
+    *outBuffer = (char)charCode;
+    return size_t{1u};
+  }
+
+  pandora::memory::LightString WindowResource::systemStringToUtf8(const wchar_t* data, size_t length) {
+    pandora::memory::LightString result;
+    char buffer[__P_UTF8_BUFFER_SIZE];
+    char* bufferIt = &buffer[0];
+    size_t bufferLength = 0;
+
+    uint32_t charCode = 0;
+    size_t sourceWordLength = 0, outputCharLength = 0;
+    char nextSourceWordHighBits = 0, nextSourceWordLowBits = 0;
+    while (length) {
+      // decode UTF-16
+      if (length >= size_t{2u}) {
+        nextSourceWordHighBits = static_cast<char>(((int)data[1] >> 8) & 0xFF);
+        nextSourceWordLowBits = static_cast<char>((int)data[1] & 0xFF);
+      }
+      else
+        nextSourceWordHighBits = nextSourceWordLowBits = (char)0;
+
+      charCode = __decodeUtf16(static_cast<char>(((int)data[0] >> 8) & 0xFF), static_cast<char>((int)data[0] & 0xFF),
+                               nextSourceWordHighBits, nextSourceWordLowBits, sourceWordLength);
+      data += sourceWordLength;
+      length -= sourceWordLength;
+
+      // encode UTF-8
+      outputCharLength = __encodeUtf8(charCode, bufferIt);
+      bufferLength += outputCharLength;
+      bufferIt += outputCharLength;
+
+      if (bufferLength + 5u >= __P_UTF8_BUFFER_SIZE) { // limit number of concats as much as possible (to avoid reallocs)
+        result.append(&buffer[0], bufferLength);
+        bufferLength = 0;
+        bufferIt = &buffer[0];
+      }
+    }
+    if (bufferLength > 0)
+      result.append(&buffer[0], bufferLength);
+    return result;
+  }
 
 # undef __P_MAKE_SHARED_RES
 #endif

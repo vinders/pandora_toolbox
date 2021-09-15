@@ -194,3 +194,30 @@ TEST_F(WindowResourceTest, nativeMenuRes) {
 # endif
 }
 
+TEST_F(WindowResourceTest, systemStringConverter) {
+  const char* asciiU8 = u8"this is a simple string\nwith two lines.\n\nand a third one too!";
+  const char* specialU8 = u8"Cha\u00EEne sp\u00E9ciale en Fran\u00E7ais,\n avec @ccents (& symboles: ~%\u00B5$\u20AC\u00A3#\u00A7\u00B0).";
+  const char* extendedU8 = u8"\u0429\u043D\u0460\u052A\u0532\U00020001\U0002000A\U0002000B\u306A\u306B\u305D\u3037\u306E\u3004\u25A9\u25C4\u20A9\u10A1\U00010338\U00010334\U00010349\u0601\u0641\uFB52\uFB67\uFB78\uFBF2\U00013000\U00013040\U0001F600\U0001F428\n";
+# ifdef _WINDOWS
+    const wchar_t* empty = L"";
+    const wchar_t* asciiSys = (const wchar_t*)u"this is a simple string\nwith two lines.\n\nand a third one too!";
+    const wchar_t* specialSys = (const wchar_t*)u"Cha\u00EEne sp\u00E9ciale en Fran\u00E7ais,\n avec @ccents (& symboles: ~%\u00B5$\u20AC\u00A3#\u00A7\u00B0).";
+    const wchar_t* extendedSys = (const wchar_t*)u"\u0429\u043D\u0460\u052A\u0532\U00020001\U0002000A\U0002000B\u306A\u306B\u305D\u3037\u306E\u3004\u25A9\u25C4\u20A9\u10A1\U00010338\U00010334\U00010349\u0601\u0641\uFB52\uFB67\uFB78\uFBF2\U00013000\U00013040\U0001F600\U0001F428\n";
+    size_t asciiLength = wcslen(asciiSys);
+    size_t specialLength = wcslen(specialSys);
+    size_t extendedLength = wcslen(extendedSys);
+# else
+    const char* empty = "";
+    const char* asciiSys = asciiU8;
+    const char* specialSys = specialU8;
+    const char* extendedSys = extendedU8;
+    size_t asciiLength = strlen(asciiSys);
+    size_t specialLength = strlen(specialSys);
+    size_t extendedLength = strlen(extendedSys);
+# endif
+  
+  EXPECT_TRUE(WindowResource::systemStringToUtf8(empty, 0) == "");
+  EXPECT_TRUE(WindowResource::systemStringToUtf8(asciiSys, asciiLength) == asciiU8);
+  EXPECT_TRUE(WindowResource::systemStringToUtf8(specialSys, specialLength) == specialU8);
+  EXPECT_TRUE(WindowResource::systemStringToUtf8(extendedSys, extendedLength) == extendedU8);
+}

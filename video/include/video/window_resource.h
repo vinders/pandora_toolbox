@@ -19,7 +19,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 #include <memory>
+#include <memory/light_string.h>
 #ifdef _WINDOWS
 # include <system/api/windows_app.h>
 #endif
@@ -184,6 +186,16 @@ namespace pandora {
       /// @returns On success: valid menu resource. On failure: nullptr.
       static std::shared_ptr<WindowResource> buildMenu(MenuHandle handle);
       
+      
+      // -- system string converter --
+      
+#     ifdef _WINDOWS
+        static pandora::memory::LightString systemStringToUtf8(const wchar_t* data, size_t length);
+#     else
+        static inline pandora::memory::LightString systemStringToUtf8(const char* data, size_t length) {
+          return pandora::memory::LightString(data, length); // already UTF-8
+        }
+#     endif
       
     private:
       WindowResourceHandle _handle { (WindowResourceHandle)0 };
