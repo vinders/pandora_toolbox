@@ -27,6 +27,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       namespace vulkan {
         /// @class ScissorRectangle
         /// @brief Boundaries for scissor test: pixels located out of the rectangle are cut
+        ///        The scissor-test occurs after the fragment shader, to remove pixels out of bounds.
         class ScissorRectangle final {
         public:
           ScissorRectangle() noexcept { ///< Empty rectangle (size: 0; 0)
@@ -39,12 +40,27 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ScissorRectangle& operator=(ScissorRectangle&&) noexcept = default;
           ~ScissorRectangle() noexcept = default;
 
-          /// @brief Create scissor rectangle
+          /// @brief Create scissor rectangle - native
+          /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
+          ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
           ScissorRectangle(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height) noexcept {
             _params.offset.x = offsetX;
             _params.offset.y = offsetY;
             _params.extent.width = width;
             _params.extent.height = height;
+          }
+          
+          // ---
+
+          /// @brief Build viewport from top-left coordinates (API-independant coords)
+          static inline ScissorRectangle fromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY,
+                                                     uint32_t width, uint32_t height) noexcept {
+            return ScissorRectangle(topLeftX, topLeftY, width, height);
+          }
+          /// @brief Build viewport from bottom-left coordinates (API-independant coords)
+          static inline ScissorRectangle fromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY,
+                                                        uint32_t width, uint32_t height) noexcept {
+            return ScissorRectangle(bottomLeftX, (int32_t)windowHeight - bottomLeftY - (int32_t)height, width, height);
           }
 
           // -- accessors --

@@ -36,56 +36,71 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // -- scissor test rectangle container --
 
   TEST_F(D3d11ScissorTest, createCopyMoveTest) {
-    ScissorRectangle vp0;
-    EXPECT_EQ((int32_t)0, vp0.x());
-    EXPECT_EQ((int32_t)0, vp0.y());
-    EXPECT_EQ((uint32_t)0, vp0.width());
-    EXPECT_EQ((uint32_t)0, vp0.height());
+    ScissorRectangle sr0;
+    EXPECT_EQ((int32_t)0, sr0.x());
+    EXPECT_EQ((int32_t)0, sr0.y());
+    EXPECT_EQ((uint32_t)0, sr0.width());
+    EXPECT_EQ((uint32_t)0, sr0.height());
 
-    ScissorRectangle vp1(0,0, 640u,480u);
-    EXPECT_EQ((int32_t)0, vp1.x());
-    EXPECT_EQ((int32_t)0, vp1.y());
-    EXPECT_EQ((uint32_t)640u, vp1.width());
-    EXPECT_EQ((uint32_t)480u, vp1.height());
+    ScissorRectangle sr1(0,0, 640u,480u);
+    EXPECT_EQ((int32_t)0, sr1.x());
+    EXPECT_EQ((int32_t)0, sr1.y());
+    EXPECT_EQ((uint32_t)640u, sr1.width());
+    EXPECT_EQ((uint32_t)480u, sr1.height());
     
-    ScissorRectangle vp2(0,0, 640u,480u);
-    EXPECT_EQ((int32_t)0, vp2.x());
-    EXPECT_EQ((int32_t)0, vp2.y());
-    EXPECT_EQ((uint32_t)640u, vp2.width());
-    EXPECT_EQ((uint32_t)480u, vp2.height());
-    EXPECT_TRUE(vp1 == vp2);
-    EXPECT_FALSE(vp1 != vp2);
-    EXPECT_FALSE(vp0 == vp2);
+    ScissorRectangle sr2(0,0, 640u,480u);
+    EXPECT_EQ((int32_t)0, sr2.x());
+    EXPECT_EQ((int32_t)0, sr2.y());
+    EXPECT_EQ((uint32_t)640u, sr2.width());
+    EXPECT_EQ((uint32_t)480u, sr2.height());
+    EXPECT_TRUE(sr1 == sr2);
+    EXPECT_FALSE(sr1 != sr2);
+    EXPECT_FALSE(sr0 == sr2);
     
-    ScissorRectangle vp3(320,240, 640u,480u);
-    EXPECT_EQ((int32_t)320, vp3.x());
-    EXPECT_EQ((int32_t)240, vp3.y());
-    EXPECT_EQ((uint32_t)640u, vp3.width());
-    EXPECT_EQ((uint32_t)480u, vp3.height());
+    ScissorRectangle sr3(320,240, 640u,480u);
+    EXPECT_EQ((int32_t)320, sr3.x());
+    EXPECT_EQ((int32_t)240, sr3.y());
+    EXPECT_EQ((uint32_t)640u, sr3.width());
+    EXPECT_EQ((uint32_t)480u, sr3.height());
     
-    ScissorRectangle copied(vp3);
+    ScissorRectangle copied(sr3);
     EXPECT_EQ((int32_t)320, copied.x());
     EXPECT_EQ((int32_t)240, copied.y());
     EXPECT_EQ((uint32_t)640u, copied.width());
     EXPECT_EQ((uint32_t)480u, copied.height());
     
-    ScissorRectangle moved(std::move(vp3));
+    ScissorRectangle moved(std::move(sr3));
     EXPECT_EQ((int32_t)320, moved.x());
     EXPECT_EQ((int32_t)240, moved.y());
     EXPECT_EQ((uint32_t)640u, moved.width());
     EXPECT_EQ((uint32_t)480u, moved.height());
     
-    vp3 = std::move(vp2);
-    EXPECT_EQ((int32_t)0, vp3.x());
-    EXPECT_EQ((int32_t)0, vp3.y());
-    EXPECT_EQ((uint32_t)640u, vp3.width());
-    EXPECT_EQ((uint32_t)480u, vp3.height());
+    sr3 = std::move(sr2);
+    EXPECT_EQ((int32_t)0, sr3.x());
+    EXPECT_EQ((int32_t)0, sr3.y());
+    EXPECT_EQ((uint32_t)640u, sr3.width());
+    EXPECT_EQ((uint32_t)480u, sr3.height());
     
-    vp3 = copied;
-    EXPECT_EQ((int32_t)320, vp3.x());
-    EXPECT_EQ((int32_t)240, vp3.y());
-    EXPECT_EQ((uint32_t)640u, vp3.width());
-    EXPECT_EQ((uint32_t)480u, vp3.height());
+    sr3 = copied;
+    EXPECT_EQ((int32_t)320, sr3.x());
+    EXPECT_EQ((int32_t)240, sr3.y());
+    EXPECT_EQ((uint32_t)640u, sr3.width());
+    EXPECT_EQ((uint32_t)480u, sr3.height());
+  }
+
+  // -- scissor rectangle builder --
+
+  TEST_F(D3d11ScissorTest, scissorRectangleBuildersTest) {
+    ScissorRectangle srRef1(320,240, 640u,480u);
+    EXPECT_TRUE(ScissorRectangle::fromTopLeft(800u, 320,240, 640u,480u) == srRef1);
+
+    auto reverted1 = ScissorRectangle::fromBottomLeft(800u, 320,240, 640u,480u);
+    auto reverted2 = ScissorRectangle::fromTopLeft(800u, 320,80, 640u,480u);
+    EXPECT_TRUE(reverted1 == reverted2);
+    EXPECT_EQ(320.f, reverted1.x());
+    EXPECT_EQ(80.f, reverted1.y());
+    EXPECT_EQ(640.f, reverted1.width());
+    EXPECT_EQ(480.f, reverted1.height());
   }
 
 #endif
