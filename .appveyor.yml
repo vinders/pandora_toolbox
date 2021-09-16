@@ -27,7 +27,7 @@ environment:
     GENERATOR: Ninja
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
-    VULKAN_SDK_VERSION: 1.2.189.0
+    VULKAN_SDK_VERSION: 1.2.182.0
     PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
     LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
     PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
@@ -57,7 +57,7 @@ environment:
     GENERATOR: Visual Studio 16 2019
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
-    VULKAN_SDK_VERSION: 1.2.189.0
+    VULKAN_SDK_VERSION: 1.2.182.0
     
   # MSVC-VS2019 x86 (x32) / C++17
   - TOOLCHAIN: "Visual Studio 2019"
