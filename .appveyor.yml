@@ -82,7 +82,7 @@ environment:
     VCVARSARG: amd64
 
 cache:
-  - VulkanSDK-1.2.exe
+  - VulkanSDK-1.2-Installer.exe
 
 install:
   # ---- set environment ----
