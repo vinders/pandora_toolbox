@@ -130,6 +130,7 @@ install:
   - if defined LIB_SUFFIX set PATH=%PATH%;%LIB_SUFFIX%
 
 build_script:
+  - refreshenv
   # ---- project version + build directory ----
   - cd C:\projects\pandora_toolbox
   - call _scripts/update_version.bat
