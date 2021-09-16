@@ -71,6 +71,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
           ///                                 - to wait for object destruction
           inline void flush() noexcept { this->_context->Flush(); }
+
           
           // -- accessors --
           
