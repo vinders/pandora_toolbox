@@ -81,6 +81,9 @@ environment:
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
 
+cache:
+  - VulkanSDK.exe
+
 install:
   # ---- set environment ----
   - if defined VCVARS call "%VCVARS%" %VCVARSARG%
