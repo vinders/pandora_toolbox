@@ -24,6 +24,11 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 # include <cstdint>
 # include "./vulkan.h"
 # include <system/_private/_enum_flags.h>
+# ifndef VK_API_VERSION_MAJOR
+#   define VK_API_VERSION_MAJOR(version) VK_VERSION_MAJOR(version)
+#   define VK_API_VERSION_MINOR(version) VK_VERSION_MINOR(version)
+# endif
+# define __P_VK_API_VERSION_NOVARIANT(version) (version & 0x1FFFFFFFu)
 
   namespace pandora {
     namespace video {

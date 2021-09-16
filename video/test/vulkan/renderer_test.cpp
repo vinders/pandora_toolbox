@@ -23,8 +23,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #     pragma warning(disable: 26812) // disable warnings about vulkan enums
 #     pragma warning(disable: 4100)  // disable warnings about unused params
 #   endif
+#   define __SYSTEM_STR(str) L"" str
+# else
+#   define __SYSTEM_STR(str) str
 # endif
 # include <gtest/gtest.h>
+# include <video/window.h>
 # include <video/vulkan/renderer.h>
 
   using namespace pandora::video::vulkan;
@@ -62,18 +66,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(renderer.vkInstance() != VK_NULL_HANDLE);
     EXPECT_TRUE(renderer.featureLevel() >= (uint32_t)VK_API_VERSION_1_2);
 
-    bool isMonitorHdr = renderer.isMonitorHdrCapable(monitor);
+    auto window = pandora::video::Window::Builder{}.create(__SYSTEM_STR("VK_TEST"), __SYSTEM_STR("Test"));
+    window->show();
+
+    bool isMonitorHdr = renderer.isMonitorHdrCapable(monitor, window->handle());
     if (isMonitorHdr) { EXPECT_TRUE(renderer.isHdrAvailable()); }
     size_t dedicatedRam = 0, sharedRam = 0;
-    //EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
-    //EXPECT_TRUE(sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
+    EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
+    EXPECT_TRUE(dedicatedRam > 0 || sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
 
     const char* trueVal = "true";
     const char* falseVal = "false";
     printf("Vulkan context:\n > API level: %u.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
            " > Max render views: %u\n > Monitor HDR capable: %s\n"
            " > HDR API available: %s\n > Tearing available: %s\n", 
-           (renderer.featureLevel() >> 22) & 0xFF, (renderer.featureLevel() >> 12) & 0xFF,
+           VK_API_VERSION_MAJOR(renderer.featureLevel()), VK_API_VERSION_MINOR(renderer.featureLevel()),
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            (uint32_t)renderer.maxRenderTargets(),
            isMonitorHdr ? trueVal : falseVal,
@@ -104,7 +111,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(renderer.context() != nullptr);
     EXPECT_EQ(device, renderer.context());
     EXPECT_EQ(featLevel, renderer.featureLevel());
-    EXPECT_EQ(isMonitorHdr, renderer.isMonitorHdrCapable(monitor));
   }
 
   TEST_F(VulkanRendererTest, createCustomRenderer) {

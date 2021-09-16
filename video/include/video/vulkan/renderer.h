@@ -22,6 +22,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <memory>
 # include <hardware/display_monitor.h>
+# include "video/window_handle.h"
 # include "./api/types.h"      // includes vulkan
 # include "./scissor.h"        // includes vulkan
 # include "./viewport.h"       // includes vulkan
@@ -112,14 +113,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
 
-          /// @brief Create default list of features (all basic standard features enabled)
+          /// @brief Create default list of vulkan features (all basic standard features enabled)
           /// @remarks Used to create a Renderer object.
           ///          Should be fine-tuned to improve performance or to support special shader features.
           static VkPhysicalDeviceFeatures defaultFeatures() noexcept;
-          /// @brief Get list of features enabled in renderer
-          const VkPhysicalDeviceFeatures& enabledFeatures() const noexcept { return this->_features; }
+          /// @brief Get list of features enabled in vulkan renderer
+          inline const VkPhysicalDeviceFeatures& enabledFeatures() const noexcept { return *(this->_features); }
+          /// @brief Get limits of physical device associated with device context
+          inline const VkPhysicalDeviceLimits& deviceLimits() const noexcept { return this->_physicalDeviceInfo->limits; }
           
-          /// @brief Flush command buffer
+          /// @brief Flush command buffers
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
           ///                                 - to wait for object destruction
           void flush() noexcept;
@@ -147,25 +150,45 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Verify if HDR functionalities are supported on current system
           /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
           bool isHdrAvailable() const noexcept;
-          /// @brief Verify if a display monitor can display HDR colors
+          /// @brief Verify if a display monitor can display HDR colors for a window
           /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
-          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
+          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, pandora::video::WindowHandle window) const noexcept;
           /// @brief Screen tearing supported (variable refresh rate display)
-          bool isTearingAvailable() const noexcept;
+          /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
+          inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
           
           
           // -- render target operations --
-          
-          /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
-          static constexpr inline size_t maxRenderTargets() noexcept { return 0; }
-          
 
+          /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
+          inline size_t maxViewports() noexcept { return this->_features->multiViewport ? this->_physicalDeviceInfo->limits.maxViewports : 1; }
+          
+          /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+          /// @warning - With Vulkan, this viewport change is only supported if the Shader pipeline
+          ///            was configured with a dynamic-state viewport.
+          ///            -> this command will fail if the pipeline viewport is static/fixed.
+          ///          - Multiple viewports are only supported if 'multiViewport' feature was enabled in constructor
+          ///            (enabled in defaultFeatures()).
+          void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
+          /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
+          /// @warning With Vulkan, this viewport change is only supported if the Shader pipeline
+          ///          was configured with a dynamic-state viewport.
+          ///          -> this command will fail if the pipeline viewport is static/fixed.
+          void setViewport(const Viewport& viewport) noexcept;
+
+          /// @brief Set rasterizer scissor-test rectangle(s)
+          void setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept;
+          /// @brief Set rasterizer scissor-test rectangle
+          void setScissorRectangle(const ScissorRectangle& rectangle) noexcept;
+          
+          
         private:
           void _destroy() noexcept;
           
         private:
-          VkPhysicalDeviceFeatures _features{ 0 };
           std::shared_ptr<VulkanInstance> _instance = nullptr;
+          std::unique_ptr<VkPhysicalDeviceFeatures> _features = nullptr;
+          std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
           DeviceContext _deviceContext = VK_NULL_HANDLE;
           VkQueue _graphicsCommandQueue = VK_NULL_HANDLE;

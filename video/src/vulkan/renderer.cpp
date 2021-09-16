@@ -146,9 +146,8 @@ Includes hpp implementations at the end of the file
       "VK_KHR_get_physical_device_properties2" // part of vulkan core 1.1+
     };
     size_t baseExtCount = sizeof(instanceBaseExt)/sizeof(*instanceBaseExt);
-    if (featureLevel >= VK_API_VERSION_1_1) { // V1.1+: remove extensions not needed anymore
+    if (featureLevel != VK_API_VERSION_1_0) // V1.1+: remove extensions not needed anymore
       baseExtCount -= 1;
-    }
     if (instanceAdditionalExts == nullptr)
       additionalExtCount = 0;
 
@@ -214,25 +213,23 @@ Includes hpp implementations at the end of the file
     VkPhysicalDeviceFeatures defaultFeatures;
     memset(&defaultFeatures, 0, sizeof(VkPhysicalDeviceFeatures));
     defaultFeatures.alphaToOne = defaultFeatures.depthBiasClamp = defaultFeatures.depthBounds = defaultFeatures.depthClamp
-      = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.geometryShader
-      = defaultFeatures.imageCubeArray = defaultFeatures.independentBlend = defaultFeatures.multiDrawIndirect
-      = defaultFeatures.multiViewport = defaultFeatures.samplerAnisotropy = defaultFeatures.shaderClipDistance
-      = defaultFeatures.shaderCullDistance = defaultFeatures.shaderResourceMinLod = defaultFeatures.tessellationShader = VK_TRUE;
+      = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.geometryShader = defaultFeatures.imageCubeArray
+      = defaultFeatures.independentBlend = defaultFeatures.multiDrawIndirect = defaultFeatures.multiViewport
+      = defaultFeatures.samplerAnisotropy = defaultFeatures.shaderClipDistance = defaultFeatures.shaderCullDistance
+      = defaultFeatures.shaderResourceMinLod = defaultFeatures.shaderStorageImageExtendedFormats = defaultFeatures.tessellationShader = VK_TRUE;
     return defaultFeatures;
   }
 
-  static void __getSupportedFeatures(const VkPhysicalDeviceFeatures& available, const VkPhysicalDeviceFeatures& requested,
-                                     VkPhysicalDeviceFeatures& outConfig) noexcept {
-    // raw copy -> no missing feature if vulkan is updated
-    char* outEnd = ((char*)&outConfig) + sizeof(VkPhysicalDeviceFeatures);
-    for (uint64_t* out = (uint64_t*)&outConfig, *src1 = (uint64_t*)&available, *src2 = (uint64_t*)&requested; (char*)out < outEnd; ++out, ++src1, ++src2)
-      *out = (*src1 & *src2);
+  // Extract features ('inOutAvailable') that are both requested by user ('requested') and available in device ('inOutAvailable')
+  static void __getSupportedFeatures(const VkPhysicalDeviceFeatures& requested, VkPhysicalDeviceFeatures& inOutAvailable) noexcept {
+    char* outEnd = ((char*)&inOutAvailable) + sizeof(VkPhysicalDeviceFeatures); // raw iteration -> no missing feature if vulkan is updated
+    for (uint64_t* out = (uint64_t*)&inOutAvailable, *req = (uint64_t*)&requested; (char*)out < outEnd; ++out, ++req)
+      *out = (*out & *req);
 
     __if_constexpr ((sizeof(VkPhysicalDeviceFeatures) & (sizeof(uint64_t) - 1)) != 0) { // not a multiple of 8 bytes -> copy last block
       char* out = outEnd - sizeof(uint64_t);
-      char* src1 = ((char*)&available) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
-      char* src2 = ((char*)&requested) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
-      *(uint64_t*)out = (*(uint64_t*)src1 & *(uint64_t*)src2);
+      char* req = ((char*)&requested) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
+      *(uint64_t*)out = (*(uint64_t*)out & *(uint64_t*)req);
     }
   }
 
@@ -268,7 +265,7 @@ Includes hpp implementations at the end of the file
 
   // List of default/standard device extensions (used if no custom list provided)
   static std::unique_ptr<const char*[]> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
-    if (featureLevel >= VK_API_VERSION_1_2) {
+    if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
@@ -342,7 +339,7 @@ Includes hpp implementations at the end of the file
         VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.get());
 
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-          for (VkDisplayPropertiesKHR* it = displays.get(); displayCount; --displayCount, ++it) {
+          for (const VkDisplayPropertiesKHR* it = displays.get(); displayCount; --displayCount, ++it) {
             if (it->displayName != nullptr && (monitorName == it->displayName || monitorDesc == it->displayName))
               return true;
           }
@@ -398,7 +395,7 @@ Includes hpp implementations at the end of the file
 
   // Find primary hardware adapter (physical device)
   static VkPhysicalDevice __getHardwareAdapter(VkInstance instance, const VkPhysicalDeviceFeatures& requestedFeatures,
-                                               const pandora::hardware::DisplayMonitor& monitor,
+                                               const pandora::hardware::DisplayMonitor& monitor, uint32_t featureLevel,
                                                uint32_t& outQueueFamilyIndex) {
     // query physical devices
     uint32_t physicalDeviceCount = 0;
@@ -425,28 +422,31 @@ Includes hpp implementations at the end of the file
     VulkanLoader& loader = VulkanLoader::instance();
     VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
     uint32_t bestDeviceScore = 0;
+    featureLevel = __P_VK_API_VERSION_NOVARIANT(featureLevel);
 
     for (VkPhysicalDevice* it = physicalDevices.get(); physicalDeviceCount; --physicalDeviceCount, ++it) {
       VkPhysicalDeviceProperties deviceProperties;
-      VkPhysicalDeviceFeatures deviceFeatures{ VK_FALSE };
       vkGetPhysicalDeviceProperties(*it, &deviceProperties);
-      vkGetPhysicalDeviceFeatures(*it, &deviceFeatures);
 
-      uint32_t deviceScore = __rateHardwareAdapter(deviceProperties, deviceFeatures); // quality score
+      if (__P_VK_API_VERSION_NOVARIANT(deviceProperties.apiVersion) >= featureLevel) {
+        VkPhysicalDeviceFeatures deviceFeatures{ VK_FALSE };
+        vkGetPhysicalDeviceFeatures(*it, &deviceFeatures);
+        uint32_t deviceScore = __rateHardwareAdapter(deviceProperties, deviceFeatures); // quality score
 
-      // identify monitor (use target monitor as a priority):
-      // - if monitor.adapterName is supported by window manager, use it (if not, use VK_KHR_display if available)
-      // - deviceProperties.deviceName may be NULL or generic on some OS or drivers -> use VK_KHR_display as fallback
-      if ((!adapterName.empty() && adapterName == deviceProperties.deviceName)
-      ||  (loader.vk.isKhrDisplaySupported && __isDeviceConnectedToKhrDisplay(*it, monitorName, monitorDesc)) ) {
-        deviceScore |= 0x40000000u;
-      }
+        // identify monitor (use target monitor as a priority):
+        // - if monitor.adapterName is supported by window manager, use it (if not, use VK_KHR_display if available)
+        // - deviceProperties.deviceName may be NULL or generic on some OS or drivers -> use VK_KHR_display as fallback
+        if ((!adapterName.empty() && adapterName == deviceProperties.deviceName)
+        ||  (loader.vk.isKhrDisplaySupported && __isDeviceConnectedToKhrDisplay(*it, monitorName, monitorDesc)) ) {
+          deviceScore |= 0x40000000u;
+        }
 
-      // store current device if: highest score + has valid command queue family (+ store queue family index if best device)
-      if (deviceScore > bestDeviceScore
-      &&  __findGraphicsCommandQueueFamily(*it, (deviceFeatures.sparseBinding && requestedFeatures.sparseBinding), outQueueFamilyIndex)) {
-        bestDevice = *it;
-        bestDeviceScore = deviceScore;
+        // store current device if: highest score + has valid command queue family (+ store queue family index if best device)
+        if (deviceScore > bestDeviceScore
+        &&  __findGraphicsCommandQueueFamily(*it, (deviceFeatures.sparseBinding && requestedFeatures.sparseBinding), outQueueFamilyIndex)) {
+          bestDevice = *it;
+          bestDeviceScore = deviceScore;
+        }
       }
     }
     return bestDevice;
@@ -457,25 +457,31 @@ Includes hpp implementations at the end of the file
 
   // Create Vulkan instance and rendering device
   Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance,
-                     const VkPhysicalDeviceFeatures& features, bool areFeaturesRequired,
+                     const VkPhysicalDeviceFeatures& requestedFeatures, bool areFeaturesRequired,
                      const char** deviceExtensions, size_t extensionCount)
     : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
       _physicalDevice(VK_NULL_HANDLE),
       _deviceContext(VK_NULL_HANDLE),
       _graphicsCommandQueue(VK_NULL_HANDLE) {
     // find hardware adapter for monitor
-    this->_physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), features, monitor,
-                                                 this->_commandQueueFamilyIndex); // throws
+    this->_physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), requestedFeatures, monitor,
+                                                 this->_instance->featureLevel(), this->_commandQueueFamilyIndex); // throws
     if (this->_physicalDevice == VK_NULL_HANDLE)
       throw std::runtime_error("Vulkan: failed to find compatible GPU");
 
     // feature support detection
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceFeatures(this->_physicalDevice, &deviceFeatures);
+    this->_features = std::make_unique<VkPhysicalDeviceFeatures>();
     if (areFeaturesRequired)
-      memcpy(&this->_features, &features, sizeof(VkPhysicalDeviceFeatures));
-    else
-      __getSupportedFeatures(deviceFeatures, features, this->_features);
+      memcpy(this->_features.get(), &requestedFeatures, sizeof(VkPhysicalDeviceFeatures));
+    else {
+      memset(this->_features.get(), 0, sizeof(VkPhysicalDeviceFeatures));
+      vkGetPhysicalDeviceFeatures(this->_physicalDevice, this->_features.get());
+      __getSupportedFeatures(requestedFeatures, *(this->_features));
+    }
+
+    this->_physicalDeviceInfo = std::make_unique<VkPhysicalDeviceProperties>();
+    memset(this->_physicalDeviceInfo.get(), 0, sizeof(VkPhysicalDeviceProperties));
+    vkGetPhysicalDeviceProperties(this->_physicalDevice, this->_physicalDeviceInfo.get());
 
     // create rendering device
     VkDeviceQueueCreateInfo cmdQueueInfo;
@@ -491,7 +497,7 @@ Includes hpp implementations at the end of the file
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pQueueCreateInfos = &cmdQueueInfo;
     deviceInfo.queueCreateInfoCount = 1;
-    deviceInfo.pEnabledFeatures = &(this->_features);
+    deviceInfo.pEnabledFeatures = this->_features.get();
 #   if defined(_DEBUG) || !defined(NDEBUG)
       try {
         const char* debugLayer = __sdkDebugLayerName();
@@ -526,6 +532,8 @@ Includes hpp implementations at the end of the file
   void Renderer::_destroy() noexcept {
     if (this->_deviceContext != VK_NULL_HANDLE) {
       vkDestroyDevice(this->_deviceContext, nullptr);
+      this->_features = nullptr;
+      this->_physicalDeviceInfo = nullptr;
       this->_graphicsCommandQueue = VK_NULL_HANDLE;
       this->_deviceContext = VK_NULL_HANDLE;
       this->_physicalDevice = VK_NULL_HANDLE;
@@ -535,13 +543,15 @@ Includes hpp implementations at the end of the file
 
   Renderer::Renderer(Renderer&& rhs) noexcept
     : _instance(std::move(rhs._instance)),
+      _features(std::move(rhs._features)),
+      _physicalDeviceInfo(std::move(rhs._physicalDeviceInfo)),
       _physicalDevice(rhs._physicalDevice),
       _deviceContext(rhs._deviceContext),
       _graphicsCommandQueue(rhs._graphicsCommandQueue),
       _commandQueueFamilyIndex(rhs._commandQueueFamilyIndex) {
-    memcpy(&this->_features, &rhs._features, sizeof(VkPhysicalDeviceFeatures));
-
     rhs._instance = nullptr;
+    rhs._features = nullptr;
+    rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = VK_NULL_HANDLE;
     rhs._graphicsCommandQueue = VK_NULL_HANDLE;
@@ -549,13 +559,16 @@ Includes hpp implementations at the end of the file
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
     this->_instance = std::move(rhs._instance);
+    this->_features = std::move(rhs._features);
+    this->_physicalDeviceInfo = std::move(rhs._physicalDeviceInfo);
     this->_physicalDevice = rhs._physicalDevice;
     this->_deviceContext = rhs._deviceContext;
     this->_graphicsCommandQueue = rhs._graphicsCommandQueue;
     this->_commandQueueFamilyIndex = rhs._commandQueueFamilyIndex;
-    memcpy(&this->_features, &rhs._features, sizeof(VkPhysicalDeviceFeatures));
 
     rhs._instance = nullptr;
+    rhs._features = nullptr;
+    rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = VK_NULL_HANDLE;
     rhs._graphicsCommandQueue = VK_NULL_HANDLE;
@@ -567,8 +580,28 @@ Includes hpp implementations at the end of the file
   
   // Read device adapter VRAM size
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
-    //...
-    return false;
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    memoryProperties.memoryHeapCount = 0;
+    vkGetPhysicalDeviceMemoryProperties(this->_physicalDevice, &memoryProperties);
+    
+    VkDeviceSize localByteSize = 0, sharedByteSize = 0;
+    uint32_t remainingHeaps = memoryProperties.memoryHeapCount;
+    for (const VkMemoryHeap* it = memoryProperties.memoryHeaps; remainingHeaps; --remainingHeaps, ++it) {
+      if (it->flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        localByteSize += it->size;
+      else
+        sharedByteSize += it->size;
+    }
+
+    if (this->_physicalDeviceInfo->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+      outDedicatedRam = (size_t)localByteSize;
+      outSharedRam = (size_t)sharedByteSize;
+    }
+    else {
+      outDedicatedRam = 0;
+      outSharedRam = (size_t)localByteSize + (size_t)sharedByteSize;
+    }
+    return (memoryProperties.memoryHeapCount != 0);
   }
   
   // Convert standard sRGB(A) color to device RGB(A)
@@ -576,9 +609,9 @@ Includes hpp implementations at the end of the file
     //...
   }
 
-  // Flush command buffer
+  // Flush command buffers
   void Renderer::flush() noexcept {
-
+    //...
   }
 
 
@@ -586,22 +619,105 @@ Includes hpp implementations at the end of the file
 
   // Verify if HDR functionalities are supported on current system
   bool Renderer::isHdrAvailable() const noexcept {
-    //...
-    return false;
+    return (this->_instance->featureLevel() != VK_API_VERSION_1_0 && this->_features->shaderStorageImageExtendedFormats);
   }
 
   // Verify if a display monitor can display HDR colors
-  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
-    //...
-    return false;
+  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, pandora::video::WindowHandle window) const noexcept {
+    if (window == (pandora::video::WindowHandle)0)
+      return false;
+
+    VkSurfaceKHR screenSurface = VK_NULL_HANDLE;
+    try {
+      if (VulkanLoader::instance().createWindowSurface(this->_instance->vkInstance(), window, nullptr, screenSurface) != VK_SUCCESS)
+        return false;
+    }
+    catch (...) { return false; }
+
+    bool isHdrAvailable = false;
+    try {
+      uint32_t formatCount = 0;
+      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
+        auto formats = std::unique_ptr<VkSurfaceFormatKHR[]>(new VkSurfaceFormatKHR[formatCount]);
+        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, formats.get());
+        if (result != VK_SUCCESS && result != VK_INCOMPLETE)
+          return false;
+
+        for (const VkSurfaceFormatKHR* it = formats.get(); !isHdrAvailable && formatCount; --formatCount, ++it) {
+          switch (it->colorSpace) {
+            case VK_COLOR_SPACE_HDR10_HLG_EXT:
+            case VK_COLOR_SPACE_HDR10_ST2084_EXT:
+            case VK_COLOR_SPACE_BT709_LINEAR_EXT:
+            case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:
+            case VK_COLOR_SPACE_BT2020_LINEAR_EXT: 
+            case VK_COLOR_SPACE_DOLBYVISION_EXT: isHdrAvailable = true; break;
+            default: break;
+          }
+        }
+      }
+    }
+    catch (...) {}
+    vkDestroySurfaceKHR(this->_instance->vkInstance(), screenSurface, nullptr);
+    return isHdrAvailable;
+  }
+ 
+
+// -- render target operations -------------------------------------------------
+
+  // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+  void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
+    if (numberViewports) {
+      if (numberViewports > maxViewports())
+        numberViewports = maxViewports();
+    
+      if (numberViewports <= 16) { // avoid huge cost of dynamic alloc if possible
+        VkViewport values[16]{};
+        VkViewport* out = &values[numberViewports - 1u];
+        for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
+          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
+        //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values);
+      }
+      else {
+        auto values = std::unique_ptr<VkViewport[]>(new VkViewport[numberViewports]);
+        VkViewport* out = &values[numberViewports - 1u];
+        for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
+          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
+        //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values.get());
+      }
+    }
+  }
+  // Replace rasterizer viewport (3D -> 2D projection rectangle)
+  void Renderer::setViewport(const Viewport& viewports) noexcept {
+    //vkCmdSetViewport(<CMDQUEUE...>, 0, 1, viewport.descriptor());
   }
 
-  // Screen tearing supported (variable refresh rate display)
-  bool Renderer::isTearingAvailable() const noexcept { 
-    //...
-    return false;
-  }
+  // Set rasterizer scissor-test rectangle(s)
+  void Renderer::setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept {
+    if (numberRectangles) {
+      if (numberRectangles > maxViewports())
+        numberRectangles = maxViewports();
 
+      if (numberRectangles <= 16) { // avoid huge cost of dynamic alloc if possible
+        VkRect2D values[16]{};
+        VkRect2D* out = &values[numberRectangles - 1u];
+        for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
+          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
+        //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values);
+      }
+      else {
+        auto values = std::unique_ptr<VkRect2D[]>(new VkRect2D[numberRectangles]);
+        VkRect2D* out = &values[numberRectangles - 1u];
+        for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
+          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
+        //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values.get());
+      }
+    }
+  }
+  // Set rasterizer scissor-test rectangle
+  void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
+    //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
+  }
+  
 
 // -----------------------------------------------------------------------------
 // _vulkan_resource.h -- error messages
@@ -649,13 +765,6 @@ Includes hpp implementations at the end of the file
       case VK_ERROR_OUT_OF_POOL_MEMORY: return "OUT_OF_POOL_MEMORY";
       case VK_ERROR_INVALID_EXTERNAL_HANDLE: return "INVALID_EXTERNAL_HANDLE";
       case VK_ERROR_FRAGMENTATION: return "FRAGMENTATION";
-      case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: return "INVALID_OPAQUE_CAPTURE_ADDRESS";
-      case VK_ERROR_INVALID_SHADER_NV: return "INVALID_SHADER";
-      case VK_ERROR_INCOMPATIBLE_VERSION_KHR: return "INCOMPATIBLE_VERSION_KHR";
-      case VK_ERROR_NOT_PERMITTED_EXT: return "NOT_PERMITTED_EXT";
-      case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT: return "FULL_SCREEN_EXCLUSIVE_MODE_LOST";
-      case VK_THREAD_IDLE_KHR: return "THREAD_IDLE_KHR";
-      case VK_THREAD_DONE_KHR: return "THREAD_DONE_KHR";
       default: return "INTERNAL_ERROR";
     }
   }
@@ -676,7 +785,7 @@ Includes hpp implementations at the end of the file
     }
     throw RuntimeException(std::move(message));
   }
-  
+
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(pop)
 # endif
