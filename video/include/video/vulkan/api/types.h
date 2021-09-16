@@ -179,6 +179,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         constexpr inline DataFormat createDataFormat(VkFormat format, uint32_t bytesPerPixel) noexcept { 
           return (DataFormat)__P_VULKAN_FORMAT(format, bytesPerPixel); 
         }
+        constexpr inline VkFormat _getDataFormatComponents(DataFormat format) noexcept { return static_cast<VkFormat>((uint64_t)format & 0xFFFFFFFFuLL); }
 #       undef __P_VULKAN_FORMAT
         
         /// @brief Primitive topology - vertex interpretation mode (tessellation patches excluded)

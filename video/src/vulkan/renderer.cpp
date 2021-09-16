@@ -15,6 +15,9 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
 OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+--------------------------------------------------------------------------------
+Includes hpp implementations at the end of the file 
+(grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # if defined(_WINDOWS)
@@ -31,9 +34,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <stdexcept>
 # include <memory/light_string.h>
 
+# include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
 # include "video/vulkan/renderer.h"
 # include "video/vulkan/_private/_vulkan_resource.h"
+#if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+# define __if_constexpr if constexpr
+#else
+# define __if_constexpr if
+#endif
 
   using namespace pandora::video::vulkan;
   using namespace pandora::video;
@@ -199,6 +208,401 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
 
+// -- feature / extension support -- -------------------------------------------
+
+  VkPhysicalDeviceFeatures Renderer::defaultFeatures() noexcept {
+    VkPhysicalDeviceFeatures defaultFeatures;
+    memset(&defaultFeatures, 0, sizeof(VkPhysicalDeviceFeatures));
+    defaultFeatures.alphaToOne = defaultFeatures.depthBiasClamp = defaultFeatures.depthBounds = defaultFeatures.depthClamp
+      = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.geometryShader
+      = defaultFeatures.imageCubeArray = defaultFeatures.independentBlend = defaultFeatures.multiDrawIndirect
+      = defaultFeatures.multiViewport = defaultFeatures.samplerAnisotropy = defaultFeatures.shaderClipDistance
+      = defaultFeatures.shaderCullDistance = defaultFeatures.shaderResourceMinLod = defaultFeatures.tessellationShader = VK_TRUE;
+    return defaultFeatures;
+  }
+
+  static void __getSupportedFeatures(const VkPhysicalDeviceFeatures& available, const VkPhysicalDeviceFeatures& requested,
+                                     VkPhysicalDeviceFeatures& outConfig) noexcept {
+    // raw copy -> no missing feature if vulkan is updated
+    char* outEnd = ((char*)&outConfig) + sizeof(VkPhysicalDeviceFeatures);
+    for (uint64_t* out = (uint64_t*)&outConfig, *src1 = (uint64_t*)&available, *src2 = (uint64_t*)&requested; (char*)out < outEnd; ++out, ++src1, ++src2)
+      *out = (*src1 & *src2);
+
+    __if_constexpr ((sizeof(VkPhysicalDeviceFeatures) & (sizeof(uint64_t) - 1)) != 0) { // not a multiple of 8 bytes -> copy last block
+      char* out = outEnd - sizeof(uint64_t);
+      char* src1 = ((char*)&available) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
+      char* src2 = ((char*)&requested) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
+      *(uint64_t*)out = (*(uint64_t*)src1 & *(uint64_t*)src2);
+    }
+  }
+
+  // ---
+
+  template <size_t _ArraySize>
+  static inline std::unique_ptr<const char*[]> __getSupportedExtensions(const char* extensions[_ArraySize], uint32_t& outExtCount) {
+    bool results[_ArraySize];
+    outExtCount = (uint32_t)VulkanLoader::instance().findExtensions(extensions, _ArraySize, results);
+    if (outExtCount == 0)
+      return nullptr;
+    
+    std::unique_ptr<const char*[]> supportedExt(new const char*[outExtCount]);
+    if (outExtCount == _ArraySize) {
+      memcpy(supportedExt.get(), extensions, _ArraySize*sizeof(*extensions));
+    }
+    else {
+      bool* curResult = results;
+      const char** endExt = extensions + _ArraySize;
+      for (const char** curExt = extensions, **out = supportedExt.get(); curExt < endExt; ++curExt, ++curResult) {
+        if (*curResult) {
+          *out = *curExt;
+          ++out;
+        }
+      }
+    }
+#   if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+      return supportedExt;
+#   else
+      return std::move(supportedExt);
+#   endif
+  }
+
+  // List of default/standard device extensions (used if no custom list provided)
+  static std::unique_ptr<const char*[]> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
+    if (featureLevel >= VK_API_VERSION_1_2) {
+      const char* extensions[] {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+      };
+      return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
+    }
+    else if (featureLevel == VK_API_VERSION_1_1) {
+      const char* extensions[] { // extensions promoted to core 1.2 + same as above
+        "VK_KHR_8bit_storage",
+        "VK_KHR_draw_indirect_count",
+        "VK_KHR_shader_float16_int8",
+        "VK_KHR_shader_float_controls",
+        "VK_KHR_spirv_1_4", // not available in 1.0
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+      };
+      return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
+    }
+    else { // 1.0
+      const char* extensions[] { // extensions promoted to core 1.1 + same as above (when available)
+        "VK_KHR_storage_buffer_storage_class",
+        "VK_KHR_16bit_storage",
+        "VK_KHR_bind_memory2",
+        "VK_KHR_multiview",
+        "VK_KHR_shader_draw_parameters",
+        "VK_KHR_8bit_storage",
+        "VK_KHR_draw_indirect_count",
+        "VK_KHR_shader_float16_int8",
+        "VK_KHR_shader_float_controls",
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+      };
+      return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
+    }
+  }
+
+
+// -- display adapter detection -- ---------------------------------------------
+
+# ifdef _WINDOWS
+    // Convert system string (monitor ID, monitor description, adapter name...) to UTF-8
+    static inline pandora::memory::LightString __convertSystemString(const pandora::memory::LightWString& source) {
+      return WindowResource::systemStringToUtf8(source.c_str(), source.size());
+    }
+# endif
+
+    // Rate quality of a physical device, based on available features
+    static inline uint32_t __rateHardwareAdapter(VkPhysicalDeviceProperties deviceProperties,
+                                                 VkPhysicalDeviceFeatures deviceFeatures) noexcept {
+      uint32_t deviceScore = 0;
+      switch (deviceProperties.deviceType) {
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:   deviceScore += 2048; break;
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: deviceScore += 1024; break;
+        default: break;
+      }
+      if (deviceProperties.limits.maxImageDimension2D != 0xFFFFFFFFu)
+        deviceScore += deviceProperties.limits.maxImageDimension2D;
+      if (deviceFeatures.geometryShader)
+        deviceScore += 16384;
+      if (deviceFeatures.tessellationShader)
+        deviceScore += 2048;
+      if (deviceFeatures.multiViewport)
+        deviceScore += 512;
+      return deviceScore;
+    }
+
+    // Detect display monitor association with an adapter
+    // warning: only supported if VK_KHR_display extension is present
+    static inline bool __isDeviceConnectedToKhrDisplay(VkPhysicalDevice& device, const pandora::memory::LightString& monitorName,
+                                                       const pandora::memory::LightString& monitorDesc) {
+      uint32_t displayCount = 0;
+      if (vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, nullptr) == VK_SUCCESS && displayCount) {
+        auto displays = std::unique_ptr<VkDisplayPropertiesKHR[]>(new VkDisplayPropertiesKHR[displayCount]);
+        VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.get());
+
+        if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+          for (VkDisplayPropertiesKHR* it = displays.get(); displayCount; --displayCount, ++it) {
+            if (it->displayName != nullptr && (monitorName == it->displayName || monitorDesc == it->displayName))
+              return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    // Find graphics command queue family for an adapter
+    static inline bool __findGraphicsCommandQueueFamily(VkPhysicalDevice device, bool useSparseBinding,
+                                                        uint32_t& outFamilyIndex) noexcept {
+      // query queue families
+      uint32_t queueFamilyCount = 0;
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+      if (queueFamilyCount == 0)
+        return false;
+      auto queueFamilies = std::unique_ptr<VkQueueFamilyProperties[]>(new VkQueueFamilyProperties[queueFamilyCount]);
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.get());
+
+      // find best family (if available)
+      uint32_t bestFamily = (uint32_t)-1;
+      uint32_t bestFamilyQueueCount = 0;
+      uint32_t bestFamilyScore = 0;
+
+      for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+        VkQueueFamilyProperties& family = queueFamilies[i];
+        if ((family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (!useSparseBinding || (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT))) {
+          uint32_t familyScore = 0;
+          if (family.queueFlags & VK_QUEUE_COMPUTE_BIT)
+            familyScore += 2048;
+          if (family.queueFlags & VK_QUEUE_TRANSFER_BIT)
+            familyScore += 1024;
+          if (family.queueFlags & VK_QUEUE_PROTECTED_BIT)
+            familyScore += 256;
+          if (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+            familyScore += 256;
+
+          if (familyScore > bestFamilyScore || (familyScore == bestFamilyScore && family.queueCount > bestFamilyQueueCount)) {
+            bestFamily = i;
+            bestFamilyQueueCount = family.queueCount;
+            bestFamilyScore = familyScore;
+          }
+        }
+      }
+      if (bestFamily != (uint32_t)-1) {
+        outFamilyIndex = bestFamily;
+        return true;
+      }
+      return false;
+    }
+
+  // ---
+
+  // Find primary hardware adapter (physical device)
+  static VkPhysicalDevice __getHardwareAdapter(VkInstance instance, const VkPhysicalDeviceFeatures& requestedFeatures,
+                                               const pandora::hardware::DisplayMonitor& monitor,
+                                               uint32_t& outQueueFamilyIndex) {
+    // query physical devices
+    uint32_t physicalDeviceCount = 0;
+    if (vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr) != VK_SUCCESS || physicalDeviceCount == 0)
+      throw std::runtime_error("Vulkan: failed to find compatible GPUs");
+
+    auto physicalDevices = std::unique_ptr<VkPhysicalDevice[]>(new VkPhysicalDevice[physicalDeviceCount]);
+    memset(physicalDevices.get(), 0, physicalDeviceCount*sizeof(VkPhysicalDevice));
+    VkResult queryResult = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.get());
+    if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
+      throw std::runtime_error("Vulkan: failed to query physical devices");
+
+#   ifdef _WINDOWS
+      pandora::memory::LightString adapterName = __convertSystemString(monitor.adapterName());
+      pandora::memory::LightString monitorName = __convertSystemString(monitor.attributes().id);
+      pandora::memory::LightString monitorDesc = __convertSystemString(monitor.attributes().description);
+#   else
+      const pandora::memory::LightString& adapterName = monitor.adapterName();
+      const pandora::memory::LightString& monitorName = monitor.attributes().id;
+      const pandora::memory::LightString& monitorDesc = monitor.attributes().description;
+#   endif
+
+    // find best physical device for monitor
+    VulkanLoader& loader = VulkanLoader::instance();
+    VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
+    uint32_t bestDeviceScore = 0;
+
+    for (VkPhysicalDevice* it = physicalDevices.get(); physicalDeviceCount; --physicalDeviceCount, ++it) {
+      VkPhysicalDeviceProperties deviceProperties;
+      VkPhysicalDeviceFeatures deviceFeatures{ VK_FALSE };
+      vkGetPhysicalDeviceProperties(*it, &deviceProperties);
+      vkGetPhysicalDeviceFeatures(*it, &deviceFeatures);
+
+      uint32_t deviceScore = __rateHardwareAdapter(deviceProperties, deviceFeatures); // quality score
+
+      // identify monitor (use target monitor as a priority):
+      // - if monitor.adapterName is supported by window manager, use it (if not, use VK_KHR_display if available)
+      // - deviceProperties.deviceName may be NULL or generic on some OS or drivers -> use VK_KHR_display as fallback
+      if ((!adapterName.empty() && adapterName == deviceProperties.deviceName)
+      ||  (loader.vk.isKhrDisplaySupported && __isDeviceConnectedToKhrDisplay(*it, monitorName, monitorDesc)) ) {
+        deviceScore |= 0x40000000u;
+      }
+
+      // store current device if: highest score + has valid command queue family (+ store queue family index if best device)
+      if (deviceScore > bestDeviceScore
+      &&  __findGraphicsCommandQueueFamily(*it, (deviceFeatures.sparseBinding && requestedFeatures.sparseBinding), outQueueFamilyIndex)) {
+        bestDevice = *it;
+        bestDeviceScore = deviceScore;
+      }
+    }
+    return bestDevice;
+  }
+
+
+// -- device/context creation -- -----------------------------------------------
+
+  // Create Vulkan instance and rendering device
+  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance,
+                     const VkPhysicalDeviceFeatures& features, bool areFeaturesRequired,
+                     const char** deviceExtensions, size_t extensionCount)
+    : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
+      _physicalDevice(VK_NULL_HANDLE),
+      _deviceContext(VK_NULL_HANDLE),
+      _graphicsCommandQueue(VK_NULL_HANDLE) {
+    // find hardware adapter for monitor
+    this->_physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), features, monitor,
+                                                 this->_commandQueueFamilyIndex); // throws
+    if (this->_physicalDevice == VK_NULL_HANDLE)
+      throw std::runtime_error("Vulkan: failed to find compatible GPU");
+
+    // feature support detection
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(this->_physicalDevice, &deviceFeatures);
+    if (areFeaturesRequired)
+      memcpy(&this->_features, &features, sizeof(VkPhysicalDeviceFeatures));
+    else
+      __getSupportedFeatures(deviceFeatures, features, this->_features);
+
+    // create rendering device
+    VkDeviceQueueCreateInfo cmdQueueInfo;
+    memset(&cmdQueueInfo, 0, sizeof(VkDeviceQueueCreateInfo));
+    cmdQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    cmdQueueInfo.queueFamilyIndex = this->_commandQueueFamilyIndex;
+    cmdQueueInfo.queueCount = 1;
+    float queuePriority = 1.0f;
+    cmdQueueInfo.pQueuePriorities = &queuePriority;
+    
+    VkDeviceCreateInfo deviceInfo;
+    memset(&deviceInfo, 0, sizeof(VkDeviceCreateInfo));
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.pQueueCreateInfos = &cmdQueueInfo;
+    deviceInfo.queueCreateInfoCount = 1;
+    deviceInfo.pEnabledFeatures = &(this->_features);
+#   if defined(_DEBUG) || !defined(NDEBUG)
+      try {
+        const char* debugLayer = __sdkDebugLayerName();
+        if (VulkanLoader::instance().findLayer(debugLayer)) {
+          deviceInfo.ppEnabledLayerNames = &debugLayer;
+          deviceInfo.enabledLayerCount = 1;
+        }
+      }
+      catch (...) {}
+#   endif
+
+    std::unique_ptr<const char* []> defaultExt = nullptr;
+    if (deviceExtensions != nullptr && extensionCount != 0) {
+      deviceInfo.ppEnabledExtensionNames = deviceExtensions;
+      deviceInfo.enabledExtensionCount = (uint32_t)extensionCount;
+    }
+    else {
+      defaultExt = __defaultDeviceExtensions(deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
+      deviceInfo.ppEnabledExtensionNames = defaultExt.get();
+    }
+
+    VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &(this->_deviceContext));
+    if (result != VK_SUCCESS)
+      throwError(result, "Vulkan: failed to create logical device");
+    vkGetDeviceQueue(this->_deviceContext, this->_commandQueueFamilyIndex, 0, &(this->_graphicsCommandQueue));
+  }
+
+
+// -- device/context destruction/move -- ---------------------------------------
+
+  // Destroy device and context resources
+  void Renderer::_destroy() noexcept {
+    if (this->_deviceContext != VK_NULL_HANDLE) {
+      vkDestroyDevice(this->_deviceContext, nullptr);
+      this->_graphicsCommandQueue = VK_NULL_HANDLE;
+      this->_deviceContext = VK_NULL_HANDLE;
+      this->_physicalDevice = VK_NULL_HANDLE;
+    }
+    this->_instance.reset();
+  }
+
+  Renderer::Renderer(Renderer&& rhs) noexcept
+    : _instance(std::move(rhs._instance)),
+      _physicalDevice(rhs._physicalDevice),
+      _deviceContext(rhs._deviceContext),
+      _graphicsCommandQueue(rhs._graphicsCommandQueue),
+      _commandQueueFamilyIndex(rhs._commandQueueFamilyIndex) {
+    memcpy(&this->_features, &rhs._features, sizeof(VkPhysicalDeviceFeatures));
+
+    rhs._instance = nullptr;
+    rhs._physicalDevice = VK_NULL_HANDLE;
+    rhs._deviceContext = VK_NULL_HANDLE;
+    rhs._graphicsCommandQueue = VK_NULL_HANDLE;
+  }
+  Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
+    _destroy();
+    this->_instance = std::move(rhs._instance);
+    this->_physicalDevice = rhs._physicalDevice;
+    this->_deviceContext = rhs._deviceContext;
+    this->_graphicsCommandQueue = rhs._graphicsCommandQueue;
+    this->_commandQueueFamilyIndex = rhs._commandQueueFamilyIndex;
+    memcpy(&this->_features, &rhs._features, sizeof(VkPhysicalDeviceFeatures));
+
+    rhs._instance = nullptr;
+    rhs._physicalDevice = VK_NULL_HANDLE;
+    rhs._deviceContext = VK_NULL_HANDLE;
+    rhs._graphicsCommandQueue = VK_NULL_HANDLE;
+    return *this;
+  }
+
+
+// -- accessors -- -------------------------------------------------------------
+  
+  // Read device adapter VRAM size
+  bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
+    //...
+    return false;
+  }
+  
+  // Convert standard sRGB(A) color to device RGB(A)
+  void Renderer::toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+    //...
+  }
+
+  // Flush command buffer
+  void Renderer::flush() noexcept {
+
+  }
+
+
+// -- feature support -- -------------------------------------------------------
+
+  // Verify if HDR functionalities are supported on current system
+  bool Renderer::isHdrAvailable() const noexcept {
+    //...
+    return false;
+  }
+
+  // Verify if a display monitor can display HDR colors
+  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
+    //...
+    return false;
+  }
+
+  // Screen tearing supported (variable refresh rate display)
+  bool Renderer::isTearingAvailable() const noexcept { 
+    //...
+    return false;
+  }
+
+
 // -----------------------------------------------------------------------------
 // _vulkan_resource.h -- error messages
 // -----------------------------------------------------------------------------
@@ -241,6 +645,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: return "NATIVE_WINDOW_IN_USE_KHR"; // window already used by a surface or another API
       case VK_ERROR_VALIDATION_FAILED_EXT: return "VALIDATION_FAILED_EXT";
       case VK_SUBOPTIMAL_KHR: return "SUBOPTIMAL_KHR"; // swapchain doesn't match surface properties exactly, but can still be used
+      case VK_ERROR_FRAGMENTED_POOL: return "FRAGMENTED_POOL";
+      case VK_ERROR_OUT_OF_POOL_MEMORY: return "OUT_OF_POOL_MEMORY";
+      case VK_ERROR_INVALID_EXTERNAL_HANDLE: return "INVALID_EXTERNAL_HANDLE";
+      case VK_ERROR_FRAGMENTATION: return "FRAGMENTATION";
+      case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS: return "INVALID_OPAQUE_CAPTURE_ADDRESS";
+      case VK_ERROR_INVALID_SHADER_NV: return "INVALID_SHADER";
+      case VK_ERROR_INCOMPATIBLE_VERSION_KHR: return "INCOMPATIBLE_VERSION_KHR";
+      case VK_ERROR_NOT_PERMITTED_EXT: return "NOT_PERMITTED_EXT";
+      case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT: return "FULL_SCREEN_EXCLUSIVE_MODE_LOST";
+      case VK_THREAD_IDLE_KHR: return "THREAD_IDLE_KHR";
+      case VK_THREAD_DONE_KHR: return "THREAD_DONE_KHR";
       default: return "INTERNAL_ERROR";
     }
   }
@@ -261,7 +676,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
     throw RuntimeException(std::move(message));
   }
-
+  
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(pop)
 # endif

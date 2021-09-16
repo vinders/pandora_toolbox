@@ -41,17 +41,85 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
   TEST_F(VulkanRendererTest, vulkanInstanceTest) {
-    {
-      auto defaultInstance = VulkanInstance::create();
-      EXPECT_TRUE(defaultInstance->vkInstance() != VK_NULL_HANDLE);
-      EXPECT_TRUE(defaultInstance->featureLevel() == VK_API_VERSION_1_2);
-    }
-    {
-      const char* addedExt = "VK_KHR_get_surface_capabilities2";
-      auto customInstance = VulkanInstance::create("ABC -  Test1", VK_MAKE_VERSION(2,3,4), VK_API_VERSION_1_1, NULL, 1);
-      EXPECT_TRUE(customInstance->vkInstance() != VK_NULL_HANDLE);
-      EXPECT_TRUE(customInstance->featureLevel() == VK_API_VERSION_1_1);
-    }
+    auto defaultInstance = VulkanInstance::create();
+    ASSERT_TRUE(defaultInstance != nullptr);
+    EXPECT_TRUE(defaultInstance->vkInstance() != VK_NULL_HANDLE);
+    EXPECT_TRUE(defaultInstance->featureLevel() == VK_API_VERSION_1_2);
+    defaultInstance = nullptr;
+
+    const char* addedExt = "VK_KHR_get_surface_capabilities2";
+    auto customInstance = VulkanInstance::create("ABC -  Test1", VK_MAKE_VERSION(2,3,4), VK_API_VERSION_1_1, &addedExt, 1);
+    ASSERT_TRUE(customInstance != nullptr);
+    EXPECT_TRUE(customInstance->vkInstance() != VK_NULL_HANDLE);
+    EXPECT_TRUE(customInstance->featureLevel() == VK_API_VERSION_1_1);
+  }
+
+  TEST_F(VulkanRendererTest, createDefaultRenderer) {
+    pandora::hardware::DisplayMonitor monitor;
+    Renderer renderer(monitor);
+    EXPECT_TRUE(renderer.device() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.context() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.vkInstance() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.featureLevel() >= (uint32_t)VK_API_VERSION_1_2);
+
+    bool isMonitorHdr = renderer.isMonitorHdrCapable(monitor);
+    if (isMonitorHdr) { EXPECT_TRUE(renderer.isHdrAvailable()); }
+    size_t dedicatedRam = 0, sharedRam = 0;
+    //EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
+    //EXPECT_TRUE(sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
+
+    const char* trueVal = "true";
+    const char* falseVal = "false";
+    printf("Vulkan context:\n > API level: %u.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
+           " > Max render views: %u\n > Monitor HDR capable: %s\n"
+           " > HDR API available: %s\n > Tearing available: %s\n", 
+           (renderer.featureLevel() >> 22) & 0xFF, (renderer.featureLevel() >> 12) & 0xFF,
+           (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
+           (uint32_t)renderer.maxRenderTargets(),
+           isMonitorHdr ? trueVal : falseVal,
+           renderer.isHdrAvailable() ? trueVal : falseVal,
+           renderer.isTearingAvailable() ? trueVal : falseVal);
+
+    //ColorChannel gammaCorrectWhite[4];
+    //float white[] { 1.f, 1.f, 1.f, 0.5f };
+    //renderer.toGammaCorrectColor(white, gammaCorrectWhite);
+    //EXPECT_TRUE(gammaCorrectWhite[0] >= 0.9f && gammaCorrectWhite[0] <= 1.2f);
+    //EXPECT_TRUE(gammaCorrectWhite[1] >= 0.9f && gammaCorrectWhite[1] <= 1.2f);
+    //EXPECT_TRUE(gammaCorrectWhite[2] >= 0.9f && gammaCorrectWhite[2] <= 1.2f);
+    //EXPECT_EQ(0.5f, gammaCorrectWhite[3]);
+
+    auto instance = renderer.vkInstance();
+    auto physical = renderer.device();
+    auto device = renderer.context();
+    auto featLevel = renderer.featureLevel();
+    Renderer moved = std::move(renderer);
+    EXPECT_EQ(instance, moved.vkInstance());
+    EXPECT_EQ(physical, moved.device());
+    EXPECT_TRUE(moved.context() != nullptr);
+    EXPECT_EQ(device, moved.context());
+    EXPECT_EQ(featLevel, moved.featureLevel());
+    renderer = std::move(moved);
+    EXPECT_EQ(instance, renderer.vkInstance());
+    EXPECT_EQ(physical, renderer.device());
+    EXPECT_TRUE(renderer.context() != nullptr);
+    EXPECT_EQ(device, renderer.context());
+    EXPECT_EQ(featLevel, renderer.featureLevel());
+    EXPECT_EQ(isMonitorHdr, renderer.isMonitorHdrCapable(monitor));
+  }
+
+  TEST_F(VulkanRendererTest, createCustomRenderer) {
+    auto customInstance = VulkanInstance::create("TestRenderer", VK_MAKE_VERSION(2,3,4), VK_API_VERSION_1_1, nullptr, 0);
+    ASSERT_TRUE(customInstance != nullptr);
+    EXPECT_TRUE(customInstance->vkInstance() != VK_NULL_HANDLE);
+    EXPECT_TRUE(customInstance->featureLevel() == VK_API_VERSION_1_1);
+
+    pandora::hardware::DisplayMonitor monitor;
+    const char* extensions[] { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    Renderer renderer(monitor, customInstance, Renderer::defaultFeatures(), false, extensions, sizeof(extensions)/sizeof(*extensions));
+    EXPECT_TRUE(renderer.device() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.context() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.vkInstance() != VK_NULL_HANDLE);
+    EXPECT_TRUE(renderer.featureLevel() == (uint32_t)VK_API_VERSION_1_1);
   }
 
 # if defined(_WINDOWS) && !defined(__MINGW32__)

@@ -23,12 +23,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <memory>
 # include <hardware/display_monitor.h>
 # include "./api/types.h"      // includes vulkan
+# include "./scissor.h"        // includes vulkan
+# include "./viewport.h"       // includes vulkan
 
   namespace pandora {
     namespace video {
       namespace vulkan {
-        class SwapChain;
-
         /// @class VulkanInstance
         /// @brief Vulkan driver client instance, used to initialize Renderer objects
         class VulkanInstance final {
@@ -47,7 +47,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                               Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
           /// @param additionalExtCount     Array size for 'instanceAdditionalExts'.
           /// @throws - runtime_error: creation failure (vulkan not supported, missing extensions, feature level too high...).
-          ///         - bad_alloc: allocation failure.
+          ///         - bad_alloc: memory allocation failure.
           static std::shared_ptr<VulkanInstance> create(const char* appName = nullptr,
                                                         uint32_t appVersion = VK_MAKE_VERSION(1,0,0),
                                                         uint32_t featureLevel = VK_API_VERSION_1_2,
@@ -67,6 +67,110 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #         endif
         };
 
+        // ---
+        
+        /// @class Renderer
+        /// @brief Vulkan rendering device and context (specific to adapter)
+        /// @warning - Renderer and VulkanInstance are the main Vulkan resources, and should be kept alive while the program runs.
+        ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer must be created.
+        ///          - Accessors to native Vulkan resources should be reserved for internal usage or for advanced features.
+        /// @remarks - To render on display output, create a SwapChain + setActiveRenderTarget with it and a depth buffer.
+        ///          - To render to a texture, create a TextureTarget2D + setActiveRenderTarget with it and a depth buffer.
+        ///          - Multiple active targets can be used simultaneously, to render the same image on multiple outputs/textures.
+        ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
+        ///          - Multi-window rendering (different adapters): use different Render instances with their own SwapChain.
+        ///          - Split-screen rendering (same window): alternate between different Viewport instances on the same SwapChain.
+        ///          - Optimization: minimize shader changes, state changes, drawing calls: sort by shader, then texture/material, then other states.
+        ///          - Optimization: order of meshes and polygons: front to back (if a depth buffer is enabled).
+        ///          - Optimization: align vertex buffer entries to a multiple of 16-byte per entry (add padding if necessary).
+        class Renderer final {
+        public:
+          /// @brief Create Vulkan rendering device and context
+          /// @param monitor   Target display monitor for the renderer: used to determine the adapter to choose.
+          /// @param instance  Vulkan driver instance (or NULL to create default instance).
+          /// @param features  Features to support in device context (or 'defaultFeatures()' to enable standard features used by toolbox).
+          ///                  If you choose advanced features, you'll probably need to specify 'deviceExtensions' as well.
+          ///                  Warning: if some features are disabled, functionalities of the toolbox depending on them won't be usable anymore.
+          /// @param areFeaturesRequired If some features are not supported by the GPU, throw error (true) or just disable them (false).
+          ///                            If set to 'false', call 'enabledFeatures()' after creation to verify if something's missing.
+          /// @param deviceExtensions Custom array of device extension to enable
+          ///                         (or NULL to enable all standard extensions used by the toolbox).
+          ///                         Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+          ///                         Warning: if the value is not NULL, no other extension than those specified here will be enabled
+          ///                         -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
+          /// @param extensionCount   Array size for 'deviceExtensions'.
+          /// @throws - runtime_error: creation failure.
+          ///         - bad_alloc: memory allocation failure.
+          Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance = nullptr,
+                   const VkPhysicalDeviceFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
+                   const char** deviceExtensions = nullptr, size_t extensionCount = 0);
+          /// @brief Destroy device and context resources
+          ~Renderer() noexcept { _destroy(); }
+          
+          Renderer(const Renderer&) = delete;
+          Renderer(Renderer&& rhs) noexcept;
+          Renderer& operator=(const Renderer&) = delete;
+          Renderer& operator=(Renderer&& rhs) noexcept;
+
+          /// @brief Create default list of features (all basic standard features enabled)
+          /// @remarks Used to create a Renderer object.
+          ///          Should be fine-tuned to improve performance or to support special shader features.
+          static VkPhysicalDeviceFeatures defaultFeatures() noexcept;
+          /// @brief Get list of features enabled in renderer
+          const VkPhysicalDeviceFeatures& enabledFeatures() const noexcept { return this->_features; }
+          
+          /// @brief Flush command buffer
+          /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
+          ///                                 - to wait for object destruction
+          void flush() noexcept;
+          
+
+          // -- accessors --
+          
+          inline DeviceHandle device() const noexcept { return this->_physicalDevice; }  ///< Get physical rendering device (VkPhysicalDevice)
+          inline DeviceContext context() const noexcept { return this->_deviceContext; } ///< Get logical device context (VkDevice)
+          inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
+          inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
+          
+          /// @brief Read device adapter VRAM size
+          /// @returns Read success
+          bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
+          /// @brief Convert color/depth/component data format to native format (usable in input layout description) -- see "video/vulkan/shader.h".
+          static constexpr inline VkFormat toLayoutFormat(DataFormat format) noexcept { return _getDataFormatComponents(format); }
+          /// @brief Convert standard sRGB(A) color to device RGB(A)
+          /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
+          static void toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
+          
+          
+          // -- feature support --
+          
+          /// @brief Verify if HDR functionalities are supported on current system
+          /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
+          bool isHdrAvailable() const noexcept;
+          /// @brief Verify if a display monitor can display HDR colors
+          /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
+          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
+          /// @brief Screen tearing supported (variable refresh rate display)
+          bool isTearingAvailable() const noexcept;
+          
+          
+          // -- render target operations --
+          
+          /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
+          static constexpr inline size_t maxRenderTargets() noexcept { return 0; }
+          
+
+        private:
+          void _destroy() noexcept;
+          
+        private:
+          VkPhysicalDeviceFeatures _features{ 0 };
+          std::shared_ptr<VulkanInstance> _instance = nullptr;
+          DeviceHandle _physicalDevice = VK_NULL_HANDLE;
+          DeviceContext _deviceContext = VK_NULL_HANDLE;
+          VkQueue _graphicsCommandQueue = VK_NULL_HANDLE;
+          uint32_t _commandQueueFamilyIndex = 0;
+        };
       }
     }
   }
