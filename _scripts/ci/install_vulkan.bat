@@ -13,12 +13,6 @@ if not exist ./VulkanSDK-1.2-Installer.exe (
 )
 
 :: run installer
-echo "Disable UAC popups..."
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 00000000 /f
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorUser /t REG_DWORD /d 00000000 /f
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 00000000 /f
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v PromptOnSecureDesktop /t REG_DWORD /d 00000000 /f
-
 echo "Starting install..."
 start /wait "VulkanSDK-1.2-Installer.exe /S"
 if not exist C:\VulkanSDK\%_VULKAN_SDK_VERSION%\ (
