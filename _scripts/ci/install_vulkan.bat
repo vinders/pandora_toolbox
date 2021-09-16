@@ -19,15 +19,17 @@ if not exist ./VulkanSDK.exe (
 )
 
 :: run installer
-runas /user:Administrator VulkanSDK.exe /S
+runas /user:Administrator "VulkanSDK.exe /S"
 del /f VulkanSDK.exe
 echo "Vulkan SDK install complete!"
 
-if "%VULKAN_SDK%"=="" (
-    setx VULKAN_SDK C:\VulkanSDK\%_VULKAN_SDK_VERSION%
-    setx VK_SDK_PATH C:\VulkanSDK\%_VULKAN_SDK_VERSION%
-    set VULKAN_SDK=C:\VulkanSDK\%_VULKAN_SDK_VERSION%
-    set VK_SDK_PATH=C:\VulkanSDK\%_VULKAN_SDK_VERSION%
+if exist C:\VulkanSDK\%_VULKAN_SDK_VERSION%\ (
+    if "%VULKAN_SDK%"=="" (
+        setx VULKAN_SDK C:\VulkanSDK\%_VULKAN_SDK_VERSION%
+        setx VK_SDK_PATH C:\VulkanSDK\%_VULKAN_SDK_VERSION%
+        set VULKAN_SDK=C:\VulkanSDK\%_VULKAN_SDK_VERSION%
+        set VK_SDK_PATH=C:\VulkanSDK\%_VULKAN_SDK_VERSION%
+    )
 )
   
 exit /B 0
