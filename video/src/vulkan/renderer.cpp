@@ -640,18 +640,17 @@ Includes hpp implementations at the end of the file
       if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
         auto formats = std::unique_ptr<VkSurfaceFormatKHR[]>(new VkSurfaceFormatKHR[formatCount]);
         VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, formats.get());
-        if (result != VK_SUCCESS && result != VK_INCOMPLETE)
-          return false;
-
-        for (const VkSurfaceFormatKHR* it = formats.get(); !isHdrAvailable && formatCount; --formatCount, ++it) {
-          switch (it->colorSpace) {
-            case VK_COLOR_SPACE_HDR10_HLG_EXT:
-            case VK_COLOR_SPACE_HDR10_ST2084_EXT:
-            case VK_COLOR_SPACE_BT709_LINEAR_EXT:
-            case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:
-            case VK_COLOR_SPACE_BT2020_LINEAR_EXT: 
-            case VK_COLOR_SPACE_DOLBYVISION_EXT: isHdrAvailable = true; break;
-            default: break;
+        if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+          for (const VkSurfaceFormatKHR* it = formats.get(); !isHdrAvailable && formatCount; --formatCount, ++it) {
+            switch (it->colorSpace) {
+              case VK_COLOR_SPACE_HDR10_HLG_EXT:
+              case VK_COLOR_SPACE_HDR10_ST2084_EXT:
+              case VK_COLOR_SPACE_BT709_LINEAR_EXT:
+              case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:
+              case VK_COLOR_SPACE_BT2020_LINEAR_EXT:
+              case VK_COLOR_SPACE_DOLBYVISION_EXT: isHdrAvailable = true; break;
+              default: break;
+            }
           }
         }
       }
