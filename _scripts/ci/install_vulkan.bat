@@ -14,8 +14,8 @@ if not exist ./VulkanSDK.exe (
 
 :: run installer
 echo "Starting install..."
-reg add "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 00000000
-reg add "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 00000000
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 00000000
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 00000000
 start /wait "VulkanSDK.exe /S"
 if not exist C:\VulkanSDK\%_VULKAN_SDK_VERSION%\ (
     echo "Failed to install..."
