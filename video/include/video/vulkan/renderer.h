@@ -181,7 +181,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Set rasterizer scissor-test rectangle
           void setScissorRectangle(const ScissorRectangle& rectangle) noexcept;
           
+          // ---
+
+          /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
+          inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
           
+
         private:
           void _destroy() noexcept;
           
