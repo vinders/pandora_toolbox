@@ -19,7 +19,7 @@ if not exist ./VulkanSDK.exe (
 )
 
 :: run installer
-runas /user:Administrator "VulkanSDK.exe /S"
+start /wait "VulkanSDK.exe /S"
 del /f VulkanSDK.exe
 echo "Vulkan SDK install complete!"
 
