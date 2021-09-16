@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ -z "$1" ]; then
-  VULKAN_VERSION=1.2.154.0
+  VULKAN_VERSION=1.2.189.0
 else
   VULKAN_VERSION="$1"
 fi

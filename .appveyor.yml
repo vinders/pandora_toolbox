@@ -27,6 +27,7 @@ environment:
     GENERATOR: Ninja
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
+    VULKAN: true
     PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
     LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
     PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
@@ -86,7 +87,7 @@ install:
   - set PATH=C:\Python38-x64;C:\Python38-x64\Scripts;%APPVEYOR_BUILD_FOLDER%\deps\bin;%PATH%
  
   # ---- Vulkan install ----
-  #- if defined VULKAN call _scripts/ci/install_vulkan.bat
+  - if defined VULKAN call _scripts/ci/install_vulkan.bat
   # ---- Pacman packages install ----
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc ""
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman -Rd --noconfirm mingw-w64-i686-gcc-ada mingw-w64-x86_64-gcc-ada mingw-w64-i686-gcc-objc mingw-w64-x86_64-gcc-objc"

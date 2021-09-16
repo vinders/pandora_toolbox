@@ -1,6 +1,6 @@
 @echo off
 
-set _VULKAN_SDK_VERSION=1.2.154.1
+set _VULKAN_SDK_VERSION=1.2.189.2
 
 :: fetch vulkan SDK installer
 set /A retry = 1
