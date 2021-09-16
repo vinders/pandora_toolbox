@@ -471,7 +471,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @remarks The same BlendParams can (and should) be used to build multiple BlendState instances (if needed).
           /// @throws runtime_error on creation failure
           BlendState createBlendState(const BlendParams& params);
-          /// @brief Create blend state with different color/alpha params for each render-target (up to 'Renderer::maxRenderTargets()' targets (usually 8))
+          /// @brief Create blend state with different color/alpha params for each render-target (up to 'renderer.maxRenderTargets()' targets (usually 8))
           /// @param perTargetParams  Array of color/alpha blending params, for each render-target (array index == target index).
           /// @param arrayLength      Array length of 'perTargetParams'.
           /// @throws runtime_error on creation failure

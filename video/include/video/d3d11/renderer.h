@@ -96,8 +96,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
           inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Verify if a display monitor can display HDR colors
-          /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
-          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept;
+          /// @remarks - Should be called to know if a HDR/SDR pipeline should be created.
+          ///          - Direct3D doesn't need the 'window' handle param (same API as Vulkan/OpenGL renderers).
+          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, void* window = nullptr) const noexcept;
           
           /// @brief "Flip" swap mode supported (more efficient) -> internal usage
           inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
@@ -106,6 +107,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           
           // -- render target operations --
+
+          /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
+          constexpr inline size_t maxViewports() noexcept { return D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
@@ -120,7 +124,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
 
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
-          static constexpr inline size_t maxRenderTargets() noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
+          constexpr inline size_t maxRenderTargets() noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
           
           /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
@@ -172,7 +176,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- primitive binding --
           
           /// @brief Max slots (or array size from first slot) for vertex buffers
-          static constexpr inline size_t maxVertexBufferSlots() noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
+          constexpr inline size_t maxVertexBufferSlots() noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
           
           /// @brief Bind active vertex array buffer to input stage slot
           /// @param slotIndex      Input stage slot to set/replace with vertex array buffer
@@ -276,7 +280,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- pipeline status operations - constant/uniform buffers --
           
           /// @brief Max slots (or array size from first slot) for constant/uniform buffers
-          static constexpr inline size_t maxUniformSlots() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
+          constexpr inline size_t maxUniformSlots() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
           
           /// @brief Bind constant/uniform buffer(s) to the vertex shader stage
           /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
@@ -338,7 +342,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- pipeline status operations - textures / shader resources --
           
           /// @brief Max slots (or array size from first slot) for shader resources / textures
-          static constexpr inline size_t maxResourceSlots() noexcept { return D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; }
+          constexpr inline size_t maxResourceSlots() noexcept { return D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; }
           
           /// @brief Bind texture resource(s) to the vertex shader stage
           /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
@@ -422,7 +426,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
           
           /// @brief Max slots (or array size from first slot) for sample filters
-          static constexpr inline size_t maxFilterStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+          constexpr inline size_t maxFilterStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index

@@ -400,8 +400,8 @@ Includes hpp implementations at the end of the file
 // -- feature support -- -------------------------------------------------------
 
   // Verify if a display monitor can display HDR colors
-# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
-    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target) const noexcept {
+  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, void*) const noexcept {
+#   if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
       try {
         auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
         if (dxgiDevice) {
@@ -422,11 +422,9 @@ Includes hpp implementations at the end of the file
           }
         }
       } catch (...) {}
-      return false; // not found
-    }
-# else
-    bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor&) const noexcept { return false; }
-# endif
+#   endif
+    return false; // not found
+  }
 
   // Screen tearing supported (variable refresh rate display)
   bool Renderer::isTearingAvailable() const noexcept { 
@@ -470,8 +468,6 @@ Includes hpp implementations at the end of the file
         memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_RECT));
       this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
     }
-    else
-      this->_context->RSSetScissorRects(0, nullptr);
   }
   
   // ---
