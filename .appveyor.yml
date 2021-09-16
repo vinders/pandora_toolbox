@@ -92,20 +92,19 @@ install:
  
   # ---- Vulkan install ----
   - ps: >-
-      if (Test-Path 'env:ImportStatus ') { 
+      if (Test-Path 'env:VULKAN_SDK_VERSION') { 
         if (-not (Test-Path -Path "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION" -PathType Container)) {
           cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION"
         }
       }
   - ps: >-
-      if (Test-Path 'env:ImportStatus ') { 
+      if (Test-Path 'env:VULKAN_SDK_VERSION') { 
         [Environment]::SetEnvironmentVariable(
           "VULKAN_SDK",
           "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION",
           "User"
         )
       }
-  - if defined VULKAN_SDK_VERSION echo %VULKAN_SDK%
   # ---- Pacman packages install ----
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc ""
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc "yes | pacman -Rd --noconfirm mingw-w64-i686-gcc-ada mingw-w64-x86_64-gcc-ada mingw-w64-i686-gcc-objc mingw-w64-x86_64-gcc-objc"
