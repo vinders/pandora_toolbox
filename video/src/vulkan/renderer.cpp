@@ -397,6 +397,8 @@ Includes hpp implementations at the end of the file
   static VkPhysicalDevice __getHardwareAdapter(VkInstance instance, const VkPhysicalDeviceFeatures& requestedFeatures,
                                                const pandora::hardware::DisplayMonitor& monitor, uint32_t featureLevel,
                                                uint32_t& outQueueFamilyIndex) {
+    VulkanLoader& loader = VulkanLoader::instance();
+
     // query physical devices
     uint32_t physicalDeviceCount = 0;
     if (vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr) != VK_SUCCESS || physicalDeviceCount == 0)
@@ -419,7 +421,6 @@ Includes hpp implementations at the end of the file
 #   endif
 
     // find best physical device for monitor
-    VulkanLoader& loader = VulkanLoader::instance();
     VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
     uint32_t bestDeviceScore = 0;
     featureLevel = __P_VK_API_VERSION_NOVARIANT(featureLevel);
