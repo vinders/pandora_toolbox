@@ -55,7 +55,8 @@ environment:
     GENERATOR: Visual Studio 16 2019
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
-    #VULKAN_SDK_VERSION: 1.2.182.0
+    VULKAN_SDK_VERSION: 1.2.182.0
+    VULKAN_LIB_ARCH: x64
     
   # MSVC-VS2019 x86 (x32) / C++17
   - TOOLCHAIN: "Visual Studio 2019"
@@ -95,13 +96,14 @@ install:
           cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION" --no-progress
         }
       }
+  - cmd: if defined VULKAN_SDK_VERSION curl -L --silent --show-error --output VulkanRT-1.2-Components.zip "https://sdk.lunarg.com/sdk/download/%VULKAN_SDK_VERSION%/windows/VulkanRT-%VULKAN_SDK_VERSION%-Components.zip?Human=true"
   - ps: >-
       if (Test-Path 'env:VULKAN_SDK_VERSION') { 
-        [Environment]::SetEnvironmentVariable(
-          "VULKAN_SDK",
-          "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION",
-          "User"
-        )
+        [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
+        Expand-Archive ./VulkanRT-1.2-Components.zip -DestinationPath ./binary
+        Copy-Item "./binary/VulkanRT-%VULKAN_SDK_VERSION%-Components/%VULKAN_LIB_ARCH%/vulkan-1.dll" -Destination "C:\VulkanSDK"
+        Remove-Item -Path ./VulkanRT-1.2-Components.zip -Force
+        Remove-Item ./binary/*
       }
   # ---- Pacman packages install ----
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc ""
@@ -128,8 +130,6 @@ install:
   - if defined LIB_SUFFIX set PATH=%PATH%;%LIB_SUFFIX%
 
 build_script:
-  - if defined VULKAN_SDK_VERSION setx VULKAN_SDK C:\VulkanSDK\%VULKAN_SDK_VERSION%
-  - if defined VULKAN_SDK_VERSION set VULKAN_SDK=C:\VulkanSDK\%VULKAN_SDK_VERSION%
   # ---- project version + build directory ----
   - cd C:\projects\pandora_toolbox
   - call _scripts/update_version.bat
@@ -138,6 +138,10 @@ build_script:
   - mkdir %PACKAGE_ID%
   - cd ..
   # ---- cmake generation + build ----
+  - if defined VULKAN_SDK_VERSION setx VULKAN_SDK C:\VulkanSDK\%VULKAN_SDK_VERSION%
+  - if defined VULKAN_SDK_VERSION set VULKAN_SDK=C:\VulkanSDK\%VULKAN_SDK_VERSION%
+  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
+  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
   - cmake -S . -B ./_build/%PACKAGE_ID% -G"%GENERATOR%" %CMAKE_ARGS% || (echo CMAKEERROR && echo CMAKEOUTPUT && exit 1)
   - cmake --build ./_build/%PACKAGE_ID% --config %BUILD_TYPE% --target install
 
