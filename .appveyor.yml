@@ -13,7 +13,6 @@ environment:
   # BUILD_TYPE: Debug
   # CMAKE_ARGS: -A x64 -T ClangCL -DCMAKE_FLAGS="-m64"
   # GENERATOR: Visual Studio 16 2019
-  # VULKAN: true
   # VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
   # VCVARSARG: amd64
     
@@ -56,7 +55,7 @@ environment:
     GENERATOR: Visual Studio 16 2019
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
-    VULKAN_SDK_VERSION: 1.2.182.0
+    #VULKAN_SDK_VERSION: 1.2.182.0
     
   # MSVC-VS2019 x86 (x32) / C++17
   - TOOLCHAIN: "Visual Studio 2019"
@@ -93,7 +92,7 @@ install:
   - ps: >-
       if (Test-Path 'env:VULKAN_SDK_VERSION') { 
         if (-not (Test-Path -Path "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION" -PathType Container)) {
-          cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION"
+          cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION" --no-progress
         }
       }
   - ps: >-
