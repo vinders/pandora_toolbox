@@ -21,6 +21,10 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 #pragma once
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
+# if defined(_WINDOWS) && !defined(__MINGW32__)
+#   pragma warning(push)
+#   pragma warning(disable: 26812) // disable warnings about vulkan enums
+# endif
 # include <cstdint>
 # include "./vulkan.h"
 # include <system/_private/_enum_flags.h>
@@ -338,4 +342,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
     }
   }
   _P_FLAGS_OPERATORS(pandora::video::vulkan::ColorComponentFlag, int);
+# if defined(_WINDOWS) && !defined(__MINGW32__)
+#   pragma warning(pop)
+# endif
 #endif

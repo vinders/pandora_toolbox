@@ -200,6 +200,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           VkQueue _graphicsCommandQueue = VK_NULL_HANDLE;
           uint32_t _commandQueueFamilyIndex = 0;
         };
+
+        // Throw native error message (or default if no message available)
+        void throwError(VkResult result, const char* messagePrefix);
       }
     }
   }

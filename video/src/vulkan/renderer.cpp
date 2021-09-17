@@ -20,12 +20,10 @@ Includes hpp implementations at the end of the file
 (grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #if defined(_VIDEO_VULKAN_SUPPORT)
-# if defined(_WINDOWS)
-#   ifndef __MINGW32__
-#     pragma warning(push)
-#     pragma warning(disable: 26812) // disable warnings about vulkan enums
-#     pragma warning(disable: 4100)  // disable warnings about unused params
-#   endif
+# if defined(_WINDOWS) && !defined(__MINGW32__)
+#   pragma warning(push)
+#   pragma warning(disable: 26812) // disable warnings about vulkan enums
+#   pragma warning(disable: 4100)  // disable warnings about unused params
 # endif
 # include <cstddef>
 # include <cstdlib>
@@ -39,7 +37,6 @@ Includes hpp implementations at the end of the file
 # include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
 # include "video/vulkan/renderer.h"
-# include "video/vulkan/_private/_vulkan_resource.h"
 #if !defined(_CPP_REVISION) || _CPP_REVISION != 14
 # define __if_constexpr if constexpr
 #else
@@ -618,7 +615,35 @@ Includes hpp implementations at the end of the file
 
   // Flush command buffers
   void Renderer::flush() noexcept {
-    //...
+    /*if (commandBuffer == VK_NULL_HANDLE || commandBufferMode != recording)
+      return;
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+      vkResetCommandBuffer(commandBuffer, 0);
+      return;
+    }
+
+    VkFenceCreateInfo fenceInfo;
+    memset(&fenceInfo, 0, sizeof(VkFenceCreateInfo));
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = 0;
+
+    VkFence fence;
+    if (vkCreateFence(this->_deviceContext, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+      return;
+
+    VkSubmitInfo submitInfo;
+    memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    if (vkQueueSubmit(this->_graphicsCommandQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
+      vkDestroyFence(this->_deviceContext, fence, nullptr);
+      return;
+    }
+
+    vkWaitForFences(this->_deviceContext, 1, &fence, true, 10000000000);
+    vkResetFences(this->_deviceContext, 1, &fence);
+    vkDestroyFence(this->_deviceContext, fence, nullptr);*/
   }
 
 
@@ -723,10 +748,10 @@ Includes hpp implementations at the end of the file
   void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
     //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
   }
-  
+
 
 // -----------------------------------------------------------------------------
-// _vulkan_resource.h -- error messages
+// -- error messages --
 // -----------------------------------------------------------------------------
 
   // Exception class with LightString
@@ -775,19 +800,19 @@ Includes hpp implementations at the end of the file
     }
   }
 
-  void pandora::video::vulkan::throwError(VkResult result, const char* messageContent) {
+  void pandora::video::vulkan::throwError(VkResult result, const char* messagePrefix) {
     const char* vkError = __getVulkanError(result);
 
     // pre-compute total size to avoid having multiple dynamic allocs
-    size_t prefixSize = strlen(messageContent);
+    size_t prefixSize = strlen(messagePrefix);
     size_t errorSize = strlen(vkError);
     auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + errorSize);
     
     // copy message in preallocated string
     if (!message->empty()) { // if no alloc failure
-      memcpy((void*)message->data(),                 messageContent, prefixSize*sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize]),    ": ",         size_t{2u}*sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize+2u]), vkError,      errorSize *sizeof(char));
+      memcpy((void*)message->data(),                 messagePrefix, prefixSize*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize]),    ": ",        size_t{2u}*sizeof(char));
+      memcpy((void*)&(message->data()[prefixSize+2u]), vkError,     errorSize *sizeof(char));
     }
     throw RuntimeException(std::move(message));
   }
