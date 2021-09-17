@@ -93,7 +93,6 @@ install:
           new-item "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH" -itemtype directory
           Copy-Item "./tmp/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH\vulkan-1.dll"
           Remove-Item -Path 'Components.zip' -Force
-          Remove-Item "./tmp"
         }
       }
   # ---- Pacman packages install ----
