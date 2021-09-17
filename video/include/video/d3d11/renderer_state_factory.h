@@ -401,7 +401,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return *this;
           }
           /// @brief Border color used with TextureWrap::clampToBorder (color[4]: R/G/B/A) - color range == [0.0 ; 1.0] - NULL to use default (transparent).
-          ///        Color should be gamma correct (see Renderer.toGammaCorrectColor).
+          ///        Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           FilterParams& borderColor(const ColorChannel rgba[4]) noexcept;
           
           /// @brief Set mip-map level-of-detail range

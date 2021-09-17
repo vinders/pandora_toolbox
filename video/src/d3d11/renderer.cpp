@@ -386,8 +386,8 @@ Includes hpp implementations at the end of the file
     return isSuccess;
   }
   
-  // Convert standard sRGB(A) color to device RGB(A)
-  void Renderer::toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+  // Convert standard sRGB(A) color to gamma-correct linear RGB(A)
+  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
     DirectX::XMFLOAT3 colorArray(colorRgba);
     DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
     outRgba[0] = colorArray.x;

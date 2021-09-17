@@ -222,7 +222,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     float color[4] = { 0.f,0.5f,0.6f,1.f };
     FLOAT gammaCorrectColor[4]{ 0 };
-    renderer->toGammaCorrectColor(color, gammaCorrectColor);
+    renderer->sRgbToGammaCorrectColor(color, gammaCorrectColor);
 
     renderer->clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
     renderer->bindInputLayout(inputLayout.handle());

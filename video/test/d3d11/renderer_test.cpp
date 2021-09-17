@@ -69,7 +69,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     ColorChannel gammaCorrectWhite[4];
     float white[] { 1.f, 1.f, 1.f, 0.5f };
-    renderer.toGammaCorrectColor(white, gammaCorrectWhite);
+    renderer.sRgbToGammaCorrectColor(white, gammaCorrectWhite);
     EXPECT_TRUE(gammaCorrectWhite[0] >= 0.9f && gammaCorrectWhite[0] <= 1.2f);
     EXPECT_TRUE(gammaCorrectWhite[1] >= 0.9f && gammaCorrectWhite[1] <= 1.2f);
     EXPECT_TRUE(gammaCorrectWhite[2] >= 0.9f && gammaCorrectWhite[2] <= 1.2f);

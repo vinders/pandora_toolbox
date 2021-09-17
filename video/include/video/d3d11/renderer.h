@@ -85,9 +85,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
           /// @brief Convert color/depth/component data format to native format (usable in input layout description) -- see "video/d3d11/shader.h".
           static constexpr inline DXGI_FORMAT toLayoutFormat(DataFormat format) noexcept { return _getDataFormatComponents(format); }
-          /// @brief Convert standard sRGB(A) color to device RGB(A)
+
+          /// @brief Convert standard sRGB(A) color to gamma-correct linear RGB(A)
           /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
-          static void toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
+          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
           
           
           // -- feature support --
@@ -129,12 +130,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
           ///          - If the color value is NULL, the default color is used (black).
-          ///          - Color should be gamma correct (see Renderer.toGammaCorrectColor).
+          ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           void clearViews(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
           /// @brief Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
           ///          - If the color value is NULL, the default color is used (black).
-          ///          - Color should be gamma correct (see Renderer.toGammaCorrectColor).
+          ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           void clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
           
           /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
@@ -163,13 +164,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Bind/replace active render-target(s) in Renderer (multi-target) + clear render-targets/buffers
           /// @remarks - If the render-targets contain new buffers (or resized), this is the recommended method (to reset them before using them).
           ///          - If the color value is NULL, the default color is used (black).
-          ///          - Color should be gamma correct (see Renderer.toGammaCorrectColor).
+          ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           void setCleanActiveRenderTargets(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, 
                                            const ColorChannel clearColorRgba[4] = nullptr) noexcept;
           /// @brief Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
           /// @remarks - If the render-target is a new buffer (or resized), this is the recommended method (to reset it before using it).
           ///          - If the color value is NULL, the default color is used (black).
-          ///          - Color should be gamma correct (see Renderer.toGammaCorrectColor).
+          ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           void setCleanActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
           
           
