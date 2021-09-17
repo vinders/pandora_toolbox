@@ -140,9 +140,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
           /// @brief Convert color/depth/component data format to native format (usable in input layout description) -- see "video/vulkan/shader.h".
           static constexpr inline VkFormat toLayoutFormat(DataFormat format) noexcept { return _getDataFormatComponents(format); }
-          /// @brief Convert standard sRGB(A) color to device RGB(A)
+
+          /// @brief Convert standard sRGB(A) color to gamma-correct linear RGB(A)
           /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
-          static void toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
+          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
           
           
           // -- feature support --
@@ -186,7 +187,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
           inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
           
-
+          
         private:
           void _destroy() noexcept;
           

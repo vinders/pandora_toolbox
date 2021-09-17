@@ -33,6 +33,8 @@ Includes hpp implementations at the end of the file
 # include <cmath>
 # include <stdexcept>
 # include <memory/light_string.h>
+# include <glm/glm.hpp>
+# include <glm/gtc/color_space.hpp>
 
 # include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
@@ -605,9 +607,13 @@ Includes hpp implementations at the end of the file
     return (memoryProperties.memoryHeapCount != 0);
   }
   
-  // Convert standard sRGB(A) color to device RGB(A)
-  void Renderer::toGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
-    //...
+  // Convert standard sRGB(A) color to gamma-correct linear RGB(A)
+  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+    glm::vec3 gammaCorrect = glm::convertSRGBToLinear(glm::vec3(colorRgba[0], colorRgba[1], colorRgba[2]));
+    outRgba[0] = gammaCorrect.r;
+    outRgba[1] = gammaCorrect.g;
+    outRgba[2] = gammaCorrect.b;
+    outRgba[3] = colorRgba[3];
   }
 
   // Flush command buffers
