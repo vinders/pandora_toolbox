@@ -93,7 +93,6 @@ install:
           Expand-Archive ./VulkanRT-1.2-Components.zip -DestinationPath ./binary
           Copy-Item "./binary/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH"
           Remove-Item -Path ./VulkanRT-1.2-Components.zip -Force
-          Remove-Item './binary'
         }
       }
   # ---- Pacman packages install ----
