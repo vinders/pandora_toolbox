@@ -89,10 +89,11 @@ install:
       if (Test-Path 'env:VULKAN_SDK_VERSION') { 
         if (-Not (Test-Path -Path C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH)) {
           [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ENV:VULKAN_SDK_VERSION/windows/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components.zip?Human=true" -OutFile "C:\tmp\Components.zip"
-          Expand-Archive C:\tmp\Components.zip -DestinationPath C:\tmp
-          Copy-Item "C:\tmp\VulkanRT-$ENV:VULKAN_SDK_VERSION-Components\$ENV:VULKAN_LIB_ARCH\vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH"
-          Remove-Item 'C:\tmp'
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ENV:VULKAN_SDK_VERSION/windows/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components.zip?Human=true" -OutFile "C:\Components.zip"
+          Expand-Archive C:\Components.zip -DestinationPath C:\
+          Copy-Item "C:\VulkanRT-$ENV:VULKAN_SDK_VERSION-Components\$ENV:VULKAN_LIB_ARCH\vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH"
+          Remove-Item -Path 'C:\Components.zip' -Force
+          Remove-Item 'C:\VulkanRT-$ENV:VULKAN_SDK_VERSION-Components'
         }
       }
   # ---- Pacman packages install ----
