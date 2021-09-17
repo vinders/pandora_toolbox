@@ -80,6 +80,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # elif defined(__ANDROID__)
 #   define __P_LIBVULKAN_FILE1      "libvulkan.so"
 #   define __P_LIBVULKAN_FILE2      "libvulkan.so.1"
+#   define __P_LIBVULKAN_FILE3      "libvulkan-1.so"
 #   define __P_VULKAN_PLATFORM_EXT  PlatformExtension::KHR_android_surface
 #   define __P_VULKAN_PLATFORM_EXT_NAME "VK_KHR_android_surface"
 
@@ -100,6 +101,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # elif defined(__linux__) || defined(__linux) || defined(__unix__) || defined(__unix)
 #   define __P_LIBVULKAN_FILE1            "libvulkan.so.1"
 #   define __P_LIBVULKAN_FILE2            "libvulkan.so"
+#   define __P_LIBVULKAN_FILE3            "libvulkan-1.so"
 #   if defined(_P_ENABLE_LINUX_WAYLAND)
 #     define __P_VULKAN_PLATFORM_EXT      PlatformExtension::KHR_wayland_surface
 #     define __P_VULKAN_PLATFORM_EXT_NAME "VK_KHR_wayland_surface"
@@ -129,7 +131,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 # else
     static inline LibHandle _loadLibrary(const char fileName[]) noexcept {
-      return dlopen(fileName, RTLD_NOW | RTLD_LOCAL);
+#     if defined(__APPLE__)
+        LibHandle inst = dlopen(fileName, RTLD_NOW | RTLD_LOCAL);
+        if (inst == nullptr)
+          inst = _getLocalVulkanLoader_apple(fileName);
+        return inst;
+#     else
+        return dlopen(fileName, RTLD_NOW | RTLD_LOCAL);
+#     endif
     }
     static inline void _freeLibrary(LibHandle lib) noexcept {
       dlclose(lib);
@@ -204,9 +213,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (this->vk.instance == nullptr) {
       this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE2);
       if (this->vk.instance == nullptr) {
-#       if defined(__APPLE__)
+#       ifdef __P_LIBVULKAN_FILE3
           this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE3);
-          if (this->vk.instance == nullptr && (this->vk.instance = _getLocalVulkanLoader_apple(__P_LIBVULKAN_FILE1)) == nullptr)
+          if (this->vk.instance == nullptr)
 #       endif
         throw std::runtime_error("Vulkan: loader not found (" __P_LIBVULKAN_FILE1 ")");
       }

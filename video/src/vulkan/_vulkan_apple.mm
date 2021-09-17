@@ -34,7 +34,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // -- vulkan loader -- -------------------------------------------------------
 
   static inline void* _loadLibrary(const char* fileName) noexcept {
-    return dlopen(fileName, RTLD_LAZY | RTLD_LOCAL);
+    return dlopen(fileName, RTLD_NOW | RTLD_LOCAL);
   }
   
   // ---
