@@ -85,6 +85,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # elif defined(__APPLE__)
 #   define __P_LIBVULKAN_FILE1                "libvulkan.1.dylib"
+#   define __P_LIBVULKAN_FILE2                "libvulkan.dylib"
+#   define __P_LIBVULKAN_FILE3                "libMoltenVK.dylib"
 #   define __P_VULKAN_PLATFORM_EXT            PlatformExtension::EXT_metal_surface // preferred extension first
 #   define __P_VULKAN_PLATFORM_EXT_NAME       "VK_EXT_metal_surface"
 #   if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
@@ -127,7 +129,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 # else
     static inline LibHandle _loadLibrary(const char fileName[]) noexcept {
-      return dlopen(fileName, RTLD_LAZY | RTLD_LOCAL);
+      return dlopen(fileName, RTLD_NOW | RTLD_LOCAL);
     }
     static inline void _freeLibrary(LibHandle lib) noexcept {
       dlclose(lib);
@@ -200,13 +202,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // load vulkan library
     this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE1);
     if (this->vk.instance == nullptr) {
-#     if defined(__APPLE__)
-        this->vk.instance = _getLocalVulkanLoader_apple(__P_LIBVULKAN_FILE1);
-#     else
-        this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE2);
-#     endif
-      if (this->vk.instance == nullptr)
+      this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE2);
+      if (this->vk.instance == nullptr) {
+#       if defined(__APPLE__)
+          this->vk.instance = _loadLibrary(__P_LIBVULKAN_FILE3);
+          if (this->vk.instance == nullptr && (this->vk.instance = _getLocalVulkanLoader_apple(__P_LIBVULKAN_FILE1)) == nullptr)
+#       endif
         throw std::runtime_error("Vulkan: loader not found (" __P_LIBVULKAN_FILE1 ")");
+      }
     }
     
     // bind functions
@@ -306,13 +309,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         return true;
     }
     return false;
-  }
-  
-  FunctionPtr VulkanLoader::getVulkanInstanceFunction(VkInstance instance, const char* functionName) const noexcept {
-    FunctionPtr func = (FunctionPtr)this->vk.GetInstanceProcAddr_(instance, functionName);
-    if (func == nullptr)
-      func = _getSymbolAddress<FunctionPtr>(this->vk.instance, functionName);
-    return func;
   }
 
 

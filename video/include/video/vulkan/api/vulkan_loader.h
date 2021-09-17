@@ -124,7 +124,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Get Vulkan function binding to dynamic library
           /// @returns Function pointer (or NULL if not supported)
           /// @remarks If the function is used more than once, this binding should be stored to be reusable efficiently.
-          FunctionPtr getVulkanInstanceFunction(VkInstance instance, const char* functionName) const noexcept;
+          inline FunctionPtr getVulkanInstanceFunction(VkInstance instance, const char* functionName) const noexcept {
+            return (FunctionPtr)this->vk.GetInstanceProcAddr_(instance, functionName);
+          }
 
 
           // -- device / window management --
