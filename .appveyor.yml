@@ -80,20 +80,20 @@ install:
  
   # ---- Vulkan install ----
   - ps: >-
-      if (Test-Path 'env:VULKAN_SDK_VERSION') { 
+      if (Test-Path env:VULKAN_SDK_VERSION) { 
         if (-not (Test-Path -Path "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION" -PathType Container)) {
           cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION" --no-progress
         }
       }
   - ps: >-
-      if (Test-Path 'env:VULKAN_SDK_VERSION') { 
-        if (-Not (Test-Path -Path C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH)) {
-          [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ENV:VULKAN_SDK_VERSION/windows/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components.zip?Human=true" -OutFile "C:\Components.zip"
-          Expand-Archive C:\Components.zip -DestinationPath C:\
-          Copy-Item "C:\VulkanRT-$ENV:VULKAN_SDK_VERSION-Components\$ENV:VULKAN_LIB_ARCH\vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH"
-          Remove-Item -Path 'C:\Components.zip' -Force
-          Remove-Item 'C:\VulkanRT-$ENV:VULKAN_SDK_VERSION-Components'
+      if (Test-Path env:VULKAN_SDK_VERSION) { 
+        if (-Not (Test-Path -Path "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH")) {
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ENV:VULKAN_SDK_VERSION/windows/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components.zip?Human=true" -OutFile 'Components.zip'
+          Expand-Archive 'Components.zip' -DestinationPath './tmp/'
+          new-item "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH" -itemtype directory
+          Copy-Item "./tmp/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH\vulkan-1.dll"
+          Remove-Item -Path 'Components.zip' -Force
+          Remove-Item "./tmp"
         }
       }
   # ---- Pacman packages install ----
