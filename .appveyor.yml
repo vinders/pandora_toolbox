@@ -130,8 +130,8 @@ build_script:
   # ---- cmake generation + build ----
   - if defined VULKAN_SDK_VERSION setx VULKAN_SDK C:\VulkanSDK\%VULKAN_SDK_VERSION%
   - if defined VULKAN_SDK_VERSION set VULKAN_SDK=C:\VulkanSDK\%VULKAN_SDK_VERSION%
-  - if defined VULKAN_SDK_VERSION xcopy /i /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
-  - if defined VULKAN_SDK_VERSION xcopy /i /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
+  - if defined VULKAN_SDK_VERSION echo F|xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
+  - if defined VULKAN_SDK_VERSION echo F|xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
   - cmake -S . -B ./_build/%PACKAGE_ID% -G"%GENERATOR%" %CMAKE_ARGS% || (echo CMAKEERROR && echo CMAKEOUTPUT && exit 1)
   - cmake --build ./_build/%PACKAGE_ID% --config %BUILD_TYPE% --target install
 
