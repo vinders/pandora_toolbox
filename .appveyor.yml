@@ -101,7 +101,7 @@ install:
       if (Test-Path 'env:VULKAN_SDK_VERSION') { 
         [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
         Expand-Archive ./VulkanRT-1.2-Components.zip -DestinationPath ./binary
-        Copy-Item "./binary/VulkanRT-%VULKAN_SDK_VERSION%-Components/%VULKAN_LIB_ARCH%/vulkan-1.dll" -Destination "C:\VulkanSDK"
+        Copy-Item "./binary/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK"
         Remove-Item -Path ./VulkanRT-1.2-Components.zip -Force
         Remove-Item ./binary/*
       }
