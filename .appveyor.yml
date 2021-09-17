@@ -15,8 +15,8 @@ environment:
     GENERATOR: Visual Studio 16 2019
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
-    VULKAN_SDK_VERSION: 1.2.182.0
-    VULKAN_LIB_ARCH: x64
+    #VULKAN_SDK_VERSION: 1.2.182.0
+    #VULKAN_LIB_ARCH: x64
     
   # MSVC-VS2019 x86 (x32) / C++17
   - TOOLCHAIN: "Visual Studio 2019"
@@ -132,7 +132,6 @@ build_script:
   - if defined VULKAN_SDK_VERSION set VULKAN_SDK=C:\VulkanSDK\%VULKAN_SDK_VERSION%
   - if defined VULKAN_SDK_VERSION echo F|xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
   - if defined VULKAN_SDK_VERSION echo F|xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
-  - if defined VULKAN_SDK_VERSION REGSVR32 /S /I "C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll"
   - cmake -S . -B ./_build/%PACKAGE_ID% -G"%GENERATOR%" %CMAKE_ARGS% || (echo CMAKEERROR && echo CMAKEOUTPUT && exit 1)
   - cmake --build ./_build/%PACKAGE_ID% --config %BUILD_TYPE% --target install
 
