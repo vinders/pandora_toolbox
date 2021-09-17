@@ -5,46 +5,6 @@ configuration: Release
 
 environment:
   matrix:
-  # ClangCL-VS2019 x86_64 / C++17
-  # - TOOLCHAIN: "ClangCL x64"
-  # PACKAGE_ID: vs2019clang_x86_64
-  # APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-  # APPVEYOR_JOB_NAME: clangcl-vs2019-64
-  # BUILD_TYPE: Debug
-  # CMAKE_ARGS: -A x64 -T ClangCL -DCMAKE_FLAGS="-m64"
-  # GENERATOR: Visual Studio 16 2019
-  # VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
-  # VCVARSARG: amd64
-    
-  # Clang10-LLVM x86_64 / C++17
-  - TOOLCHAIN: "Visual Studio 2019 Clang/LLVM 11.0.0"
-    PACKAGE_ID: clang11_x86_64
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    APPVEYOR_JOB_NAME: clangcl-ninja-64
-    BUILD_TYPE: Debug
-    CMAKE_ARGS: -DCMAKE_C_COMPILER=clang-cl.exe -DCMAKE_CXX_COMPILER=clang-cl.exe
-    GENERATOR: Ninja
-    VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
-    VCVARSARG: amd64
-    PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
-    LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
-    PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
-    CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/LLVM-11.0.0-win64.exe
-  
-  # Mingw-w64 x86_64 / C++17
-  - TOOLCHAIN: "MinGW-w64 GCC"
-    PACKAGE_ID: mingw_x86_64
-    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    APPVEYOR_JOB_NAME: gcc-mingw-64
-    CMAKE_ARGS: -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CI_DISABLE_SLOW_TESTS=ON
-    BUILD_TYPE: Debug
-    GENERATOR: MinGW Makefiles
-    PATH: C:\mingw64\bin;%PATH%;C:\Windows\System32
-    INCLUDE_PREFIX: C:\mingw64\x86_64-w64-mingw32\include
-    LIB_PREFIX: C:\mingw64\x86_64-w64-mingw32\lib
-    LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
-    MINGW_URL: http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
-  
   # MSVC-VS2019 x86_64 / C++17
   - TOOLCHAIN: "Visual Studio 2019 x64"
     PACKAGE_ID: vs2019_x86_64
@@ -79,6 +39,35 @@ environment:
     GENERATOR: Visual Studio 15 2017
     VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat
     VCVARSARG: amd64
+  
+  # Clang10-LLVM x86_64 / C++17
+  - TOOLCHAIN: "Visual Studio 2019 Clang/LLVM 11.0.0"
+    PACKAGE_ID: clang11_x86_64
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    APPVEYOR_JOB_NAME: clangcl-ninja-64
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: -DCMAKE_C_COMPILER=clang-cl.exe -DCMAKE_CXX_COMPILER=clang-cl.exe
+    GENERATOR: Ninja
+    VCVARS: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
+    VCVARSARG: amd64
+    PATH: C:\Program Files\LLVM\bin;C:\msys64\mingw64\bin;%PATH%;C:\Windows\System32
+    LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
+    PACMAN_PACKAGES: "mingw-w64-x86_64-ninja"
+    CLANG_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/LLVM-11.0.0-win64.exe
+  
+  # Mingw-w64 x86_64 / C++17
+  - TOOLCHAIN: "MinGW-w64 GCC"
+    PACKAGE_ID: mingw_x86_64
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    APPVEYOR_JOB_NAME: gcc-mingw-64
+    CMAKE_ARGS: -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCWORK_CI_DISABLE_SLOW_TESTS=ON
+    BUILD_TYPE: Debug
+    GENERATOR: MinGW Makefiles
+    PATH: C:\mingw64\bin;%PATH%;C:\Windows\System32
+    INCLUDE_PREFIX: C:\mingw64\x86_64-w64-mingw32\include
+    LIB_PREFIX: C:\mingw64\x86_64-w64-mingw32\lib
+    LIB_SUFFIX: C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\architecture;C:\Program Files (x86)\Windows Kits\10\bin\architecture\ucrt;C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64
+    MINGW_URL: http://downloads.sourceforge.net/mingw-w64/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z
 
 cache:
   # Cache Vulkan SDK to avoid re-downloading it (invalidate cache if .appveyor.yml is changed)
@@ -96,14 +85,16 @@ install:
           cinst vulkan-sdk --version "$ENV:VULKAN_SDK_VERSION" --no-progress
         }
       }
-  - cmd: if defined VULKAN_SDK_VERSION curl -L --silent --show-error --output VulkanRT-1.2-Components.zip "https://sdk.lunarg.com/sdk/download/%VULKAN_SDK_VERSION%/windows/VulkanRT-%VULKAN_SDK_VERSION%-Components.zip?Human=true"
+  - cmd: if defined VULKAN_SDK_VERSION if not exist C:\VulkanSDK\%VULKAN_LIB_ARCH%\ curl -L --silent --show-error --output VulkanRT-1.2-Components.zip "https://sdk.lunarg.com/sdk/download/%VULKAN_SDK_VERSION%/windows/VulkanRT-%VULKAN_SDK_VERSION%-Components.zip?Human=true"
   - ps: >-
       if (Test-Path 'env:VULKAN_SDK_VERSION') { 
-        [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
-        Expand-Archive ./VulkanRT-1.2-Components.zip -DestinationPath ./binary
-        Copy-Item "./binary/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK"
-        Remove-Item -Path ./VulkanRT-1.2-Components.zip -Force
-        Remove-Item ./binary/*
+        if (-Not (Test-Path -Path C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH)) {
+          [Environment]::SetEnvironmentVariable("VULKAN_SDK", "C:\VulkanSDK\$ENV:VULKAN_SDK_VERSION", "User")
+          Expand-Archive ./VulkanRT-1.2-Components.zip -DestinationPath ./binary
+          Copy-Item "./binary/VulkanRT-$ENV:VULKAN_SDK_VERSION-Components/$ENV:VULKAN_LIB_ARCH/vulkan-1.dll" -Destination "C:\VulkanSDK\$ENV:VULKAN_LIB_ARCH"
+          Remove-Item -Path ./VulkanRT-1.2-Components.zip -Force
+          Remove-Item './binary'
+        }
       }
   # ---- Pacman packages install ----
   - if defined PACMAN_PACKAGES C:\msys64\usr\bin\bash.exe -lc ""
@@ -140,8 +131,8 @@ build_script:
   # ---- cmake generation + build ----
   - if defined VULKAN_SDK_VERSION setx VULKAN_SDK C:\VulkanSDK\%VULKAN_SDK_VERSION%
   - if defined VULKAN_SDK_VERSION set VULKAN_SDK=C:\VulkanSDK\%VULKAN_SDK_VERSION%
-  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
-  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
+  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\vulkan-1.dll
+  - if defined VULKAN_SDK_VERSION xcopy /s C:\VulkanSDK\%VULKAN_LIB_ARCH%\vulkan-1.dll C:\projects\pandora_toolbox\_build\%PACKAGE_ID%\video\%BUILD_TYPE%\vulkan-1.dll
   - cmake -S . -B ./_build/%PACKAGE_ID% -G"%GENERATOR%" %CMAKE_ARGS% || (echo CMAKEERROR && echo CMAKEOUTPUT && exit 1)
   - cmake --build ./_build/%PACKAGE_ID% --config %BUILD_TYPE% --target install
 
