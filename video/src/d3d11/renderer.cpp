@@ -704,7 +704,10 @@ Includes hpp implementations at the end of the file
         auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&_swapChain);
         if (FAILED(result) || this->_swapChain == nullptr)
           throwError(result, "Renderer: swap-chain not created");
+
         this->_deviceContext11_1 = D3dResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context()).extract();
+        if (this->_deviceContext11_1 == nullptr)
+          this->_flags |= SwapChain::OutputFlag::swapNoDiscard;
       }
       else
 #   endif
@@ -797,9 +800,9 @@ Includes hpp implementations at the end of the file
   SwapChain::SwapChain(SwapChain&& rhs) noexcept
     : _swapChain(rhs._swapChain),
       _tearingSwapFlags(rhs._tearingSwapFlags),
+      _flags(rhs._flags),
       _pixelSize(rhs._pixelSize),
       _framebufferCount(rhs._framebufferCount),
-      _flags(rhs._flags),
       _backBufferFormat(rhs._backBufferFormat),
       _colorSpace(rhs._colorSpace),
       _renderer(std::move(rhs._renderer)),
@@ -819,9 +822,9 @@ Includes hpp implementations at the end of the file
     release();
     this->_swapChain = rhs._swapChain;
     this->_tearingSwapFlags = rhs._tearingSwapFlags;
+    this->_flags = rhs._flags;
     this->_pixelSize = rhs._pixelSize;
     this->_framebufferCount = rhs._framebufferCount;
-    this->_flags = rhs._flags;
     this->_backBufferFormat = rhs._backBufferFormat;
     this->_colorSpace = rhs._colorSpace;
     this->_renderer = std::move(rhs._renderer);
@@ -908,7 +911,7 @@ Includes hpp implementations at the end of the file
 
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       // discard content of render target + depth/stencil buffer
-      if ((this->_flags & SwapChain::OutputFlag::swapNoDiscard) == SwapChain::OutputFlag::none && this->_deviceContext11_1) {
+      if ((this->_flags & SwapChain::OutputFlag::swapNoDiscard) == SwapChain::OutputFlag::none) {
         ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(this->_renderTargetView);
         if (depthBuffer != nullptr)
           ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(depthBuffer);

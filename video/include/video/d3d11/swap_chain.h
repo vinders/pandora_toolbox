@@ -54,9 +54,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           SwapChain(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window, 
                     const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB,
                     ColorSpace colorSpace = ColorSpace::unknown)
-            : _pixelSize(_toPixelSize(params.width, params.height)),
+            : _flags(params.outputFlags),
+              _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
-              _flags(params.outputFlags),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
               _colorSpace(colorSpace),
               _renderer(std::move(renderer)) {
@@ -131,9 +131,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           SwapChainHandle _swapChain = nullptr; // IDXGISwapChain*/IDXGISwapChain1*
           UINT _tearingSwapFlags = 0;           // flags used for screen tearing during swap
           
+          OutputFlag _flags = OutputFlag::none; // advanced settings (various params + flip-swap on/off)
           uint32_t _pixelSize = 0;              // width / height
           uint32_t _framebufferCount = 0;       // framebuffer count
-          OutputFlag _flags = OutputFlag::none; // advanced settings (various params + flip-swap on/off)
           DXGI_FORMAT _backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
           ColorSpace _colorSpace = ColorSpace::unknown;
           
