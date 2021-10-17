@@ -44,11 +44,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(renderer.dxgiLevel() >= (uint32_t)1u);
     EXPECT_TRUE((uint32_t)renderer.featureLevel() >= (uint32_t)D3D_FEATURE_LEVEL_11_0);
 
-    EXPECT_TRUE((int)renderer.isHdrAvailable() >= (int)renderer.isTearingAvailable());
-    EXPECT_TRUE((int)renderer.isFlipSwapAvailable() >= (int)renderer.isTearingAvailable());
-
-    bool isMonitorHdr = renderer.isMonitorHdrCapable(monitor);
-    if (isMonitorHdr) { EXPECT_TRUE(renderer.isHdrAvailable()); }
+    auto colorSpace = renderer.getMonitorColorSpace(monitor);
+    bool isHdrMonitor = (colorSpace == ColorSpace::hdr10_bt2084 || colorSpace == ColorSpace::scRgb);
     size_t dedicatedRam = 0, sharedRam = 0;
     EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
     EXPECT_TRUE(sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
@@ -57,14 +54,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const char* falseVal = "false";
     printf("Direct3D context:\n > DXGI level: %u\n > Feature level: 11.%s\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
            " > Max render views: %u\n > Max sampler/filter states: %u\n > Max anisotropy: %u\n > Monitor HDR capable: %s\n"
-           " > HDR API available: %s\n > Flip swap available: %s\n > Tearing available: %s\n", 
+           " > Tearing available: %s\n", 
            renderer.dxgiLevel(), ((uint32_t)renderer.featureLevel() > 0) ? "1+" : "0",
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            (uint32_t)renderer.maxRenderTargets(), (uint32_t)renderer.maxFilterStateSlots(), 
            FilterParams::maxAnisotropy(), 
-           isMonitorHdr ? trueVal : falseVal,
-           renderer.isHdrAvailable() ? trueVal : falseVal,
-           renderer.isFlipSwapAvailable() ? trueVal : falseVal,
+           isHdrMonitor ? trueVal : falseVal,
            renderer.isTearingAvailable() ? trueVal : falseVal);
 
     ColorChannel gammaCorrectWhite[4];
@@ -88,7 +83,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(renderer.context() != nullptr);
     EXPECT_EQ(dxgiLevel, renderer.dxgiLevel());
     EXPECT_EQ(featLevel, renderer.featureLevel());
-    EXPECT_EQ(isMonitorHdr, renderer.isMonitorHdrCapable(monitor));
   }
 
   TEST_F(D3d11RendererTest, createSetRendererStates) {

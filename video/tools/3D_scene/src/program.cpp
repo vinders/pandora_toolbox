@@ -34,7 +34,7 @@ static inline void __renderFrame(_Renderer& renderer, _SwapChain& swapChain, boo
 
   //...
 
-  swapChain.swapBuffersDiscard(useVsync, nullptr);
+  swapChain.swapBuffers(useVsync, nullptr);
 }
 
 

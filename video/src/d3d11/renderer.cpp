@@ -399,31 +399,35 @@ Includes hpp implementations at the end of the file
 
 // -- feature support -- -------------------------------------------------------
 
-  // Verify if a display monitor can display HDR colors
-  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, void*) const noexcept {
+  // Detect current color space used by display monitor
+  ColorSpace Renderer::getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept {
 #   if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
-      try {
-        auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
-        if (dxgiDevice) {
-          D3dResource<IDXGIAdapter> adapter;
-          if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
+      if (_areColorSpacesAvailable()) {
+        try {
+          auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
+          if (dxgiDevice) {
+            D3dResource<IDXGIAdapter> adapter;
+            if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
 
-            D3dResource<IDXGIOutput> output;
-            DXGI_OUTPUT_DESC1 monitorDescription;
-            for (UINT index = 0; adapter->EnumOutputs(index, output.address()) == S_OK; ++index) {
-              auto outputV6 = D3dResource<IDXGIOutput6>::tryFromInterface(output.get());
-              if (outputV6) {
-                // if monitor found, verify color space
-                if (outputV6->GetDesc1(&monitorDescription) == S_OK && target.attributes().id == monitorDescription.DeviceName)
-                  return (monitorDescription.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
-                         || monitorDescription.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
+              D3dResource<IDXGIOutput> output;
+              DXGI_OUTPUT_DESC1 monitorDescription;
+              for (UINT index = 0; adapter->EnumOutputs(index, output.address()) == S_OK; ++index) {
+                auto outputV6 = D3dResource<IDXGIOutput6>::tryFromInterface(output.get());
+                if (outputV6) {
+                  // if monitor found, verify color space
+                  if (outputV6->GetDesc1(&monitorDescription) == S_OK && target.attributes().id == monitorDescription.DeviceName) {
+                    return (monitorDescription.ColorSpace != DXGI_COLOR_SPACE_CUSTOM && monitorDescription.ColorSpace != DXGI_COLOR_SPACE_RESERVED)
+                         ? (ColorSpace)monitorDescription.ColorSpace
+                         : ColorSpace::sRgb;
+                  }
+                }
               }
             }
           }
-        }
-      } catch (...) {}
+        } catch (...) {}
+      }
 #   endif
-    return false; // not found
+      return ColorSpace::unknown;
   }
 
   // Screen tearing supported (variable refresh rate display)
@@ -553,7 +557,24 @@ Includes hpp implementations at the end of the file
 // swap_chain.h
 // -----------------------------------------------------------------------------
 
+# define __P_DEFAULT_COLORSPACE_SRGB  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709
+
 // -- color management --
+  
+  // Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
+  bool SwapChain::isColorSpaceSupported(ColorSpace colorSpace) const noexcept {
+    if (colorSpace == ColorSpace::unknown)
+      return true;
+#   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
+      auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)this->_swapChain);
+      if (swapChainV3) {
+        UINT colorSpaceSupport = 0;
+        if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)colorSpace, &colorSpaceSupport)))
+          return (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT);
+      }
+#   endif
+    return ((DXGI_COLOR_SPACE_TYPE)colorSpace == __P_DEFAULT_COLORSPACE_SRGB);
+  }
 
 # if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
     // Find color space for a buffer format
@@ -561,73 +582,49 @@ Includes hpp implementations at the end of the file
       switch (backBufferFormat) {
         case DXGI_FORMAT_R10G10B10A2_UNORM:
         case DXGI_FORMAT_R10G10B10A2_UINT:
-        case DXGI_FORMAT_R11G11B10_FLOAT:
           return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020; // HDR-10
         case DXGI_FORMAT_R16G16B16A16_FLOAT:
         case DXGI_FORMAT_R16G16_FLOAT:
-        case DXGI_FORMAT_R16G16B16A16_UINT:
-        case DXGI_FORMAT_R16G16_UINT:
-        case DXGI_FORMAT_R16G16B16A16_SINT:
-        case DXGI_FORMAT_R16G16_SINT:
-        case DXGI_FORMAT_R16G16B16A16_UNORM:
-        case DXGI_FORMAT_R16G16_UNORM:
-        case DXGI_FORMAT_R16G16B16A16_SNORM:
-        case DXGI_FORMAT_R16G16_SNORM:
         case DXGI_FORMAT_R32G32B32A32_FLOAT:
         case DXGI_FORMAT_R32G32B32_FLOAT:
         case DXGI_FORMAT_R32G32_FLOAT:
-        case DXGI_FORMAT_R32G32B32A32_UINT:
-        case DXGI_FORMAT_R32G32B32_UINT:
-        case DXGI_FORMAT_R32G32_UINT:
-        case DXGI_FORMAT_R32G32B32A32_SINT:
-        case DXGI_FORMAT_R32G32B32_SINT:
-        case DXGI_FORMAT_R32G32_SINT:
           return DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709; // HDR-scRGB
-        default: break;
+        default:
+          return __P_DEFAULT_COLORSPACE_SRGB; // SDR-sRGB
       }
-      return DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
     }
 # endif
   
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
-  static __forceinline bool __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, 
-                                            bool isHdrPreferred, DXGI_COLOR_SPACE_TYPE& outColorSpace) { // throws
-    // verify HDR support
-    outColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709; // SDR-sRGB
+  static __forceinline void __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, 
+                                            ID3D11Device* device, ColorSpace& inOutColorSpace) { // throws
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
 #     if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
-        if (isHdrPreferred) {
-          D3dResource<IDXGIOutput> output;
-          if (SUCCEEDED(swapChain->GetContainingOutput(output.address())) && output) {
-            DXGI_OUTPUT_DESC1 outputInfo;
-            auto outputV6 = D3dResource<IDXGIOutput6>::tryFromInterface(output.get());
-            if (outputV6 && SUCCEEDED(outputV6->GetDesc1(&outputInfo))) {
-              
-              if (outputInfo.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
-              ||  outputInfo.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709) {
-                outColorSpace = __getColorSpace(backBufferFormat);
-              }
-            }
-          }
-        }
+        DXGI_COLOR_SPACE_TYPE colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __getColorSpace(backBufferFormat) : (DXGI_COLOR_SPACE_TYPE)inOutColorSpace;
+#     else
+        DXGI_COLOR_SPACE_TYPE colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __P_DEFAULT_COLORSPACE_SRGB : (DXGI_COLOR_SPACE_TYPE)inOutColorSpace;
 #     endif
 
       // apply color space
       auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)swapChain);
       if (swapChainV3) {
         UINT colorSpaceSupport = 0;
-        if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport(outColorSpace, &colorSpaceSupport))
+        if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport))
         && (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)) {
 
-          auto result = swapChainV3->SetColorSpace1(outColorSpace);
+          auto result = swapChainV3->SetColorSpace1(colorSpace);
           if (FAILED(result))
             throwError(result, "SwapChain: color space error");
-          return true;
+          inOutColorSpace = (ColorSpace)colorSpace;
+          return;
         }
       }
 #   endif
-    return false;
+
+    if (inOutColorSpace != ColorSpace::unknown && inOutColorSpace != ColorSpace::sRgb)
+      throw std::invalid_argument("SwapChain: color space not supported");
+    inOutColorSpace = (ColorSpace)__P_DEFAULT_COLORSPACE_SRGB; // default: use SDR-sRGB
   }
 
 
@@ -665,7 +662,7 @@ Includes hpp implementations at the end of the file
       if (this->_renderer->_dxgiLevel >= 2u) { // Direct3D 11.1+
         bool useFlipSwap = ( (this->_flags & (SwapChain::OutputFlag::disableFlipSwap 
                                             | SwapChain::OutputFlag::partialOutput)) == false  // * flip-swap not disabled + unique render-target view
-                          && this->_renderer->isFlipSwapAvailable()                            // * supported by device/API/system
+                          && this->_renderer->_isFlipSwapAvailable()                            // * supported by device/API/system
                           && ((this->_flags & SwapChain::OutputFlag::variableRefresh) == false // * no tearing or support with flip-swap
                             || this->_renderer->isTearingAvailable()) );
 
@@ -712,7 +709,7 @@ Includes hpp implementations at the end of the file
       else
 #   endif
     { // Direct3D 11.0
-      this->_flags |= SwapChain::OutputFlag::disableFlipSwap; // no flip-swap in 11.0
+      this->_flags |= (SwapChain::OutputFlag::disableFlipSwap | SwapChain::OutputFlag::swapNoDiscard); // no flip-swap & no discard in 11.0
     
       DXGI_SWAP_CHAIN_DESC descriptor = {};
       ZeroMemory(&descriptor, sizeof(DXGI_SWAP_CHAIN_DESC));
@@ -744,8 +741,7 @@ Includes hpp implementations at the end of the file
   // Create/refresh swap-chain render-target view + color space
   void SwapChain::_createOrRefreshTargetView() { // throws
     // find + set color space value (if supported)
-    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat,
-                    (this->_flags & SwapChain::OutputFlag::hdrPreferred) == true, this->_colorSpace);
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat, this->_renderer->device(), this->_colorSpace);
 
     // create render-target view
     if (this->_renderTargetView == nullptr) {
@@ -902,27 +898,17 @@ Includes hpp implementations at the end of the file
   }
 
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen
-  void SwapChain::swapBuffers(bool useVsync) {
+  void SwapChain::swapBuffers(bool useVsync, DepthStencilView depthBuffer) {
     auto result = useVsync
                 ? ((IDXGISwapChain*)this->_swapChain)->Present(1, 0) // no screen tearing with vsync
                 : ((IDXGISwapChain*)this->_swapChain)->Present(0, this->_tearingSwapFlags);
     if (FAILED(result))
       __processSwapError(result);
     __refreshDxgiFactory(this->_renderer->_dxgiFactory);
-  }
-  
-  // Swap back-buffer(s) and front-buffer, to display drawn content on screen + discard render-target content after it
-  void SwapChain::swapBuffersDiscard(bool useVsync, DepthStencilView depthBuffer) {
-    auto result = useVsync
-                ? ((IDXGISwapChain*)this->_swapChain)->Present(1, 0) // no screen tearing with vsync
-                : ((IDXGISwapChain*)this->_swapChain)->Present(0, this->_tearingSwapFlags);
-    if (FAILED(result))
-      __processSwapError(result);
-    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
-    
+
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       // discard content of render target + depth/stencil buffer
-      if (this->_deviceContext11_1) {
+      if ((this->_flags & SwapChain::OutputFlag::swapNoDiscard) == SwapChain::OutputFlag::none && this->_deviceContext11_1) {
         ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(this->_renderTargetView);
         if (depthBuffer != nullptr)
           ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(depthBuffer);

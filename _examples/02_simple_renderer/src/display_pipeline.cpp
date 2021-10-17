@@ -93,7 +93,7 @@ void DisplayPipeline::enableRenderTarget(bool isCleaned) {
 }
 
 void DisplayPipeline::swapBuffers() {
-  _swapChain.swapBuffersDiscard(_useVsync, _depthBuffer.getDepthStencilView());
+  _swapChain.swapBuffers(_useVsync, _depthBuffer.getDepthStencilView());
   if (!_useVsync) {
     _renderer->flush();
     _timer.waitPeriod();

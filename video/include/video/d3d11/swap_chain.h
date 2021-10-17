@@ -22,6 +22,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <memory>
 # include "../window_handle.h"
+# include "../common_types.h"
 # include "./api/types.h" // includes D3D11
 # include "./renderer.h"  // includes D3D11
 
@@ -46,14 +47,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           using Descriptor = SwapChainDescriptor;
         
           /// @brief Create rendering swap-chain for existing renderer
-          /// @throws - invalid_argument: if renderer or window is NULL.
+          /// @param colorSpace  Color space to use for rendering (or 'unknown' to keep default color space).
+          ///                    If the color space is not supported, an exception occurs.
+          /// @throws - invalid_argument: if 'renderer' or 'window' is NULL, or if color space is not supported by API or hardware.
           ///         - runtime_error: creation failure.
           SwapChain(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window, 
-                    const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB)
+                    const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB,
+                    ColorSpace colorSpace = ColorSpace::unknown)
             : _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _flags(params.outputFlags),
-              _backBufferFormat(_getDataFormatComponents(backBufferFormat)) ,
+              _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
+              _colorSpace(colorSpace),
               _renderer(std::move(renderer)) {
             _createSwapChain(window, params.refreshRate); // throws
             _createOrRefreshTargetView(); // throws
@@ -73,11 +78,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
           // -- accessors --
           
-          /// @brief Get native Direct3D 11.0 compatible swap-chain handle (cast to IDXGISwapChain*)
+          /// @brief Get native Direct3D 11.0+ compatible swap-chain handle (cast to IDXGISwapChain*)
           inline SwapChainHandle handle() const noexcept { return this->_swapChain; }
           /// @brief Get native Direct3D 11.1+ swap-chain handle, if available (cast to IDXGISwapChain1*)
           /// @returns Handle for Direct3D 11.1+ devices (or NULL for Direct3D 11.0 devices).
-          inline SwapChainHandle handleHigherLevel() const noexcept { 
+          inline SwapChainHandle handleExt() const noexcept { 
             return (this->_renderer->_dxgiLevel >= 2u) ? this->_swapChain : nullptr;
           }
           inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
@@ -89,41 +94,29 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline uint32_t width() const noexcept  { return _width(); } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
-          /// @brief Verify if HDR is enabled in current swap-chain (should be verified before using HDR shaders and data)
-          /// @remarks HDR might be disabled even if it was enabled in creation params:
-          ///          - if the adapter or monitor doesn't support it.
-          ///          - if the rendering API level is too old to support it.
-          ///          - if the buffer color/component format isn't compatible with it.
-          inline bool isHdrEnabled() const noexcept {
-            return (this->_colorSpace == (int32_t)DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
-                 || this->_colorSpace == (int32_t)DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
-          }
+          inline ColorSpace colorSpace() const noexcept { return this->_colorSpace; } ///< Get color space currently configured
+
+          /// @brief Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
+          /// @param colorSpace  Color space to test (to verify additional color spaces, simply cast a DXGI_COLOR_SPACE_TYPE value to 'ColorSpace').
+          bool isColorSpaceSupported(ColorSpace colorSpace) const noexcept;
 
           // -- operations --
           
-          /// @brief Change back-buffer(s) size + refresh color space
+          /// @brief Change back-buffer(s) size
           /// @remarks Must be called when the window size changes, or when the display monitor is different.
           /// @warning - A new depth buffer (with the same size) should be created.
           ///          - Disables all active render-targets of Renderer -> they need to be activated again! ('Renderer.setActiveRenderTargets')
-          /// @returns True if buffers/active-render-target must be reconfigured / false if only color-space has been updated.
+          /// @returns True if buffers/active-render-target must be reconfigured / false if nothing has changed.
           /// @throws - domain_error: if new monitor uses a different adapter -> a new Renderer (with a new SwapChain) must be created (using current may crash).
-          ///         - runtime_error: resize failure -> a new SwapChain must be created (using current swap-chain again may crash).
+          ///         - runtime_error: resize failure or incompatible monitor -> a new SwapChain must be created (using current swap-chain again may crash).
           bool resize(uint32_t width, uint32_t height);
           
           /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen
-          /// @param useVsync  Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).
+          /// @param useVsync     Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).
+          /// @param depthBuffer  Depth buffer associated with swap-chain, for resource cleanup.
           /// @throws - domain_error: if the device has been lost (disconnected/switched/updated) -> recreate Renderer and SwapChain!
           ///         - runtime_error: internal GPU/device/network error -> if the error repeats itself, recreate Renderer and SwapChain!
-          void swapBuffers(bool useVsync);
-          /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen + discard render-target/depth-stencil view content after it
-          /// @param useVsync  Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).
-          /// @remarks - Efficient way to release GPU resources -> should be called instead of 'swapBuffers' when each pixel is redrawn for each frame.
-          ///          - If only part of the content is rewritten, and view must be cleared: use 'swapBuffer' + 'Renderer.clear'.
-          ///          - If only part of the content is rewritten, and previous view content must be kept: only use 'swapBuffer'.
-          ///          - Discard feature only supported in Direct3D 11.1+ -> 'swapBuffersDiscard' is the same as 'swapBuffers' with API level 11.0.
-          /// @throws - domain_error: if the device has been lost (disconnected/switched/updated) -> recreate Renderer and SwapChain!
-          ///         - runtime_error: internal GPU/device/network error -> if the error repeats itself, recreate Renderer and SwapChain!
-          void swapBuffersDiscard(bool useVsync, DepthStencilView depthBuffer = nullptr);
+          void swapBuffers(bool useVsync, DepthStencilView depthBuffer = nullptr);
         
         
         private:
@@ -142,7 +135,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           uint32_t _framebufferCount = 0;       // framebuffer count
           OutputFlag _flags = OutputFlag::none; // advanced settings (various params + flip-swap on/off)
           DXGI_FORMAT _backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-          DXGI_COLOR_SPACE_TYPE _colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+          ColorSpace _colorSpace = ColorSpace::unknown;
           
           std::shared_ptr<Renderer> _renderer = nullptr;
           RenderTargetView _renderTargetView = nullptr;

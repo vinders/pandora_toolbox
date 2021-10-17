@@ -86,6 +86,14 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         
         
         // -- component data formats --
+
+        /// @brief SDR/HDR RGB color space
+        enum class ColorSpace : int/*DXGI_COLOR_SPACE_TYPE*/ {
+          unknown      = -1,
+          sRgb         = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709,    ///< SDR sRGB non-linear color space (rgba8_sRGB / rgba8_unorm)
+          scRgb        = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709,    ///< HDR scRGB linear color space (rgba16_f_scRGB)
+          hdr10_bt2084 = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020  ///< HDR-10 / BT.2084 non-linear color space (rgb10a2_unorm_hdr10)
+        };
         
         /// @brief RGBA color component - bit-mask flags
         enum class ColorComponentFlag : int/*D3D11_COLOR_WRITE_ENABLE*/ {

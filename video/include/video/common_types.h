@@ -30,17 +30,16 @@ namespace pandora {
     ///          - Some of these features are not supported by old API versions (Direct3D 11.0, OpenGL 4.1...)
     enum class TargetOutputFlag : uint32_t {
       none            = 0x0u, ///< No option
-      hdrPreferred    = 0x1u, ///< use HDR color space if possible:
-                              ///  - HDR only used if supported by display monitor;
-                              ///  - HDR only used if supported by rendering API version (ex: D3D11.1+) + by operating system (ex: Win10+);
-                              ///  - HDR only used with HDR back-buffer formats: rgba32/rgb32/rg32, rgba16/rgb16/rg16, rgb10a2/rg11b10;
-                              ///  -> Always verify if the swap-chain supports HDR after creating it (SwapChain.isHdrEnabled).
-      variableRefresh = 0x2u, ///< Variable refresh rate display in fullscreen/borderless.
-      partialOutput   = 0x4u, ///< Partial display output config (instead of unique display output):
+      variableRefresh = 0x1u, ///< Variable refresh rate display in fullscreen/borderless.
+      partialOutput   = 0x2u, ///< Partial display output config (instead of unique display output):
                               ///  allows multiple partial swap-chains (for example, for multi-window rendering).
-      stereo          = 0x8u, ///< Stereo rendering mode, for 3D devices/glasses (only usable in fullscreen mode).
+      stereo          = 0x4u, ///< Stereo rendering mode, for 3D devices/glasses (only usable in fullscreen mode).
       shaderInput     = 0x10u,///< Allow using swap-chain output as shader input data.
-      disableFlipSwap = 0x20u ///< Prevent swap-chain from using flip-swap mode if supported.
+      disableFlipSwap = 0x20u,///< Prevent swap-chain from using flip-swap mode if supported.
+      swapNoDiscard   = 0x40u ///< Keep existing data after swapping buffers if supported:
+                              ///  - GPU resources not released as efficiently -> should only be used if frames aren't completely redrawn.
+                              ///  - Required when previous data must be kept (otherwise, the buffer would contain garbage after being swapped).
+                              ///  - Can also be useful if 'clearView' is called after every swap call (clearing the buffer also releases GPU resources).
     };
     
     // ---

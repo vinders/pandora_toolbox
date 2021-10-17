@@ -93,16 +93,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           // -- feature support --
           
-          /// @brief Verify if HDR functionalities are supported on current system
-          /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
-          inline bool isHdrAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          /// @brief Verify if a display monitor can display HDR colors
-          /// @remarks - Should be called to know if a HDR/SDR pipeline should be created.
-          ///          - Direct3D doesn't need the 'window' handle param (same API as Vulkan/OpenGL renderers).
-          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, void* window = nullptr) const noexcept;
+          /// @brief Detect current color space used by display monitor -- available with Direct3D 11.1+ / DXGI 1.4+ / Windows 10+
+          /// @remarks - Should be called to know if HDR can be properly displayed.
+          ///          - May return values not listed in the 'ColorSpace' enum, if the monitor uses an uncommon color space
+          ///            (can be cast to DXGI_COLOR_SPACE_TYPE values to verify the actual value).
+          ///          - Returns "unknown" if the detection fails, for example if color spaces are not supported
+          ///            (in that case, it's better to let the user choose to enable HDR).
+          ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept;
           
-          /// @brief "Flip" swap mode supported (more efficient) -> internal usage
-          inline bool isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           /// @brief Screen tearing supported (variable refresh rate display)
           bool isTearingAvailable() const noexcept;
           
@@ -488,6 +486,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
         private:
           void _destroy() noexcept;
+          inline bool _areColorSpacesAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
+          inline bool _isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           friend class pandora::video::d3d11::SwapChain;
           
         private:

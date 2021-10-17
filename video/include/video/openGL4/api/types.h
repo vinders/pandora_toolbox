@@ -78,6 +78,14 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
         
         
         // -- component data formats --
+
+        /// @brief SDR/HDR RGB color space
+        enum class ColorSpace : int {
+          unknown      = -1,
+          sRgb         = 1, ///< SDR sRGB non-linear color space (rgba8_sRGB / rgba8_unorm)
+          scRgb        = 2, ///< HDR scRGB linear color space (rgba16_f_scRGB)
+          hdr10_bt2084 = 3  ///< HDR-10 / BT.2084 non-linear color space (rgb10a2_unorm_hdr10)
+        };
         
         /// @brief RGBA color component - bit-mask flags
         enum class ColorComponentFlag : int {
