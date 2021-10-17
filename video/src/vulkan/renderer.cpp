@@ -36,7 +36,19 @@ Includes hpp implementations at the end of the file
 
 # include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
+# include "video/vulkan/api/_private/_dynamic_array.h"
 # include "video/vulkan/renderer.h"
+// # include "video/vulkan/swap_chain.h"
+// # include "video/vulkan/renderer_state_factory.h"
+
+// # include "video/vulkan/shader.h"
+// # include "video/vulkan/depth_stencil_buffer.h"
+// # include "video/vulkan/dynamic_buffer.h"
+// # include "video/vulkan/static_buffer.h"
+// # include "video/vulkan/texture.h"
+// # include "video/vulkan/texture_reader.h"
+// # include "video/vulkan/texture_writer.h"
+// # include "video/vulkan/camera_utils.h"
 #if !defined(_CPP_REVISION) || _CPP_REVISION != 14
 # define __if_constexpr if constexpr
 #else
@@ -154,19 +166,19 @@ Includes hpp implementations at the end of the file
     if (loader.vk.isKhrDisplaySupported)
       ++enabledExtCount;
 
-    auto enabledExtensions = std::unique_ptr<const char*[]>(new const char*[enabledExtCount]);
-    memcpy(enabledExtensions.get(), instanceBaseExt, baseExtCount*sizeof(*instanceBaseExt));
+    auto enabledExtensions = DynamicArray<const char*>(enabledExtCount);
+    memcpy(enabledExtensions.value, instanceBaseExt, baseExtCount*sizeof(*instanceBaseExt));
     if (additionalExtCount != 0)
-      memcpy(&enabledExtensions[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
+      memcpy(&enabledExtensions.value[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
     if (loader.vk.isKhrDisplaySupported)
-      enabledExtensions[enabledExtCount - 1] = "VK_KHR_display";
+      enabledExtensions.value[enabledExtCount - 1] = "VK_KHR_display";
 
     // create vulkan instance
     VkInstanceCreateInfo instanceInfo;
     memset(&instanceInfo, 0, sizeof(instanceInfo));
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
-    instanceInfo.ppEnabledExtensionNames = enabledExtensions.get();
+    instanceInfo.ppEnabledExtensionNames = enabledExtensions.value;
     instanceInfo.enabledExtensionCount = (uint32_t)enabledExtCount;
 
 #   if defined(_DEBUG) || !defined(NDEBUG)
@@ -220,13 +232,13 @@ Includes hpp implementations at the end of the file
   }
 
   // Extract features ('inOutAvailable') that are both requested by user ('requested') and available in device ('inOutAvailable')
-  static void __getSupportedFeatures(const VkPhysicalDeviceFeatures& requested, VkPhysicalDeviceFeatures& inOutAvailable) noexcept {
-    char* outEnd = ((char*)&inOutAvailable) + sizeof(VkPhysicalDeviceFeatures); // raw iteration -> no missing feature if vulkan is updated
-    for (uint64_t* out = (uint64_t*)&inOutAvailable, *req = (uint64_t*)&requested; (char*)out < outEnd; ++out, ++req)
+  static void __getSupportedFeatures(const VkPhysicalDeviceFeatures& requested, VkPhysicalDeviceFeatures* inOutAvailable) noexcept {
+    uint64_t* outEnd = ((uint64_t*)inOutAvailable) + sizeof(VkPhysicalDeviceFeatures)/sizeof(uint64_t); // raw iteration -> no missing feature if vulkan is updated
+    for (uint64_t* out = (uint64_t*)inOutAvailable, *req = (uint64_t*)&requested; out < outEnd; ++out, ++req)
       *out = (*out & *req);
 
     __if_constexpr ((sizeof(VkPhysicalDeviceFeatures) & (sizeof(uint64_t) - 1)) != 0) { // not a multiple of 8 bytes -> copy last block
-      char* out = outEnd - sizeof(uint64_t);
+      char* out = ((char*)inOutAvailable) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
       char* req = ((char*)&requested) + sizeof(VkPhysicalDeviceFeatures) - sizeof(uint64_t);
       *(uint64_t*)out = (*(uint64_t*)out & *(uint64_t*)req);
     }
@@ -235,20 +247,20 @@ Includes hpp implementations at the end of the file
   // ---
 
   template <size_t _ArraySize>
-  static inline std::unique_ptr<const char*[]> __getSupportedExtensions(const char* extensions[_ArraySize], uint32_t& outExtCount) {
+  static inline DynamicArray<const char*> __getSupportedExtensions(const char* extensions[_ArraySize], uint32_t& outExtCount) {
     bool results[_ArraySize];
     outExtCount = (uint32_t)VulkanLoader::instance().findExtensions(extensions, _ArraySize, results);
     if (outExtCount == 0)
-      return nullptr;
+      return DynamicArray<const char*>{};
     
-    std::unique_ptr<const char*[]> supportedExt(new const char*[outExtCount]);
+    DynamicArray<const char*> supportedExt(outExtCount);
     if (outExtCount == _ArraySize) {
-      memcpy(supportedExt.get(), extensions, _ArraySize*sizeof(*extensions));
+      memcpy(supportedExt.value, extensions, _ArraySize*sizeof(*extensions));
     }
     else {
       bool* curResult = results;
       const char** endExt = extensions + _ArraySize;
-      for (const char** curExt = extensions, **out = supportedExt.get(); curExt < endExt; ++curExt, ++curResult) {
+      for (const char** curExt = extensions, **out = supportedExt.value; curExt < endExt; ++curExt, ++curResult) {
         if (*curResult) {
           *out = *curExt;
           ++out;
@@ -263,7 +275,7 @@ Includes hpp implementations at the end of the file
   }
 
   // List of default/standard device extensions (used if no custom list provided)
-  static std::unique_ptr<const char*[]> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
+  static DynamicArray<const char*> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
     if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -334,11 +346,11 @@ Includes hpp implementations at the end of the file
                                                        const pandora::memory::LightString& monitorDesc) {
       uint32_t displayCount = 0;
       if (vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, nullptr) == VK_SUCCESS && displayCount) {
-        auto displays = std::unique_ptr<VkDisplayPropertiesKHR[]>(new VkDisplayPropertiesKHR[displayCount]);
-        VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.get());
+        auto displays = DynamicArray<VkDisplayPropertiesKHR>(displayCount);
+        VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.value);
 
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-          for (const VkDisplayPropertiesKHR* it = displays.get(); displayCount; --displayCount, ++it) {
+          for (const VkDisplayPropertiesKHR* it = displays.value; displayCount; --displayCount, ++it) {
             if (it->displayName != nullptr && (monitorName == it->displayName || monitorDesc == it->displayName))
               return true;
           }
@@ -355,8 +367,8 @@ Includes hpp implementations at the end of the file
       vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
       if (queueFamilyCount == 0)
         return false;
-      auto queueFamilies = std::unique_ptr<VkQueueFamilyProperties[]>(new VkQueueFamilyProperties[queueFamilyCount]);
-      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.get());
+      auto queueFamilies = DynamicArray<VkQueueFamilyProperties>(queueFamilyCount);
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.value);
 
       // find best family (if available)
       uint32_t bestFamily = (uint32_t)-1;
@@ -364,7 +376,7 @@ Includes hpp implementations at the end of the file
       uint32_t bestFamilyScore = 0;
 
       for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-        VkQueueFamilyProperties& family = queueFamilies[i];
+        VkQueueFamilyProperties& family = queueFamilies.value[i];
         if ((family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (!useSparseBinding || (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT))) {
           uint32_t familyScore = 0;
           if (family.queueFlags & VK_QUEUE_COMPUTE_BIT)
@@ -403,9 +415,9 @@ Includes hpp implementations at the end of the file
     if (vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr) != VK_SUCCESS || physicalDeviceCount == 0)
       throw std::runtime_error("Vulkan: failed to find compatible GPUs");
 
-    auto physicalDevices = std::unique_ptr<VkPhysicalDevice[]>(new VkPhysicalDevice[physicalDeviceCount]);
-    memset(physicalDevices.get(), 0, physicalDeviceCount*sizeof(VkPhysicalDevice));
-    VkResult queryResult = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.get());
+    auto physicalDevices = DynamicArray<VkPhysicalDevice>(physicalDeviceCount);
+    memset(physicalDevices.value, 0, physicalDeviceCount*sizeof(VkPhysicalDevice));
+    VkResult queryResult = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.value);
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query physical devices");
 
@@ -424,7 +436,7 @@ Includes hpp implementations at the end of the file
     uint32_t bestDeviceScore = 0;
     featureLevel = __P_VK_API_VERSION_NOVARIANT(featureLevel);
 
-    for (VkPhysicalDevice* it = physicalDevices.get(); physicalDeviceCount; --physicalDeviceCount, ++it) {
+    for (VkPhysicalDevice* it = physicalDevices.value; physicalDeviceCount; --physicalDeviceCount, ++it) {
       VkPhysicalDeviceProperties deviceProperties;
       vkGetPhysicalDeviceProperties(*it, &deviceProperties);
 
@@ -476,7 +488,7 @@ Includes hpp implementations at the end of the file
     else {
       memset(this->_features.get(), 0, sizeof(VkPhysicalDeviceFeatures));
       vkGetPhysicalDeviceFeatures(this->_physicalDevice, this->_features.get());
-      __getSupportedFeatures(requestedFeatures, *(this->_features));
+      __getSupportedFeatures(requestedFeatures, this->_features.get());
     }
 
     this->_physicalDeviceInfo = std::make_unique<VkPhysicalDeviceProperties>();
@@ -509,14 +521,14 @@ Includes hpp implementations at the end of the file
       catch (...) {}
 #   endif
 
-    std::unique_ptr<const char* []> defaultExt = nullptr;
+    DynamicArray<const char*> defaultExt;
     if (deviceExtensions != nullptr && extensionCount != 0) {
       deviceInfo.ppEnabledExtensionNames = deviceExtensions;
       deviceInfo.enabledExtensionCount = (uint32_t)extensionCount;
     }
     else {
       defaultExt = __defaultDeviceExtensions(deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
-      deviceInfo.ppEnabledExtensionNames = defaultExt.get();
+      deviceInfo.ppEnabledExtensionNames = defaultExt.value;
     }
 
     VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &(this->_deviceContext));
@@ -531,6 +543,8 @@ Includes hpp implementations at the end of the file
   // Destroy device and context resources
   void Renderer::_destroy() noexcept {
     if (this->_deviceContext != VK_NULL_HANDLE) {
+      flush();
+      vkDeviceWaitIdle(this->_deviceContext);
       vkDestroyDevice(this->_deviceContext, nullptr);
       this->_features = nullptr;
       this->_physicalDeviceInfo = nullptr;
@@ -647,52 +661,6 @@ Includes hpp implementations at the end of the file
   }
 
 
-// -- feature support -- -------------------------------------------------------
-
-  // Verify if HDR functionalities are supported on current system
-  bool Renderer::isHdrAvailable() const noexcept {
-    return (this->_instance->featureLevel() != VK_API_VERSION_1_0 && this->_features->shaderStorageImageExtendedFormats);
-  }
-
-  // Verify if a display monitor can display HDR colors
-  bool Renderer::isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, pandora::video::WindowHandle window) const noexcept {
-    if (window == (pandora::video::WindowHandle)0)
-      return false;
-
-    VkSurfaceKHR screenSurface = VK_NULL_HANDLE;
-    try {
-      if (VulkanLoader::instance().createWindowSurface(this->_instance->vkInstance(), window, nullptr, screenSurface) != VK_SUCCESS)
-        return false;
-    }
-    catch (...) { return false; }
-
-    bool isHdrAvailable = false;
-    try {
-      uint32_t formatCount = 0;
-      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
-        auto formats = std::unique_ptr<VkSurfaceFormatKHR[]>(new VkSurfaceFormatKHR[formatCount]);
-        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_physicalDevice, screenSurface, &formatCount, formats.get());
-        if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-          for (const VkSurfaceFormatKHR* it = formats.get(); !isHdrAvailable && formatCount; --formatCount, ++it) {
-            switch (it->colorSpace) {
-              case VK_COLOR_SPACE_HDR10_HLG_EXT:
-              case VK_COLOR_SPACE_HDR10_ST2084_EXT:
-              case VK_COLOR_SPACE_BT709_LINEAR_EXT:
-              case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:
-              case VK_COLOR_SPACE_BT2020_LINEAR_EXT:
-              case VK_COLOR_SPACE_DOLBYVISION_EXT: isHdrAvailable = true; break;
-              default: break;
-            }
-          }
-        }
-      }
-    }
-    catch (...) {}
-    vkDestroySurfaceKHR(this->_instance->vkInstance(), screenSurface, nullptr);
-    return isHdrAvailable;
-  }
- 
-
 // -- render target operations -------------------------------------------------
 
   // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
@@ -702,15 +670,15 @@ Includes hpp implementations at the end of the file
         numberViewports = maxViewports();
     
       if (numberViewports <= 16) { // avoid huge cost of dynamic alloc if possible
-        VkViewport values[16]{};
-        VkViewport* out = &values[numberViewports - 1u];
+        VkViewport data[16]{};
+        VkViewport* out = &data[numberViewports - 1u];
         for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
           memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
         //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values);
       }
       else {
-        auto values = std::unique_ptr<VkViewport[]>(new VkViewport[numberViewports]);
-        VkViewport* out = &values[numberViewports - 1u];
+        auto data = DynamicArray<VkViewport>(numberViewports);
+        VkViewport* out = &(data.value[numberViewports - 1u]);
         for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
           memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
         //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values.get());
@@ -729,15 +697,15 @@ Includes hpp implementations at the end of the file
         numberRectangles = maxViewports();
 
       if (numberRectangles <= 16) { // avoid huge cost of dynamic alloc if possible
-        VkRect2D values[16]{};
-        VkRect2D* out = &values[numberRectangles - 1u];
+        VkRect2D data[16]{};
+        VkRect2D* out = &data[numberRectangles - 1u];
         for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
           memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
         //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values);
       }
       else {
-        auto values = std::unique_ptr<VkRect2D[]>(new VkRect2D[numberRectangles]);
-        VkRect2D* out = &values[numberRectangles - 1u];
+        auto data = DynamicArray<VkRect2D>(numberRectangles);
+        VkRect2D* out = &(data.value[numberRectangles - 1u]);
         for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
           memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
         //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values.get());
@@ -747,6 +715,208 @@ Includes hpp implementations at the end of the file
   // Set rasterizer scissor-test rectangle
   void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
     //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
+  }
+  
+
+// -----------------------------------------------------------------------------
+// swap_chain.h
+// -----------------------------------------------------------------------------
+
+# define __P_DEFAULT_COLORSPACE_SRGB  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+
+// -- color management --
+
+  // Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
+  bool SwapChain::isColorSpaceSupported(ColorSpace colorSpace) const noexcept {
+    if (colorSpace == ColorSpace::unknown)
+      return true;
+    try {
+      uint32_t formatCount = 0;
+      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
+        auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
+        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, formats.value);
+        if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+          for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
+            if (it->colorSpace == (VkColorSpaceKHR)colorSpace && it->format == this->_backBufferFormat)
+              return true;
+          }
+          return false;
+        }
+      }
+    }
+    catch (...) {}
+    return (colorSpace == ColorSpace::sRgb);
+  }
+
+  // Find color space for a buffer format
+  static __forceinline VkColorSpaceKHR __getColorSpace(VkFormat backBufferFormat) noexcept {
+    switch (backBufferFormat) {
+      case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+      case VK_FORMAT_A2R10G10B10_SNORM_PACK32:
+      case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
+      case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
+      case VK_FORMAT_A2R10G10B10_UINT_PACK32:
+      case VK_FORMAT_A2R10G10B10_SINT_PACK32:
+      case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+      case VK_FORMAT_A2B10G10R10_SNORM_PACK32:
+      case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
+      case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
+      case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+      case VK_FORMAT_A2B10G10R10_SINT_PACK32:
+      case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+        return VK_COLOR_SPACE_HDR10_ST2084_EXT; // HDR-10
+      case VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+      case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+      case VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+      case VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+        return VK_COLOR_SPACE_BT709_NONLINEAR_EXT; // HDR-scRGB12
+      case VK_FORMAT_R16G16_USCALED:
+      case VK_FORMAT_R16G16_SSCALED:
+      case VK_FORMAT_R16G16_SFLOAT:
+      case VK_FORMAT_R16G16B16_USCALED:
+      case VK_FORMAT_R16G16B16_SSCALED:
+      case VK_FORMAT_R16G16B16_SFLOAT:
+      case VK_FORMAT_R16G16B16A16_USCALED:
+      case VK_FORMAT_R16G16B16A16_SSCALED:
+      case VK_FORMAT_R16G16B16A16_SFLOAT:
+      case VK_FORMAT_R32G32_SFLOAT:
+      case VK_FORMAT_R32G32B32_SFLOAT:
+      case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return VK_COLOR_SPACE_BT709_LINEAR_EXT; // HDR-scRGB16
+      default: break;
+    }
+    return __P_DEFAULT_COLORSPACE_SRGB; // SDR-sRGB
+  }
+
+  // Set swap-chain color space
+  // returns: color spaces supported (true) or not
+  static __forceinline void __setColorSpace(const Renderer& renderer, SwapChain& swapChain, VkSurfaceKHR windowSurface, 
+                                            VkFormat backBufferFormat, ColorSpace& inOutColorSpace) { // throws
+    if (renderer.featureLevel() != VK_API_VERSION_1_0) {
+      VkColorSpaceKHR colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __getColorSpace(backBufferFormat) : (VkColorSpaceKHR)inOutColorSpace;
+      if (swapChain.isColorSpaceSupported((ColorSpace)colorSpace)) {
+        VkResult result = VK_SUCCESS;//swapChain->setColorSpace(colorSpace); //TODO
+        if (result != VK_SUCCESS)
+          throwError(result, "SwapChain: color space error");
+        inOutColorSpace = (ColorSpace)colorSpace;
+        return;
+      }
+    }
+
+    if (inOutColorSpace != ColorSpace::unknown && inOutColorSpace != ColorSpace::sRgb)
+      throw std::invalid_argument("SwapChain: color space not supported");
+    inOutColorSpace = (ColorSpace)__P_DEFAULT_COLORSPACE_SRGB; // default: use SDR-sRGB
+  }
+
+
+// -- swap-chain creation -- ---------------------------------------------------
+
+  // Get swap-chain format (based on buffer format + flip-swap request) + detect flip-swap support for format
+  // inOutUseFlipSwap: [in] = request flip-swap or not  /  [out] = requested and supported for format
+  static inline int __getSwapChainFormat(int backBufferFormat, bool& inOutUseFlipSwap) noexcept {
+    //...
+    return backBufferFormat;
+  }
+  
+  // ---
+  
+  // Create swap-chain resource for existing renderer
+  void SwapChain::_createSwapChain(pandora::video::WindowHandle window, const SwapChain::RefreshRate& rate) { // throws
+    if (this->_renderer == nullptr || window == (pandora::video::WindowHandle)0)
+      throw std::invalid_argument("SwapChain: NULL renderer/window");
+    VulkanLoader& loader = VulkanLoader::instance();
+
+    VkResult result = loader.createWindowSurface(this->_renderer->vkInstance(), window, nullptr, this->_windowSurface);
+    if (result != VK_SUCCESS)
+      throwError(result, "SwapChain: window surface not created");
+
+    // build swap-chain
+    VkSurfaceKHR windowSurface = VK_NULL_HANDLE;
+    loader.createWindowSurface(this->_renderer->vkInstance(), window, nullptr, windowSurface);
+
+    /*if (this->_renderer->isHdrAvailable()
+    && __isSurfaceUsingHdrFormat(this->_renderer->device(), windowSurface))
+      this->_colorSpace = __getColorSpace(this->_backBufferFormat);*/
+
+
+    //... // no response to ALT+ENTER
+  }
+  
+  // ---
+  
+  // Create/refresh swap-chain render-target view + color space
+  void SwapChain::_createOrRefreshTargetView() { // throws
+    // find + set color space value (if supported)
+    //...
+
+    // create render-target view (if not existing)
+    //...
+  }
+
+
+// -- swap-chain destruction/move -- -------------------------------------------
+
+  // Destroy swap-chain
+  void SwapChain::release() noexcept {
+    //...
+  }
+
+  SwapChain::SwapChain(SwapChain&& rhs) noexcept {
+    //...
+  }
+  SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
+    release();
+    //...
+    return *this;
+  }
+
+
+// -- operations -- ------------------------------------------------------------
+
+  // Change back-buffer(s) size + refresh color space
+  bool SwapChain::resize(uint32_t width, uint32_t height) { // throws
+    uint32_t pixelSize = _toPixelSize(width, height);
+    bool isResized = (this->_pixelSize != pixelSize);
+  
+    if (isResized) {
+      // clear previous size-specific context
+      //...
+      
+      // resize swap-chain
+      //...
+    }
+
+    // create/refresh render-target-view (if not resized, will only verify color space (in case monitor changed))
+    _createOrRefreshTargetView();
+    return isResized;
+  }
+  
+  // ---
+  
+  // Throw appropriate exception for 'swap buffers' error
+  static void __processSwapError(VkResult result) {
+    switch (result) {
+      // minor issues -> ignore
+      case VK_NOT_READY:
+      case VK_EVENT_SET:
+      case VK_EVENT_RESET:
+      case VK_INCOMPLETE:
+      case VK_OPERATION_DEFERRED_KHR:
+      case VK_OPERATION_NOT_DEFERRED_KHR:
+      case VK_SUBOPTIMAL_KHR: break;
+      // device lost
+      case VK_ERROR_DEVICE_LOST:
+      case VK_ERROR_SURFACE_LOST_KHR:
+      case VK_ERROR_OUT_OF_DATE_KHR:
+        throw std::domain_error("SwapChain: device lost");
+      // invalid option / internal error
+      default: throwError(result, "SwapChain: internal error"); break;
+    }
+  }
+
+  // Swap back-buffer(s) and front-buffer, to display drawn content on screen
+  void SwapChain::swapBuffers(bool useVsync, DepthStencilView depthBuffer) {
+    //... swap + check
   }
 
 
@@ -816,6 +986,17 @@ Includes hpp implementations at the end of the file
     }
     throw RuntimeException(std::move(message));
   }
+  
+
+// -----------------------------------------------------------------------------
+// Include hpp implementations
+// -----------------------------------------------------------------------------
+// # include "./renderer_state_factory.hpp"
+// # include "./buffers.hpp"
+// # include "./texture.hpp"
+// # include "./texture_reader_writer.hpp"
+// # include "./shader.hpp"
+// # include "./camera_utils.hpp"
 
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(pop)

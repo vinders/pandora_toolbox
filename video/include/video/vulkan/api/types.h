@@ -85,6 +85,14 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         
         
         // -- component data formats --
+
+        /// @brief SDR/HDR RGB color space
+        enum class ColorSpace : int/*VkColorSpaceKHR*/ {
+          unknown      = -1,
+          sRgb         = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, ///< SDR sRGB non-linear color space (rgba8_sRGB / rgba8_unorm)
+          scRgb        = VK_COLOR_SPACE_BT709_LINEAR_EXT,   ///< HDR scRGB linear color space (rgba16_f_scRGB)
+          hdr10_bt2084 = VK_COLOR_SPACE_HDR10_ST2084_EXT    ///< HDR-10 / BT.2084 non-linear color space (rgb10a2_unorm_hdr10)
+        };
         
         /// @brief RGBA color component - bit-mask flags
         enum class ColorComponentFlag : int/*VkColorComponentFlagBits*/ {

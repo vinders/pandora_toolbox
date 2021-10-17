@@ -73,8 +73,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       auto window = pandora::video::Window::Builder{}.create(__SYSTEM_STR("VK_TEST"), __SYSTEM_STR("Test"));
       window->show();
 
-      bool isMonitorHdr = renderer.isMonitorHdrCapable(monitor, window->handle());
-      if (isMonitorHdr) { EXPECT_TRUE(renderer.isHdrAvailable()); }
+      auto colorSpace = renderer.getMonitorColorSpace(monitor);
       size_t dedicatedRam = 0, sharedRam = 0;
       EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
       EXPECT_TRUE(dedicatedRam > 0 || sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
@@ -82,13 +81,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       const char* trueVal = "true";
       const char* falseVal = "false";
       printf("Vulkan context:\n > API level: %u.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
-             " > Max render views: %u\n > Monitor HDR capable: %s\n"
-             " > HDR API available: %s\n > Tearing available: %s\n", 
+             " > Max render views: %u\n > Tearing available: %s\n", 
              VK_API_VERSION_MAJOR(renderer.featureLevel()), VK_API_VERSION_MINOR(renderer.featureLevel()),
              (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
              (uint32_t)renderer.maxRenderTargets(),
-             isMonitorHdr ? trueVal : falseVal,
-             renderer.isHdrAvailable() ? trueVal : falseVal,
              renderer.isTearingAvailable() ? trueVal : falseVal);
 
       ColorChannel gammaCorrectWhite[4];

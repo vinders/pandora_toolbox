@@ -19,9 +19,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdlib>
 # include <cstring>
-# include <memory>
 # include <stdexcept>
 # include "video/vulkan/api/vulkan_loader.h"
+# include "video/vulkan/api/_private/_dynamic_array.h"
 
 # if defined(_WINDOWS)
 #   ifndef __MINGW32__
@@ -164,13 +164,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (enumerator(nullptr, &extCount, nullptr) != VK_SUCCESS || extCount == 0)
       throw std::runtime_error("Vulkan: failed to count extensions");
 
-    auto allExt = std::unique_ptr<VkExtensionProperties[]>(new VkExtensionProperties[extCount]);
-    if (enumerator(nullptr, &extCount, allExt.get()))
+    auto allExt = DynamicArray<VkExtensionProperties>(extCount);
+    if (enumerator(nullptr, &extCount, allExt.value))
       throw std::runtime_error("Vulkan: failed to query extensions");
     
     // search for platform extension
-    VkExtensionProperties* endIt = allExt.get() + (intptr_t)extCount;
-    for (VkExtensionProperties* it = allExt.get(); it < endIt; ++it) {
+    VkExtensionProperties* endIt = allExt.value + (intptr_t)extCount;
+    for (VkExtensionProperties* it = allExt.value; it < endIt; ++it) {
       if (!hasBaseKhr && strcmp(it->extensionName, "VK_KHR_surface") == 0) {
         hasBaseKhr = true;
       }
@@ -279,17 +279,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, nullptr) != VK_SUCCESS || availableExtCount == 0)
       throw std::runtime_error("Vulkan: failed to count extensions");
 
-    auto availableExt = std::unique_ptr<VkExtensionProperties[]>(new VkExtensionProperties[availableExtCount]);
-    VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.get());
+    auto availableExt = DynamicArray<VkExtensionProperties>(availableExtCount);
+    VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.value);
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query extensions");
 
     size_t numberFound = 0;
     memset(outResults, 0, length*sizeof(*outResults)); // set all results to false
     
-    VkExtensionProperties* endIt = availableExt.get() + (intptr_t)availableExtCount;
+    VkExtensionProperties* endIt = availableExt.value + (intptr_t)availableExtCount;
     for (const char** currentExt = extensions; length; --length, ++currentExt, ++outResults) {
-      for (VkExtensionProperties* it = availableExt.get(); it < endIt; ++it) {
+      for (VkExtensionProperties* it = availableExt.value; it < endIt; ++it) {
         if (strcmp(*currentExt, it->extensionName) == 0) {
           it->extensionName[0] = '\0'; // remove from list -> faster comparison
           
@@ -307,13 +307,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     if (this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, nullptr) != VK_SUCCESS || availableLayerCount == 0)
       throw std::runtime_error("Vulkan: failed to count layers");
 
-    auto availableLayers = std::unique_ptr<VkLayerProperties[]>(new VkLayerProperties[availableLayerCount]);
-    VkResult queryResult = this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, availableLayers.get());
+    auto availableLayers = DynamicArray<VkLayerProperties>(availableLayerCount);
+    VkResult queryResult = this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, availableLayers.value);
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query layers");
 
-    VkLayerProperties* endIt = availableLayers.get() + (intptr_t)availableLayerCount;
-    for (VkLayerProperties* it = availableLayers.get(); it < endIt; ++it) {
+    VkLayerProperties* endIt = availableLayers.value + (intptr_t)availableLayerCount;
+    for (VkLayerProperties* it = availableLayers.value; it < endIt; ++it) {
       if (strcmp(layerName, it->layerName) == 0)
         return true;
     }

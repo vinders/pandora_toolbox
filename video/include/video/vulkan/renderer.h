@@ -30,6 +30,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace vulkan {
+        class SwapChain;
+
         /// @class VulkanInstance
         /// @brief Vulkan driver client instance, used to initialize Renderer objects
         class VulkanInstance final {
@@ -148,12 +150,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           // -- feature support --
           
-          /// @brief Verify if HDR functionalities are supported on current system
-          /// @warning That doesn't mean the display supports it (call 'isMonitorHdrCapable').
-          bool isHdrAvailable() const noexcept;
-          /// @brief Verify if a display monitor can display HDR colors for a window
-          /// @remarks Should be called to know if a HDR/SDR pipeline should be created.
-          bool isMonitorHdrCapable(const pandora::hardware::DisplayMonitor& target, pandora::video::WindowHandle window) const noexcept;
+          /// @brief Detect current color space used by display monitor -- not supported with Vulkan
+          /// @remarks Returns "unknown" with Vulkan (color space detection not supported)
+          ///          (-> it's better to let the user choose to optionally enable HDR).
+          ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept { return ColorSpace::unknown; }
+
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
           inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
@@ -190,6 +191,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
         private:
           void _destroy() noexcept;
+          inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }
+          friend class pandora::video::vulkan::SwapChain;
           
         private:
           std::shared_ptr<VulkanInstance> _instance = nullptr;
@@ -206,4 +209,5 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
     }
   }
+# include "./swap_chain.h" // includes vulkan
 #endif
