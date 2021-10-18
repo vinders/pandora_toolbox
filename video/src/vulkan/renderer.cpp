@@ -38,7 +38,7 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/api/vulkan_loader.h"
 # include "video/vulkan/api/_private/_dynamic_array.h"
 # include "video/vulkan/renderer.h"
-// # include "video/vulkan/swap_chain.h"
+# include "video/vulkan/swap_chain.h"
 // # include "video/vulkan/renderer_state_factory.h"
 
 // # include "video/vulkan/shader.h"
@@ -278,6 +278,7 @@ Includes hpp implementations at the end of the file
   static DynamicArray<const char*> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
     if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
+        "VK_EXT_extended_dynamic_state",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -289,6 +290,7 @@ Includes hpp implementations at the end of the file
         "VK_KHR_shader_float16_int8",
         "VK_KHR_shader_float_controls",
         "VK_KHR_spirv_1_4", // not available in 1.0
+        "VK_EXT_extended_dynamic_state",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -304,6 +306,7 @@ Includes hpp implementations at the end of the file
         "VK_KHR_draw_indirect_count",
         "VK_KHR_shader_float16_int8",
         "VK_KHR_shader_float_controls",
+        "VK_EXT_extended_dynamic_state",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -330,7 +333,9 @@ Includes hpp implementations at the end of the file
         default: break;
       }
       if (deviceProperties.limits.maxImageDimension2D != 0xFFFFFFFFu)
-        deviceScore += deviceProperties.limits.maxImageDimension2D;
+        deviceScore += (deviceProperties.limits.maxImageDimension2D >= 8192)
+                       ? 7168u + (deviceProperties.limits.maxImageDimension2D >> 3)
+                       : deviceProperties.limits.maxImageDimension2D;
       if (deviceFeatures.geometryShader)
         deviceScore += 16384;
       if (deviceFeatures.tessellationShader)
@@ -716,7 +721,7 @@ Includes hpp implementations at the end of the file
   void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
     //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
   }
-  
+
 
 // -----------------------------------------------------------------------------
 // swap_chain.h
@@ -726,26 +731,26 @@ Includes hpp implementations at the end of the file
 
 // -- color management --
 
-  // Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
-  bool SwapChain::isColorSpaceSupported(ColorSpace colorSpace) const noexcept {
-    if (colorSpace == ColorSpace::unknown)
-      return true;
-    try {
+  // Verify if a buffer format is supported to create swap-chains and render targets
+  bool DisplaySurface::isFormatSupported(DataFormat bufferFormat) const noexcept {
+    if (this->_renderer != nullptr) {
+      auto format = _getDataFormatComponents(bufferFormat);
+
       uint32_t formatCount = 0;
       if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
         auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
         VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, formats.value);
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+
           for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
-            if (it->colorSpace == (VkColorSpaceKHR)colorSpace && it->format == this->_backBufferFormat)
+            if (it->format == format)
               return true;
           }
           return false;
         }
       }
     }
-    catch (...) {}
-    return (colorSpace == ColorSpace::sRgb);
+    return (bufferFormat == DataFormat::rgba8_unorm || bufferFormat == DataFormat::rgba8_sRGB);
   }
 
   // Find color space for a buffer format
@@ -779,9 +784,6 @@ Includes hpp implementations at the end of the file
       case VK_FORMAT_R16G16B16A16_USCALED:
       case VK_FORMAT_R16G16B16A16_SSCALED:
       case VK_FORMAT_R16G16B16A16_SFLOAT:
-      case VK_FORMAT_R32G32_SFLOAT:
-      case VK_FORMAT_R32G32B32_SFLOAT:
-      case VK_FORMAT_R32G32B32A32_SFLOAT:
         return VK_COLOR_SPACE_BT709_LINEAR_EXT; // HDR-scRGB16
       default: break;
     }
@@ -790,56 +792,99 @@ Includes hpp implementations at the end of the file
 
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
-  static __forceinline void __setColorSpace(const Renderer& renderer, SwapChain& swapChain, VkSurfaceKHR windowSurface, 
-                                            VkFormat backBufferFormat, ColorSpace& inOutColorSpace) { // throws
-    if (renderer.featureLevel() != VK_API_VERSION_1_0) {
-      VkColorSpaceKHR colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __getColorSpace(backBufferFormat) : (VkColorSpaceKHR)inOutColorSpace;
-      if (swapChain.isColorSpaceSupported((ColorSpace)colorSpace)) {
-        VkResult result = VK_SUCCESS;//swapChain->setColorSpace(colorSpace); //TODO
-        if (result != VK_SUCCESS)
-          throwError(result, "SwapChain: color space error");
-        inOutColorSpace = (ColorSpace)colorSpace;
-        return;
+  static __forceinline VkSurfaceFormatKHR __findSwapChainFormat(const VkPhysicalDevice& device, VkSurfaceKHR windowSurface,
+                                                                VkFormat backBufferFormat) { // throws
+    uint32_t formatCount = 0;
+    VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, nullptr);
+    if (result == VK_SUCCESS && formatCount) {
+      auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
+      result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, formats.value);
+      if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
+
+        VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_MAX_ENUM_KHR;
+        VkColorSpaceKHR preferredColorSpace = __getColorSpace(backBufferFormat);
+        for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
+          if (it->format == backBufferFormat) {
+            if (it->colorSpace == preferredColorSpace) { // preferred color space found -> exit loop
+              colorSpace = it->colorSpace;
+              break;
+            }
+            else if (colorSpace == VK_COLOR_SPACE_MAX_ENUM_KHR) // first available color space -> store it (in case preferred is not found)
+              colorSpace = it->colorSpace;
+          }
+        }
+        if (colorSpace != VK_COLOR_SPACE_MAX_ENUM_KHR)
+          return VkSurfaceFormatKHR{ backBufferFormat, colorSpace };
+
+        // format not found -> use first available format (only if default format requested)
+        if (backBufferFormat == VK_FORMAT_R8G8B8A8_SRGB || backBufferFormat == VK_FORMAT_R8G8B8A8_UNORM)
+          return VkSurfaceFormatKHR(formats.value[0]);
       }
     }
 
-    if (inOutColorSpace != ColorSpace::unknown && inOutColorSpace != ColorSpace::sRgb)
-      throw std::invalid_argument("SwapChain: color space not supported");
-    inOutColorSpace = (ColorSpace)__P_DEFAULT_COLORSPACE_SRGB; // default: use SDR-sRGB
+    // query failed -> only default format allowed
+    if (backBufferFormat != VK_FORMAT_R8G8B8A8_SRGB && backBufferFormat != VK_FORMAT_R8G8B8A8_UNORM)
+      throwError(result, "SwapChain: color space query");
+    return VkSurfaceFormatKHR{ backBufferFormat, __P_DEFAULT_COLORSPACE_SRGB };
   }
 
 
 // -- swap-chain creation -- ---------------------------------------------------
 
-  // Get swap-chain format (based on buffer format + flip-swap request) + detect flip-swap support for format
-  // inOutUseFlipSwap: [in] = request flip-swap or not  /  [out] = requested and supported for format
-  static inline int __getSwapChainFormat(int backBufferFormat, bool& inOutUseFlipSwap) noexcept {
-    //...
-    return backBufferFormat;
-  }
-  
-  // ---
-  
-  // Create swap-chain resource for existing renderer
-  void SwapChain::_createSwapChain(pandora::video::WindowHandle window, const SwapChain::RefreshRate& rate) { // throws
-    if (this->_renderer == nullptr || window == (pandora::video::WindowHandle)0)
-      throw std::invalid_argument("SwapChain: NULL renderer/window");
-    VulkanLoader& loader = VulkanLoader::instance();
+  // Create output surface for a swap-chain
+  DisplaySurface::DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window)
+    : _renderer(std::move(renderer)) {
+    if (this->_renderer == nullptr || window == nullptr)
+      throw std::invalid_argument("DisplaySurface: NULL renderer/window");
 
-    VkResult result = loader.createWindowSurface(this->_renderer->vkInstance(), window, nullptr, this->_windowSurface);
-    if (result != VK_SUCCESS)
-      throwError(result, "SwapChain: window surface not created");
+    VkResult result = VulkanLoader::instance().createWindowSurface(this->_renderer->vkInstance(), window, nullptr, this->_windowSurface);
+    if (result != VK_SUCCESS || this->_windowSurface == VK_NULL_HANDLE)
+      throwError(result, "DisplaySurface: creation failed");
+  }
+
+  // Destroy output surface
+  DisplaySurface::~DisplaySurface() noexcept {
+    if (this->_windowSurface != VK_NULL_HANDLE)
+      vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
+  }
+
+  DisplaySurface& DisplaySurface::operator=(DisplaySurface&& rhs) noexcept {
+    if (this->_windowSurface != VK_NULL_HANDLE)
+      vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
+    this->_renderer = std::move(rhs._renderer);
+    this->_windowSurface = rhs._windowSurface;
+    rhs._windowSurface = VK_NULL_HANDLE;
+    return *this;
+  }
+
+  // ---
+
+  // Create swap-chain resource for existing renderer
+  void SwapChain::_createSwapChain(const SwapChain::RefreshRate& rate) { // throws
+    if (this->_windowSurface == VK_NULL_HANDLE)
+      throw std::invalid_argument("SwapChain: NULL window surface");
+
+    VkBool32 presentSupport = VK_FALSE;
+    if (this->_renderer->_graphicsCommandQueue != VK_NULL_HANDLE
+    && vkGetPhysicalDeviceSurfaceSupportKHR(this->_renderer->device(), this->_renderer->_commandQueueFamilyIndex,
+                                            this->_windowSurface, &presentSupport) == VK_SUCCESS && presentSupport == VK_TRUE) {
+      this->_presentQueue = this->_renderer->_graphicsCommandQueue;
+      //TODO: stocker refs vers object implementation de swapchain dans renderer -> si 2e swap-chain créée, et qu'elle "re-crée" le device, màj de la 1e
+      //TODO: ne pas créer swap-chain tout de suite: attendre qu'un pipeline soit créé (ou assigné au renderer) pour créer device + swapchains + pipelines
+      //-> fonction devient _registerSwapChain et récupère ref de sous-objet d'impl + retourne ID (index dans array)
+      //-> release() appelle _removeSwapChain(ID)
+    }
+    else {
+      if (this->_renderer->_graphicsCommandQueue != VK_NULL_HANDLE) {
+        //...flush
+        //...destroy vkdevice
+      }
+      //...create vkdevice + register queue(s) index/indices
+    }
 
     // build swap-chain
-    VkSurfaceKHR windowSurface = VK_NULL_HANDLE;
-    loader.createWindowSurface(this->_renderer->vkInstance(), window, nullptr, windowSurface);
-
-    /*if (this->_renderer->isHdrAvailable()
-    && __isSurfaceUsingHdrFormat(this->_renderer->device(), windowSurface))
-      this->_colorSpace = __getColorSpace(this->_backBufferFormat);*/
-
-
-    //... // no response to ALT+ENTER
+    VkSurfaceFormatKHR colorParams = __findSwapChainFormat(this->_renderer->device(), this->_windowSurface, this->_backBufferFormat); // throws
+    //...
   }
   
   // ---
@@ -858,15 +903,48 @@ Includes hpp implementations at the end of the file
 
   // Destroy swap-chain
   void SwapChain::release() noexcept {
-    //...
+    try {
+      if (this->_windowSurface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
+        this->_windowSurface = VK_NULL_HANDLE;
+      }
+      this->_renderer = nullptr;
+    }
+    catch (...) {}
   }
 
-  SwapChain::SwapChain(SwapChain&& rhs) noexcept {
-    //...
+  SwapChain::SwapChain(SwapChain&& rhs) noexcept
+    : _swapChain(rhs._swapChain),
+      _flags(rhs._flags),
+      _pixelSize(rhs._pixelSize),
+      _framebufferCount(rhs._framebufferCount),
+      _backBufferFormat(rhs._backBufferFormat),
+      _renderer(std::move(rhs._renderer)),
+      _windowSurface(rhs._windowSurface),
+      _renderTargetView(rhs._renderTargetView),
+      _presentQueue(rhs._presentQueue) {
+    rhs._swapChain = VK_NULL_HANDLE;
+    rhs._renderer = nullptr;
+    rhs._windowSurface = VK_NULL_HANDLE;
+    rhs._renderTargetView = VK_NULL_HANDLE;
+    rhs._presentQueue = VK_NULL_HANDLE;
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
     release();
-    //...
+    this->_swapChain = rhs._swapChain;
+    this->_flags = rhs._flags;
+    this->_pixelSize = rhs._pixelSize;
+    this->_framebufferCount = rhs._framebufferCount;
+    this->_backBufferFormat = rhs._backBufferFormat;
+    this->_renderer = std::move(rhs._renderer);
+    this->_windowSurface = rhs._windowSurface;
+    this->_renderTargetView = rhs._renderTargetView;
+    this->_presentQueue = rhs._presentQueue;
+    rhs._swapChain = VK_NULL_HANDLE;
+    rhs._renderer = nullptr;
+    rhs._windowSurface = VK_NULL_HANDLE;
+    rhs._renderTargetView = VK_NULL_HANDLE;
+    rhs._presentQueue = VK_NULL_HANDLE;
     return *this;
   }
 

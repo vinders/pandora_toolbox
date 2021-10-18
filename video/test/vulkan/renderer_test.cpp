@@ -74,6 +74,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       window->show();
 
       auto colorSpace = renderer.getMonitorColorSpace(monitor);
+      EXPECT_TRUE(colorSpace == ColorSpace::unknown);
       size_t dedicatedRam = 0, sharedRam = 0;
       EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
       EXPECT_TRUE(dedicatedRam > 0 || sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM

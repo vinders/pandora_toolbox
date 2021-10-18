@@ -29,12 +29,50 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace vulkan {
+        class SwapChain;
+
+        /// @class DisplaySurface
+        /// @brief Vulkan output surface of a window - tied to a Window instance and used to create a swap-chain
+        /// @warning Only one DisplaySurface instance is allowed for the same Window.
+        class DisplaySurface final {
+        public:
+          /// @brief Create output surface for a swap-chain
+          /// @throws - invalid_argument: if 'renderer' or 'window' is NULL.
+          ///         - runtime_error: surface creation failure.
+          DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window);
+          ~DisplaySurface() noexcept;
+
+          DisplaySurface(const DisplaySurface&) = delete;
+          DisplaySurface(DisplaySurface&& rhs) noexcept
+            : _renderer(std::move(rhs._renderer)), _windowSurface(rhs._windowSurface) { rhs._windowSurface = VK_NULL_HANDLE; }
+          DisplaySurface& operator=(const DisplaySurface&) = delete;
+          DisplaySurface& operator=(DisplaySurface&& rhs) noexcept;
+
+          /// @brief Verify if a buffer format is supported to create swap-chains and render targets
+          /// @remarks Can be used to verify HDR support by API/hardware
+          bool isFormatSupported(DataFormat bufferFormat) const noexcept;
+
+        private:
+          inline VkSurfaceKHR extract() noexcept {
+            VkSurfaceKHR surface = this->_windowSurface;
+            this->_windowSurface = VK_NULL_HANDLE;
+            return surface;
+          }
+          friend class SwapChain;
+
+          std::shared_ptr<Renderer> _renderer = nullptr;
+          VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
+        };
+
+        // ---
+
         /// @class SwapChain
         /// @brief Vulkan rendering swap-chain (framebuffers) - tied to a Window instance
-        /// @warning - SwapChain is the Vulkan display output tool, and should be kept alive while the window exists.
+        /// @warning - SwapChain is the Vulkan display output, and should be kept alive while the window exists.
+        ///          - All SwapChains must be created before any Pipeline object.
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
-        ///          - handle() and handleLevel1() should be reserved for internal usage or for advanced features.
+        ///          - handle() and handleSurface() should be reserved for internal usage or for advanced features.
         /// @remarks - To render on display output, call 'Renderer.setActiveRenderTarget' with getRenderTargetView() value + optional depth buffer.
         ///          - Swap-chains are meant for display. To "render to texture", use TextureTarget2D instead.
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
@@ -47,20 +85,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           using Descriptor = SwapChainDescriptor;
 
           /// @brief Create rendering swap-chain for existing renderer
-          /// @param colorSpace  Color space to use for rendering (or 'unknown' to keep default color space).
-          ///                    If the color space is not supported, an exception occurs.
-          /// @throws - invalid_argument: if 'renderer' or 'window' is NULL, or if color space is not supported by API or hardware.
+          /// @throws - invalid_argument: if window surface is invalid
           ///         - runtime_error: creation failure.
-          SwapChain(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window, 
-                    const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB,
-                    ColorSpace colorSpace = ColorSpace::unknown)
-            : _pixelSize(_toPixelSize(params.width, params.height)),
+          SwapChain(DisplaySurface&& surface, const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB)
+            : _flags(params.outputFlags),
+              _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
-              _flags(params.outputFlags),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
-              _colorSpace(colorSpace),
-              _renderer(std::move(renderer)) {
-            _createSwapChain(window, params.refreshRate); // throws
+              _renderer(std::move(surface._renderer)),
+              _windowSurface(surface.extract()) {
+            _createSwapChain(params.refreshRate); // throws
             _createOrRefreshTargetView(); // throws
           }
           /// @brief Destroy swap-chain
@@ -80,7 +114,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Get native Vulkan swap-chain handle
           inline SwapChainHandle handle() const noexcept { return this->_swapChain; }
-          /// @brief Get native Vulkan window surface handle - internal usage
+          /// @brief Get native Vulkan window surface handle - internal or advanced usage
           inline VkSurfaceKHR handleSurface() const noexcept { return this->_windowSurface; }
           inline bool isEmpty() const noexcept { return (this->_swapChain == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           
@@ -91,11 +125,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline uint32_t width() const noexcept  { return _width(); } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
-          inline ColorSpace colorSpace() const noexcept { return this->_colorSpace; } ///< Get color space currently configured
-
-          /// @brief Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
-          /// @param colorSpace  Color space to test (to verify additional color spaces, simply cast a DXGI_COLOR_SPACE_TYPE value to 'ColorSpace').
-          bool isColorSpaceSupported(ColorSpace colorSpace) const noexcept;
 
           // -- operations --
           
@@ -117,7 +146,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         
         private:
-          void _createSwapChain(pandora::video::WindowHandle window, const RefreshRate& rate); // throws
+          void _createSwapChain(const RefreshRate& rate); // throws
           void _createOrRefreshTargetView(); // throws
           
           inline uint32_t _width() const noexcept { return (this->_pixelSize & 0xFFFFu); }
@@ -125,17 +154,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           static constexpr inline uint32_t _toPixelSize(uint32_t width, uint32_t height) noexcept { return (width | (height << 16)); }
           
         private:
-          VkSurfaceKHR _windowSurface = nullptr;
-          SwapChainHandle _swapChain = nullptr;
+          SwapChainHandle _swapChain = VK_NULL_HANDLE;
 
+          OutputFlag _flags = OutputFlag::none; // advanced settings
           uint32_t _pixelSize = 0;              // width / height
           uint32_t _framebufferCount = 0;       // framebuffer count
-          OutputFlag _flags = OutputFlag::none; // advanced settings
           VkFormat _backBufferFormat = VK_FORMAT_R8G8B8A8_SRGB;
-          ColorSpace _colorSpace = ColorSpace::unknown;
           
           std::shared_ptr<Renderer> _renderer = nullptr;
-          RenderTargetView _renderTargetView = nullptr;
+          VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
+          RenderTargetView _renderTargetView = VK_NULL_HANDLE;
+          VkQueue _presentQueue = VK_NULL_HANDLE;
         };
       }
     }

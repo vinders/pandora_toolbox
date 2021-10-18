@@ -31,6 +31,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     namespace video {
       namespace vulkan {
         class SwapChain;
+        class DisplaySurface;
 
         /// @class VulkanInstance
         /// @brief Vulkan driver client instance, used to initialize Renderer objects
@@ -152,7 +153,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Detect current color space used by display monitor -- not supported with Vulkan
           /// @remarks Returns "unknown" with Vulkan (color space detection not supported)
-          ///          (-> it's better to let the user choose to optionally enable HDR).
+          ///          (-> it's better to default to sRGB and let the user choose to optionally enable HDR).
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept { return ColorSpace::unknown; }
 
           /// @brief Screen tearing supported (variable refresh rate display)
@@ -193,6 +194,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }
           friend class pandora::video::vulkan::SwapChain;
+          friend class pandora::video::vulkan::DisplaySurface;
           
         private:
           std::shared_ptr<VulkanInstance> _instance = nullptr;
