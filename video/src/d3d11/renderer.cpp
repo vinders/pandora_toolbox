@@ -558,25 +558,21 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 
 # define __P_DEFAULT_COLORSPACE_SRGB  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709
+# define __P_SWAPCHAIN_FORMAT_SUPPORT (D3D11_FORMAT_SUPPORT_RENDER_TARGET | D3D11_FORMAT_SUPPORT_DISPLAY)
 
 // -- color management --
-  
-  // Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
-  bool SwapChain::isColorSpaceSupported(ColorSpace colorSpace) const noexcept {
-    if (colorSpace == ColorSpace::unknown)
-      return true;
-#   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
-      auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)this->_swapChain);
-      if (swapChainV3) {
-        UINT colorSpaceSupport = 0;
-        if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)colorSpace, &colorSpaceSupport)))
-          return (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT);
-      }
-#   endif
-    return ((DXGI_COLOR_SPACE_TYPE)colorSpace == __P_DEFAULT_COLORSPACE_SRGB);
+
+  // Verify if a buffer format is supported to create swap-chains and render targets
+  bool DisplaySurface::isFormatSupported(DataFormat bufferFormat) const noexcept {
+    UINT support = 0;
+    if (this->_renderer != nullptr
+    && SUCCEEDED(this->_renderer->device()->CheckFormatSupport(_getDataFormatComponents(bufferFormat), &support)))
+      return ((support & __P_SWAPCHAIN_FORMAT_SUPPORT) == __P_SWAPCHAIN_FORMAT_SUPPORT);
+
+    return (bufferFormat == DataFormat::rgba8_unorm || bufferFormat == DataFormat::rgba8_sRGB);
   }
 
-# if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
+# if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
     // Find color space for a buffer format
     static __forceinline DXGI_COLOR_SPACE_TYPE __getColorSpace(DXGI_FORMAT backBufferFormat) noexcept {
       switch (backBufferFormat) {
@@ -585,9 +581,6 @@ Includes hpp implementations at the end of the file
           return DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020; // HDR-10
         case DXGI_FORMAT_R16G16B16A16_FLOAT:
         case DXGI_FORMAT_R16G16_FLOAT:
-        case DXGI_FORMAT_R32G32B32A32_FLOAT:
-        case DXGI_FORMAT_R32G32B32_FLOAT:
-        case DXGI_FORMAT_R32G32_FLOAT:
           return DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709; // HDR-scRGB
         default:
           return __P_DEFAULT_COLORSPACE_SRGB; // SDR-sRGB
@@ -598,15 +591,10 @@ Includes hpp implementations at the end of the file
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
   static __forceinline void __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, 
-                                            ID3D11Device* device, ColorSpace& inOutColorSpace) { // throws
+                                            ID3D11Device* device) { // throws
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
-#     if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
-        DXGI_COLOR_SPACE_TYPE colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __getColorSpace(backBufferFormat) : (DXGI_COLOR_SPACE_TYPE)inOutColorSpace;
-#     else
-        DXGI_COLOR_SPACE_TYPE colorSpace = (inOutColorSpace == ColorSpace::unknown) ? __P_DEFAULT_COLORSPACE_SRGB : (DXGI_COLOR_SPACE_TYPE)inOutColorSpace;
-#     endif
+      DXGI_COLOR_SPACE_TYPE colorSpace = __getColorSpace(backBufferFormat);
 
-      // apply color space
       auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)swapChain);
       if (swapChainV3) {
         UINT colorSpaceSupport = 0;
@@ -614,17 +602,12 @@ Includes hpp implementations at the end of the file
         && (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)) {
 
           auto result = swapChainV3->SetColorSpace1(colorSpace);
-          if (FAILED(result))
+          if (FAILED(result) && colorSpace != __P_DEFAULT_COLORSPACE_SRGB)
             throwError(result, "SwapChain: color space error");
-          inOutColorSpace = (ColorSpace)colorSpace;
           return;
         }
       }
 #   endif
-
-    if (inOutColorSpace != ColorSpace::unknown && inOutColorSpace != ColorSpace::sRgb)
-      throw std::invalid_argument("SwapChain: color space not supported");
-    inOutColorSpace = (ColorSpace)__P_DEFAULT_COLORSPACE_SRGB; // default: use SDR-sRGB
   }
 
 
@@ -653,8 +636,8 @@ Includes hpp implementations at the end of the file
   
   // Create DXGI swap-chain resource for existing renderer
   void SwapChain::_createSwapChain(pandora::video::WindowHandle window, const SwapChain::RefreshRate& rate) { // throws
-    if (this->_renderer == nullptr || window == nullptr)
-      throw std::invalid_argument("SwapChain: NULL renderer/window");
+    if (this->_renderer == nullptr)
+      throw std::invalid_argument("SwapChain: NULL renderer");
     __refreshDxgiFactory(this->_renderer->_dxgiFactory);
 
     // build swap-chain
@@ -744,7 +727,7 @@ Includes hpp implementations at the end of the file
   // Create/refresh swap-chain render-target view + color space
   void SwapChain::_createOrRefreshTargetView() { // throws
     // find + set color space value (if supported)
-    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat, this->_renderer->device(), this->_colorSpace);
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat, this->_renderer->device());
 
     // create render-target view
     if (this->_renderTargetView == nullptr) {
@@ -804,7 +787,6 @@ Includes hpp implementations at the end of the file
       _pixelSize(rhs._pixelSize),
       _framebufferCount(rhs._framebufferCount),
       _backBufferFormat(rhs._backBufferFormat),
-      _colorSpace(rhs._colorSpace),
       _renderer(std::move(rhs._renderer)),
       _renderTargetView(rhs._renderTargetView)
 #     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
@@ -826,7 +808,6 @@ Includes hpp implementations at the end of the file
     this->_pixelSize = rhs._pixelSize;
     this->_framebufferCount = rhs._framebufferCount;
     this->_backBufferFormat = rhs._backBufferFormat;
-    this->_colorSpace = rhs._colorSpace;
     this->_renderer = std::move(rhs._renderer);
     this->_renderTargetView = rhs._renderTargetView;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110

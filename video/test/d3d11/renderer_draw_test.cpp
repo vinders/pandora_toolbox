@@ -190,7 +190,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -254,7 +254,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
     
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -333,7 +333,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -420,7 +420,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -684,7 +684,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(renderer, window->handle(), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
@@ -749,10 +749,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // texture
     auto image2D = std::unique_ptr<uint8_t[]>(new uint8_t[128 * 128 * 4]());
-    for (int i = 0; i < 128; ++i)
+    for (size_t i = 0; i < 128; ++i)
       memcpy(&image2D[128*4*i], ((i >> 3) & 0x1) ? textureLine128_A() : textureLine128_B(), 128*4);
     auto image2Dmip = std::unique_ptr<uint8_t[]>(new uint8_t[64 * 64 * 4]());
-    for (int i = 0; i < 64; ++i)
+    for (size_t i = 0; i < 64; ++i)
       memcpy(&image2Dmip[64*4*i], ((i >> 2) & 0x1) ? textureLine64_A() : textureLine64_B(), 64*4);
     const uint8_t* image2Ddata[] = { &image2D[0], &image2Dmip[0] };
 

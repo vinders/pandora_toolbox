@@ -98,7 +98,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - May return values not listed in the 'ColorSpace' enum, if the monitor uses an uncommon color space
           ///            (can be cast to DXGI_COLOR_SPACE_TYPE values to verify the actual value).
           ///          - Returns "unknown" if the detection fails, for example if color spaces are not supported
-          ///            (in that case, it's better to let the user choose to enable HDR).
+          ///            (in that case, it's better to default to sRGB and let the user choose to enable HDR).
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept;
           
           /// @brief Screen tearing supported (variable refresh rate display)

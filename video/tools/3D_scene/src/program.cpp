@@ -47,7 +47,7 @@ namespace scene {
       D3d11Program(std::shared_ptr<d3d11::Renderer> renderer, SwapChainDescriptor& params,
                    std::shared_ptr<scene::MenuManager> menu, Window& window)
         : Program(), _menu(menu), _renderer(renderer), 
-          _swapChain(renderer, window.handle(), params, d3d11::DataFormat::rgba8_sRGB) {
+          _swapChain(d3d11::DisplaySurface(renderer, window.handle()), params, d3d11::DataFormat::rgba8_sRGB) {
         //init shaders + filters
       }
       virtual ~D3d11Program() noexcept = default;

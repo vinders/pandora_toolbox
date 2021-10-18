@@ -39,11 +39,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // -- create/manage swap-chain --
 
   TEST_F(D3d11SwapChainTest, invalidSwapChain) {
-    EXPECT_ANY_THROW(SwapChain(nullptr, nullptr, SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
+    EXPECT_ANY_THROW(SwapChain(DisplaySurface(nullptr, nullptr), SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
 
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
-    EXPECT_ANY_THROW(SwapChain(renderer, nullptr, SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
+    EXPECT_ANY_THROW(SwapChain(DisplaySurface(renderer, nullptr), SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
 
     SwapChain defaultInit;
     EXPECT_TRUE(defaultInit.isEmpty());
@@ -61,12 +61,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     SwapChain::Descriptor params{ 600, 400 };
     {
-      SwapChain chain1(renderer, window->handle(), params);
+      DisplaySurface surface1(renderer, window->handle());
+      EXPECT_TRUE(surface1.isFormatSupported(DataFormat::rgba8_sRGB));
+      EXPECT_FALSE(surface1.isFormatSupported(DataFormat::d32_f_s8_ui));
+
+      SwapChain chain1(std::move(surface1), params);
       EXPECT_FALSE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() != nullptr);
       EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
-      EXPECT_EQ(ColorSpace::sRgb, chain1.colorSpace());
       EXPECT_EQ((uint32_t)600, chain1.width());
       EXPECT_EQ((uint32_t)400, chain1.height());
       renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
@@ -82,7 +85,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(handle1, moved.handle());
       EXPECT_TRUE(moved.getRenderTargetView() != nullptr);
       EXPECT_EQ(target1, moved.getRenderTargetView());
-      EXPECT_EQ(ColorSpace::sRgb, moved.colorSpace());
       EXPECT_TRUE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() == nullptr);
       EXPECT_TRUE(chain1.getRenderTargetView() == nullptr);
@@ -94,7 +96,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(handle1, chain1.handle());
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
       EXPECT_EQ(target1, chain1.getRenderTargetView());
-      EXPECT_EQ(ColorSpace::sRgb, chain1.colorSpace());
       EXPECT_TRUE(moved.isEmpty());
       EXPECT_TRUE(moved.handle() == nullptr);
       EXPECT_TRUE(moved.getRenderTargetView() == nullptr);
@@ -104,7 +105,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       params.framebufferCount = 1u;
       params.outputFlags = (SwapChain::OutputFlag::partialOutput | SwapChain::OutputFlag::swapNoDiscard);
       params.refreshRate = pandora::video::RefreshRate(60000u, 1001u);
-      SwapChain chain2(renderer, window->handle(), params, DataFormat::rgb10a2_unorm_hdr10);
+      DisplaySurface surface2(renderer, window->handle());
+      DisplaySurface surfaceMoved2(std::move(surface2));
+      SwapChain chain2(std::move(surfaceMoved2), params, DataFormat::rgb10a2_unorm_hdr10);
       EXPECT_TRUE(chain2.handle() != nullptr);
       EXPECT_TRUE(chain2.handleExt() == nullptr || chain2.handleExt() == chain2.handle());
       EXPECT_TRUE(chain2.getRenderTargetView() != nullptr);
@@ -117,11 +120,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       params.framebufferCount = 2u;
       params.outputFlags = (SwapChain::OutputFlag::partialOutput);
       params.refreshRate = pandora::video::RefreshRate(60u, 1u);
-      SwapChain chain3(renderer, window->handle(), params, DataFormat::rgba16_f_scRGB);
+      SwapChain chain3(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba16_f_scRGB);
       EXPECT_TRUE(chain3.handle() != nullptr);
       EXPECT_TRUE(chain3.handleExt() == nullptr || chain3.handleExt() == chain3.handle());
       EXPECT_TRUE(chain3.getRenderTargetView() != nullptr);
-      SwapChain chain3B(renderer, window->handle(), params, DataFormat::rgba16_f_scRGB);
+      SwapChain chain3B(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba16_f_scRGB);
       EXPECT_TRUE(chain3B.handle() != nullptr);
       EXPECT_TRUE(chain3B.handleExt() == nullptr || chain3B.handleExt() == chain3B.handle());
       EXPECT_TRUE(chain3B.getRenderTargetView() != nullptr);
@@ -135,11 +138,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     params.framebufferCount = 2u;
     params.outputFlags = SwapChain::OutputFlag::none;
     params.refreshRate = pandora::video::RefreshRate(60u, 1u);
-    SwapChain chain4(renderer, window->handle(), params, DataFormat::rgba8_unorm);
+    SwapChain chain4(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_unorm);
     EXPECT_TRUE(chain4.handle() != nullptr);
     EXPECT_TRUE(chain4.handleExt() == nullptr || chain4.handleExt() == chain4.handle());
     EXPECT_TRUE(chain4.getRenderTargetView() != nullptr);
-    EXPECT_EQ(ColorSpace::sRgb, chain4.colorSpace());
     renderer->setActiveRenderTarget(chain4.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain4.swapBuffers(false));
     EXPECT_NO_THROW(chain4.swapBuffers(true));
@@ -162,11 +164,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
 
-    SwapChain chain1(renderer, window->handle(), SwapChain::Descriptor(600,400));
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), SwapChain::Descriptor(600,400));
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
-    EXPECT_EQ(ColorSpace::sRgb, chain1.colorSpace());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain1.swapBuffers(false));
     EXPECT_NO_THROW(chain1.swapBuffers(true));
@@ -178,7 +179,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
-    EXPECT_EQ(ColorSpace::sRgb, chain1.colorSpace());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain1.swapBuffers(false));
     EXPECT_NO_THROW(chain1.swapBuffers(true));

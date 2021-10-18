@@ -29,12 +29,46 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace d3d11 {
+        class SwapChain;
+
+        /// @class DisplaySurface
+        /// @brief Direct3D output surface of a window - tied to a Window instance and used to create a swap-chain
+        /// @warning Only one DisplaySurface instance is allowed for the same Window.
+        class DisplaySurface final {
+        public:
+          /// @brief Create output surface for a swap-chain
+          /// @throws invalid_argument: if 'renderer' or 'window' is NULL.
+          DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window)
+            : _renderer(std::move(renderer)), _window(window) {
+            if (this->_renderer == nullptr || this->_window == nullptr)
+              throw std::invalid_argument("DisplaySurface: NULL renderer/window");
+          }
+          ~DisplaySurface() noexcept = default;
+
+          DisplaySurface(const DisplaySurface&) = delete;
+          DisplaySurface(DisplaySurface&&) noexcept = default;
+          DisplaySurface& operator=(const DisplaySurface&) = delete;
+          DisplaySurface& operator=(DisplaySurface&&) noexcept = default;
+
+          /// @brief Verify if a buffer format is supported to create swap-chains and render targets
+          /// @remarks Can be used to verify HDR support by API/hardware
+          bool isFormatSupported(DataFormat bufferFormat) const noexcept;
+
+        private:
+          friend class SwapChain;
+          std::shared_ptr<Renderer> _renderer = nullptr;
+          pandora::video::WindowHandle _window = (pandora::video::WindowHandle)0;
+        };
+
+        // ---
+
         /// @class SwapChain
         /// @brief Direct3D rendering swap-chain (framebuffers) - tied to a Window instance
         /// @warning - SwapChain is the Direct3D display output tool, and should be kept alive while the window exists.
+        ///          - All SwapChains should be created before any Pipeline object.
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
-        ///          - handle() and handleLevel1() should be reserved for internal usage or for advanced features.
+        ///          - handle() and handleExt() should be reserved for internal usage or for advanced features.
         /// @remarks - To render on display output, call 'Renderer.setActiveRenderTarget' with getRenderTargetView() value + optional depth buffer.
         ///          - Swap-chains are meant for display. To "render to texture", use TextureTarget2D instead.
         ///          - Multi-window rendering (same adapter): alternate between different SwapChain instances on the same Renderer.
@@ -47,20 +81,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           using Descriptor = SwapChainDescriptor;
         
           /// @brief Create rendering swap-chain for existing renderer
-          /// @param colorSpace  Color space to use for rendering (or 'unknown' to keep default color space).
-          ///                    If the color space is not supported, an exception occurs.
-          /// @throws - invalid_argument: if 'renderer' or 'window' is NULL, or if color space is not supported by API or hardware.
-          ///         - runtime_error: creation failure.
-          SwapChain(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window, 
-                    const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB,
-                    ColorSpace colorSpace = ColorSpace::unknown)
+          /// @throws runtime_error: creation failure.
+          SwapChain(DisplaySurface&& surface, const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB)
             : _flags(params.outputFlags),
               _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
-              _colorSpace(colorSpace),
-              _renderer(std::move(renderer)) {
-            _createSwapChain(window, params.refreshRate); // throws
+              _renderer(std::move(surface._renderer)) {
+            _createSwapChain(surface._window, params.refreshRate); // throws
             _createOrRefreshTargetView(); // throws
           }
           /// @brief Destroy swap-chain
@@ -94,11 +122,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline uint32_t width() const noexcept  { return _width(); } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
-          inline ColorSpace colorSpace() const noexcept { return this->_colorSpace; } ///< Get color space currently configured
-
-          /// @brief Verify if hardware & API support a specific color space with the backbuffer format specified in constructor
-          /// @param colorSpace  Color space to test (to verify additional color spaces, simply cast a DXGI_COLOR_SPACE_TYPE value to 'ColorSpace').
-          bool isColorSpaceSupported(ColorSpace colorSpace) const noexcept;
 
           // -- operations --
           
@@ -135,7 +158,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           uint32_t _pixelSize = 0;              // width / height
           uint32_t _framebufferCount = 0;       // framebuffer count
           DXGI_FORMAT _backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-          ColorSpace _colorSpace = ColorSpace::unknown;
           
           std::shared_ptr<Renderer> _renderer = nullptr;
           RenderTargetView _renderTargetView = nullptr;

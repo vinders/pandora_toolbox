@@ -27,12 +27,12 @@ DisplayPipeline::DisplayPipeline(const pandora::hardware::DisplayMonitor& monito
                                  uint32_t clientWidth, uint32_t clientHeight, pandora::video::RefreshRate&& rate,
                                  bool useAnisotropy, bool useVsync)
   : _renderer(std::make_shared<Renderer>(monitor)),
-    _swapChain(_renderer, window, SwapChain::Descriptor(clientWidth, clientHeight, 2u, rate)),
-    _depthBuffer(*_renderer, DepthStencilFormat::d24_unorm_s8_ui, clientWidth, clientHeight),
     _viewport(clientWidth, clientHeight),
     _timer(pandora::time::Rate(rate.numerator(), rate.denominator())),
     _useAnisotropy(useAnisotropy),
     _useVsync(useVsync) {
+  _swapChain = SwapChain(DisplaySurface(_renderer, window), SwapChain::Descriptor(clientWidth, clientHeight, 2u, rate));
+  _depthBuffer = DepthStencilBuffer(*_renderer, DepthStencilFormat::d24_unorm_s8_ui, clientWidth, clientHeight);
 
   RendererStateFactory factory(*_renderer);
   _depthTests.append(factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::keep,
