@@ -35,5 +35,7 @@ else()
         else()
             set(vulkan_libs__LINKED ${Vulkan_LIBRARIES})
         endif()
+        
+        add_definitions(-DDISABLE_VK_LAYER_VALVE_steam_overlay_1=1)
     endif()
 endif()
