@@ -55,10 +55,7 @@ public:
   void resize(uint32_t clientWidth, uint32_t clientHeight);
 
   // Toggle vertical sync
-  void toggleVsync() noexcept {
-    _useVsync ^= true;
-    _timer.reset();
-  }
+  void toggleVsync(pandora::video::WindowHandle window);
   bool hasVsync() const noexcept { return _useVsync; }
 
   // Toggle texture sampler (anisotropic / trilinear)
@@ -101,6 +98,7 @@ private:
   pandora::time::Timer<pandora::time::HighResolutionClock,
                        pandora::time::HighResolutionAuxClock,
                        pandora::time::DelayHandling::none, true> _timer;
+  pandora::video::RefreshRate _rate;
   bool _useAnisotropy = false;
   bool _useVsync = false;
 };

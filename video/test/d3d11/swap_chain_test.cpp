@@ -65,6 +65,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(surface1.isFormatSupported(DataFormat::rgba8_sRGB));
       EXPECT_FALSE(surface1.isFormatSupported(DataFormat::d32_f_s8_ui));
 
+      params.presentMode = pandora::video::PresentMode::immediate;
       SwapChain chain1(std::move(surface1), params);
       EXPECT_FALSE(chain1.isEmpty());
       EXPECT_TRUE(chain1.handle() != nullptr);
@@ -73,8 +74,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ((uint32_t)600, chain1.width());
       EXPECT_EQ((uint32_t)400, chain1.height());
       renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
-      EXPECT_NO_THROW(chain1.swapBuffers(false));
-      EXPECT_NO_THROW(chain1.swapBuffers(true));
+      EXPECT_NO_THROW(chain1.swapBuffers());
       auto handle1 = chain1.handle();
       auto target1 = chain1.getRenderTargetView();
 
@@ -99,11 +99,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(moved.isEmpty());
       EXPECT_TRUE(moved.handle() == nullptr);
       EXPECT_TRUE(moved.getRenderTargetView() == nullptr);
-      EXPECT_NO_THROW(chain1.swapBuffers(true));
+      EXPECT_NO_THROW(chain1.swapBuffers());
     } // destroy "unique" swap-chain before creating other swap-chain
     {
       params.framebufferCount = 1u;
-      params.outputFlags = (SwapChain::OutputFlag::partialOutput | SwapChain::OutputFlag::swapNoDiscard);
+      params.presentMode = pandora::video::PresentMode::fifo;
+      params.outputFlags = (SwapChain::OutputFlag::disableFlipSwap | SwapChain::OutputFlag::swapNoDiscard);
       params.refreshRate = pandora::video::RefreshRate(60000u, 1001u);
       DisplaySurface surface2(renderer, window->handle());
       DisplaySurface surfaceMoved2(std::move(surface2));
@@ -114,11 +115,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ((uint32_t)600, chain2.width());
       EXPECT_EQ((uint32_t)400, chain2.height());
       renderer->setActiveRenderTarget(chain2.getRenderTargetView(), nullptr);
-      EXPECT_NO_THROW(chain2.swapBuffers(false));
-      EXPECT_NO_THROW(chain2.swapBuffers(true));
+      EXPECT_NO_THROW(chain2.swapBuffers());
 
       params.framebufferCount = 2u;
-      params.outputFlags = (SwapChain::OutputFlag::partialOutput);
+      params.outputFlags = (SwapChain::OutputFlag::disableFlipSwap);
       params.refreshRate = pandora::video::RefreshRate(60u, 1u);
       SwapChain chain3(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba16_f_scRGB);
       EXPECT_TRUE(chain3.handle() != nullptr);
@@ -131,8 +131,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       RenderTargetView views[]{ chain3.getRenderTargetView(), chain3B.getRenderTargetView() };
       renderer->setActiveRenderTargets(views, (size_t)2u, nullptr);
-      EXPECT_NO_THROW(chain3.swapBuffers(false));
-      EXPECT_NO_THROW(chain3.swapBuffers(true));
+      EXPECT_NO_THROW(chain3.swapBuffers());
     } // destroy to create new "unique" swap-chain
 
     params.framebufferCount = 2u;
@@ -143,8 +142,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(chain4.handleExt() == nullptr || chain4.handleExt() == chain4.handle());
     EXPECT_TRUE(chain4.getRenderTargetView() != nullptr);
     renderer->setActiveRenderTarget(chain4.getRenderTargetView(), nullptr);
-    EXPECT_NO_THROW(chain4.swapBuffers(false));
-    EXPECT_NO_THROW(chain4.swapBuffers(true));
+    EXPECT_NO_THROW(chain4.swapBuffers());
     renderer->setActiveRenderTarget(nullptr, nullptr);
     
     DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, 600, 400);
@@ -169,8 +167,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
-    EXPECT_NO_THROW(chain1.swapBuffers(false));
-    EXPECT_NO_THROW(chain1.swapBuffers(true));
+    EXPECT_NO_THROW(chain1.swapBuffers());
 
     window->resize(640, 480);
     chain1.resize(640, 480);
@@ -180,8 +177,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
-    EXPECT_NO_THROW(chain1.swapBuffers(false));
-    EXPECT_NO_THROW(chain1.swapBuffers(true));
+    EXPECT_NO_THROW(chain1.swapBuffers());
     
     Viewport viewport1(0,0, 640u,480u,0.,1.);
     renderer->setViewports(&viewport1, size_t{1u});

@@ -232,7 +232,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
-    chain1.swapBuffers(true, nullptr);
+    chain1.swapBuffers(nullptr);
     renderer->flush();
   }
 
@@ -311,7 +311,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawIndexed(sizeof(indices1)/sizeof(*indices1));
-    chain1.swapBuffers(true, depthBuffer.getDepthStencilView());
+    chain1.swapBuffers(depthBuffer.getDepthStencilView());
     renderer->flush();
   }
 
@@ -398,7 +398,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
-    chain1.swapBuffers(true, depthBuffer.getDepthStencilView());
+    chain1.swapBuffers(depthBuffer.getDepthStencilView());
     renderer->flush();
   }
 
@@ -505,7 +505,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexUniforms(0, camBuffer.handleArray(), size_t{ 1u });
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
-    chain1.swapBuffers(true, depthBuffer.getDepthStencilView());
+    chain1.swapBuffers(depthBuffer.getDepthStencilView());
     renderer->flush();
   }
 
@@ -793,7 +793,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
-    chain1.swapBuffers(true, depthBuffer.getDepthStencilView());
+    chain1.swapBuffers(depthBuffer.getDepthStencilView());
     renderer->flush();
   }
 

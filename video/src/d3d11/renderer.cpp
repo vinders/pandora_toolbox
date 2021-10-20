@@ -643,10 +643,9 @@ Includes hpp implementations at the end of the file
     // build swap-chain
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       if (this->_renderer->_dxgiLevel >= 2u) { // Direct3D 11.1+
-        bool useFlipSwap = ( (this->_flags & (SwapChain::OutputFlag::disableFlipSwap 
-                                            | SwapChain::OutputFlag::partialOutput)) == false  // * flip-swap not disabled + unique render-target view
+        bool useFlipSwap = ( (this->_flags & (SwapChain::OutputFlag::disableFlipSwap)) == false // * flip-swap not disabled + unique render-target view
                           && this->_renderer->_isFlipSwapAvailable()                            // * supported by device/API/system
-                          && ((this->_flags & SwapChain::OutputFlag::variableRefresh) == false // * no tearing or support with flip-swap
+                          && ((this->_flags & SwapChain::OutputFlag::variableRefresh) == false  // * no tearing or support with flip-swap
                             || this->_renderer->isTearingAvailable()) );
 
         DXGI_SWAP_CHAIN_DESC1 descriptor = {};
@@ -670,7 +669,7 @@ Includes hpp implementations at the end of the file
           descriptor.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
           if ((this->_flags & SwapChain::OutputFlag::variableRefresh) == true) {
             descriptor.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-            this->_tearingSwapFlags = (UINT)DXGI_PRESENT_ALLOW_TEARING;
+            this->_tearingSwapFlags = (this->_vsyncInterval == 0) ? (UINT)DXGI_PRESENT_ALLOW_TEARING : 0; // no screen tearing with vsync
           }
           if (descriptor.Stereo == FALSE)
             fullscnDescriptor.Windowed = TRUE;
@@ -741,6 +740,22 @@ Includes hpp implementations at the end of the file
       targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
       if (FAILED(targetResult) || this->_renderTargetView == nullptr)
         throwError(targetResult, "SwapChain: view not created");
+    }
+  }
+
+  // Change presentation mode
+  void SwapChain::setPresentMode(pandora::video::PresentMode mode) noexcept {
+    if (mode == pandora::video::PresentMode::immediate) {
+      this->_vsyncInterval = 0;
+      if ((this->_flags & (SwapChain::OutputFlag::variableRefresh
+                         | SwapChain::OutputFlag::disableFlipSwap)) == SwapChain::OutputFlag::variableRefresh
+      && this->_renderer->_dxgiLevel >= 2u && this->_renderer->isTearingAvailable()) {
+        this->_tearingSwapFlags = (UINT)DXGI_PRESENT_ALLOW_TEARING;
+      }
+    }
+    else {
+      this->_vsyncInterval = 1;
+      this->_tearingSwapFlags = 0;
     }
   }
 
@@ -882,10 +897,8 @@ Includes hpp implementations at the end of the file
   }
 
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen
-  void SwapChain::swapBuffers(bool useVsync, DepthStencilView depthBuffer) {
-    auto result = useVsync
-                ? ((IDXGISwapChain*)this->_swapChain)->Present(1, 0) // no screen tearing with vsync
-                : ((IDXGISwapChain*)this->_swapChain)->Present(0, this->_tearingSwapFlags);
+  void SwapChain::swapBuffers(DepthStencilView depthBuffer) {
+    auto result = ((IDXGISwapChain*)this->_swapChain)->Present(this->_vsyncInterval, this->_tearingSwapFlags);
     if (FAILED(result))
       __processSwapError(result);
     __refreshDxgiFactory(this->_renderer->_dxgiFactory);

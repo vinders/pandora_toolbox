@@ -21,8 +21,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <memory>
-# include "../window_handle.h"
-# include "../common_types.h"
+# include "video/window_handle.h"
+# include "video/common_types.h"
 # include "./api/types.h" // includes D3D11
 # include "./renderer.h"  // includes D3D11
 
@@ -65,7 +65,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class SwapChain
         /// @brief Direct3D rendering swap-chain (framebuffers) - tied to a Window instance
         /// @warning - SwapChain is the Direct3D display output tool, and should be kept alive while the window exists.
-        ///          - All SwapChains should be created before any Pipeline object.
+        ///          - All SwapChains MUST be created before attaching any SwapChain or render target to the Renderer.
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleExt() should be reserved for internal usage or for advanced features.
@@ -83,7 +83,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Create rendering swap-chain for existing renderer
           /// @throws runtime_error: creation failure.
           SwapChain(DisplaySurface&& surface, const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB)
-            : _flags(params.outputFlags),
+            : _vsyncInterval((params.presentMode == pandora::video::PresentMode::immediate) ? 0 : 1),
+              _flags(params.outputFlags),
               _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
@@ -124,6 +125,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
 
           // -- operations --
+
+          /// @brief Change presentation mode -- warning: not available in other APIs such as Vulkan -> do not use for cross-API projects
+          void setPresentMode(pandora::video::PresentMode mode) noexcept;
           
           /// @brief Change back-buffer(s) size
           /// @remarks Must be called when the window size changes, or when the display monitor is different.
@@ -135,11 +139,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool resize(uint32_t width, uint32_t height);
           
           /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen
-          /// @param useVsync     Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).
           /// @param depthBuffer  Depth buffer associated with swap-chain, for resource cleanup.
           /// @throws - domain_error: if the device has been lost (disconnected/switched/updated) -> recreate Renderer and SwapChain!
           ///         - runtime_error: internal GPU/device/network error -> if the error repeats itself, recreate Renderer and SwapChain!
-          void swapBuffers(bool useVsync, DepthStencilView depthBuffer = nullptr);
+          void swapBuffers(DepthStencilView depthBuffer = nullptr);
         
         
         private:
@@ -152,6 +155,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
         private:
           SwapChainHandle _swapChain = nullptr; // IDXGISwapChain*/IDXGISwapChain1*
+          UINT _vsyncInterval = 0;              // vertical sync interval
           UINT _tearingSwapFlags = 0;           // flags used for screen tearing during swap
           
           OutputFlag _flags = OutputFlag::none; // advanced settings (various params + flip-swap on/off)

@@ -15,6 +15,7 @@ Description : Example - renderer pipeline
 # include <video/d3d11/renderer_state_factory.h>
 #elif defined(_VIDEO_VULKAN_SUPPORT)
 # include <video/vulkan/renderer_state_factory.h>
+# define __P_USE_VULKAN_API 1
 #else
 # include <video/openGL4/renderer_state_factory.h>
 #endif
@@ -29,9 +30,11 @@ DisplayPipeline::DisplayPipeline(const pandora::hardware::DisplayMonitor& monito
   : _renderer(std::make_shared<Renderer>(monitor)),
     _viewport(clientWidth, clientHeight),
     _timer(pandora::time::Rate(rate.numerator(), rate.denominator())),
+    _rate(rate),
     _useAnisotropy(useAnisotropy),
     _useVsync(useVsync) {
-  _swapChain = SwapChain(DisplaySurface(_renderer, window), SwapChain::Descriptor(clientWidth, clientHeight, 2u, rate));
+  auto presentMode = useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate;
+  _swapChain = SwapChain(DisplaySurface(_renderer, window), SwapChain::Descriptor(clientWidth, clientHeight, 2u, presentMode, rate));
   _depthBuffer = DepthStencilBuffer(*_renderer, DepthStencilFormat::d24_unorm_s8_ui, clientWidth, clientHeight);
 
   RendererStateFactory factory(*_renderer);
@@ -83,6 +86,31 @@ void DisplayPipeline::resize(uint32_t clientWidth, uint32_t clientHeight) {
   _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
 }
 
+#ifdef __P_USE_VULKAN_API
+  void DisplayPipeline::toggleVsync(pandora::video::WindowHandle window) {
+    _useVsync ^= true;
+    uint32_t clientWidth = _swapChain.width();
+    uint32_t clientHeight = _swapChain.height();
+    auto presentMode = _useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate;
+    _swapChain.release();
+    _swapChain = SwapChain(DisplaySurface(_renderer, window), SwapChain::Descriptor(clientWidth, clientHeight, 2u, presentMode, _rate));
+
+    _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
+    _renderer->setRasterizerState(_rasterizer);
+    _renderer->setBlendState(_blend);
+    _renderer->setDepthStencilState(_depthTests.at(0));
+    _renderer->setFragmentFilterStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+    _renderer->setViewport(_viewport);
+    _timer.reset();
+  }
+#else
+  void DisplayPipeline::toggleVsync(pandora::video::WindowHandle) {
+    _useVsync ^= true;
+    _swapChain.setPresentMode(_useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate);
+    _timer.reset();
+  }
+#endif
+
 // -- operations--
 
 void DisplayPipeline::enableRenderTarget(bool isCleaned) {
@@ -93,7 +121,7 @@ void DisplayPipeline::enableRenderTarget(bool isCleaned) {
 }
 
 void DisplayPipeline::swapBuffers() {
-  _swapChain.swapBuffers(_useVsync, _depthBuffer.getDepthStencilView());
+  _swapChain.swapBuffers(_depthBuffer.getDepthStencilView());
   if (!_useVsync) {
     _renderer->flush();
     _timer.waitPeriod();

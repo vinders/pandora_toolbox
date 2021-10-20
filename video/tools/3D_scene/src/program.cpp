@@ -29,12 +29,12 @@ using namespace pandora::video;
 // -- common implementation --
 
 template <typename _Renderer, typename _SwapChain>
-static inline void __renderFrame(_Renderer& renderer, _SwapChain& swapChain, bool useVsync) {
+static inline void __renderFrame(_Renderer& renderer, _SwapChain& swapChain, bool /*useVsync*/) {
   renderer.setCleanActiveRenderTarget(swapChain.getRenderTargetView(), nullptr, nullptr);
 
   //...
 
-  swapChain.swapBuffers(useVsync, nullptr);
+  swapChain.swapBuffers(nullptr);
 }
 
 

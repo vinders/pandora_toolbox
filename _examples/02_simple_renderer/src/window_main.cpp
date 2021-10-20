@@ -135,7 +135,7 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
           break;
         case _P_VK_F10: // F10 -> toggle vsync (on/off) -- default: off
           if (g_renderer)
-            g_renderer->toggleVsync();
+            g_renderer->toggleVsync(sender->handle());
           break;
       }
       break;
