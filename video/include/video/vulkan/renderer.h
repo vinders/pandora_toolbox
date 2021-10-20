@@ -23,6 +23,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <memory>
 # include <hardware/display_monitor.h>
 # include "video/window_handle.h"
+# include "video/vulkan/api/_private/_dynamic_array.h"
 # include "./api/types.h"      // includes vulkan
 # include "./scissor.h"        // includes vulkan
 # include "./viewport.h"       // includes vulkan
@@ -97,17 +98,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                  Warning: if some features are disabled, functionalities of the toolbox depending on them won't be usable anymore.
           /// @param areFeaturesRequired If some features are not supported by the GPU, throw error (true) or just disable them (false).
           ///                            If set to 'false', call 'enabledFeatures()' after creation to verify if something's missing.
-          /// @param deviceExtensions Custom array of device extension to enable
-          ///                         (or NULL to enable all standard extensions used by the toolbox).
-          ///                         Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
-          ///                         Warning: if the value is not NULL, no other extension than those specified here will be enabled
-          ///                         -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
-          /// @param extensionCount   Array size for 'deviceExtensions'.
+          /// @param deviceExtensions  Custom array of device extension to enable
+          ///                          (or NULL to enable all standard extensions used by the toolbox).
+          ///                          Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+          ///                          Warning: if the value is not NULL, no other extension than those specified here will be enabled
+          ///                          -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
+          /// @param extensionCount    Array size for 'deviceExtensions'.
+          /// @param commandQueueCount Number of parallel command queues created (usually one per swap-chain/target).
           /// @throws - runtime_error: creation failure.
           ///         - bad_alloc: memory allocation failure.
           Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance = nullptr,
                    const VkPhysicalDeviceFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
-                   const char** deviceExtensions = nullptr, size_t extensionCount = 0);
+                   const char** deviceExtensions = nullptr, size_t extensionCount = 0, size_t commandQueueCount = 1);
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { _destroy(); }
           
@@ -132,11 +134,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
 
           // -- accessors --
+
+          /// @brief Command queues from one family (with graphics support)
+          struct CommandQueues final {
+            DynamicArray<VkQueue> commandQueues = VK_NULL_HANDLE;
+            uint32_t familyIndex = 0;
+          };
           
           inline DeviceHandle device() const noexcept { return this->_physicalDevice; }  ///< Get physical rendering device (VkPhysicalDevice)
           inline DeviceContext context() const noexcept { return this->_deviceContext; } ///< Get logical device context (VkDevice)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
           inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
+          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_graphicsQueuesPerFamily; } ///< Get Vulkan command queues (per family)
           
           /// @brief Read device adapter VRAM size
           /// @returns Read success
@@ -202,8 +211,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
           DeviceContext _deviceContext = VK_NULL_HANDLE;
-          VkQueue _graphicsCommandQueue = VK_NULL_HANDLE;
-          uint32_t _commandQueueFamilyIndex = 0;
+          DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
         };
 
         // Throw native error message (or default if no message available)

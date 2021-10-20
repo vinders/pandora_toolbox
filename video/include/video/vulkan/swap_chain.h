@@ -21,8 +21,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdint>
 # include <memory>
-# include "../window_handle.h"
-# include "../common_types.h"
+# include "video/window_handle.h"
+# include "video/common_types.h"
+# include "video/vulkan/api/_private/_dynamic_array.h"
 # include "./api/types.h" // includes Vulkan
 # include "./renderer.h"  // includes Vulkan
 
@@ -69,7 +70,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class SwapChain
         /// @brief Vulkan rendering swap-chain (framebuffers) - tied to a Window instance
         /// @warning - SwapChain is the Vulkan display output, and should be kept alive while the window exists.
-        ///          - All SwapChains must be created before any Pipeline object.
+        ///          - All SwapChains MUST be created before attaching any SwapChain or render target to the Renderer.
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleSurface() should be reserved for internal usage or for advanced features.
@@ -85,17 +86,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           using Descriptor = SwapChainDescriptor;
 
           /// @brief Create rendering swap-chain for existing renderer
-          /// @throws - invalid_argument: if window surface is invalid
+          /// @throws - invalid_argument: if window surface is invalid or if params are not supported.
           ///         - runtime_error: creation failure.
           SwapChain(DisplaySurface&& surface, const Descriptor& params, DataFormat backBufferFormat = DataFormat::rgba8_sRGB)
             : _flags(params.outputFlags),
-              _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
               _renderer(std::move(surface._renderer)),
               _windowSurface(surface.extract()) {
-            _createSwapChain(params.refreshRate); // throws
-            _createOrRefreshTargetView(); // throws
+            _createSwapChain(params); // throws
+            _createOrRefreshTargetViews(); // throws
           }
           /// @brief Destroy swap-chain
           /// @warning Disables all active render-targets of Renderer -> they need to be activated again! ('Renderer.setActiveRenderTargets')
@@ -121,7 +121,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Get render-target view of current SwapChain
           /// @remarks - This value should be used to call 'Renderer.setActiveRenderTargets'.
           ///          - Activating the render-target is necessary to draw into SwapChain back-buffers.
-          inline RenderTargetView getRenderTargetView() const noexcept { return this->_renderTargetView; }
+          inline RenderTargetView getRenderTargetView() const noexcept { return this->_renderTargetViews.value[_currentImageIndex]; }
           
           inline uint32_t width() const noexcept  { return _width(); } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
@@ -138,16 +138,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool resize(uint32_t width, uint32_t height);
           
           /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen
-          /// @param useVsync  Wait for adapter vsync signal (avoids screen tearing, but may cause up to 1 frame of delay before display).
           /// @param depthBuffer  Depth buffer associated with swap-chain, for resource cleanup.
           /// @throws - domain_error: if the device has been lost (disconnected/switched/updated) -> recreate Renderer and SwapChain!
           ///         - runtime_error: internal GPU/device/network error -> if the error repeats itself, recreate Renderer and SwapChain!
-          void swapBuffers(bool useVsync, DepthStencilView depthBuffer = nullptr);
+          void swapBuffers(DepthStencilView depthBuffer = nullptr);
         
         
         private:
-          void _createSwapChain(const RefreshRate& rate); // throws
-          void _createOrRefreshTargetView(); // throws
+          void _createSwapChain(const Descriptor& params); // throws
+          void _createOrRefreshTargetViews(); // throws
+          VkPresentModeKHR _findPresentMode(pandora::video::PresentMode preferredMode, uint32_t framebufferCount) const;
           
           inline uint32_t _width() const noexcept { return (this->_pixelSize & 0xFFFFu); }
           inline uint32_t _height() const noexcept { return (this->_pixelSize >> 16); }
@@ -163,8 +163,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           std::shared_ptr<Renderer> _renderer = nullptr;
           VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
-          RenderTargetView _renderTargetView = VK_NULL_HANDLE;
-          VkQueue _presentQueue = VK_NULL_HANDLE;
+          DynamicArray<VkImage> _bufferImages;
+          DynamicArray<VkImageView> _renderTargetViews;
+          uint32_t _currentImageIndex = 0;
+          uint32_t _presentQueueArrayIndex = (uint32_t)-1; // index in Renderer::_graphicsQueuesPerFamily
+          VkQueue _presentQueue = VK_NULL_HANDLE;          // loaded when attached
         };
       }
     }

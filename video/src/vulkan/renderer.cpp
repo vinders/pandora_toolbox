@@ -364,9 +364,18 @@ Includes hpp implementations at the end of the file
       return false;
     }
 
+    // ---
+
+    struct _VkLinkedFamily final {
+      uint32_t index = 0;
+      uint32_t queueCount = 0;
+      uint32_t score = 0;
+      _VkLinkedFamily* next = nullptr;
+    };
+
     // Find graphics command queue family for an adapter
-    static inline bool __findGraphicsCommandQueueFamily(VkPhysicalDevice device, bool useSparseBinding,
-                                                        uint32_t& outFamilyIndex) noexcept {
+    static inline bool __findGraphicsCommandQueues(VkPhysicalDevice device, bool useSparseBinding, size_t minQueueCount,
+                                                   DynamicArray<uint32_t>& outQueueFamilyIndices) noexcept {
       // query queue families
       uint32_t queueFamilyCount = 0;
       vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -375,33 +384,43 @@ Includes hpp implementations at the end of the file
       auto queueFamilies = DynamicArray<VkQueueFamilyProperties>(queueFamilyCount);
       vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.value);
 
-      // find best family (if available)
-      uint32_t bestFamily = (uint32_t)-1;
-      uint32_t bestFamilyQueueCount = 0;
-      uint32_t bestFamilyScore = 0;
+      // find compatible families (if available) - ordered from best to worst
+      DynamicArray<_VkLinkedFamily> buffers(queueFamilyCount);
+      _VkLinkedFamily* orderedResults = nullptr;
+      uint32_t orderedResultsLength = 0;
 
       for (uint32_t i = 0; i < queueFamilyCount; ++i) {
         VkQueueFamilyProperties& family = queueFamilies.value[i];
-        if ((family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (!useSparseBinding || (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT))) {
-          uint32_t familyScore = 0;
-          if (family.queueFlags & VK_QUEUE_COMPUTE_BIT)
-            familyScore += 2048;
-          if (family.queueFlags & VK_QUEUE_TRANSFER_BIT)
-            familyScore += 1024;
-          if (family.queueFlags & VK_QUEUE_PROTECTED_BIT)
-            familyScore += 256;
-          if (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
-            familyScore += 256;
+        if ((family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && family.queueCount >= (uint32_t)minQueueCount
+        && (!useSparseBinding || (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT))) {
+          _VkLinkedFamily* entry = &(buffers.value[i]);
+          entry->index = i;
+          entry->queueCount = family.queueCount;
+          entry->score = 0;
 
-          if (familyScore > bestFamilyScore || (familyScore == bestFamilyScore && family.queueCount > bestFamilyQueueCount)) {
-            bestFamily = i;
-            bestFamilyQueueCount = family.queueCount;
-            bestFamilyScore = familyScore;
-          }
+          if (family.queueFlags & VK_QUEUE_COMPUTE_BIT)
+            entry->score += 2048;
+          if (family.queueFlags & VK_QUEUE_TRANSFER_BIT)
+            entry->score += 1024;
+          if (family.queueFlags & VK_QUEUE_PROTECTED_BIT)
+            entry->score += 256;
+          if (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+            entry->score += 256;
+
+          _VkLinkedFamily** res = &orderedResults;
+          while (*res != nullptr && (entry->score < (*res)->score || (entry->score == (*res)->score && family.queueCount <= (*res)->queueCount)) )
+            res = &((*res)->next);
+          entry->next = (*res != nullptr) ? (*res)->next : nullptr;
+          *res = entry;
+          ++orderedResultsLength;
         }
       }
-      if (bestFamily != (uint32_t)-1) {
-        outFamilyIndex = bestFamily;
+
+      if (orderedResults != nullptr) {
+        outQueueFamilyIndices = DynamicArray<uint32_t>(orderedResultsLength);
+        uint32_t* out = &(outQueueFamilyIndices.value[0]);
+        for (_VkLinkedFamily* it = orderedResults; it != nullptr; ++out, it = it->next)
+          *out = it->index;
         return true;
       }
       return false;
@@ -412,7 +431,7 @@ Includes hpp implementations at the end of the file
   // Find primary hardware adapter (physical device)
   static VkPhysicalDevice __getHardwareAdapter(VkInstance instance, const VkPhysicalDeviceFeatures& requestedFeatures,
                                                const pandora::hardware::DisplayMonitor& monitor, uint32_t featureLevel,
-                                               uint32_t& outQueueFamilyIndex) {
+                                               size_t minQueueCount, DynamicArray<uint32_t>& outQueueFamilyIndices) {
     VulkanLoader& loader = VulkanLoader::instance();
 
     // query physical devices
@@ -460,7 +479,8 @@ Includes hpp implementations at the end of the file
 
         // store current device if: highest score + has valid command queue family (+ store queue family index if best device)
         if (deviceScore > bestDeviceScore
-        &&  __findGraphicsCommandQueueFamily(*it, (deviceFeatures.sparseBinding && requestedFeatures.sparseBinding), outQueueFamilyIndex)) {
+        &&  __findGraphicsCommandQueues(*it, (deviceFeatures.sparseBinding && requestedFeatures.sparseBinding),
+                                        minQueueCount, outQueueFamilyIndices)) {
           bestDevice = *it;
           bestDeviceScore = deviceScore;
         }
@@ -475,14 +495,16 @@ Includes hpp implementations at the end of the file
   // Create Vulkan instance and rendering device
   Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance,
                      const VkPhysicalDeviceFeatures& requestedFeatures, bool areFeaturesRequired,
-                     const char** deviceExtensions, size_t extensionCount)
+                     const char** deviceExtensions, size_t extensionCount, size_t commandQueueCount)
     : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
       _physicalDevice(VK_NULL_HANDLE),
-      _deviceContext(VK_NULL_HANDLE),
-      _graphicsCommandQueue(VK_NULL_HANDLE) {
+      _deviceContext(VK_NULL_HANDLE) {
     // find hardware adapter for monitor
+    if (commandQueueCount < 1u)
+      commandQueueCount = 1u;
+    DynamicArray<uint32_t> cmdQueueFamilyIndices;
     this->_physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), requestedFeatures, monitor,
-                                                 this->_instance->featureLevel(), this->_commandQueueFamilyIndex); // throws
+                                                 this->_instance->featureLevel(), commandQueueCount, cmdQueueFamilyIndices); // throws
     if (this->_physicalDevice == VK_NULL_HANDLE)
       throw std::runtime_error("Vulkan: failed to find compatible GPU");
 
@@ -500,20 +522,27 @@ Includes hpp implementations at the end of the file
     memset(this->_physicalDeviceInfo.get(), 0, sizeof(VkPhysicalDeviceProperties));
     vkGetPhysicalDeviceProperties(this->_physicalDevice, this->_physicalDeviceInfo.get());
 
+    // command queue params
+    DynamicArray<VkDeviceQueueCreateInfo> cmdQueueInfos(cmdQueueFamilyIndices.length());
+    memset(cmdQueueInfos.value, 0, cmdQueueFamilyIndices.length()*sizeof(VkDeviceQueueCreateInfo));
+    DynamicArray<float> queuePriorities(commandQueueCount);
+    for (size_t i = 0; i < commandQueueCount; ++i)
+      queuePriorities.value[i] = 1.0f;
+
+    for (size_t i = 0; i < cmdQueueFamilyIndices.length(); ++i) {
+      VkDeviceQueueCreateInfo& cmdQueueInfo = cmdQueueInfos.value[i];
+      cmdQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      cmdQueueInfo.queueFamilyIndex = cmdQueueFamilyIndices.value[i];
+      cmdQueueInfo.queueCount = (uint32_t)commandQueueCount;
+      cmdQueueInfo.pQueuePriorities = queuePriorities.value;
+    }
+
     // create rendering device
-    VkDeviceQueueCreateInfo cmdQueueInfo;
-    memset(&cmdQueueInfo, 0, sizeof(VkDeviceQueueCreateInfo));
-    cmdQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    cmdQueueInfo.queueFamilyIndex = this->_commandQueueFamilyIndex;
-    cmdQueueInfo.queueCount = 1;
-    float queuePriority = 1.0f;
-    cmdQueueInfo.pQueuePriorities = &queuePriority;
-    
     VkDeviceCreateInfo deviceInfo;
     memset(&deviceInfo, 0, sizeof(VkDeviceCreateInfo));
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceInfo.pQueueCreateInfos = &cmdQueueInfo;
-    deviceInfo.queueCreateInfoCount = 1;
+    deviceInfo.pQueueCreateInfos = cmdQueueInfos.value;
+    deviceInfo.queueCreateInfoCount = (uint32_t)cmdQueueInfos.length();
     deviceInfo.pEnabledFeatures = this->_features.get();
 #   if defined(_DEBUG) || !defined(NDEBUG)
       try {
@@ -539,7 +568,20 @@ Includes hpp implementations at the end of the file
     VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &(this->_deviceContext));
     if (result != VK_SUCCESS)
       throwError(result, "Vulkan: failed to create logical device");
-    vkGetDeviceQueue(this->_deviceContext, this->_commandQueueFamilyIndex, 0, &(this->_graphicsCommandQueue));
+
+    // get command queue handles
+    this->_graphicsQueuesPerFamily = DynamicArray<Renderer::CommandQueues>(cmdQueueFamilyIndices.length());
+    for (size_t i = 0; i < cmdQueueFamilyIndices.length(); ++i) {
+      Renderer::CommandQueues& family = this->_graphicsQueuesPerFamily.value[i];
+      family.familyIndex = cmdQueueFamilyIndices.value[i];
+      family.commandQueues = DynamicArray<VkQueue>(commandQueueCount);
+      for (size_t queue = 0; queue < commandQueueCount; ++queue) {
+        VkQueue* target = &(family.commandQueues.value[queue]);
+        vkGetDeviceQueue(this->_deviceContext, family.familyIndex, (uint32_t)queue, target);
+        if (*target == VK_NULL_HANDLE)
+          throw std::runtime_error("Vulkan: failed to obtain command queue access");
+      }
+    }
   }
 
 
@@ -551,9 +593,9 @@ Includes hpp implementations at the end of the file
       flush();
       vkDeviceWaitIdle(this->_deviceContext);
       vkDestroyDevice(this->_deviceContext, nullptr);
+      this->_graphicsQueuesPerFamily.clear();
       this->_features = nullptr;
       this->_physicalDeviceInfo = nullptr;
-      this->_graphicsCommandQueue = VK_NULL_HANDLE;
       this->_deviceContext = VK_NULL_HANDLE;
       this->_physicalDevice = VK_NULL_HANDLE;
     }
@@ -566,14 +608,12 @@ Includes hpp implementations at the end of the file
       _physicalDeviceInfo(std::move(rhs._physicalDeviceInfo)),
       _physicalDevice(rhs._physicalDevice),
       _deviceContext(rhs._deviceContext),
-      _graphicsCommandQueue(rhs._graphicsCommandQueue),
-      _commandQueueFamilyIndex(rhs._commandQueueFamilyIndex) {
+      _graphicsQueuesPerFamily(std::move(rhs._graphicsQueuesPerFamily)) {
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = VK_NULL_HANDLE;
-    rhs._graphicsCommandQueue = VK_NULL_HANDLE;
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
@@ -582,15 +622,12 @@ Includes hpp implementations at the end of the file
     this->_physicalDeviceInfo = std::move(rhs._physicalDeviceInfo);
     this->_physicalDevice = rhs._physicalDevice;
     this->_deviceContext = rhs._deviceContext;
-    this->_graphicsCommandQueue = rhs._graphicsCommandQueue;
-    this->_commandQueueFamilyIndex = rhs._commandQueueFamilyIndex;
-
+    this->_graphicsQueuesPerFamily = std::move(rhs._graphicsQueuesPerFamily);
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = VK_NULL_HANDLE;
-    rhs._graphicsCommandQueue = VK_NULL_HANDLE;
     return *this;
   }
 
@@ -790,10 +827,10 @@ Includes hpp implementations at the end of the file
     return __P_DEFAULT_COLORSPACE_SRGB; // SDR-sRGB
   }
 
-  // Set swap-chain color space
+  // Find swap-chain color format and color space
   // returns: color spaces supported (true) or not
-  static __forceinline VkSurfaceFormatKHR __findSwapChainFormat(const VkPhysicalDevice& device, VkSurfaceKHR windowSurface,
-                                                                VkFormat backBufferFormat) { // throws
+  static inline VkSurfaceFormatKHR __findSwapChainFormat(const VkPhysicalDevice& device, VkSurfaceKHR windowSurface,
+                                                         VkFormat backBufferFormat) { // throws
     uint32_t formatCount = 0;
     VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, nullptr);
     if (result == VK_SUCCESS && formatCount) {
@@ -828,6 +865,68 @@ Includes hpp implementations at the end of the file
     return VkSurfaceFormatKHR{ backBufferFormat, __P_DEFAULT_COLORSPACE_SRGB };
   }
 
+  // Find swap-chain presentation mode
+  inline VkPresentModeKHR SwapChain::_findPresentMode(pandora::video::PresentMode preferredMode, uint32_t framebufferCount) const { // throws
+    uint32_t presentModeCount = 0;
+    VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(this->_renderer->device(), this->_windowSurface, &presentModeCount, nullptr);
+    if (result != VK_SUCCESS || presentModeCount == 0)
+      throwError(result, "SwapChain: can't count present modes");
+    DynamicArray<VkPresentModeKHR> supportedModes(presentModeCount);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(this->_renderer->device(), this->_windowSurface, &presentModeCount, supportedModes.value);
+    if (result != VK_SUCCESS && result != VK_INCOMPLETE)
+      throwError(result, "SwapChain: can't read present modes");
+
+    VkPresentModeKHR mode = VK_PRESENT_MODE_FIFO_KHR;
+    if (preferredMode == PresentMode::immediate) {
+      for (size_t i = 0; i < presentModeCount; ++i) {
+        if (supportedModes.value[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+          mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+          break;
+        }
+      }
+    }
+    else if (framebufferCount >= 3 && (this->_flags & SwapChain::OutputFlag::disableFlipSwap) == false) {
+      for (size_t i = 0; i < presentModeCount; ++i) {
+        if (supportedModes.value[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+          mode = VK_PRESENT_MODE_MAILBOX_KHR;
+          break;
+        }
+      }
+    }
+    return mode;
+  }
+
+  // Find array index (in renderer) of presentation queue
+  static inline uint32_t _findPresentQueueArrayIndex(const Renderer& renderer, VkSurfaceKHR windowSurface) { // throws
+    uint32_t queueArrayIndex = (uint32_t)-1;
+
+    auto* family = renderer.commandQueues().value;
+    for (size_t i = 0; i < renderer.commandQueues().length(); ++i, ++family) {
+      VkBool32 presentSupport = VK_FALSE;
+      if (vkGetPhysicalDeviceSurfaceSupportKHR(renderer.device(), family->familyIndex,
+                                               windowSurface, &presentSupport) == VK_SUCCESS && presentSupport == VK_TRUE) {
+        queueArrayIndex = (uint32_t)i;
+        break;
+      }
+    }
+    if (queueArrayIndex == (uint32_t)-1)
+      throw std::runtime_error("SwapChain: no compatible command queue family found");
+    return queueArrayIndex;
+  }
+
+  // Force swap-chain size within min/max limits
+  static inline void _constrainSwapChainExtents(const VkSurfaceCapabilitiesKHR& capabilities,
+                                                uint32_t& inOutWidth, uint32_t& inOutHeight) noexcept {
+    if (capabilities.minImageExtent.width != UINT32_MAX && capabilities.minImageExtent.width > inOutWidth)
+      inOutWidth = capabilities.minImageExtent.width;
+    else if (capabilities.maxImageExtent.width != 0 && capabilities.maxImageExtent.width < inOutWidth)
+      inOutWidth = capabilities.maxImageExtent.width;
+    if (capabilities.minImageExtent.height != UINT32_MAX && capabilities.minImageExtent.height > inOutHeight)
+      inOutHeight = capabilities.minImageExtent.height;
+    else if (capabilities.maxImageExtent.height != 0 && capabilities.maxImageExtent.height < inOutHeight)
+      inOutHeight = capabilities.maxImageExtent.height;
+  }
+
 
 // -- swap-chain creation -- ---------------------------------------------------
 
@@ -860,42 +959,113 @@ Includes hpp implementations at the end of the file
   // ---
 
   // Create swap-chain resource for existing renderer
-  void SwapChain::_createSwapChain(const SwapChain::RefreshRate& rate) { // throws
+  void SwapChain::_createSwapChain(const Descriptor& params) { // throws
     if (this->_windowSurface == VK_NULL_HANDLE)
       throw std::invalid_argument("SwapChain: NULL window surface");
 
-    VkBool32 presentSupport = VK_FALSE;
-    if (this->_renderer->_graphicsCommandQueue != VK_NULL_HANDLE
-    && vkGetPhysicalDeviceSurfaceSupportKHR(this->_renderer->device(), this->_renderer->_commandQueueFamilyIndex,
-                                            this->_windowSurface, &presentSupport) == VK_SUCCESS && presentSupport == VK_TRUE) {
-      this->_presentQueue = this->_renderer->_graphicsCommandQueue;
-      //TODO: stocker refs vers object implementation de swapchain dans renderer -> si 2e swap-chain créée, et qu'elle "re-crée" le device, màj de la 1e
-      //TODO: ne pas créer swap-chain tout de suite: attendre qu'un pipeline soit créé (ou assigné au renderer) pour créer device + swapchains + pipelines
-      //-> fonction devient _registerSwapChain et récupère ref de sous-objet d'impl + retourne ID (index dans array)
-      //-> release() appelle _removeSwapChain(ID)
-    }
-    else {
-      if (this->_renderer->_graphicsCommandQueue != VK_NULL_HANDLE) {
-        //...flush
-        //...destroy vkdevice
-      }
-      //...create vkdevice + register queue(s) index/indices
-    }
+    VkSurfaceCapabilitiesKHR capabilities;
+    VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this->_renderer->device(), this->_windowSurface, &capabilities);
+    if (result != VK_SUCCESS)
+      throwError(result, "SwapChain: can't read capabilities");
+    
+    // find resources + apply constraints
+    this->_presentQueueArrayIndex = _findPresentQueueArrayIndex(*(this->_renderer), this->_windowSurface); // throws
+    VkSurfaceFormatKHR surfaceFormat = __findSwapChainFormat(this->_renderer->device(), this->_windowSurface, this->_backBufferFormat); // throws
+    this->_backBufferFormat = surfaceFormat.format;
+
+    uint32_t clientWidth = params.width, clientHeight = params.height;
+    _constrainSwapChainExtents(capabilities, clientWidth, clientHeight);
+    this->_pixelSize = _toPixelSize(clientWidth, clientHeight);
+
+    if (capabilities.minImageCount != UINT32_MAX && capabilities.minImageCount > this->_framebufferCount)
+      this->_framebufferCount = capabilities.minImageCount;
+    else if (capabilities.maxImageCount != 0 && capabilities.maxImageCount < this->_framebufferCount)
+      this->_framebufferCount = capabilities.maxImageCount;
+    auto presentMode = _findPresentMode(params.presentMode, this->_framebufferCount); // throws
 
     // build swap-chain
-    VkSurfaceFormatKHR colorParams = __findSwapChainFormat(this->_renderer->device(), this->_windowSurface, this->_backBufferFormat); // throws
-    //...
+    VkSwapchainCreateInfoKHR createInfo;
+    memset(&createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = this->_windowSurface;
+    createInfo.minImageCount = this->_framebufferCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent.width = clientWidth;
+    createInfo.imageExtent.height = clientHeight;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.preTransform = capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    const auto* cmdQueues = this->_renderer->commandQueues().value;
+    uint32_t cmdQueueIndices[2] = { cmdQueues[0].familyIndex, cmdQueues[_presentQueueArrayIndex].familyIndex };
+    createInfo.pQueueFamilyIndices = &cmdQueueIndices[0];
+    if (this->_presentQueueArrayIndex != 0) {
+      createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+      createInfo.queueFamilyIndexCount = 2;
+    }
+    else {
+      createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      createInfo.queueFamilyIndexCount = 1;
+    }
+
+    if ((this->_flags & SwapChain::OutputFlag::shaderInput) == true) {
+      createInfo.flags = VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR;
+      createInfo.imageUsage |= (VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    }
+    if ((this->_flags & SwapChain::OutputFlag::stereo) == true) {
+      if (capabilities.maxImageArrayLayers < 2)
+        throw std::invalid_argument("SwapChain: stereo image (2 layers) not supported");
+      createInfo.imageArrayLayers = 2;
+    }
+    else
+      createInfo.imageArrayLayers = 1;
+
+    result = vkCreateSwapchainKHR(this->_renderer->context(), &createInfo, nullptr, &(this->_swapChain));
+    if (result != VK_SUCCESS)
+      throwError(result, "SwapChain: creation failed");
   }
   
   // ---
   
-  // Create/refresh swap-chain render-target view + color space
-  void SwapChain::_createOrRefreshTargetView() { // throws
-    // find + set color space value (if supported)
-    //...
+  // Create/refresh swap-chain render-target view
+  void SwapChain::_createOrRefreshTargetViews() { // throws
+    // retrieve swap-chain buffer images
+    uint32_t imageCount = 0;
+    VkResult result = vkGetSwapchainImagesKHR(this->_renderer->context(), this->_swapChain, &imageCount, nullptr);
+    if (result != VK_SUCCESS || imageCount == 0)
+      throwError(result, "SwapChain: failed to count buffer images");
 
-    // create render-target view (if not existing)
-    //...
+    this->_bufferImages = DynamicArray<VkImage>(imageCount);
+    result = vkGetSwapchainImagesKHR(this->_renderer->context(), this->_swapChain, &imageCount, this->_bufferImages.value);
+    if (result != VK_SUCCESS && result != VK_INCOMPLETE)
+      throwError(result, "SwapChain: failed to obtain buffer images");
+
+    // retrieve swap-chain target image views
+    this->_renderTargetViews = DynamicArray<VkImageView>(imageCount);
+    uint32_t layerCount = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? 2 : 1;
+    for (uint32_t i = 0; i < imageCount; ++i) {
+      VkImageViewCreateInfo viewInfo{};
+      viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      viewInfo.image = this->_bufferImages.value[i];
+      viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      viewInfo.format = this->_backBufferFormat;
+      viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+      viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      viewInfo.subresourceRange.baseMipLevel = 0;
+      viewInfo.subresourceRange.levelCount = 1;
+      viewInfo.subresourceRange.baseArrayLayer = 0;
+      viewInfo.subresourceRange.layerCount = layerCount;
+      VkResult viewResult = vkCreateImageView(this->_renderer->context(), &viewInfo, nullptr, &(this->_renderTargetViews.value[i]));
+      if (viewResult != VK_SUCCESS)
+        throwError(viewResult, "SwapChain: failed to create buffer views");
+    }
   }
 
 
@@ -907,6 +1077,14 @@ Includes hpp implementations at the end of the file
       if (this->_windowSurface != VK_NULL_HANDLE) {
         vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
         this->_windowSurface = VK_NULL_HANDLE;
+
+        if (this->_swapChain != VK_NULL_HANDLE) {
+          for (size_t i = 0; i < this->_renderTargetViews.length(); ++i)
+            vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+          this->_renderTargetViews.clear();
+
+          vkDestroySwapchainKHR(this->_renderer->context(), this->_swapChain, nullptr);
+        }
       }
       this->_renderer = nullptr;
     }
@@ -921,12 +1099,14 @@ Includes hpp implementations at the end of the file
       _backBufferFormat(rhs._backBufferFormat),
       _renderer(std::move(rhs._renderer)),
       _windowSurface(rhs._windowSurface),
-      _renderTargetView(rhs._renderTargetView),
+      _bufferImages(std::move(rhs._bufferImages)),
+      _renderTargetViews(std::move(rhs._renderTargetViews)),
+      _currentImageIndex(rhs._currentImageIndex),
+      _presentQueueArrayIndex(rhs._presentQueueArrayIndex),
       _presentQueue(rhs._presentQueue) {
     rhs._swapChain = VK_NULL_HANDLE;
     rhs._renderer = nullptr;
     rhs._windowSurface = VK_NULL_HANDLE;
-    rhs._renderTargetView = VK_NULL_HANDLE;
     rhs._presentQueue = VK_NULL_HANDLE;
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
@@ -938,12 +1118,14 @@ Includes hpp implementations at the end of the file
     this->_backBufferFormat = rhs._backBufferFormat;
     this->_renderer = std::move(rhs._renderer);
     this->_windowSurface = rhs._windowSurface;
-    this->_renderTargetView = rhs._renderTargetView;
+    this->_bufferImages = std::move(rhs._bufferImages);
+    this->_renderTargetViews = std::move(rhs._renderTargetViews);
+    this->_currentImageIndex = rhs._currentImageIndex;
+    this->_presentQueueArrayIndex = rhs._presentQueueArrayIndex;
     this->_presentQueue = rhs._presentQueue;
     rhs._swapChain = VK_NULL_HANDLE;
     rhs._renderer = nullptr;
     rhs._windowSurface = VK_NULL_HANDLE;
-    rhs._renderTargetView = VK_NULL_HANDLE;
     rhs._presentQueue = VK_NULL_HANDLE;
     return *this;
   }
@@ -958,14 +1140,16 @@ Includes hpp implementations at the end of the file
   
     if (isResized) {
       // clear previous size-specific context
-      //...
+      for (size_t i = 0; i < this->_renderTargetViews.length(); ++i)
+        vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+      this->_renderTargetViews.clear();
       
       // resize swap-chain
       //...
-    }
 
-    // create/refresh render-target-view (if not resized, will only verify color space (in case monitor changed))
-    _createOrRefreshTargetView();
+      // create/refresh render-target-view
+      _createOrRefreshTargetViews();
+    }
     return isResized;
   }
   
@@ -993,7 +1177,7 @@ Includes hpp implementations at the end of the file
   }
 
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen
-  void SwapChain::swapBuffers(bool useVsync, DepthStencilView depthBuffer) {
+  void SwapChain::swapBuffers(DepthStencilView depthBuffer) {
     //... swap + check
   }
 
