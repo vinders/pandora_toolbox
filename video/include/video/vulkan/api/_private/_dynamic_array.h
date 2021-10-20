@@ -19,6 +19,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
+# include <cstddef>
+
   namespace pandora {
     namespace video {
       namespace vulkan {
@@ -26,17 +28,39 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         template <typename _DataType>
         struct DynamicArray final {
           constexpr inline DynamicArray() noexcept : value(nullptr) {}
-          inline DynamicArray(size_t length) : value(new _DataType[length]()) {}
+          inline DynamicArray(size_t length) : value(new _DataType[length]()), _length(length) {}
           ~DynamicArray() noexcept {
             if (value != nullptr)
               delete[] value;
           }
+
           DynamicArray(const DynamicArray&) = delete;
           DynamicArray& operator=(const DynamicArray&) = delete;
-          inline DynamicArray(DynamicArray&& rhs) noexcept : value(rhs.value) { rhs.value = nullptr; }
-          inline DynamicArray& operator=(DynamicArray&& rhs) noexcept { value = rhs.value; rhs.value = nullptr; return *this; }
+          inline DynamicArray(DynamicArray&& rhs) noexcept : value(rhs.value), _length(rhs._length) {
+            rhs.value = nullptr;
+            rhs._length = 0;
+          }
+          inline DynamicArray& operator=(DynamicArray&& rhs) noexcept { 
+            if (value != nullptr)
+              delete[] value;
+            value = rhs.value;
+            _length = rhs._length;
+            rhs.value = nullptr;
+            rhs._length = 0;
+            return *this;
+          }
+
+          void clear() noexcept {
+            if (value != nullptr)
+              delete[] value;
+            value = nullptr;
+            _length = 0;
+          }
 
           _DataType* value = nullptr;
+          inline size_t length() const noexcept { return this->_length; }
+        private:
+          size_t _length = 0;
         };
       }
     }

@@ -46,7 +46,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using TextureHandle2D = VkImage;        ///< 2D texture resource container
         using TextureHandle3D = VkImage;        ///< 3D texture resource container
         using BufferHandle = VkBuffer;          ///< Vertex/index/constant/resource buffer
-        using RenderTargetView = VkFramebuffer; ///< Bindable render-target view for renderer (shader output buffer)
+        using RenderTargetView = VkImageView; ///< Bindable render-target view for renderer (shader output buffer)
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
         
