@@ -743,22 +743,6 @@ Includes hpp implementations at the end of the file
     }
   }
 
-  // Change presentation mode
-  void SwapChain::setPresentMode(pandora::video::PresentMode mode) noexcept {
-    if (mode == pandora::video::PresentMode::immediate) {
-      this->_vsyncInterval = 0;
-      if ((this->_flags & (SwapChain::OutputFlag::variableRefresh
-                         | SwapChain::OutputFlag::disableFlipSwap)) == SwapChain::OutputFlag::variableRefresh
-      && this->_renderer->_dxgiLevel >= 2u && this->_renderer->isTearingAvailable()) {
-        this->_tearingSwapFlags = (UINT)DXGI_PRESENT_ALLOW_TEARING;
-      }
-    }
-    else {
-      this->_vsyncInterval = 1;
-      this->_tearingSwapFlags = 0;
-    }
-  }
-
 
 // -- swap-chain destruction/move -- -------------------------------------------
 
@@ -839,6 +823,22 @@ Includes hpp implementations at the end of the file
 
 
 // -- operations -- ------------------------------------------------------------
+
+  // Change presentation mode
+  void SwapChain::setPresentMode(pandora::video::PresentMode mode) noexcept {
+    if (mode == pandora::video::PresentMode::immediate) {
+      this->_vsyncInterval = 0;
+      if ((this->_flags & (SwapChain::OutputFlag::variableRefresh
+                         | SwapChain::OutputFlag::disableFlipSwap)) == SwapChain::OutputFlag::variableRefresh
+      && this->_renderer->_dxgiLevel >= 2u && this->_renderer->isTearingAvailable()) {
+        this->_tearingSwapFlags = (UINT)DXGI_PRESENT_ALLOW_TEARING;
+      }
+    }
+    else {
+      this->_vsyncInterval = 1;
+      this->_tearingSwapFlags = 0;
+    }
+  }
 
   // Change back-buffer(s) size + refresh color space
   bool SwapChain::resize(uint32_t width, uint32_t height) { // throws

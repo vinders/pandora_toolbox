@@ -75,6 +75,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ((uint32_t)400, chain1.height());
       renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
       EXPECT_NO_THROW(chain1.swapBuffers());
+      chain1.setPresentMode(pandora::video::PresentMode::fifo);
+      EXPECT_NO_THROW(chain1.swapBuffers());
       auto handle1 = chain1.handle();
       auto target1 = chain1.getRenderTargetView();
 
