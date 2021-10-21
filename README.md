@@ -70,4 +70,5 @@ Examples:
 | Maximum Direct3D 11 feature level (11.0 - 11.4).<br><sub>*Default: "114" on Win8.1/10+, otherwise "110"*</sub>  | CWORK_D3D11_VERSION  | "114" "113"<br>"111" "110"  | only windows systems<br>(MSVC/LLVM required)  |
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all systems<br>(environment variable *VULKAN_SDK* required)  |
 | Enable OpenGL 4 features.<br><sub>*Default: OFF*</sub>                                       | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all desktop systems    |
-| Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems    |
+| Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems |
+| Allow shader compilation at runtime (D3D/Vulkan)<br><sub>*Default: ON*</sub>                 | CWORK_INCLUDE_SHADER_COMPILERS | ON<br>OFF | all desktop systems           |

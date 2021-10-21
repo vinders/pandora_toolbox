@@ -73,6 +73,10 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     
     # -- video rendering --
     
+    if(NOT IOS AND NOT ANDROID AND NOT DEFINED CWORK_INCLUDE_SHADER_COMPILERS)
+        option(CWORK_INCLUDE_SHADER_COMPILERS "include D3D/Vulkan shader compilation at runtime" ON)
+    endif()
+    
     if(IOS OR ANDROID)
         set(CWORK_VIDEO_OPENGL4 OFF CACHE BOOL "not supported (desktop only)")
         set(_VIDEO_OPENGL4_NOT_SUPPORTED ON CACHE INTERNAL "" FORCE)

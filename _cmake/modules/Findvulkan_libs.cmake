@@ -37,5 +37,26 @@ else()
         endif()
         
         add_definitions(-DDISABLE_VK_LAYER_VALVE_steam_overlay_1=1)
+        
+        if(DEFINED CWORK_INCLUDE_SHADER_COMPILERS AND CWORK_INCLUDE_SHADER_COMPILERS)
+            if(WIN32)
+                if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+                    find_library(VULKANCOMPILER_LIBRARY NAMES glslang
+                                 PATHS "$ENV{VULKAN_SDK}/Lib" "$ENV{VULKAN_SDK}/Bin")
+                elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+                    find_library(VULKANCOMPILER_LIBRARY NAMES glslang
+                                 PATHS "$ENV{VULKAN_SDK}/Lib32" "$ENV{VULKAN_SDK}/Bin32" NO_SYSTEM_ENVIRONMENT_PATH)
+                endif()
+            else()
+                find_library(VULKANCOMPILER_LIBRARY NAMES glslang PATHS "$ENV{VULKAN_SDK}/lib")
+            endif()
+            set(vulkan_libs__LINKED ${vulkan_libs__LINKED} ${VULKANCOMPILER_LIBRARY})
+            
+            find_path(_VULKANCOMPILER_INCLUDES_TEST NAMES glslang/SPIRV/SpvTools.h PATHS "$ENV{VULKAN_SDK}/Include" NO_CACHE)
+            if(_VULKANCOMPILER_INCLUDES_TEST STREQUAL "_VULKANCOMPILER_INCLUDES_TEST-NOTFOUND")
+                add_definitions(-D_P_VULKAN_GLSLANG_OLD_INCLUDES=1)
+            endif()
+            unset(_VULKANCOMPILER_INCLUDES_TEST)
+        endif()
     endif()
 endif()
