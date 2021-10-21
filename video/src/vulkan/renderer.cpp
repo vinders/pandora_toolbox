@@ -959,7 +959,7 @@ Includes hpp implementations at the end of the file
   // ---
 
   // Create swap-chain resource for existing renderer
-  void SwapChain::_createSwapChain(const Descriptor& params) { // throws
+  void SwapChain::_createSwapChain(uint32_t clientWidth, uint32_t clientHeight, VkSwapchainKHR oldSwapchain) { // throws
     if (this->_windowSurface == VK_NULL_HANDLE)
       throw std::invalid_argument("SwapChain: NULL window surface");
 
@@ -973,7 +973,6 @@ Includes hpp implementations at the end of the file
     VkSurfaceFormatKHR surfaceFormat = __findSwapChainFormat(this->_renderer->device(), this->_windowSurface, this->_backBufferFormat); // throws
     this->_backBufferFormat = surfaceFormat.format;
 
-    uint32_t clientWidth = params.width, clientHeight = params.height;
     _constrainSwapChainExtents(capabilities, clientWidth, clientHeight);
     this->_pixelSize = _toPixelSize(clientWidth, clientHeight);
 
@@ -981,7 +980,7 @@ Includes hpp implementations at the end of the file
       this->_framebufferCount = capabilities.minImageCount;
     else if (capabilities.maxImageCount != 0 && capabilities.maxImageCount < this->_framebufferCount)
       this->_framebufferCount = capabilities.maxImageCount;
-    auto presentMode = _findPresentMode(params.presentMode, this->_framebufferCount); // throws
+    auto presentMode = _findPresentMode(this->_presentMode, this->_framebufferCount); // throws
 
     // build swap-chain
     VkSwapchainCreateInfoKHR createInfo;
@@ -998,7 +997,7 @@ Includes hpp implementations at the end of the file
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = oldSwapchain;
 
     const auto* cmdQueues = this->_renderer->commandQueues().value;
     uint32_t cmdQueueIndices[2] = { cmdQueues[0].familyIndex, cmdQueues[_presentQueueArrayIndex].familyIndex };
@@ -1046,6 +1045,7 @@ Includes hpp implementations at the end of the file
 
     // retrieve swap-chain target image views
     this->_renderTargetViews = DynamicArray<VkImageView>(imageCount);
+    memset(this->_renderTargetViews.value, 0, imageCount*sizeof(VkImageView));
     uint32_t layerCount = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? 2 : 1;
     for (uint32_t i = 0; i < imageCount; ++i) {
       VkImageViewCreateInfo viewInfo{};
@@ -1079,9 +1079,12 @@ Includes hpp implementations at the end of the file
         this->_windowSurface = VK_NULL_HANDLE;
 
         if (this->_swapChain != VK_NULL_HANDLE) {
-          for (size_t i = 0; i < this->_renderTargetViews.length(); ++i)
-            vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+          for (size_t i = 0; i < this->_renderTargetViews.length(); ++i) {
+            if (this->_renderTargetViews.value[i] != VK_NULL_HANDLE)
+              vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+          }
           this->_renderTargetViews.clear();
+          this->_bufferImages.clear();
 
           vkDestroySwapchainKHR(this->_renderer->context(), this->_swapChain, nullptr);
         }
@@ -1135,22 +1138,27 @@ Includes hpp implementations at the end of the file
 
   // Change back-buffer(s) size + refresh color space
   bool SwapChain::resize(uint32_t width, uint32_t height) { // throws
-    uint32_t pixelSize = _toPixelSize(width, height);
-    bool isResized = (this->_pixelSize != pixelSize);
-  
-    if (isResized) {
+    if (this->_swapChain != VK_NULL_HANDLE && this->_pixelSize != _toPixelSize(width, height)) {
+      vkDeviceWaitIdle(this->_renderer->context());
+
       // clear previous size-specific context
+      //...destroy framebuffers
+      //...free command buffers
       for (size_t i = 0; i < this->_renderTargetViews.length(); ++i)
         vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
       this->_renderTargetViews.clear();
+      this->_bufferImages.clear();
       
       // resize swap-chain
-      //...
+      auto oldSwapChain = this->_swapChain;
+      _createSwapChain(width, height, oldSwapChain);
+      vkDestroySwapchainKHR(this->_renderer->context(), oldSwapChain, nullptr);
 
-      // create/refresh render-target-view
+      // create/refresh render-target-views
       _createOrRefreshTargetViews();
+      return true;
     }
-    return isResized;
+    return false;
   }
   
   // ---
@@ -1164,8 +1172,7 @@ Includes hpp implementations at the end of the file
       case VK_EVENT_RESET:
       case VK_INCOMPLETE:
       case VK_OPERATION_DEFERRED_KHR:
-      case VK_OPERATION_NOT_DEFERRED_KHR:
-      case VK_SUBOPTIMAL_KHR: break;
+      case VK_OPERATION_NOT_DEFERRED_KHR: break;
       // device lost
       case VK_ERROR_DEVICE_LOST:
       case VK_ERROR_SURFACE_LOST_KHR:
@@ -1178,7 +1185,20 @@ Includes hpp implementations at the end of the file
 
   // Swap back-buffer(s) and front-buffer, to display drawn content on screen
   void SwapChain::swapBuffers(DepthStencilView depthBuffer) {
-    //... swap + check
+    if (this->_swapChain == VK_NULL_HANDLE)
+      return;
+
+    VkResult result = VK_SUCCESS;//TODO
+    //...
+    //...
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+      // don't throw during first call to swapBuffers following a resize (give the app an occasion to call 'resize')
+      if (result == VK_ERROR_OUT_OF_DATE_KHR && this->_pixelSize != 0)
+        this->_pixelSize = 0;
+      else
+        __processSwapError(result);
+    }
   }
 
 

@@ -92,9 +92,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             : _flags(params.outputFlags),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
+              _presentMode(params.presentMode),
               _renderer(std::move(surface._renderer)),
               _windowSurface(surface.extract()) {
-            _createSwapChain(params); // throws
+            _createSwapChain(params.width, params.height, VK_NULL_HANDLE); // throws
             _createOrRefreshTargetViews(); // throws
           }
           /// @brief Destroy swap-chain
@@ -145,7 +146,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         
         private:
-          void _createSwapChain(const Descriptor& params); // throws
+          void _createSwapChain(uint32_t clientWidth, uint32_t clientHeight, VkSwapchainKHR oldSwapchain); // throws
           void _createOrRefreshTargetViews(); // throws
           VkPresentModeKHR _findPresentMode(pandora::video::PresentMode preferredMode, uint32_t framebufferCount) const;
           
@@ -160,6 +161,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           uint32_t _pixelSize = 0;              // width / height
           uint32_t _framebufferCount = 0;       // framebuffer count
           VkFormat _backBufferFormat = VK_FORMAT_R8G8B8A8_SRGB;
+          pandora::video::PresentMode _presentMode = pandora::video::PresentMode::fifo;
           
           std::shared_ptr<Renderer> _renderer = nullptr;
           VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
