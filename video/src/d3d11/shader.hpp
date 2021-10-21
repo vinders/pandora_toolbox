@@ -25,43 +25,45 @@ Implementation included in renderer.cpp
 
 // -- create/compile shaders -- ------------------------------------------------
 
-  // Get D3D11 shader model ID
-  static const char* __getShaderModel(ShaderType type) noexcept {
-    switch (type) {
-      case ShaderType::vertex:   return "vs_5_0";
-      case ShaderType::tessCtrl: return "hs_5_0";
-      case ShaderType::tessEval: return "ds_5_0";
-      case ShaderType::geometry: return "gs_5_0";
-      case ShaderType::fragment: return "ps_5_0";
-      case ShaderType::compute:  return "cs_5_0";
-      default: return "";
+# ifdef _P_VIDEO_SHADER_COMPILERS
+    // Get D3D11 shader model ID
+    static const char* __getShaderModel(ShaderType type) noexcept {
+      switch (type) {
+        case ShaderType::vertex:   return "vs_5_0";
+        case ShaderType::tessCtrl: return "hs_5_0";
+        case ShaderType::tessEval: return "ds_5_0";
+        case ShaderType::geometry: return "gs_5_0";
+        case ShaderType::fragment: return "ps_5_0";
+        case ShaderType::compute:  return "cs_5_0";
+        default: return "";
+      }
     }
-  }
 
-  // Compile shader from text content
-  Shader::Builder Shader::Builder::compile(ShaderType type, const char* textContent, size_t length,
-                                           const char* entryPoint, bool isStrict) {
-    ID3DBlob* errorMessage = nullptr;
-    ID3DBlob* shaderBuffer = nullptr;
-    const char* shaderModel = __getShaderModel(type);
-    HRESULT result = D3DCompile((LPCVOID)textContent, (SIZE_T)length, nullptr, nullptr, nullptr, entryPoint, shaderModel, 
-                                isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
-    if (FAILED(result))
-      throwShaderError(errorMessage, "Shader: compile error", shaderModel);
-    return Shader::Builder(type, shaderBuffer);
-  }
-  // Compile shader from text file
-  Shader::Builder Shader::Builder::compileFromFile(ShaderType type, const wchar_t* filePath,
-                                                   const char* entryPoint, bool isStrict) {
-    ID3DBlob* errorMessage = nullptr;
-    ID3DBlob* shaderBuffer = nullptr;
-    const char* shaderModel = __getShaderModel(type);
-    HRESULT result = D3DCompileFromFile(filePath, nullptr, nullptr, entryPoint, shaderModel, 
-                                        isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
-    if (FAILED(result))
-      throwShaderError(errorMessage, "Shader: file/compile error", shaderModel);
-    return Shader::Builder(type, shaderBuffer);
-  }
+    // Compile shader from text content
+    Shader::Builder Shader::Builder::compile(ShaderType type, const char* textContent, size_t length,
+                                             const char* entryPoint, bool isStrict) {
+      ID3DBlob* errorMessage = nullptr;
+      ID3DBlob* shaderBuffer = nullptr;
+      const char* shaderModel = __getShaderModel(type);
+      HRESULT result = D3DCompile((LPCVOID)textContent, (SIZE_T)length, nullptr, nullptr, nullptr, entryPoint, shaderModel, 
+                                  isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
+      if (FAILED(result))
+        throwShaderError(errorMessage, "Shader: compile error", shaderModel);
+      return Shader::Builder(type, shaderBuffer);
+    }
+    // Compile shader from text file
+    Shader::Builder Shader::Builder::compileFromFile(ShaderType type, const wchar_t* filePath,
+                                                     const char* entryPoint, bool isStrict) {
+      ID3DBlob* errorMessage = nullptr;
+      ID3DBlob* shaderBuffer = nullptr;
+      const char* shaderModel = __getShaderModel(type);
+      HRESULT result = D3DCompileFromFile(filePath, nullptr, nullptr, entryPoint, shaderModel, 
+                                          isStrict ? D3DCOMPILE_ENABLE_STRICTNESS : 0, 0, &shaderBuffer, &errorMessage);
+      if (FAILED(result))
+        throwShaderError(errorMessage, "Shader: file/compile error", shaderModel);
+      return Shader::Builder(type, shaderBuffer);
+    }
+# endif
 
 
 // -- create shader objects -- -------------------------------------------------

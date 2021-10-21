@@ -26,8 +26,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       namespace d3d11 {
         // Throw native error message (or default if no message available)
         void throwError(HRESULT result, const char* messageContent);
-        // Throw shader-specific error message
-        void throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo);
+        // Throw shader-specific compilation error message
+#       ifdef _P_VIDEO_SHADER_COMPILERS
+          void throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo);
+#       endif
         
         // ---
         

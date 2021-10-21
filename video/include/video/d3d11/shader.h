@@ -21,7 +21,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstddef>
 # include <cstdint>
-# include "../common_types.h"
 # include "./api/types.h"      // includes D3D11
 
   namespace pandora {
@@ -67,6 +66,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public:
             /// @brief Initialize shader builder with already compiled shader data.
             ///        To compile a shader from text, use 'Shader::Builder::compile' or 'Shader::Builder::compileFromFile' instead.
+            ///        The Cmake option CWORK_INCLUDE_SHADER_COMPILERS is required to compile shaders.
             /// @remarks - Typically used when reading binary FXC-compiled "*.cso" file.
             ///          - Can also be used with compiled shader data stored in memory.
             ///          - Will NOT work with HLSL text data: use 'Builder::compile' or 'Builder::compileFromFile' instead.
@@ -90,23 +90,25 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 _shaderBuffer->Release();
             }
 
-            /// @brief Compile shader from HLSL text content
-            /// @param type         Shader category/model.
-            /// @param textContent  ASCII uncompiled text data.
-            /// @param length       Number of bytes in 'textContent'.
-            /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
-            /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
-            /// @throws runtime_error on failure
-            static Builder compile(ShaderType type, const char* textContent, size_t length, 
-                                   const char* entryPoint = "main", bool isStrict = true);
-            /// @brief Compile shader from HLSL text file ("*.hlsl")
-            /// @param type         Shader category/model.
-            /// @param filePath     File to compile (absolute path / relative path to current directory).
-            /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
-            /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
-            /// @throws runtime_error on failure
-            static Builder compileFromFile(ShaderType type, const wchar_t* filePath, 
-                                           const char* entryPoint = "main", bool isStrict = true);
+#           ifdef _P_VIDEO_SHADER_COMPILERS // option CWORK_INCLUDE_SHADER_COMPILERS required
+              /// @brief Compile shader from HLSL text content
+              /// @param type         Shader category/model.
+              /// @param textContent  ASCII uncompiled text data.
+              /// @param length       Number of bytes in 'textContent'.
+              /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
+              /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
+              /// @throws runtime_error on failure
+              static Builder compile(ShaderType type, const char* textContent, size_t length, 
+                                     const char* entryPoint = "main", bool isStrict = true);
+              /// @brief Compile shader from HLSL text file ("*.hlsl")
+              /// @param type         Shader category/model.
+              /// @param filePath     File to compile (absolute path / relative path to current directory).
+              /// @param entryPoint   Name of the entry point function in the shader ("main"/"Main"/"VSMain"/"PsMain"/"MyShaderMain"/...)
+              /// @param isStrict     Force strict compilation rules (deprecated/legacy/incomplete syntax refused)
+              /// @throws runtime_error on failure
+              static Builder compileFromFile(ShaderType type, const wchar_t* filePath, 
+                                             const char* entryPoint = "main", bool isStrict = true);
+#           endif
             
             // -- create shader objects --
             

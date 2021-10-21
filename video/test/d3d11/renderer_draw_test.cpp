@@ -17,7 +17,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #ifndef _P_CI_DISABLE_SLOW_TESTS
-#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT) && defined(_P_VIDEO_SHADER_COMPILERS)
 # ifndef __MINGW32__
 #   pragma warning(push)
 #   pragma warning(disable : 4324)

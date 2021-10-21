@@ -95,98 +95,100 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // ---
   
-  TEST_F(D3d11ShaderTest, compileBindFromTextFiles) {
-    pandora::hardware::DisplayMonitor monitor;
-    Renderer renderer(monitor);
-    ASSERT_TRUE(renderer.device() != nullptr);
+# ifdef _P_VIDEO_SHADER_COMPILERS
+    TEST_F(D3d11ShaderTest, compileBindFromTextFiles) {
+      pandora::hardware::DisplayMonitor monitor;
+      Renderer renderer(monitor);
+      ASSERT_TRUE(renderer.device() != nullptr);
 
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    auto vertexBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
-    auto vertexShader = vertexBuilder.createShader(renderer.device());
-    auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
-    EXPECT_TRUE(vertexShader.handle() != nullptr);
-    EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
-    EXPECT_FALSE(vertexShader.isEmpty());
-    EXPECT_TRUE(inputLayout.handle() != nullptr);
-    renderer.bindInputLayout(inputLayout.handle());
-    renderer.bindVertexShader(vertexShader.handle());
-    renderer.bindVertexShader(nullptr);
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+      };
+      auto vertexBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
+      auto vertexShader = vertexBuilder.createShader(renderer.device());
+      auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
+      EXPECT_TRUE(vertexShader.handle() != nullptr);
+      EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
+      EXPECT_FALSE(vertexShader.isEmpty());
+      EXPECT_TRUE(inputLayout.handle() != nullptr);
+      renderer.bindInputLayout(inputLayout.handle());
+      renderer.bindVertexShader(vertexShader.handle());
+      renderer.bindVertexShader(nullptr);
     
-    auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/d3d11/test_fragment.ps.hlsl"), "PSMain")
-                          .createShader(renderer.device());
-    EXPECT_TRUE(fragmentShader.handle() != nullptr);
-    EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
-    EXPECT_FALSE(fragmentShader.isEmpty());
-    renderer.bindFragmentShader(fragmentShader.handle());
-    renderer.bindFragmentShader(nullptr);
+      auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/d3d11/test_fragment.ps.hlsl"), "PSMain")
+                            .createShader(renderer.device());
+      EXPECT_TRUE(fragmentShader.handle() != nullptr);
+      EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
+      EXPECT_FALSE(fragmentShader.isEmpty());
+      renderer.bindFragmentShader(fragmentShader.handle());
+      renderer.bindFragmentShader(nullptr);
     
-    auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
-                          .createShader(renderer.device());
-    EXPECT_TRUE(geometryShader.handle() != nullptr);
-    EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
-    EXPECT_FALSE(geometryShader.isEmpty());
-    renderer.bindGeometryShader(geometryShader.handle());
-    renderer.bindGeometryShader(nullptr);
+      auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
+                            .createShader(renderer.device());
+      EXPECT_TRUE(geometryShader.handle() != nullptr);
+      EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
+      EXPECT_FALSE(geometryShader.isEmpty());
+      renderer.bindGeometryShader(geometryShader.handle());
+      renderer.bindGeometryShader(nullptr);
 
-    auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
-                         .createShader(renderer.device());
-    EXPECT_TRUE(computeShader.handle() != nullptr);
-    EXPECT_TRUE(computeShader.type() == ShaderType::compute);
-    EXPECT_FALSE(computeShader.isEmpty());
-    renderer.bindComputeShader(computeShader.handle());
-    renderer.bindComputeShader(nullptr);
+      auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
+                           .createShader(renderer.device());
+      EXPECT_TRUE(computeShader.handle() != nullptr);
+      EXPECT_TRUE(computeShader.type() == ShaderType::compute);
+      EXPECT_FALSE(computeShader.isEmpty());
+      renderer.bindComputeShader(computeShader.handle());
+      renderer.bindComputeShader(nullptr);
     
-    auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
-                         .createShader(renderer.device());
-    EXPECT_TRUE(controlShader.handle() != nullptr);
-    EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
-    EXPECT_FALSE(controlShader.isEmpty());
-    renderer.bindTessCtrlShader(controlShader.handle());
-    renderer.bindTessCtrlShader(nullptr);
+      auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
+                           .createShader(renderer.device());
+      EXPECT_TRUE(controlShader.handle() != nullptr);
+      EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
+      EXPECT_FALSE(controlShader.isEmpty());
+      renderer.bindTessCtrlShader(controlShader.handle());
+      renderer.bindTessCtrlShader(nullptr);
     
-    auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
-                      .createShader(renderer.device());
-    EXPECT_TRUE(evalShader.handle() != nullptr);
-    EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
-    EXPECT_FALSE(evalShader.isEmpty());
-    renderer.bindTessEvalShader(evalShader.handle());
-    renderer.bindTessEvalShader(nullptr);
+      auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
+                        .createShader(renderer.device());
+      EXPECT_TRUE(evalShader.handle() != nullptr);
+      EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
+      EXPECT_FALSE(evalShader.isEmpty());
+      renderer.bindTessEvalShader(evalShader.handle());
+      renderer.bindTessEvalShader(nullptr);
     
-    const char* vertexShaderText = "cbuffer MatrixBuffer {"
-      "  matrix worldMatrix;"
-      "  matrix viewMatrix;"
-      "  matrix projectionMatrix;"
-      "};"
-      "struct VertexInputType {"
-      "  float4 position : POSITION;"
-      "  float4 color : COLOR;"
-      "};"
-      "struct PixelInputType {"
-      "  float4 position : SV_POSITION;"
-      "  float4 color : COLOR;"
-      "};"
-      "PixelInputType VSMain(VertexInputType input) {"
-      "  PixelInputType output;"
-      "  input.position.w = 1.0f;"
-      "  output.position = mul(input.position, worldMatrix);"
-      "  output.position = mul(output.position, viewMatrix);"
-      "  output.position = mul(output.position, projectionMatrix);"
-      "  output.color = input.color;"
-      "  return output;"
-      "}";
-    auto vertexTextBuilder = Shader::Builder::compile(ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
-    auto vertexShader2 = vertexTextBuilder.createShader(renderer.device());
-    auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
-    EXPECT_TRUE(vertexShader2.handle() != nullptr);
-    EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
-    EXPECT_FALSE(vertexShader2.isEmpty());
-    EXPECT_TRUE(inputLayout2.handle() != nullptr);
-    renderer.bindInputLayout(inputLayout2.handle());
-    renderer.bindVertexShader(vertexShader2.handle());
-    renderer.bindVertexShader(nullptr);
-  }
+      const char* vertexShaderText = "cbuffer MatrixBuffer {"
+        "  matrix worldMatrix;"
+        "  matrix viewMatrix;"
+        "  matrix projectionMatrix;"
+        "};"
+        "struct VertexInputType {"
+        "  float4 position : POSITION;"
+        "  float4 color : COLOR;"
+        "};"
+        "struct PixelInputType {"
+        "  float4 position : SV_POSITION;"
+        "  float4 color : COLOR;"
+        "};"
+        "PixelInputType VSMain(VertexInputType input) {"
+        "  PixelInputType output;"
+        "  input.position.w = 1.0f;"
+        "  output.position = mul(input.position, worldMatrix);"
+        "  output.position = mul(output.position, viewMatrix);"
+        "  output.position = mul(output.position, projectionMatrix);"
+        "  output.color = input.color;"
+        "  return output;"
+        "}";
+      auto vertexTextBuilder = Shader::Builder::compile(ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
+      auto vertexShader2 = vertexTextBuilder.createShader(renderer.device());
+      auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
+      EXPECT_TRUE(vertexShader2.handle() != nullptr);
+      EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
+      EXPECT_FALSE(vertexShader2.isEmpty());
+      EXPECT_TRUE(inputLayout2.handle() != nullptr);
+      renderer.bindInputLayout(inputLayout2.handle());
+      renderer.bindVertexShader(vertexShader2.handle());
+      renderer.bindVertexShader(nullptr);
+    }
+# endif
 
 #endif

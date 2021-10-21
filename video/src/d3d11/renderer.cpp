@@ -66,7 +66,9 @@ Includes hpp implementations at the end of the file
 #   include <dxgidebug.h>
 # endif
 # include <DirectXMath.h>
-# include <D3DCompiler.h>
+# ifdef _P_VIDEO_SHADER_COMPILERS
+#   include <D3DCompiler.h>
+# endif
 
 # include "video/d3d11/renderer.h"
 # include "video/d3d11/swap_chain.h"
@@ -993,27 +995,29 @@ Includes hpp implementations at the end of the file
     throw RuntimeException(std::move(message));
   }
   
-  void pandora::video::d3d11::throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo) {
-    const char* errorData = (errorMessage) ? (const char*)errorMessage->GetBufferPointer() : "missing/empty shader file/content";
+# ifdef _P_VIDEO_SHADER_COMPILERS
+    void pandora::video::d3d11::throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo) {
+      const char* errorData = (errorMessage) ? (const char*)errorMessage->GetBufferPointer() : "missing/empty shader file/content";
     
-    // pre-compute total size to avoid having multiple dynamic allocs
-    size_t prefixSize = strlen(messagePrefix);
-    size_t infoSize = strlen(shaderInfo);
-    size_t errorSize = strlen(errorData);
-    auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + infoSize + 3u + errorSize);
+      // pre-compute total size to avoid having multiple dynamic allocs
+      size_t prefixSize = strlen(messagePrefix);
+      size_t infoSize = strlen(shaderInfo);
+      size_t errorSize = strlen(errorData);
+      auto message = std::make_shared<pandora::memory::LightString>(prefixSize + 2u + infoSize + 3u + errorSize);
     
-    // copy message in preallocated string
-    if (!message->empty()) { // if no alloc failure
-      memcpy((void*)message->data(),                           messagePrefix, prefixSize*sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize]),             " (",         size_t{2u}*sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize + 2u]),        shaderInfo,   infoSize  *sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize+infoSize+2u]), "): ",        size_t{3u}*sizeof(char));
-      memcpy((void*)&(message->data()[prefixSize+infoSize+2u+3u]), errorData, errorSize *sizeof(char));
+      // copy message in preallocated string
+      if (!message->empty()) { // if no alloc failure
+        memcpy((void*)message->data(),                           messagePrefix, prefixSize*sizeof(char));
+        memcpy((void*)&(message->data()[prefixSize]),             " (",         size_t{2u}*sizeof(char));
+        memcpy((void*)&(message->data()[prefixSize + 2u]),        shaderInfo,   infoSize  *sizeof(char));
+        memcpy((void*)&(message->data()[prefixSize+infoSize+2u]), "): ",        size_t{3u}*sizeof(char));
+        memcpy((void*)&(message->data()[prefixSize+infoSize+2u+3u]), errorData, errorSize *sizeof(char));
+      }
+      if (errorMessage)
+        errorMessage->Release();
+      throw RuntimeException(std::move(message));
     }
-    if (errorMessage)
-      errorMessage->Release();
-    throw RuntimeException(std::move(message));
-  }
+# endif
   
 
 // -----------------------------------------------------------------------------
