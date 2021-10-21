@@ -73,8 +73,8 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     
     # -- video rendering --
     
-    if(NOT IOS AND NOT ANDROID AND NOT DEFINED CWORK_INCLUDE_SHADER_COMPILERS)
-        option(CWORK_INCLUDE_SHADER_COMPILERS "include D3D/Vulkan shader compilation at runtime" ON)
+    if(NOT IOS AND NOT ANDROID AND NOT DEFINED CWORK_SHADER_COMPILERS)
+        option(CWORK_SHADER_COMPILERS "include D3D/Vulkan shader compilation at runtime" ON)
     endif()
     
     if(IOS OR ANDROID)

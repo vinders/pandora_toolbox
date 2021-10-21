@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.14)
 #           they can be referenced from Cmake files that do not use CWork.
 set(PANDORA_TOOLBOX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
-set(CWORK_INCLUDE_SHADER_COMPILERS ON CACHE INTERNAL "" FORCE)
+set(CWORK_SHADER_COMPILERS ON CACHE INTERNAL "" FORCE)
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
 cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON)
 

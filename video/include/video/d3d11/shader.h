@@ -66,7 +66,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public:
             /// @brief Initialize shader builder with already compiled shader data.
             ///        To compile a shader from text, use 'Shader::Builder::compile' or 'Shader::Builder::compileFromFile' instead.
-            ///        The Cmake option CWORK_INCLUDE_SHADER_COMPILERS is required to compile shaders.
+            ///        The Cmake option CWORK_SHADER_COMPILERS is required to compile shaders.
             /// @remarks - Typically used when reading binary FXC-compiled "*.cso" file.
             ///          - Can also be used with compiled shader data stored in memory.
             ///          - Will NOT work with HLSL text data: use 'Builder::compile' or 'Builder::compileFromFile' instead.
@@ -90,7 +90,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 _shaderBuffer->Release();
             }
 
-#           ifdef _P_VIDEO_SHADER_COMPILERS // option CWORK_INCLUDE_SHADER_COMPILERS required
+#           ifdef _P_VIDEO_SHADER_COMPILERS // option CWORK_SHADER_COMPILERS required
               /// @brief Compile shader from HLSL text content
               /// @param type         Shader category/model.
               /// @param textContent  ASCII uncompiled text data.

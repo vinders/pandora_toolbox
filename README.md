@@ -71,4 +71,4 @@ Examples:
 | Enable Vulkan features.<br><sub>*Default: ON if Vulkan SDK is installed*</sub>               | CWORK_VIDEO_VULKAN         | ON<br>OFF     | all systems<br>(environment variable *VULKAN_SDK* required)  |
 | Enable OpenGL 4 features.<br><sub>*Default: OFF*</sub>                                       | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all desktop systems    |
 | Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems |
-| Allow shader compilation at runtime (D3D/Vulkan)<br><sub>*Default: ON*</sub>                 | CWORK_INCLUDE_SHADER_COMPILERS | ON<br>OFF | all desktop systems           |
+| Allow shader compilation at runtime (D3D/Vulkan)<br><sub>*Default: ON*</sub>                 | CWORK_SHADER_COMPILERS     | ON<br>OFF | all desktop systems           |

@@ -38,7 +38,7 @@ else()
         
         add_definitions(-DDISABLE_VK_LAYER_VALVE_steam_overlay_1=1)
         
-        if(DEFINED CWORK_INCLUDE_SHADER_COMPILERS AND CWORK_INCLUDE_SHADER_COMPILERS)
+        if(DEFINED CWORK_SHADER_COMPILERS AND CWORK_SHADER_COMPILERS)
             if(WIN32)
                 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                     find_library(VULKANCOMPILER_LIBRARY NAMES glslang
