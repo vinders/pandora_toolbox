@@ -38,6 +38,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
       namespace d3d11 {
         using DeviceHandle = ID3D11Device*;               ///< Physical device access/resources
         using DeviceContext = ID3D11DeviceContext*;       ///< Device rendering context
+        using DeviceResourceManager = ID3D11Device*;      ///< Device resource manager
         using SwapChainHandle = void*;                    ///< Swap-chain (framebuffer container/swapper) - IDXGISwapChain*/IDXGISwapChain1*
         
         using TextureHandle = ID3D11Resource*;            ///< Generic texture resource handle

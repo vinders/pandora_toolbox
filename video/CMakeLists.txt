@@ -243,4 +243,4 @@ add_custom_target(${PROJECT_NAME}.build_shaders ALL
     COMMENT "Building shader files..."
 )
 set_target_properties(${PROJECT_NAME}.build_shaders PROPERTIES FOLDER ${CWORK_SOLUTION_NAME}/tools)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.build_shaders)
+#add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.build_shaders)

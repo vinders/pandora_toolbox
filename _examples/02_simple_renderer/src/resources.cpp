@@ -100,9 +100,9 @@ void loadShader(Renderer& renderer, ShaderProgramId id, ResourceStorage& out) {
   auto* layout = __loadInputLayout(id, length, strideBytes);
   auto vsBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, vsPath.c_str(), "main", true);
   auto fsBuilder = Shader::Builder::compileFromFile(ShaderType::fragment, fsPath.c_str(), "main", true);
-  out.shaders[id].layout = vsBuilder.createInputLayout(renderer.device(), layout, length);
-  out.shaders[id].vertex = vsBuilder.createShader(renderer.device());
-  out.shaders[id].fragment = fsBuilder.createShader(renderer.device());
+  out.shaders[id].layout = vsBuilder.createInputLayout(renderer.resourceManager(), layout, length);
+  out.shaders[id].vertex = vsBuilder.createShader(renderer.resourceManager());
+  out.shaders[id].fragment = fsBuilder.createShader(renderer.resourceManager());
   out.shaders[id].strideBytes = strideBytes;
 }
 

@@ -69,7 +69,7 @@ Implementation included in renderer.cpp
 // -- create shader objects -- -------------------------------------------------
 
   // Create shader object
-  Shader Shader::Builder::createShader(DeviceHandle device) const {
+  Shader Shader::Builder::createShader(DeviceResourceManager device) const {
     HRESULT result;
     Shader::Handle handle = nullptr;
     switch (this->_type) {
@@ -120,7 +120,7 @@ Implementation included in renderer.cpp
   // ---
 
   // Create input layout for shader object
-  InputLayout Shader::Builder::createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const {
+  InputLayout Shader::Builder::createInputLayout(DeviceResourceManager device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const {
     ID3D11InputLayout* inputLayout = nullptr;
     HRESULT result = device->CreateInputLayout((D3D11_INPUT_ELEMENT_DESC*)layoutElements, (UINT)length, 
                                                (const void*)this->_data, (SIZE_T)this->_length, &inputLayout);

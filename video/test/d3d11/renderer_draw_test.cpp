@@ -200,10 +200,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexBaseShaderText(), strlen(__vertexBaseShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, (size_t)1u);
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, (size_t)1u);
+    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentBaseShaderText(), strlen(__fragmentBaseShaderText()), "PSMain")
-                                          .createShader(renderer->device());
+                                          .createShader(renderer->resourceManager());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
@@ -265,10 +265,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexPosColorShaderText(), strlen(__vertexPosColorShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentPosColorShaderText(), strlen(__fragmentPosColorShaderText()), "PSMain")
-                                          .createShader(renderer->device());
+                                          .createShader(renderer->resourceManager());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
@@ -346,10 +346,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceShaderText(), strlen(__vertexInstanceShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
-      .createShader(renderer->device());
+                                          .createShader(renderer->resourceManager());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
@@ -433,10 +433,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceCamShaderText(), strlen(__vertexInstanceCamShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
-                                          .createShader(renderer->device());
+                                          .createShader(renderer->resourceManager());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
@@ -699,10 +699,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
     };
     auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceTexLightShaderText(), strlen(__vertexInstanceTexLightShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->device(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->device());
+    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceTexLightShaderText(), strlen(__fragmentInstanceTexLightShaderText()), "PSMain")
-      .createShader(renderer->device());
+                                          .createShader(renderer->resourceManager());
     ASSERT_TRUE(inputLayout.handle() != nullptr);
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());

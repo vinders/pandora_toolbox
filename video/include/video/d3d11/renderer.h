@@ -77,6 +77,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline DeviceHandle device() const noexcept { return this->_device; }    ///< Get Direct3D rendering device
           inline DeviceContext context() const noexcept { return this->_context; } ///< Get Direct3D device context
+          inline DeviceResourceManager resourceManager() const noexcept { return this->_device; } ///< Get resource manager (to build resources such as shaders)
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; }  ///< Get available DXGI level on current system (1-6)
           inline D3D_FEATURE_LEVEL featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
           

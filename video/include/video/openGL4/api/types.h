@@ -30,6 +30,7 @@ OpenGL4 - bindings with native types (same labels/values as other renderers: onl
       namespace openGL4 {
         using DeviceHandle = void*;       ///< Physical device access/resources (HGLRC / NSOpenGLContext* / EGLContext / GLXContext / OSMesaContext)
         using DeviceContext = GLuint;     ///< Device rendering context
+        using DeviceResourceManager = GLuint; ///< Device resource manager
         using SwapChainHandle = GLuint;   ///< Swap-chain (framebuffer container/swapper)
         
         using TextureHandle = GLuint;     ///< Generic texture resource handle

@@ -77,7 +77,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     binaryFile.read(binaryFileBuffer, binaryFileSize);
     binaryFile.close();
     Shader::Builder binaryBuilder(ShaderType::vertex, (const uint8_t*)binaryFileBuffer, (size_t)binaryFileSize);
-    auto binaryShader = binaryBuilder.createShader(renderer.device());
+    auto binaryShader = binaryBuilder.createShader(renderer.resourceManager());
     EXPECT_TRUE(binaryShader.handle() != nullptr);
     EXPECT_TRUE(binaryShader.type() == ShaderType::vertex);
     EXPECT_FALSE(binaryShader.isEmpty());
@@ -86,7 +86,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
-    auto inputLayout = binaryBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
+    auto inputLayout = binaryBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, (size_t)2u);
     EXPECT_TRUE(inputLayout.handle() != nullptr);
     
     renderer.bindInputLayout(inputLayout.handle());
@@ -106,8 +106,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
       };
       auto vertexBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, __createPath(L"/d3d11/test_vertex.vs.hlsl"), "VSMain");
-      auto vertexShader = vertexBuilder.createShader(renderer.device());
-      auto inputLayout = vertexBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
+      auto vertexShader = vertexBuilder.createShader(renderer.resourceManager());
+      auto inputLayout = vertexBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, (size_t)2u);
       EXPECT_TRUE(vertexShader.handle() != nullptr);
       EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader.isEmpty());
@@ -117,7 +117,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindVertexShader(nullptr);
     
       auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/d3d11/test_fragment.ps.hlsl"), "PSMain")
-                            .createShader(renderer.device());
+                            .createShader(renderer.resourceManager());
       EXPECT_TRUE(fragmentShader.handle() != nullptr);
       EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
       EXPECT_FALSE(fragmentShader.isEmpty());
@@ -125,7 +125,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindFragmentShader(nullptr);
     
       auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
-                            .createShader(renderer.device());
+                            .createShader(renderer.resourceManager());
       EXPECT_TRUE(geometryShader.handle() != nullptr);
       EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
       EXPECT_FALSE(geometryShader.isEmpty());
@@ -133,7 +133,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindGeometryShader(nullptr);
 
       auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
-                           .createShader(renderer.device());
+                           .createShader(renderer.resourceManager());
       EXPECT_TRUE(computeShader.handle() != nullptr);
       EXPECT_TRUE(computeShader.type() == ShaderType::compute);
       EXPECT_FALSE(computeShader.isEmpty());
@@ -141,7 +141,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindComputeShader(nullptr);
     
       auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
-                           .createShader(renderer.device());
+                           .createShader(renderer.resourceManager());
       EXPECT_TRUE(controlShader.handle() != nullptr);
       EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
       EXPECT_FALSE(controlShader.isEmpty());
@@ -149,7 +149,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindTessCtrlShader(nullptr);
     
       auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
-                        .createShader(renderer.device());
+                        .createShader(renderer.resourceManager());
       EXPECT_TRUE(evalShader.handle() != nullptr);
       EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
       EXPECT_FALSE(evalShader.isEmpty());
@@ -179,8 +179,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         "  return output;"
         "}";
       auto vertexTextBuilder = Shader::Builder::compile(ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
-      auto vertexShader2 = vertexTextBuilder.createShader(renderer.device());
-      auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.device(), inputLayoutDescr, (size_t)2u);
+      auto vertexShader2 = vertexTextBuilder.createShader(renderer.resourceManager());
+      auto inputLayout2 = vertexTextBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, (size_t)2u);
       EXPECT_TRUE(vertexShader2.handle() != nullptr);
       EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader2.isEmpty());

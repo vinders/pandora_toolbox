@@ -115,13 +115,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @brief Create shader object
             /// @param device Device handle from associated Renderer instance (Renderer.device())
             /// @throws runtime_error on failure
-            Shader createShader(DeviceHandle device) const;
+            Shader createShader(DeviceResourceManager device) const;
             
             /// @brief Create input layout for shader object
             /// @param device         Device handle from associated Renderer instance (Renderer.device())
-            /// @param length         Number of elements in 'layoutElements'
             /// @param layoutElements Array of input element descriptions:
-            ///        * very specific to each shading language -> currently no portable abstraction in toolbox;
+            /// @param length         Number of elements in 'layoutElements'
+            /// @note  * very specific to each shading language -> currently no portable abstraction in toolbox;
             ///        * example:
             ///          D3D11_INPUT_ELEMENT_DESC layout[] = {
             ///            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -131,7 +131,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///          - The input layout may be bound with any other shader that has the same input signature.
             ///          - For engines with material shaders with different inputs, it's easier to verify shader params with D3DReflect, instead of hardcoding them.
             /// @throws runtime_error on failure (or if layout doesn't match shader input signature)
-            InputLayout createInputLayout(DeviceHandle device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
+            InputLayout createInputLayout(DeviceResourceManager device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
             
           private:
             Builder(ShaderType type, ID3DBlob* shaderBuffer)
