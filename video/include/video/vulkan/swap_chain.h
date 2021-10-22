@@ -21,9 +21,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdint>
 # include <memory>
-# include "video/window_handle.h"
-# include "video/common_types.h"
-# include "video/vulkan/api/_private/_dynamic_array.h"
+# include "../window_handle.h"
+# include "../common_types.h"
+# include "./api/_private/_dynamic_array.h"
 # include "./api/types.h" // includes Vulkan
 # include "./renderer.h"  // includes Vulkan
 

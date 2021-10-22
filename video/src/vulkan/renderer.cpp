@@ -20,14 +20,26 @@ Includes hpp implementations at the end of the file
 (grouped object improves compiler optimizations + greatly reduces executable size)
 *******************************************************************************/
 #if defined(_VIDEO_VULKAN_SUPPORT)
-# if defined(_WINDOWS) && !defined(__MINGW32__)
-#   pragma warning(push)
-#   pragma warning(disable: 26812) // disable warnings about vulkan enums
-#   pragma warning(disable: 4100)  // disable warnings about unused params
+# ifdef _WINDOWS
+#   ifndef __MINGW32__
+#     pragma warning(push)
+#     pragma warning(disable: 4100)  // disable warnings about unused params
+#     pragma warning(disable: 6387)  // disable warnings about legacy file readers
+#     pragma warning(disable: 26812) // disable warnings about vulkan unscoped enums
+#     pragma warning(disable: 4701)  // disable init warnings about glm memory
+#     pragma warning(disable: 6001)  // disable init warnings about glm memory
+#     pragma warning(disable: 26451) // disable init warnings about vulkan and glm types
+#     pragma warning(disable: 26495) // disable init warnings about vulkan and glm types
+#   endif
+#   ifndef NOMINMAX
+#     define NOMINMAX            // no min/max macros
+#     define WIN32_LEAN_AND_MEAN // exclude rare MFC libraries
+#   endif
 # endif
-# include <cstddef>
+# include <cstdio>
 # include <cstdlib>
 # include <cstring>
+# include <cerrno>
 # include <cmath>
 # include <stdexcept>
 # include <memory/light_string.h>
@@ -37,11 +49,19 @@ Includes hpp implementations at the end of the file
 # include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
 # include "video/vulkan/api/_private/_dynamic_array.h"
+# include "video/vulkan/api/_private/_glslang_utils.h"
+# if defined(_WINDOWS) && !defined(__MINGW32__)
+#   pragma warning(default: 4701)  // restore init warnings after including glm
+#   pragma warning(default: 6001)  // restore init warnings after including glm
+#   pragma warning(default: 26451) // restore init warnings after including vulkan and glm
+#   pragma warning(default: 26495) // restore init warnings after including vulkan and glm
+# endif
+
 # include "video/vulkan/renderer.h"
 # include "video/vulkan/swap_chain.h"
 // # include "video/vulkan/renderer_state_factory.h"
-
-// # include "video/vulkan/shader.h"
+# include "video/vulkan/shader.h"
+//# include "video/vulkan/graphics_pipeline.h"
 // # include "video/vulkan/depth_stencil_buffer.h"
 // # include "video/vulkan/dynamic_buffer.h"
 // # include "video/vulkan/static_buffer.h"
@@ -755,7 +775,7 @@ Includes hpp implementations at the end of the file
     }
   }
   // Set rasterizer scissor-test rectangle
-  void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
+  void Renderer::setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
     //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
   }
 
@@ -1075,10 +1095,9 @@ Includes hpp implementations at the end of the file
   void SwapChain::release() noexcept {
     try {
       if (this->_windowSurface != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
-        this->_windowSurface = VK_NULL_HANDLE;
-
         if (this->_swapChain != VK_NULL_HANDLE) {
+          vkDeviceWaitIdle(this->_renderer->context());
+
           for (size_t i = 0; i < this->_renderTargetViews.length(); ++i) {
             if (this->_renderTargetViews.value[i] != VK_NULL_HANDLE)
               vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
@@ -1088,6 +1107,8 @@ Includes hpp implementations at the end of the file
 
           vkDestroySwapchainKHR(this->_renderer->context(), this->_swapChain, nullptr);
         }
+        vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
+        this->_windowSurface = VK_NULL_HANDLE;
       }
       this->_renderer = nullptr;
     }
@@ -1277,7 +1298,8 @@ Includes hpp implementations at the end of the file
 // # include "./buffers.hpp"
 // # include "./texture.hpp"
 // # include "./texture_reader_writer.hpp"
-// # include "./shader.hpp"
+# include "./shader.hpp"
+//# include "./graphics_pipeline.hpp"
 // # include "./camera_utils.hpp"
 
 # if defined(_WINDOWS) && !defined(__MINGW32__)

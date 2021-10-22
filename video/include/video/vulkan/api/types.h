@@ -28,6 +28,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 # include <cstdint>
 # include "./vulkan.h"
 # include <system/_private/_enum_flags.h>
+# include "./_private/_dynamic_array.h"
 # ifndef VK_API_VERSION_MAJOR
 #   define VK_API_VERSION_MAJOR(version) VK_VERSION_MAJOR(version)
 #   define VK_API_VERSION_MINOR(version) VK_VERSION_MINOR(version)
@@ -39,7 +40,8 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
       namespace vulkan {
         using DeviceHandle = VkPhysicalDevice;  ///< Physical device access/resources
         using DeviceContext = VkDevice;         ///< Device rendering context
-        using SwapChainHandle = VkSwapchainKHR;    ///< Swap-chain (framebuffer container/swapper)
+        using DeviceResourceManager = VkDevice; ///< Device resource manager
+        using SwapChainHandle = VkSwapchainKHR; ///< Swap-chain (framebuffer container/swapper)
         
         using TextureHandle = VkImage;          ///< Generic texture resource handle
         using TextureHandle1D = VkImage;        ///< 1D texture resource container
@@ -49,9 +51,13 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using RenderTargetView = VkImageView; ///< Bindable render-target view for renderer (shader output buffer)
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
-        
-        using InputLayoutHandle = void*;        ///< Input layout representation, for shader input stage
         using ColorChannel = float;             ///< R/G/B/A color value
+        
+        struct InputLayoutDescription final {
+          DynamicArray<VkVertexInputBindingDescription> bindings;
+          DynamicArray<VkVertexInputAttributeDescription> attributes;
+        };
+        using InputLayoutHandle = const InputLayoutDescription*; ///< Input layout representation, for shader input stage
         
         
         // -- rasterizer settings --

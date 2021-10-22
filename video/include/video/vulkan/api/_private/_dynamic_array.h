@@ -28,7 +28,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         template <typename _DataType>
         struct DynamicArray final {
           constexpr inline DynamicArray() noexcept : value(nullptr) {}
-          inline DynamicArray(size_t length) : value(new _DataType[length]()), _length(length) {}
+          inline DynamicArray(size_t length) : value(length ? new _DataType[length]() : nullptr), _length(length) {}
           ~DynamicArray() noexcept {
             if (value != nullptr)
               delete[] value;

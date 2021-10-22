@@ -22,11 +22,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <memory>
 # include <hardware/display_monitor.h>
-# include "video/window_handle.h"
-# include "video/vulkan/api/_private/_dynamic_array.h"
+# include "./api/_private/_dynamic_array.h"
 # include "./api/types.h"      // includes vulkan
 # include "./scissor.h"        // includes vulkan
 # include "./viewport.h"       // includes vulkan
+# include "./shader.h"         // includes vulkan
 
   namespace pandora {
     namespace video {
@@ -143,6 +143,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline DeviceHandle device() const noexcept { return this->_physicalDevice; }  ///< Get physical rendering device (VkPhysicalDevice)
           inline DeviceContext context() const noexcept { return this->_deviceContext; } ///< Get logical device context (VkDevice)
+          inline DeviceResourceManager resourceManager() const noexcept { return this->_deviceContext; } ///< Get resource manager (to build resources such as shaders)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
           inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
           inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_graphicsQueuesPerFamily; } ///< Get Vulkan command queues (per family)
@@ -198,7 +199,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
           inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
           
-          
+
         private:
           void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }
