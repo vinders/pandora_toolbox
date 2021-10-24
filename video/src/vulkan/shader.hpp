@@ -157,15 +157,26 @@ Implementation included in renderer.cpp
     auto result = vkCreateShaderModule(device, &shaderInfo, nullptr, &shaderModule);
     if (result != VK_SUCCESS)
       throwError(result, "Shader: creation error");
-    return Shader(shaderModule, this->_type, (DeviceContext)device, this->_entryPoint.c_str());
+    return Shader(shaderModule, this->_type, device, this->_entryPoint.c_str());
+  }
+
+  // Create usable shader stage object
+  Shader::Shader(Shader::Handle handle, ShaderType type, DeviceResourceManager device, const char* entryPoint)
+    : _context(device) {
+    memset(&_stageInfo, 0, sizeof(VkPipelineShaderStageCreateInfo));
+    this->_entryPoint = entryPoint; // throws
+    _stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    _stageInfo.stage = (VkShaderStageFlagBits)type;
+    _stageInfo.module = (VkShaderModule)handle;
+    _stageInfo.pName = this->_entryPoint.c_str();
   }
   
   // Destroy shader object
   void Shader::release() noexcept {
-    if (this->_handle != VK_NULL_HANDLE) {
+    if (this->_stageInfo.module != VK_NULL_HANDLE) {
       try {
-        vkDestroyShaderModule(this->_context, this->_handle, nullptr);
-        this->_handle = VK_NULL_HANDLE;
+        vkDestroyShaderModule(this->_context, this->_stageInfo.module, nullptr);
+        this->_stageInfo.module = VK_NULL_HANDLE;
       }
       catch (...) {}
     }

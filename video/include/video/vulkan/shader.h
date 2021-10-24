@@ -41,21 +41,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         public:
           using Handle = VkShaderModule;
           
-          /// @brief Create usable shader object -- reserved for internal use or advanced usage
+          /// @brief Create usable shader stage object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
-          Shader(Handle handle, ShaderType type, DeviceContext deviceContext, const char* entryPoint = "main")
-            : _handle(handle), _type(type), _entryPoint(entryPoint), _context(deviceContext) {}
+          Shader(Handle handle, ShaderType type, DeviceResourceManager device, const char* entryPoint = "main");
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
           Shader(const Shader&) = delete;
           Shader(Shader&& rhs) noexcept
-            : _handle(rhs._handle), _type(rhs._type), _entryPoint(std::move(rhs._entryPoint)), _context(rhs._context) {
-            rhs._handle = VK_NULL_HANDLE;
+            : _stageInfo(rhs._stageInfo), _entryPoint(std::move(rhs._entryPoint)), _context(rhs._context) {
+            rhs._stageInfo.module = VK_NULL_HANDLE;
           }
           Shader& operator=(const Shader&) = delete;
           Shader& operator=(Shader&& rhs) noexcept {
-            this->_handle=rhs._handle; this->_type=rhs._type; this->_entryPoint=std::move(rhs._entryPoint); this->_context=rhs._context;
-            rhs._handle = VK_NULL_HANDLE;
+            this->_stageInfo=rhs._stageInfo; this->_entryPoint=std::move(rhs._entryPoint); this->_context=rhs._context;
+            rhs._stageInfo.module = VK_NULL_HANDLE;
             return *this;
           }
           ~Shader() noexcept { release(); }
@@ -65,9 +64,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- accessors --
           
           /// @brief Get native shader handle -- for internal use or advanced features
-          inline Handle handle() const noexcept { return this->_handle; }
-          inline ShaderType type() const noexcept { return this->_type; } ///< Get shader category/model type
-          inline bool isEmpty() const noexcept { return (this->_handle == VK_NULL_HANDLE); } ///< Verify if initialized (false) or empty/moved/released (true)
+          inline Handle handle() const noexcept { return (Handle)this->_stageInfo.module; }
+          inline ShaderType type() const noexcept { return (ShaderType)this->_stageInfo.stage; } ///< Get shader category/model type
+          inline bool isEmpty() const noexcept { return (this->_stageInfo.module == VK_NULL_HANDLE); } ///< Verify if initialized (false) or empty/moved/released (true)
+          /// @brief Get native shader stage info -- should be used to customize advanced settings: 'pSpecializationInfo', 'flags'...
+          inline VkPipelineShaderStageCreateInfo& entryPoint() noexcept { return this->_stageInfo; }
+          inline const VkPipelineShaderStageCreateInfo& entryPoint() const noexcept { return this->_stageInfo; }
 
 
           // -- create/compile shaders --
@@ -169,10 +171,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           };
           
         private:
-          Handle _handle = VK_NULL_HANDLE;
-          ShaderType _type = ShaderType::vertex;
+          VkPipelineShaderStageCreateInfo _stageInfo{};
           pandora::memory::LightString _entryPoint;
-          DeviceContext _context = VK_NULL_HANDLE;
+          DeviceResourceManager _context = VK_NULL_HANDLE;
         };
         
         // ---
