@@ -67,9 +67,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline Handle handle() const noexcept { return (Handle)this->_stageInfo.module; }
           inline ShaderType type() const noexcept { return (ShaderType)this->_stageInfo.stage; } ///< Get shader category/model type
           inline bool isEmpty() const noexcept { return (this->_stageInfo.module == VK_NULL_HANDLE); } ///< Verify if initialized (false) or empty/moved/released (true)
-          /// @brief Get native shader stage info -- should be used to customize advanced settings: 'pSpecializationInfo', 'flags'...
-          inline VkPipelineShaderStageCreateInfo& entryPoint() noexcept { return this->_stageInfo; }
-          inline const VkPipelineShaderStageCreateInfo& entryPoint() const noexcept { return this->_stageInfo; }
+          /// @brief Get native shader stage info -- should only be used to customize advanced settings: 'pSpecializationInfo', 'flags'...
+          inline VkPipelineShaderStageCreateInfo& descriptor() noexcept { return this->_stageInfo; }
+          inline const VkPipelineShaderStageCreateInfo& descriptor() const noexcept { return this->_stageInfo; }
 
 
           // -- create/compile shaders --
@@ -185,7 +185,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Create usable input layout object -- reserved for internal use or advanced usage
           InputLayout(InputLayoutDescription&& description) : _description(std::move(description)) {}
           
-          InputLayout() noexcept;
+          InputLayout() noexcept = default;
           InputLayout(const InputLayout&) = delete;
           InputLayout(InputLayout&& rhs) noexcept = default;
           InputLayout& operator=(const InputLayout&) = delete;
@@ -199,7 +199,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline InputLayoutHandle handle() const noexcept { return &(this->_description); } ///< Get native handle
           inline bool isEmpty() const noexcept { ///< Verify if initialized (false) or empty/moved/released (true)
-            return (this->_description.bindings.length() == 0 && this->_description.attributes.length() == 0);
+            return (this->_description.bindings.length() == 0);
           } 
         
         private:

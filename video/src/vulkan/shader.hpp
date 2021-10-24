@@ -162,9 +162,7 @@ Implementation included in renderer.cpp
 
   // Create usable shader stage object
   Shader::Shader(Shader::Handle handle, ShaderType type, DeviceResourceManager device, const char* entryPoint)
-    : _context(device) {
-    memset(&_stageInfo, 0, sizeof(VkPipelineShaderStageCreateInfo));
-    this->_entryPoint = entryPoint; // throws
+    : _entryPoint(entryPoint), _context(device) {
     _stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     _stageInfo.stage = (VkShaderStageFlagBits)type;
     _stageInfo.module = (VkShaderModule)handle;
