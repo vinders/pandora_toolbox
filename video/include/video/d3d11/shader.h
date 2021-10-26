@@ -40,10 +40,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           Shader(Handle handle, ShaderType type) : _handle(handle), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
-          Shader(const Shader&) = delete;
+          Shader(const Shader& rhs) noexcept : _handle(rhs._handle), _type(rhs._type) {
+            if (rhs._handle != nullptr)
+              ((ID3D11DeviceChild*)rhs._handle)->AddRef();
+          }
           Shader(Shader&& rhs) noexcept : _handle(rhs._handle), _type(rhs._type) { rhs._handle = nullptr; }
-          Shader& operator=(const Shader&) = delete;
-          Shader& operator=(Shader&& rhs) noexcept { this->_handle=rhs._handle; this->_type=rhs._type; rhs._handle=nullptr; return *this; }
+          Shader& operator=(const Shader& rhs) noexcept;
+          Shader& operator=(Shader&& rhs) noexcept;
           ~Shader() noexcept { release(); }
           void release() noexcept; ///< Destroy shader object
           
@@ -165,7 +168,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           InputLayout(InputLayout&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = nullptr; }
           InputLayout& operator=(const InputLayout&) = delete;
           InputLayout& operator=(InputLayout&& rhs) noexcept { 
-            this->_handle = rhs._handle; rhs._handle = nullptr; return *this; 
+            release(); this->_handle = rhs._handle; rhs._handle = nullptr; return *this; 
           }
           ~InputLayout() noexcept { release(); }
           /// @brief Destroy input layout

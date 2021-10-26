@@ -102,19 +102,27 @@ Implementation included in renderer.cpp
   void Shader::release() noexcept {
     if (this->_handle != nullptr) {
       try {
-        switch (this->_type) {
-          case ShaderType::vertex:   ((ID3D11VertexShader*)this->_handle)->Release(); break;
-          case ShaderType::tessCtrl: ((ID3D11HullShader*)this->_handle)->Release(); break;
-          case ShaderType::tessEval: ((ID3D11DomainShader*)this->_handle)->Release(); break;
-          case ShaderType::geometry: ((ID3D11GeometryShader*)this->_handle)->Release(); break;
-          case ShaderType::fragment: ((ID3D11PixelShader*)this->_handle)->Release(); break;
-          case ShaderType::compute:  ((ID3D11ComputeShader*)this->_handle)->Release(); break;
-          default: break;
-        }
+        ((ID3D11DeviceChild*)this->_handle)->Release();
         this->_handle = nullptr;
       }
       catch (...) {}
     }
+  }
+
+  Shader& Shader::operator=(const Shader& rhs) noexcept {
+    release();
+    this->_handle = rhs._handle;
+    this->_type = rhs._type;
+    if (rhs._handle != nullptr)
+      ((ID3D11DeviceChild*)rhs._handle)->AddRef();
+    return *this;
+  }
+  Shader& Shader::operator=(Shader&& rhs) noexcept {
+    release();
+    this->_handle = rhs._handle;
+    this->_type = rhs._type;
+    rhs._handle = nullptr;
+    return *this; 
   }
   
   // ---
