@@ -137,6 +137,31 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           VkResult createWindowSurface(VkInstance instance, pandora::video::WindowHandle window,
                                        const VkAllocationCallbacks* allocator,
                                        VkSurfaceKHR& outSurface) noexcept;
+
+          // -- feature support --
+
+          /// @brief Check if GPU supports dynamic changes for: viewport/scissor-test count
+          inline bool isDynamicViewportCountSupported(VkInstance instance) noexcept {
+            return (getVulkanInstanceFunction(instance, "vkCmdSetViewportWithCountEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetScissorWithCountEXT") != nullptr);
+          }
+          /// @brief Check if GPU supports dynamic changes for: cull mode, front face order
+          inline bool isDynamicCullingSupported(VkInstance instance) noexcept {
+            return (getVulkanInstanceFunction(instance, "vkCmdSetCullModeEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetFrontFaceEXT") != nullptr);
+          }
+          /// @brief Check if GPU supports dynamic changes for: depth-test on/off, depth comparison, depth bounds, depth write on/off
+          inline bool isDynamicDepthTestSupported(VkInstance instance) noexcept {
+            return (getVulkanInstanceFunction(instance, "vkCmdSetDepthTestEnableEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetDepthCompareOpEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetDepthWriteEnableEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetDepthBoundsTestEnableEXT ") != nullptr);
+          }
+          /// @brief Check if GPU supports dynamic changes for: stencil-test on/off, stencil comparison, stencil mask, stencil write on/off
+          inline bool isDynamicStencilTestSupported(VkInstance instance) noexcept {
+            return (getVulkanInstanceFunction(instance, "vkCmdSetStencilTestEnableEXT") != nullptr
+                 && getVulkanInstanceFunction(instance, "vkCmdSetStencilOpEXT") != nullptr);
+          }
         
         private:
           bool _isInit = false;

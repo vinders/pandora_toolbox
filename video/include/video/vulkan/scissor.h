@@ -30,6 +30,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         ///        The scissor-test occurs after the fragment shader, to remove pixels out of bounds.
         class ScissorRectangle final {
         public:
+          using Descriptor = VkRect2D;
+
           ScissorRectangle() noexcept { ///< Empty rectangle (size: 0; 0)
             _params.offset.x = _params.offset.y = 0;
             _params.extent.width = _params.extent.height = 0;
@@ -76,11 +78,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           constexpr inline bool operator!=(const ScissorRectangle& rhs) const noexcept { return !(this->operator==(rhs)); }
 
-          inline VkRect2D* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-          inline const VkRect2D* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
+          inline Descriptor* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
+          inline const Descriptor* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
 
         private:
-          VkRect2D _params;
+          Descriptor _params{};
         };
       }
     }

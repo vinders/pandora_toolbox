@@ -61,7 +61,7 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/swap_chain.h"
 // # include "video/vulkan/renderer_state_factory.h"
 # include "video/vulkan/shader.h"
-//# include "video/vulkan/graphics_pipeline.h"
+# include "video/vulkan/graphics_pipeline.h"
 // # include "video/vulkan/depth_stencil_buffer.h"
 // # include "video/vulkan/dynamic_buffer.h"
 // # include "video/vulkan/static_buffer.h"
@@ -1299,7 +1299,7 @@ Includes hpp implementations at the end of the file
 // # include "./texture.hpp"
 // # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"
-//# include "./graphics_pipeline.hpp"
+# include "./graphics_pipeline.hpp"
 // # include "./camera_utils.hpp"
 
 # if defined(_WINDOWS) && !defined(__MINGW32__)

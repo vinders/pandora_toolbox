@@ -126,8 +126,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(geometryShader.handle() != nullptr);
       EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
       EXPECT_FALSE(geometryShader.isEmpty());
-      renderer.bindGeometryShader(geometryShader.handle());
-      renderer.bindGeometryShader(nullptr);
 
       auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/vulkan/test_compute.comp"), "CSMain")
                            .createShader(renderer.resourceManager());

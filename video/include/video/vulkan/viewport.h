@@ -30,6 +30,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @remarks Vulkan viewports are based on top-left corner.
         class Viewport final {
         public:
+          using Descriptor = VkViewport;
+
           Viewport() noexcept { ///< Empty viewport (size: 0; 0)
             _params.x=_params.y=_params.width=_params.height=_params.minDepth=0.f; _params.maxDepth=1.f;
           }
@@ -129,11 +131,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           constexpr inline bool operator!=(const Viewport& rhs) const noexcept { return !(this->operator==(rhs)); }
       
-          inline VkViewport* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-          inline const VkViewport* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
+          inline Descriptor* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
+          inline const Descriptor* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
         
         private:
-          VkViewport _params;
+          Descriptor _params{};
         };
       }
     }

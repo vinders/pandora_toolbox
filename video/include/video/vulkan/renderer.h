@@ -33,6 +33,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       namespace vulkan {
         class SwapChain;
         class DisplaySurface;
+        class GraphicsPipeline;
 
         /// @class VulkanInstance
         /// @brief Vulkan driver client instance, used to initialize Renderer objects
@@ -164,7 +165,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Detect current color space used by display monitor -- not supported with Vulkan
           /// @remarks Returns "unknown" with Vulkan (color space detection not supported)
           ///          (-> it's better to default to sRGB and let the user choose to optionally enable HDR).
-          ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept { return ColorSpace::unknown; }
+          ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor&) const noexcept { return ColorSpace::unknown; }
 
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
@@ -177,21 +178,27 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline size_t maxViewports() noexcept { return this->_features->multiViewport ? this->_physicalDeviceInfo->limits.maxViewports : 1; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
-          /// @warning - With Vulkan, this viewport change is only supported if the Shader pipeline
-          ///            was configured with a dynamic-state viewport.
+          /// @warning - With Vulkan, this viewport change is only supported if the GraphicsPipeline
+          ///            was configured with dynamic viewports.
           ///            -> this command will fail if the pipeline viewport is static/fixed.
           ///          - Multiple viewports are only supported if 'multiViewport' feature was enabled in constructor
           ///            (enabled in defaultFeatures()).
           void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
-          /// @warning With Vulkan, this viewport change is only supported if the Shader pipeline
-          ///          was configured with a dynamic-state viewport.
+          /// @warning With Vulkan, this viewport change is only supported if the GraphicsPipeline
+          ///          was configured with a dynamic viewport.
           ///          -> this command will fail if the pipeline viewport is static/fixed.
           void setViewport(const Viewport& viewport) noexcept;
 
           /// @brief Set rasterizer scissor-test rectangle(s)
+          /// @warning - With Vulkan, this scissor-test change is only supported if the GraphicsPipeline
+          ///            was configured with dynamic scissor-tests.
+          ///            -> this command will fail if the pipeline scissor-test is static/fixed.
           void setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept;
           /// @brief Set rasterizer scissor-test rectangle
+          /// @warning With Vulkan, this scissor-test change is only supported if the GraphicsPipeline
+          ///          was configured with a dynamic scissor-test.
+          ///          -> this command will fail if the pipeline scissor-test is static/fixed.
           void setScissorRectangle(const ScissorRectangle& rectangle) noexcept;
           
           // ---
@@ -199,12 +206,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
           inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
           
+          // -- pipeline status operations - shaders --
 
+          inline void bindGraphicsPipeline(VkPipeline pipeline) noexcept {
+            this->_boundPipeline = pipeline;
+            //...
+          }
+
+          
         private:
           void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }
           friend class pandora::video::vulkan::SwapChain;
           friend class pandora::video::vulkan::DisplaySurface;
+          friend class pandora::video::vulkan::GraphicsPipeline;
           
         private:
           std::shared_ptr<VulkanInstance> _instance = nullptr;
@@ -213,6 +228,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
           DeviceContext _deviceContext = VK_NULL_HANDLE;
           DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
+
+          VkPipeline _boundPipeline = VK_NULL_HANDLE;
         };
 
         // Throw native error message (or default if no message available)
@@ -220,5 +237,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
     }
   }
-# include "./swap_chain.h" // includes vulkan
+# include "./swap_chain.h"        // includes vulkan
+# include "./graphics_pipeline.h" // includes vulkan
 #endif
