@@ -137,4 +137,12 @@ Implementation included in renderer.cpp
     return InputLayout((InputLayoutHandle)inputLayout);
   }
 
+  InputLayout& InputLayout::operator=(const InputLayout& rhs) noexcept { 
+    release();
+    this->_handle = rhs._handle;
+    if (rhs._handle != nullptr)
+      rhs._handle->AddRef();
+    return *this; 
+  }
+
 #endif

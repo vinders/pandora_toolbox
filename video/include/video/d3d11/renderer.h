@@ -205,7 +205,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             this->_context->IASetIndexBuffer(indexBuffer, (DXGI_FORMAT)indexFormat, (UINT)byteOffset);
           }
           /// @brief Set vertex polygon topology for input stage
-          /// @param topology  Native topology value (createTopology / createPatchTopology / D3D11_PRIMITIVE_TOPOLOGY)
           inline void setVertexTopology(VertexTopology topology) noexcept { this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topology); }
           /// @brief Set vertex patch topology for input stage (for vertex/tessellation shaders)
           /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).

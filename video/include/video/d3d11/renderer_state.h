@@ -35,10 +35,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           RendererState() = default; ///< Create empty state
           /// @brief Initialize state (isManaged should always be true, except when using an array value that should not be destroyed)
           RendererState(_Type* state, bool isManaged = true) : _state(state), _isManaged(isManaged) {}
-          RendererState(const RendererState&) = delete;
+          RendererState(const RendererState& rhs) noexcept : _state(rhs._state), _isManaged(rhs._isManaged) {
+            if (rhs._isManaged)
+              rhs._state->AddRef();
+          }
           RendererState(RendererState&& rhs) noexcept : _state(rhs._state), _isManaged(rhs._isManaged) { rhs._state = nullptr; }
-          RendererState& operator=(const RendererState&) = delete;
-          RendererState& operator=(RendererState&& rhs) noexcept { this->_state=rhs._state; this->_isManaged=rhs._isManaged; rhs._state=nullptr; return *this; }
+          RendererState& operator=(const RendererState& rhs) noexcept {
+            release();
+            this->_state=rhs._state; this->_isManaged=rhs._isManaged;
+            if (rhs._isManaged)
+              rhs._state->AddRef();
+            return *this;
+          }
+          RendererState& operator=(RendererState&& rhs) noexcept { release(); this->_state=rhs._state; this->_isManaged=rhs._isManaged; rhs._state=nullptr; return *this; }
           ~RendererState() noexcept { release(); }
           
           inline void release() noexcept { ///< Destroy state resource

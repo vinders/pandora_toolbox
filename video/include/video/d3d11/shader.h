@@ -164,9 +164,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           InputLayout(InputLayoutHandle handle) : _handle(handle) {}
           
           InputLayout() = default;
-          InputLayout(const InputLayout&) = delete;
+          InputLayout(const InputLayout& rhs) noexcept : _handle(rhs._handle) {
+            if (rhs._handle != nullptr)
+              rhs._handle->AddRef();
+          }
           InputLayout(InputLayout&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = nullptr; }
-          InputLayout& operator=(const InputLayout&) = delete;
+          InputLayout& operator=(const InputLayout& rhs) noexcept;
           InputLayout& operator=(InputLayout&& rhs) noexcept { 
             release(); this->_handle = rhs._handle; rhs._handle = nullptr; return *this; 
           }
