@@ -72,5 +72,5 @@ Examples:
 | Enable OpenGL 4 features.<br><sub>*Default: OFF*</sub>                                       | CWORK_VIDEO_OPENGL4        | ON<br>OFF     | all desktop systems           |
 | Maximum OpenGL 4 feature level.<br><sub>*Default: "45" (or "41" on Mac OS)*</sub>            | CWORK_OPENGL4_VERSION      | "46" "45"<br>"43" "41"  | all desktop systems |
 | Allow shader compilation at runtime (D3D/Vulkan)<br><sub>*Default: ON*</sub>                 | CWORK_SHADER_COMPILERS     | ON<br>OFF     | all desktop systems           |
-| Disable geometry shader stage<br>to reduce overhead (if not used)<br><sub>*Default: OFF*</sub> | CWORK_DISABLE_GEOMETRY_STAGE | ON<br>OFF | all systems                   |
-| Disable tessellation stage<br>to reduce overhead (if not used)<br><sub>*Default: OFF*</sub>  | CWORK_DISABLE_TESSELLATION     | ON<br>OFF | all systems                   |
+| Disable geometry shader stage<br>to reduce overhead (if not used)<br><sub>*Default: OFF*</sub> | CWORK_GEOM_STAGE_OFF     | ON<br>OFF     | all systems                   |
+| Disable tessellation stage<br>to reduce overhead (if not used)<br><sub>*Default: OFF*</sub>  | CWORK_TESS_STAGE_OFF       | ON<br>OFF | all systems                   |

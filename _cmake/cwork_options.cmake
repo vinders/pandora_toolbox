@@ -134,11 +134,11 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
     
     # -- Features to enable/disable --
     
-    if(NOT DEFINED CWORK_DISABLE_GEOMETRY_STAGE)
-        option(CWORK_DISABLE_GEOMETRY_STAGE "disable geometry shader stage, to reduce overhead (if not used)" OFF)
+    if(NOT DEFINED CWORK_GEOM_STAGE_OFF)
+        option(CWORK_GEOM_STAGE_OFF "disable geometry shader stage, to reduce overhead (if not used)" OFF)
     endif()
-    if(NOT DEFINED CWORK_DISABLE_TESSELLATION)
-        option(CWORK_DISABLE_TESSELLATION "disable tessellation features, to reduce overhead (if not used)" OFF)
+    if(NOT DEFINED CWORK_TESS_STAGE_OFF)
+        option(CWORK_TESS_STAGE_OFF "disable tessellation features, to reduce overhead (if not used)" OFF)
     endif()
     
     # ┌──────────────────────────────────────────────────────────────────┐
