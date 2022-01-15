@@ -362,14 +362,31 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         // -- shaders --
         
         /// @brief Shader pipeline stage type
-        enum class ShaderType : int {
+        enum class ShaderType : unsigned int {
           vertex   = 0, ///< Vertex shader: process input vertex data -> outputs vertex projection.
-          tessCtrl = 1, ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
-          tessEval = 2, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
-          geometry = 3, ///< Geometry shader: modify/duplicate primitive.
-          fragment = 4, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
-          compute  = 5  ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
+          fragment = 1, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            geometry = 2, ///< Geometry shader: modify/duplicate primitive.
+#           ifndef __P_DISABLE_TESSELLATION_STAGE
+              tessCtrl = 3, ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
+              tessEval = 4, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
+#           endif
+#         else
+#           ifndef __P_DISABLE_TESSELLATION_STAGE
+              tessCtrl = 2,
+              tessEval = 3,
+#           endif
+#         endif
+          compute  = 0xFF  ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
         };
+
+#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
+#         define __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX ((unsigned int)ShaderType::tessEval)
+#       elif !defined(__P_DISABLE_GEOMETRY_STAGE)
+#         define __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX ((unsigned int)ShaderType::geometry)
+#       else
+#         define __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX ((unsigned int)ShaderType::fragment)
+#       endif
       }
     }
   }

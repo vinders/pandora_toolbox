@@ -121,11 +121,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
       EXPECT_FALSE(fragmentShader.isEmpty());
 
-      auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/vulkan/test_geometry.geom"), "GSMain")
-                            .createShader(renderer.resourceManager());
-      EXPECT_TRUE(geometryShader.handle() != nullptr);
-      EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
-      EXPECT_FALSE(geometryShader.isEmpty());
+#     ifndef __P_DISABLE_GEOMETRY_STAGE
+        auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/vulkan/test_geometry.geom"), "GSMain")
+                              .createShader(renderer.resourceManager());
+        EXPECT_TRUE(geometryShader.handle() != nullptr);
+        EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
+        EXPECT_FALSE(geometryShader.isEmpty());
+#     endif
 
       auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/vulkan/test_compute.comp"), "CSMain")
                            .createShader(renderer.resourceManager());
@@ -133,17 +135,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(computeShader.type() == ShaderType::compute);
       EXPECT_FALSE(computeShader.isEmpty());
 
-      auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/vulkan/test_control.tesc"), "HSMain")
-                           .createShader(renderer.resourceManager());
-      EXPECT_TRUE(controlShader.handle() != nullptr);
-      EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
-      EXPECT_FALSE(controlShader.isEmpty());
+#     ifndef __P_DISABLE_TESSELLATION_STAGE
+        auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/vulkan/test_control.tesc"), "HSMain")
+                             .createShader(renderer.resourceManager());
+        EXPECT_TRUE(controlShader.handle() != nullptr);
+        EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
+        EXPECT_FALSE(controlShader.isEmpty());
 
-      auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/vulkan/test_eval.tese"), "DSMain")
-                        .createShader(renderer.resourceManager());
-      EXPECT_TRUE(evalShader.handle() != nullptr);
-      EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
-      EXPECT_FALSE(evalShader.isEmpty());
+        auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/vulkan/test_eval.tese"), "DSMain")
+                          .createShader(renderer.resourceManager());
+        EXPECT_TRUE(evalShader.handle() != nullptr);
+        EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
+        EXPECT_FALSE(evalShader.isEmpty());
+#     endif
 
       EXPECT_ANY_THROW(Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/nodirectory/blabla_--_.ext"), "PSMain"));
 

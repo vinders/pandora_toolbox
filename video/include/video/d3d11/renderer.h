@@ -206,9 +206,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           /// @brief Set vertex polygon topology for input stage
           inline void setVertexTopology(VertexTopology topology) noexcept { this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topology); }
-          /// @brief Set vertex patch topology for input stage (for vertex/tessellation shaders)
-          /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
-          void setVertexPatchTopology(uint32_t controlPoints) noexcept;
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Set vertex patch topology for input stage (for vertex/tessellation shaders)
+            /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
+            void setVertexPatchTopology(uint32_t controlPoints) noexcept;
+#         endif
           
           
           // -- primitive drawing --
@@ -251,26 +253,40 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           
           
-          // -- pipeline status operations - shaders --
+          // -- pipeline status operations
 
           /// @brief Bind input-layout object to the input-assembler stage
           /// @param inputLayout  Native handle (ShaderInputLayout.handle()) or NULL to disable input.
           inline void bindInputLayout(InputLayoutHandle inputLayout) noexcept { this->_context->IASetInputLayout((ID3D11InputLayout*)inputLayout); }
           /// @brief Bind vertex shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind vertex shader.
-          inline void bindVertexShader(Shader::Handle shader) noexcept { this->_context->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0); }
-          /// @brief Bind tessellation-control/hull shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind control/hull shader.
-          inline void bindTessCtrlShader(Shader::Handle shader) noexcept { this->_context->HSSetShader((ID3D11HullShader*)shader, nullptr, 0); }
-          /// @brief Bind tessellation-evaluation/domain shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind evaluation/domain shader.
-          inline void bindTessEvalShader(Shader::Handle shader) noexcept { this->_context->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0); }
-          /// @brief Bind geometry shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind geometry shader.
-          inline void bindGeometryShader(Shader::Handle shader) noexcept { this->_context->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0); }
+          inline void bindVertexShader(Shader::Handle shader) noexcept {
+            this->_context->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
+          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Bind tessellation-control/hull shader stage to the device
+            /// @param shader  Native handle (Shader.handle()) or NULL to unbind control/hull shader.
+            inline void bindTessCtrlShader(Shader::Handle shader) noexcept {
+              this->_context->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
+            }
+            /// @brief Bind tessellation-evaluation/domain shader stage to the device
+            /// @param shader  Native handle (Shader.handle()) or NULL to unbind evaluation/domain shader.
+            inline void bindTessEvalShader(Shader::Handle shader) noexcept {
+              this->_context->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            /// @brief Bind geometry shader stage to the device
+            /// @param shader  Native handle (Shader.handle()) or NULL to unbind geometry shader.
+            inline void bindGeometryShader(Shader::Handle shader) noexcept {
+              this->_context->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
+            }
+#         endif
           /// @brief Bind fragment/pixel shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind fragment/pixel shader.
-          inline void bindFragmentShader(Shader::Handle shader) noexcept { this->_context->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0); }
+          inline void bindFragmentShader(Shader::Handle shader) noexcept {
+            this->_context->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
+          }
           /// @brief Bind compute shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind compute shader.
           inline void bindComputeShader(Shader::Handle shader) noexcept { this->_context->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0); }
@@ -286,21 +302,25 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline void bindVertexUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
             this->_context->VSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
           }
-          /// @brief Bind constant/uniform buffer(s) to the tessellation-control/hull shader stage
-          /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindTessCtrlUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
-            this->_context->HSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
-          }
-          /// @brief Bind constant/uniform buffer(s) to the tessellation-evaluation/domain shader stage
-          /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindTessEvalUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
-            this->_context->DSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
-          }
-          /// @brief Bind constant/uniform buffer(s) to the geometry shader stage
-          /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindGeometryUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
-            this->_context->GSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Bind constant/uniform buffer(s) to the tessellation-control/hull shader stage
+            /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindTessCtrlUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
+              this->_context->HSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+            /// @brief Bind constant/uniform buffer(s) to the tessellation-evaluation/domain shader stage
+            /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindTessEvalUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
+              this->_context->DSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            /// @brief Bind constant/uniform buffer(s) to the geometry shader stage
+            /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindGeometryUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
+              this->_context->GSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+#         endif
           /// @brief Bind constant/uniform buffer(s) to the fragment shader stage
           /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
           inline void bindFragmentUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length) noexcept {
@@ -316,18 +336,22 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
             this->_context->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
           }
-          inline void clearTessCtrlUniforms() noexcept { ///< Reset all constant/uniform buffers in tessellation-control/hull shader stage
-            ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-            this->_context->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearTessEvalUniforms() noexcept { ///< Reset all constant/uniform buffers in tessellation-evaluation/domain shader stage
-            ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-            this->_context->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearGeometryUniforms() noexcept { ///< Reset all constant/uniform buffers in geometry shader stage
-            ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
-            this->_context->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            inline void clearTessCtrlUniforms() noexcept { ///< Reset all constant/uniform buffers in tessellation-control/hull shader stage
+              ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+              this->_context->HSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+            }
+            inline void clearTessEvalUniforms() noexcept { ///< Reset all constant/uniform buffers in tessellation-evaluation/domain shader stage
+              ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+              this->_context->DSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            inline void clearGeometryUniforms() noexcept { ///< Reset all constant/uniform buffers in geometry shader stage
+              ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
+              this->_context->GSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
+            }
+#         endif
           inline void clearFragmentUniforms() noexcept { ///< Reset all constant/uniform buffers in fragment/pixel shader stage (standard)
             ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
             this->_context->PSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
@@ -348,21 +372,25 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline void bindVertexTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
             this->_context->VSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
           }
-          /// @brief Bind texture resource(s) to the tessellation-control/hull shader stage
-          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindTesselControlTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
-            this->_context->HSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
-          }
-          /// @brief Bind texture resource(s) to the tessellation-evaluation/domain shader stage
-          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindTesselEvalTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
-            this->_context->DSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
-          }
-          /// @brief Bind texture resource(s) to the geometry shader stage
-          /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
-          inline void bindGeometryTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
-            this->_context->GSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Bind texture resource(s) to the tessellation-control/hull shader stage
+            /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindTesselControlTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
+              this->_context->HSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+            /// @brief Bind texture resource(s) to the tessellation-evaluation/domain shader stage
+            /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindTesselEvalTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
+              this->_context->DSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            /// @brief Bind texture resource(s) to the geometry shader stage
+            /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
+            inline void bindGeometryTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
+              this->_context->GSSetShaderResources((UINT)firstSlotIndex, (UINT)length, handles);
+            }
+#         endif
           /// @brief Bind texture resource(s) (or texture(s)) to the fragment shader stage
           /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
           inline void bindFragmentTextures(uint32_t firstSlotIndex, const TextureView* handles, size_t length) noexcept {
@@ -378,18 +406,22 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
             this->_context->VSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
           }
-          inline void clearTesselControlTextures() noexcept { ///< Reset all texture resource(s) in tessellation-control/hull shader stage
-            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
-            this->_context->HSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearTesselEvalTextures() noexcept { ///< Reset all texture resource(s) in tessellation-evaluation/domain shader stage
-            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
-            this->_context->DSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearGeometryTextures() noexcept { ///< Reset all texture resource(s) in geometry shader stage
-            ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
-            this->_context->GSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            inline void clearTesselControlTextures() noexcept { ///< Reset all texture resource(s) in tessellation-control/hull shader stage
+              ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+              this->_context->HSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+            }
+            inline void clearTesselEvalTextures() noexcept { ///< Reset all texture resource(s) in tessellation-evaluation/domain shader stage
+              ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+              this->_context->DSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            inline void clearGeometryTextures() noexcept { ///< Reset all texture resource(s) in geometry shader stage
+              ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
+              this->_context->GSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
+            }
+#         endif
           inline void clearFragmentTextures() noexcept { ///< Reset all texture resource(s) in fragment/pixel shader stage
             ID3D11ShaderResourceView* empty[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] { nullptr };
             this->_context->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, &empty[0]);
@@ -432,21 +464,25 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline void setVertexFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
             this->_context->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
-          /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
-          /// @remarks To remove some filters, use NULL value at their index
-          inline void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
-            this->_context->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
-          }
-          /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
-          /// @remarks To remove some filters, use NULL value at their index
-          inline void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
-            this->_context->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
-          }
-          /// @brief Set array of sampler filters to the geometry shader stage
-          /// @remarks To remove some filters, use NULL value at their index
-          inline void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
-            this->_context->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
+            /// @remarks To remove some filters, use NULL value at their index
+            inline void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+              this->_context->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
+            }
+            /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
+            /// @remarks To remove some filters, use NULL value at their index
+            inline void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+              this->_context->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            /// @brief Set array of sampler filters to the geometry shader stage
+            /// @remarks To remove some filters, use NULL value at their index
+            inline void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+              this->_context->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
+            }
+#         endif
           /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
           /// @remarks To remove some filters, use NULL value at their index
           inline void setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
@@ -462,18 +498,22 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
             this->_context->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
           }
-          inline void clearTesselControlFilterStates() noexcept { ///< Reset all sampler filters in tessellation-control/hull shader stage
-            ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-            this->_context->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearTesselEvalFilterStates() noexcept { ///< Reset all sampler filters in tessellation-evaluation/domain shader stage
-            ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-            this->_context->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-          }
-          inline void clearGeometryFilterStates() noexcept { ///< Reset all sampler filters in geometry shader stage
-            ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
-            this->_context->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
-          }
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            inline void clearTesselControlFilterStates() noexcept { ///< Reset all sampler filters in tessellation-control/hull shader stage
+              ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+              this->_context->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+            }
+            inline void clearTesselEvalFilterStates() noexcept { ///< Reset all sampler filters in tessellation-evaluation/domain shader stage
+              ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+              this->_context->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+            }
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            inline void clearGeometryFilterStates() noexcept { ///< Reset all sampler filters in geometry shader stage
+              ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
+              this->_context->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
+            }
+#         endif
           inline void clearFragmentFilterStates() noexcept { ///< Reset all sampler filters in fragment/pixel shader stage (standard)
             ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
             this->_context->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);

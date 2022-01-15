@@ -132,6 +132,15 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         option(CWORK_DUMMY_SOURCES "compile header-only libs (generate dummy sources)" OFF) # generate source files for header-only libraries (to force compilation)
     endif()
     
+    # -- Features to enable/disable --
+    
+    if(NOT DEFINED CWORK_DISABLE_GEOMETRY_STAGE)
+        option(CWORK_DISABLE_GEOMETRY_STAGE "disable geometry shader stage, to reduce overhead (if not used)" OFF)
+    endif()
+    if(NOT DEFINED CWORK_DISABLE_TESSELLATION)
+        option(CWORK_DISABLE_TESSELLATION "disable tessellation features, to reduce overhead (if not used)" OFF)
+    endif()
+    
     # ┌──────────────────────────────────────────────────────────────────┐
     # │  Helpers                                                         │
     # └──────────────────────────────────────────────────────────────────┘

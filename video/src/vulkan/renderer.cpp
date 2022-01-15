@@ -244,10 +244,17 @@ Includes hpp implementations at the end of the file
     VkPhysicalDeviceFeatures defaultFeatures;
     memset(&defaultFeatures, 0, sizeof(VkPhysicalDeviceFeatures));
     defaultFeatures.alphaToOne = defaultFeatures.depthBiasClamp = defaultFeatures.depthBounds = defaultFeatures.depthClamp
-      = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.geometryShader = defaultFeatures.imageCubeArray
+      = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.imageCubeArray
       = defaultFeatures.independentBlend = defaultFeatures.multiDrawIndirect = defaultFeatures.multiViewport
       = defaultFeatures.samplerAnisotropy = defaultFeatures.shaderClipDistance = defaultFeatures.shaderCullDistance
-      = defaultFeatures.shaderResourceMinLod = defaultFeatures.shaderStorageImageExtendedFormats = defaultFeatures.tessellationShader = VK_TRUE;
+      = defaultFeatures.shaderResourceMinLod = defaultFeatures.shaderStorageImageExtendedFormats
+#     ifndef __P_DISABLE_GEOMETRY_STAGE
+        = defaultFeatures.geometryShader
+#     endif
+#     ifndef __P_DISABLE_TESSELLATION_STAGE
+        = defaultFeatures.tessellationShader
+#     endif
+      = VK_TRUE;
     return defaultFeatures;
   }
 

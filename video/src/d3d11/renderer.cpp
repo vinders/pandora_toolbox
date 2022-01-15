@@ -23,6 +23,7 @@ Includes hpp implementations at the end of the file
 # ifndef __MINGW32__
 #   pragma warning(push)
 #   pragma warning(disable: 4100)  // disable warnings about unused params
+#   pragma warning(disable: 33011) // disable warnings about upper bound check
 # endif
 # include <cstddef>
 # include <cstring>
@@ -543,16 +544,18 @@ Includes hpp implementations at the end of the file
 
 // -- primitive binding -- -----------------------------------------------------
 
-  // Set vertex patch topology for input stage (for vertex/tessellation shaders)
-  void Renderer::setVertexPatchTopology(uint32_t controlPoints) noexcept {
-    if (controlPoints != 0u) {
-      --controlPoints;
-      if (controlPoints >= 32u)
-        controlPoints = 31u;
+# ifndef __P_DISABLE_TESSELLATION_STAGE
+    // Set vertex patch topology for input stage (for vertex/tessellation shaders)
+    void Renderer::setVertexPatchTopology(uint32_t controlPoints) noexcept {
+      if (controlPoints != 0u) {
+        --controlPoints;
+        if (controlPoints >= 32u)
+          controlPoints = 31u;
+      }
+      int topologyValue = (int)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int)controlPoints;
+      this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topologyValue);
     }
-    int topologyValue = (int)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int)controlPoints;
-    this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topologyValue);
-  }
+# endif
 
 
 // -----------------------------------------------------------------------------

@@ -30,9 +30,13 @@ Implementation included in renderer.cpp
     static const char* __getShaderModel(ShaderType type) noexcept {
       switch (type) {
         case ShaderType::vertex:   return "vs_5_0";
-        case ShaderType::tessCtrl: return "hs_5_0";
-        case ShaderType::tessEval: return "ds_5_0";
-        case ShaderType::geometry: return "gs_5_0";
+#       ifndef __P_DISABLE_TESSELLATION_STAGE
+          case ShaderType::tessCtrl: return "hs_5_0";
+          case ShaderType::tessEval: return "ds_5_0";
+#       endif
+#       ifndef __P_DISABLE_GEOMETRY_STAGE
+          case ShaderType::geometry: return "gs_5_0";
+#       endif
         case ShaderType::fragment: return "ps_5_0";
         case ShaderType::compute:  return "cs_5_0";
         default: return "";
@@ -76,15 +80,19 @@ Implementation included in renderer.cpp
       case ShaderType::vertex:
         result = device->CreateVertexShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11VertexShader**)&handle);
         break;
-      case ShaderType::tessCtrl:
-        result = device->CreateHullShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11HullShader**)&handle);
-        break;
-      case ShaderType::tessEval:
-        result = device->CreateDomainShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11DomainShader**)&handle);
-        break;
-      case ShaderType::geometry:
-        result = device->CreateGeometryShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11GeometryShader**)&handle);
-        break;
+#     ifndef __P_DISABLE_TESSELLATION_STAGE
+        case ShaderType::tessCtrl:
+          result = device->CreateHullShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11HullShader**)&handle);
+          break;
+        case ShaderType::tessEval:
+          result = device->CreateDomainShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11DomainShader**)&handle);
+          break;
+#     endif
+#     ifndef __P_DISABLE_GEOMETRY_STAGE
+        case ShaderType::geometry:
+          result = device->CreateGeometryShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11GeometryShader**)&handle);
+          break;
+#     endif
       case ShaderType::fragment:
         result = device->CreatePixelShader((const void*)this->_data, (SIZE_T)this->_length, nullptr, (ID3D11PixelShader**)&handle);
         break;

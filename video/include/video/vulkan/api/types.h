@@ -346,9 +346,13 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         /// @brief Shader pipeline stage type
         enum class ShaderType : int/*VkShaderStageFlagBits*/ {
           vertex   = VK_SHADER_STAGE_VERTEX_BIT,   ///< Vertex shader: process input vertex data -> outputs vertex projection.
-          tessCtrl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
-          tessEval = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
-          geometry = VK_SHADER_STAGE_GEOMETRY_BIT, ///< Geometry shader: modify/duplicate primitive.
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            tessCtrl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    ///< Tessellation control/hull shader: tessellate primitive -> outputs geometry patch.
+            tessEval = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, ///< Tessellation evaluation/domain shader: calculate new vertex positions.
+#         endif
+#         ifndef __P_DISABLE_GEOMETRY_STAGE
+            geometry = VK_SHADER_STAGE_GEOMETRY_BIT, ///< Geometry shader: modify/duplicate primitive.
+#         endif
           fragment = VK_SHADER_STAGE_FRAGMENT_BIT, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
           compute  = VK_SHADER_STAGE_COMPUTE_BIT   ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
         };

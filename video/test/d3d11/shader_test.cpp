@@ -124,14 +124,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindFragmentShader(fragmentShader.handle());
       renderer.bindFragmentShader(nullptr);
     
-      auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
-                            .createShader(renderer.resourceManager());
-      EXPECT_TRUE(geometryShader.handle() != nullptr);
-      EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
-      EXPECT_FALSE(geometryShader.isEmpty());
-      renderer.bindGeometryShader(geometryShader.handle());
-      renderer.bindGeometryShader(nullptr);
-
+#     ifndef __P_DISABLE_GEOMETRY_STAGE
+        auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/d3d11/test_geometry.gs.hlsl"), "GSMain")
+                              .createShader(renderer.resourceManager());
+        EXPECT_TRUE(geometryShader.handle() != nullptr);
+        EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
+        EXPECT_FALSE(geometryShader.isEmpty());
+        renderer.bindGeometryShader(geometryShader.handle());
+        renderer.bindGeometryShader(nullptr);
+#     endif
       auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/d3d11/test_compute.cs.hlsl"), "CSMain")
                            .createShader(renderer.resourceManager());
       EXPECT_TRUE(computeShader.handle() != nullptr);
@@ -140,21 +141,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindComputeShader(computeShader.handle());
       renderer.bindComputeShader(nullptr);
     
-      auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
-                           .createShader(renderer.resourceManager());
-      EXPECT_TRUE(controlShader.handle() != nullptr);
-      EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
-      EXPECT_FALSE(controlShader.isEmpty());
-      renderer.bindTessCtrlShader(controlShader.handle());
-      renderer.bindTessCtrlShader(nullptr);
+#     ifndef __P_DISABLE_TESSELLATION_STAGE
+        auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/d3d11/test_control.hs.hlsl"), "HSMain")
+                             .createShader(renderer.resourceManager());
+        EXPECT_TRUE(controlShader.handle() != nullptr);
+        EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
+        EXPECT_FALSE(controlShader.isEmpty());
+        renderer.bindTessCtrlShader(controlShader.handle());
+        renderer.bindTessCtrlShader(nullptr);
     
-      auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
-                        .createShader(renderer.resourceManager());
-      EXPECT_TRUE(evalShader.handle() != nullptr);
-      EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
-      EXPECT_FALSE(evalShader.isEmpty());
-      renderer.bindTessEvalShader(evalShader.handle());
-      renderer.bindTessEvalShader(nullptr);
+        auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/d3d11/test_eval.ds.hlsl"), "DSMain")
+                          .createShader(renderer.resourceManager());
+        EXPECT_TRUE(evalShader.handle() != nullptr);
+        EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
+        EXPECT_FALSE(evalShader.isEmpty());
+        renderer.bindTessEvalShader(evalShader.handle());
+        renderer.bindTessEvalShader(nullptr);
+#     endif
     
       const char* vertexShaderText = "cbuffer MatrixBuffer {"
         "  matrix worldMatrix;"

@@ -31,10 +31,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           switch (type) {
             case ShaderType::vertex:   return EShLanguage::EShLangVertex;
             case ShaderType::fragment: return EShLanguage::EShLangFragment;
-            case ShaderType::geometry: return EShLanguage::EShLangGeometry;
+#           ifndef __P_DISABLE_GEOMETRY_STAGE
+              case ShaderType::geometry: return EShLanguage::EShLangGeometry;
+#           endif
             case ShaderType::compute:  return EShLanguage::EShLangCompute;
-            case ShaderType::tessCtrl: return EShLanguage::EShLangTessControl;
-            case ShaderType::tessEval: return EShLanguage::EShLangTessEvaluation;
+#           ifndef __P_DISABLE_TESSELLATION_STAGE
+              case ShaderType::tessCtrl: return EShLanguage::EShLangTessControl;
+              case ShaderType::tessEval: return EShLanguage::EShLangTessEvaluation;
+#           endif
             default: return EShLanguage::EShLangCompute;
           }
         }
