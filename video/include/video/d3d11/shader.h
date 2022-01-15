@@ -186,6 +186,76 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         private:
           InputLayoutHandle _handle = nullptr;
         };
+
+
+        // ---
+
+        /// @brief User-defined set of related compiled display shaders to execute on a GPU
+        /// @warning - Inputs/outputs of shader stages must be compatible
+        ///          - Only appropriate for display shaders (compute shaders not allowed!)
+        class ShaderProgram final {
+        public:
+          /// @brief Initialize shader program: shader modules, vertex input layout, topology
+          ShaderProgram(const Shader* shaderModules, size_t shaderModuleCount,
+                        const InputLayout& inputLayout, VertexTopology topology = VertexTopology::triangles) noexcept;
+#         ifndef __P_DISABLE_TESSELLATION_STAGE
+            /// @brief Initialize shader program: shader modules, vertex input layout, tessellation patch control points
+            ShaderProgram(const Shader* shaderModules, size_t shaderModuleCount,
+                          uint32_t patchControlPoints, const InputLayout& inputLayout) noexcept;
+#         endif
+
+          ShaderProgram() = default;
+          ShaderProgram(const ShaderProgram& rhs) noexcept : _inputLayout(rhs._inputLayout), _topology(rhs._topology) { _copyShaders(rhs); }
+          ShaderProgram(ShaderProgram&&) noexcept;
+          ShaderProgram& operator=(const ShaderProgram& rhs) noexcept {
+            clear();
+            this->_inputLayout=rhs._inputLayout; this->_topology=rhs._topology; _copyShaders(rhs);
+            return *this;
+          }
+          ShaderProgram& operator=(ShaderProgram&&) noexcept;
+          ~ShaderProgram() noexcept { clear(); }
+
+          inline VertexTopology topology() const noexcept { return this->_topology; } ///< Get current topology (or patchlist mode)
+          inline const InputLayout& inputLayout() const noexcept { return this->_inputLayout; } ///< Get vertex input layout
+          inline const Shader::Handle* shaderStages() const noexcept { return this->_shaderStages; }  ///< Get array of all shader stages
+
+          // -- vertex input layout --
+
+          /// @brief Set vertex polygon topology for input stage
+          inline void setVertexTopology(VertexTopology topology) noexcept { this->_topology = topology; }
+          /// @brief Set vertex patch topology for input stage (for vertex/tessellation shaders)
+          /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
+          void setPatchTopology(uint32_t controlPoints) noexcept;
+
+          /// @brief Set vertex input layout description (required if vertex shader has input data)
+          inline void attachInputLayout(const InputLayout& inputLayout) noexcept { this->_inputLayout = inputLayout; }
+          /// @brief Clear vertex input layout description
+          inline void detachInputLayout() noexcept { this->_inputLayout.release(); }
+
+          // -- shader stages --
+
+          /// @brief Set (or replace) shader module for a specific stage (at least vertex+fragment or compute required)
+          inline void attachShader(const Shader& shaderModule) noexcept {
+            detachShader(shaderModule.type());
+            if (shaderModule.handle() != nullptr) {
+              this->_shaderStages[(unsigned int)shaderModule.type()] = shaderModule.handle();
+              ((ID3D11DeviceChild*)shaderModule.handle())->AddRef();
+            }
+          }
+          /// @brief Clear a shader stage
+          void detachShader(ShaderType stage) noexcept;
+
+          /// @brief Clear all shader stages + input layout
+          void clear() noexcept;
+
+        private:
+          void _copyShaders(const ShaderProgram& rhs) noexcept;
+
+        private:
+          Shader::Handle _shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1]{ nullptr };
+          InputLayout _inputLayout;
+          VertexTopology _topology = VertexTopology::triangles;
+        };
       }
     }
   }

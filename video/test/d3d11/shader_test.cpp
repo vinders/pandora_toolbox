@@ -194,4 +194,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 # endif
 
+  // ---
+
+  TEST_F(D3d11ShaderTest, shaderProgramAccessors) {
+
+  }
+
+# ifdef _P_VIDEO_SHADER_COMPILERS
+    TEST_F(D3d11ShaderTest, compileBindProgramFromTextFiles) {
+
+    }
+# endif
+
 #endif

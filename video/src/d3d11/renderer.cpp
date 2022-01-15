@@ -346,7 +346,9 @@ Includes hpp implementations at the end of the file
       _context(rhs._context),
       _deviceLevel(rhs._deviceLevel),
       _dxgiFactory(rhs._dxgiFactory),
-      _dxgiLevel(rhs._dxgiLevel) {
+      _dxgiLevel(rhs._dxgiLevel),
+      _currentTopology(rhs._currentTopology) {
+    memcpy(this->_currentStages, rhs._currentStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
     rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
     rhs._context = nullptr;
@@ -358,6 +360,8 @@ Includes hpp implementations at the end of the file
     this->_deviceLevel = rhs._deviceLevel;
     this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;
+    memcpy(this->_currentStages, rhs._currentStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+    this->_currentTopology = rhs._currentTopology;
     rhs._device = nullptr;
     rhs._context = nullptr;
     rhs._dxgiFactory = nullptr;
@@ -556,6 +560,55 @@ Includes hpp implementations at the end of the file
       this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topologyValue);
     }
 # endif
+
+  // Bind display shader program to the graphics pipeline (topology, input-assembler stage, shader stages)
+  void Renderer::bindDisplayShaders(const ShaderProgram& shaders) noexcept {
+    static_assert((unsigned int)ShaderType::vertex == 0 && (unsigned int)ShaderType::fragment == 1
+#            ifndef __P_DISABLE_GEOMETRY_STAGE
+               && (unsigned int)ShaderType::geometry == 2
+#              ifndef __P_DISABLE_TESSELLATION_STAGE
+                 && (unsigned int)ShaderType::tessCtrl == 3 && (unsigned int)ShaderType::tessEval == 4
+#              endif
+#            else
+#              ifndef __P_DISABLE_TESSELLATION_STAGE
+                 && (unsigned int)ShaderType::tessCtrl == 2 && (unsigned int)ShaderType::tessEval == 3
+#              endif
+#            endif
+             ,"ShaderType enum: value order inconsistent with Renderer::bindDisplayShaders");
+    const Shader::Handle* newStage = shaders.shaderStages();
+    Shader::Handle* oldStage = this->_currentStages;
+
+    if (this->_currentTopology != shaders.topology()) {
+      this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)shaders.topology());
+      this->_currentTopology = shaders.topology();
+    }
+    if (*oldStage != *newStage) {
+      this->_context->IASetInputLayout((ID3D11InputLayout*)&(shaders.inputLayout()));
+      this->_context->VSSetShader((ID3D11VertexShader*)*newStage, nullptr, 0);
+      *oldStage = *newStage;
+    }
+    if (*(++oldStage) != *(++newStage)) {
+      this->_context->PSSetShader((ID3D11PixelShader*)*newStage, nullptr, 0);
+      *oldStage = *newStage;
+    }
+
+#   if !defined(__P_DISABLE_GEOMETRY_STAGE)
+      if (*(++oldStage) != *(++newStage)) {
+        this->_context->GSSetShader((ID3D11GeometryShader*)*newStage, nullptr, 0);
+        *oldStage = *newStage;
+      }
+#   endif
+#   ifndef __P_DISABLE_TESSELLATION_STAGE
+      if (*(++oldStage) != *(++newStage)) {
+        this->_context->HSSetShader((ID3D11HullShader*)*newStage, nullptr, 0);
+        *oldStage = *newStage;
+      }
+      if (*(++oldStage) != *(++newStage)) {
+        this->_context->DSSetShader((ID3D11DomainShader*)*newStage, nullptr, 0);
+        *oldStage = *newStage;
+      }
+#   endif
+  }
 
 
 // -----------------------------------------------------------------------------

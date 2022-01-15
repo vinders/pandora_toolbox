@@ -153,4 +153,94 @@ Implementation included in renderer.cpp
     return *this; 
   }
 
+
+// -- ShaderProgram -- ---------------------------------------------------------
+
+  // Initialize shader program: shader modules, vertex input layout, topology
+  ShaderProgram::ShaderProgram(const Shader* shaderModules, size_t shaderModuleCount,
+                               const InputLayout& inputLayout, VertexTopology topology) noexcept
+    : _inputLayout(inputLayout),
+      _topology(topology) {
+    if (shaderModuleCount) {
+      for (const Shader* it = &shaderModules[shaderModuleCount - 1]; it >= shaderModules; --it) {
+        if (it->handle() != nullptr) {
+          this->_shaderStages[(unsigned int)it->type()] = it->handle();
+          ((ID3D11DeviceChild*)it->handle())->AddRef();
+        }
+      }
+    }
+  }
+# ifndef __P_DISABLE_TESSELLATION_STAGE
+    // Initialize shader program: shader modules, vertex input layout, tessellation patch control points
+    ShaderProgram::ShaderProgram(const Shader* shaderModules, size_t shaderModuleCount,
+                                 uint32_t patchControlPoints, const InputLayout& inputLayout) noexcept
+      : _inputLayout(inputLayout) {
+      if (shaderModuleCount) {
+        for (const Shader* it = &shaderModules[shaderModuleCount - 1]; it >= shaderModules; --it) {
+          if (it->handle() != nullptr) {
+            this->_shaderStages[(unsigned int)it->type()] = it->handle();
+            ((ID3D11DeviceChild*)it->handle())->AddRef();
+          }
+        }
+      }
+      setPatchTopology(patchControlPoints);
+    }
+# endif
+
+  void ShaderProgram::_copyShaders(const ShaderProgram& rhs) noexcept {
+    auto* rit = &(rhs._shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX]);
+    for (auto* lit = &(this->_shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX]); lit >= this->_shaderStages; --lit, --rit) {
+      if (*rit) {
+        *lit = *rit;
+        ((ID3D11DeviceChild*)*rit)->AddRef();
+      }
+    }
+  }
+  ShaderProgram::ShaderProgram(ShaderProgram&& rhs) noexcept
+    : _inputLayout(std::move(_inputLayout)),
+      _topology(rhs._topology) {
+    memcpy(this->_shaderStages, rhs._shaderStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+    memset(rhs._shaderStages, 0, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+  }
+  ShaderProgram& ShaderProgram::operator=(ShaderProgram&& rhs) noexcept {
+    memcpy(this->_shaderStages, rhs._shaderStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+    memset(rhs._shaderStages, 0, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+    this->_inputLayout = std::move(rhs._inputLayout);
+    this->_topology = rhs._topology;
+    return *this;
+  }
+
+  // ---
+
+  // Set vertex patch topology for input stage (for vertex/tessellation shaders)
+  void ShaderProgram::setPatchTopology(uint32_t controlPoints) noexcept {
+    if (controlPoints != 0u) {
+      --controlPoints;
+      if (controlPoints >= 32u)
+        controlPoints = 31u;
+    }
+    this->_topology = static_cast<VertexTopology>((int)D3D11_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (int)controlPoints);
+  }
+
+  // Clear a shader stage
+  void ShaderProgram::detachShader(ShaderType stage) noexcept {
+    assert((unsigned int)stage <= __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX);
+    if (this->_shaderStages[(unsigned int)stage] != nullptr) {
+      ((ID3D11DeviceChild*)this->_shaderStages[(unsigned int)stage])->Release();
+      this->_shaderStages[(unsigned int)stage] = nullptr;
+    }
+  }
+
+  // Clear all shader stages + input layout
+  void ShaderProgram::clear() noexcept {
+    this->_inputLayout.release();
+    this->_topology = VertexTopology::triangles;
+    for (auto* it = &(this->_shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX]); it >= this->_shaderStages; --it) {
+      if (it != nullptr) {
+        ((ID3D11DeviceChild*)it)->Release();
+        *it = nullptr;
+      }
+    }
+  }
+
 #endif

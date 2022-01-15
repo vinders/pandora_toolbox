@@ -253,7 +253,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           
           
-          // -- pipeline status operations
+          // -- pipeline status operations - shaders --
+
+          /// @brief Bind display shader program to the graphics pipeline (topology, input-assembler stage, shader stages)
+          /// @param shaders  Display shader program (material)
+          void bindDisplayShaders(const ShaderProgram& shaders) noexcept;
 
           /// @brief Bind input-layout object to the input-assembler stage
           /// @param inputLayout  Native handle (ShaderInputLayout.handle()) or NULL to disable input.
@@ -262,17 +266,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind vertex shader.
           inline void bindVertexShader(Shader::Handle shader) noexcept {
             this->_context->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
+            this->_currentStages[(unsigned int)ShaderType::vertex] = shader;
           }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
             /// @brief Bind tessellation-control/hull shader stage to the device
             /// @param shader  Native handle (Shader.handle()) or NULL to unbind control/hull shader.
             inline void bindTessCtrlShader(Shader::Handle shader) noexcept {
               this->_context->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
+              this->_currentStages[(unsigned int)ShaderType::tessCtrl] = shader;
             }
             /// @brief Bind tessellation-evaluation/domain shader stage to the device
             /// @param shader  Native handle (Shader.handle()) or NULL to unbind evaluation/domain shader.
             inline void bindTessEvalShader(Shader::Handle shader) noexcept {
               this->_context->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
+              this->_currentStages[(unsigned int)ShaderType::tessEval] = shader;
             }
 #         endif
 #         ifndef __P_DISABLE_GEOMETRY_STAGE
@@ -280,12 +287,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param shader  Native handle (Shader.handle()) or NULL to unbind geometry shader.
             inline void bindGeometryShader(Shader::Handle shader) noexcept {
               this->_context->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
+              this->_currentStages[(unsigned int)ShaderType::geometry] = shader;
             }
 #         endif
           /// @brief Bind fragment/pixel shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind fragment/pixel shader.
           inline void bindFragmentShader(Shader::Handle shader) noexcept {
             this->_context->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
+            this->_currentStages[(unsigned int)ShaderType::fragment] = shader;
           }
           /// @brief Bind compute shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind compute shader.
@@ -537,6 +546,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           void* _dxgiFactory = nullptr; // IDXGIFactory1*
           uint32_t _dxgiLevel = 1u;
+          Shader::Handle _currentStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1]{ nullptr };
+          VertexTopology _currentTopology = (VertexTopology)-1;
         };
       }
     }
