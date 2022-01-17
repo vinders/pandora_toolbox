@@ -19,7 +19,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <gtest/gtest.h>
 # include <video/d3d11/renderer.h>
-# include <video/d3d11/renderer_state.h>
+# include <video/d3d11/_private/_shared_resource.h>
 # include <video/d3d11/renderer_state_factory.h>
 
   using namespace pandora::video::d3d11;
@@ -41,21 +41,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   TEST_F(D3d11RendererStateTest, emptyDepthContainer) {
     DepthStencilState empty;
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
     DepthStencilState empty2(nullptr);
     EXPECT_FALSE(empty2);
-    EXPECT_FALSE(empty2.isValid());
+    EXPECT_FALSE(empty2.hasValue());
     EXPECT_TRUE(empty2.get() == nullptr);
 
     empty = std::move(empty2);
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
 
     DepthStencilState empty3 = std::move(empty);
     EXPECT_FALSE(empty3);
-    EXPECT_FALSE(empty3.isValid());
+    EXPECT_FALSE(empty3.hasValue());
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
@@ -68,13 +68,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     DepthStencilState valD1 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace, 
                                                                                      StencilOp::decrementWrap, StencilOp::invert));
     EXPECT_TRUE(valD1);
-    EXPECT_TRUE(valD1.isValid());
+    EXPECT_TRUE(valD1.hasValue());
     EXPECT_TRUE(valD1.get() != nullptr);
     renderer.setDepthStencilState(valD1);
     DepthStencilState valD2 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::greaterEqual, StencilOp::zero, StencilOp::replace, 
                                                                                      StencilOp::zero, StencilOp::invert));
     EXPECT_TRUE(valD2);
-    EXPECT_TRUE(valD2.isValid());
+    EXPECT_TRUE(valD2.hasValue());
     EXPECT_TRUE(valD2.get() != nullptr);
     renderer.setDepthStencilState(valD2);
     
@@ -82,14 +82,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                                                      StencilOp::incrementWrap, StencilOp::replace, 
                                                                                      StencilOp::decrementWrap, StencilOp::invert));
     EXPECT_TRUE(valS1);
-    EXPECT_TRUE(valS1.isValid());
+    EXPECT_TRUE(valS1.hasValue());
     EXPECT_TRUE(valS1.get() != nullptr);
     renderer.setDepthStencilState(valS1);
     DepthStencilState valS2 = factory.createDepthStencilTestState(DepthStencilParams(StencilCompare::always, StencilCompare::notEqual, 
                                                                                      StencilOp::zero, StencilOp::replace, 
                                                                                      StencilOp::zero, StencilOp::invert));
     EXPECT_TRUE(valS2);
-    EXPECT_TRUE(valS2.isValid());
+    EXPECT_TRUE(valS2.hasValue());
     EXPECT_TRUE(valS2.get() != nullptr);
     renderer.setDepthStencilState(valS2);
     
@@ -97,7 +97,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                                                       StencilOp::zero, StencilOp::incrementWrap, StencilOp::keep, 
                                                                                       StencilOp::zero, StencilOp::decrementClamp, StencilOp::keep));
     EXPECT_TRUE(valDS1);
-    EXPECT_TRUE(valDS1.isValid());
+    EXPECT_TRUE(valDS1.hasValue());
     EXPECT_TRUE(valDS1.get() != nullptr);
     renderer.setDepthStencilState(valDS1);
     
@@ -105,7 +105,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                                                       StencilOp::keep, StencilOp::decrementClamp, StencilOp::replace, 
                                                                                       StencilOp::keep, StencilOp::incrementClamp, StencilOp::invert));
     EXPECT_TRUE(valDS2);
-    EXPECT_TRUE(valDS2.isValid());
+    EXPECT_TRUE(valDS2.hasValue());
     EXPECT_TRUE(valDS2.get() != nullptr);
     renderer.setDepthStencilState(valDS2);
     renderer.setDepthStencilState(DepthStencilState{});
@@ -113,23 +113,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto valGet = valS1.get();
     valD1 = std::move(valS1);
     EXPECT_TRUE(valD1);
-    EXPECT_TRUE(valD1.isValid());
+    EXPECT_TRUE(valD1.hasValue());
     EXPECT_TRUE(valD1.get() != nullptr);
     EXPECT_TRUE(valD1.get() == valGet);
     EXPECT_FALSE(valS1);
-    EXPECT_FALSE(valS1.isValid());
+    EXPECT_FALSE(valS1.hasValue());
     EXPECT_TRUE(valS1.get() == nullptr);
 
     DepthStencilState moved = std::move(valD1);
     EXPECT_TRUE(moved);
-    EXPECT_TRUE(moved.isValid());
+    EXPECT_TRUE(moved.hasValue());
     EXPECT_TRUE(moved.get() != nullptr);
     EXPECT_TRUE(moved.get() == valGet);
     EXPECT_FALSE(valD1);
-    EXPECT_FALSE(valD1.isValid());
+    EXPECT_FALSE(valD1.hasValue());
     EXPECT_TRUE(valD1.get() == nullptr);
     EXPECT_FALSE(valS1);
-    EXPECT_FALSE(valS1.isValid());
+    EXPECT_FALSE(valS1.hasValue());
     EXPECT_TRUE(valS1.get() == nullptr);
   }
   
@@ -138,21 +138,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   TEST_F(D3d11RendererStateTest, emptyRasterContainer) {
     RasterizerState empty;
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
     RasterizerState empty2(nullptr);
     EXPECT_FALSE(empty2);
-    EXPECT_FALSE(empty2.isValid());
+    EXPECT_FALSE(empty2.hasValue());
     EXPECT_TRUE(empty2.get() == nullptr);
 
     empty = std::move(empty2);
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
 
     RasterizerState empty3 = std::move(empty);
     EXPECT_FALSE(empty3);
-    EXPECT_FALSE(empty3.isValid());
+    EXPECT_FALSE(empty3.hasValue());
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
@@ -163,12 +163,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     RasterizerState val1 = factory.createRasterizerState(RasterizerParams(CullMode::none, FillMode::lines, false, true, false));
     EXPECT_TRUE(val1);
-    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.get() != nullptr);
     renderer.setRasterizerState(val1);
     RasterizerState val2(factory.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, true, true)));
     EXPECT_TRUE(val2);
-    EXPECT_TRUE(val2.isValid());
+    EXPECT_TRUE(val2.hasValue());
     EXPECT_TRUE(val2.get() != nullptr);
     renderer.setRasterizerState(val2);
     renderer.setRasterizerState(RasterizerState{});
@@ -176,23 +176,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto val2Get = val2.get();
     val1 = std::move(val2);
     EXPECT_TRUE(val1);
-    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.get() != nullptr);
     EXPECT_TRUE(val1.get() == val2Get);
     EXPECT_FALSE(val2);
-    EXPECT_FALSE(val2.isValid());
+    EXPECT_FALSE(val2.hasValue());
     EXPECT_TRUE(val2.get() == nullptr);
 
     RasterizerState val3 = std::move(val1);
     EXPECT_TRUE(val3);
-    EXPECT_TRUE(val3.isValid());
+    EXPECT_TRUE(val3.hasValue());
     EXPECT_TRUE(val3.get() != nullptr);
     EXPECT_TRUE(val3.get() == val2Get);
     EXPECT_FALSE(val1);
-    EXPECT_FALSE(val1.isValid());
+    EXPECT_FALSE(val1.hasValue());
     EXPECT_TRUE(val1.get() == nullptr);
     EXPECT_FALSE(val2);
-    EXPECT_FALSE(val2.isValid());
+    EXPECT_FALSE(val2.hasValue());
     EXPECT_TRUE(val2.get() == nullptr);
   }
 
@@ -201,21 +201,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   TEST_F(D3d11RendererStateTest, emptyBlendContainer) {
     BlendState empty;
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
     BlendState empty2(nullptr);
     EXPECT_FALSE(empty2);
-    EXPECT_FALSE(empty2.isValid());
+    EXPECT_FALSE(empty2.hasValue());
     EXPECT_TRUE(empty2.get() == nullptr);
 
     empty = std::move(empty2);
     EXPECT_FALSE(empty);
-    EXPECT_FALSE(empty.isValid());
+    EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.get() == nullptr);
 
     BlendState empty3 = std::move(empty);
     EXPECT_FALSE(empty3);
-    EXPECT_FALSE(empty3.isValid());
+    EXPECT_FALSE(empty3.hasValue());
     EXPECT_TRUE(empty3.get() == nullptr);
   }
 
@@ -228,14 +228,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     BlendState val1 = factory.createBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add, 
                                                            BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add));
     EXPECT_TRUE(val1);
-    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.get() != nullptr);
     renderer.setBlendState(val1);
     renderer.setBlendState(val1, color);
     BlendState val2(factory.createBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::revSubtract, 
                                                          BlendFactor::one, BlendFactor::zero, BlendOp::maximum)));
     EXPECT_TRUE(val2);
-    EXPECT_TRUE(val2.isValid());
+    EXPECT_TRUE(val2.hasValue());
     EXPECT_TRUE(val2.get() != nullptr);
     renderer.setBlendState(val2);
     renderer.setBlendState(val2, color);
@@ -244,7 +244,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     BlendState val3(factory.createBlendState(BlendParams(BlendFactor::constantColor, BlendFactor::constantInvColor, BlendOp::subtract,
                                                          BlendFactor::constantAlpha, BlendFactor::constantInvAlpha, BlendOp::subtract)));
     EXPECT_TRUE(val3);
-    EXPECT_TRUE(val3.isValid());
+    EXPECT_TRUE(val3.hasValue());
     EXPECT_TRUE(val3.get() != nullptr);
     renderer.setBlendState(val3);
     renderer.setBlendState(val3, color);
@@ -255,7 +255,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                  BlendTargetParams(BlendFactor::one, BlendFactor::zero, BlendOp::add, BlendFactor::one, BlendFactor::zero, BlendOp::add, false) };
     BlendState val4(factory.createBlendStatePerTarget(params1, (size_t)3u));
     EXPECT_TRUE(val4);
-    EXPECT_TRUE(val4.isValid());
+    EXPECT_TRUE(val4.hasValue());
     EXPECT_TRUE(val4.get() != nullptr);
     renderer.setBlendState(val4);
     renderer.setBlendState(val4, color);
@@ -265,7 +265,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                               BlendFactor::one, BlendFactor::one, BlendOp::maximum);
     BlendState val5(factory.createBlendStatePerTarget(&params2, (size_t)1u));
     EXPECT_TRUE(val5);
-    EXPECT_TRUE(val5.isValid());
+    EXPECT_TRUE(val5.hasValue());
     EXPECT_TRUE(val5.get() != nullptr);
     renderer.setBlendState(val5);
     renderer.setBlendState(val5, color);
@@ -274,23 +274,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto val2Get = val2.get();
     val1 = std::move(val2);
     EXPECT_TRUE(val1);
-    EXPECT_TRUE(val1.isValid());
+    EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.get() != nullptr);
     EXPECT_TRUE(val1.get() == val2Get);
     EXPECT_FALSE(val2);
-    EXPECT_FALSE(val2.isValid());
+    EXPECT_FALSE(val2.hasValue());
     EXPECT_TRUE(val2.get() == nullptr);
 
     BlendState valM = std::move(val1);
     EXPECT_TRUE(valM);
-    EXPECT_TRUE(valM.isValid());
+    EXPECT_TRUE(valM.hasValue());
     EXPECT_TRUE(valM.get() != nullptr);
     EXPECT_TRUE(valM.get() == val2Get);
     EXPECT_FALSE(val1);
-    EXPECT_FALSE(val1.isValid());
+    EXPECT_FALSE(val1.hasValue());
     EXPECT_TRUE(val1.get() == nullptr);
     EXPECT_FALSE(val2);
-    EXPECT_FALSE(val2.isValid());
+    EXPECT_FALSE(val2.hasValue());
     EXPECT_TRUE(val2.get() == nullptr);
   }
 
@@ -322,29 +322,31 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     values.erase(0);
     EXPECT_EQ((size_t)0, values.size());
     EXPECT_FALSE(values.insert(1, FilterState(nullptr)));
+    EXPECT_FALSE(values.replace(0, FilterState(nullptr)));
     EXPECT_EQ((size_t)0, values.size());
     EXPECT_TRUE(values.insert(0, FilterState(nullptr)));
+    EXPECT_TRUE(values.replace(0, FilterState(nullptr)));
+    EXPECT_FALSE(values.replace(1, FilterState(nullptr)));
     EXPECT_TRUE(values);
     EXPECT_FALSE(values.empty());
     EXPECT_EQ((size_t)1, values.size());
     EXPECT_ANY_THROW(values.at(1));
-    EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_FALSE(values.at(0).isValid());
+    EXPECT_FALSE(values.at(0).hasValue());
     EXPECT_TRUE(values.get()[0] == nullptr);
     values.erase(0);
     EXPECT_EQ((size_t)0, values.size());
     EXPECT_TRUE(values.append(FilterState(nullptr)));
     EXPECT_EQ((size_t)1, values.size());
-    EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_FALSE(values.at(0).isValid());
+    EXPECT_FALSE(values.at(0).hasValue());
     EXPECT_TRUE(values.get()[0] == nullptr);
     EXPECT_TRUE(values.insert(0, FilterState(nullptr)));
+    EXPECT_TRUE(values.replace(0, FilterState(nullptr)));
+    EXPECT_TRUE(values.replace(1, FilterState(nullptr)));
     EXPECT_EQ((size_t)2, values.size());
     EXPECT_ANY_THROW(values.at(2));
-    EXPECT_TRUE(values.get() != nullptr);
-    EXPECT_FALSE(values.at(0).isValid());
+    EXPECT_FALSE(values.at(0).hasValue());
     EXPECT_TRUE(values.get()[0] == nullptr);
-    EXPECT_FALSE(values.at(1).isValid());
+    EXPECT_FALSE(values.at(1).hasValue());
     EXPECT_TRUE(values.get()[1] == nullptr);
 
     size_t length = values.size();
@@ -356,6 +358,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_FALSE(values.append(FilterState(nullptr)));
     EXPECT_FALSE(values.insert(0, FilterState(nullptr)));
     EXPECT_FALSE(values.insert((uint32_t)values.size(), FilterState(nullptr)));
+    EXPECT_FALSE(values.replace((uint32_t)values.size(), FilterState(nullptr)));
     EXPECT_EQ(values.maxSize(), values.size());
 
     values.clear();
@@ -372,20 +375,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(values.maxSize(), values.size());
     EXPECT_FALSE(values.append(FilterState(nullptr)));
     EXPECT_FALSE(values.insert(0, FilterState(nullptr)));
+    EXPECT_TRUE(values.replace(0, FilterState(nullptr)));
 
-    auto address = values.get();
     FilterStateArray moved(std::move(values));
-    ASSERT_TRUE(moved.get() != nullptr);
-    ASSERT_TRUE(values.get() == nullptr);
+    EXPECT_TRUE(values.get()[0] == nullptr);
     EXPECT_EQ(moved.maxSize(), moved.size());
     EXPECT_EQ((size_t)0, values.size());
-    EXPECT_TRUE(moved.get() == address);
     values = std::move(moved);
-    ASSERT_TRUE(values.get() != nullptr);
-    ASSERT_TRUE(moved.get() == nullptr);
+    EXPECT_TRUE(moved.get()[0] == nullptr);
     EXPECT_EQ(values.maxSize(), values.size());
     EXPECT_EQ((size_t)0, moved.size());
-    EXPECT_TRUE(values.get() == address);
 
     values.erase((uint32_t)values.size()); // out of range
     EXPECT_EQ(values.maxSize(), values.size());
@@ -426,6 +425,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                             addrModes, 0.f,0.f)));
     ASSERT_EQ((size_t)4, values.size());
     EXPECT_EQ(val0, values.at(0).extract());
+    EXPECT_EQ(val1, values.at(2).extract());
+    EXPECT_EQ(val2, values.at(3).extract());
+    auto val3 = values.at(1).extract();
+    values.replace(1, factory.createFilterState(FilterParams(TextureFilter::nearest, TextureFilter::linear, TextureFilter::nearest,
+                                                             addrModes, 0.f,0.f)));
+    ASSERT_EQ((size_t)4, values.size());
+    EXPECT_EQ(val0, values.at(0).extract());
+    EXPECT_NE(val3, values.at(1).extract());
     EXPECT_EQ(val1, values.at(2).extract());
     EXPECT_EQ(val2, values.at(3).extract());
     values.erase(1);

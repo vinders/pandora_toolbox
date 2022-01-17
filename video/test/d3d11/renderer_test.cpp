@@ -103,7 +103,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer.setRasterizerState(value3);
     renderer.setRasterizerState(value4);
     
-    FilterStateArray::State emptyFilter = nullptr;
+    FilterStateArray::Resource emptyFilter = nullptr;
     renderer.setFragmentFilterStates(0, nullptr, 0);
     renderer.setFragmentFilterStates(1, &emptyFilter, 1);
     renderer.setFragmentFilterStates(2, &emptyFilter, 1);

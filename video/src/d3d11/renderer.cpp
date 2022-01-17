@@ -74,7 +74,6 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/renderer.h"
 # include "video/d3d11/swap_chain.h"
 # include "video/d3d11/renderer_state_factory.h"
-# include "video/d3d11/_private/_d3d_resource.h"
 
 # include "video/d3d11/shader.h"
 # include "video/d3d11/depth_stencil_buffer.h"
@@ -97,7 +96,7 @@ Includes hpp implementations at the end of the file
 
   // Verify if a hardware adapter outputs on a monitor
   static bool __isHardwareAdapterForMonitor(IDXGIAdapter1* adapter, const pandora::memory::LightWString& targetMonitorId) {
-    D3dResource<IDXGIOutput> output;
+    SharedResource<IDXGIOutput> output;
     DXGI_OUTPUT_DESC monitorDescription;
     for (UINT index = 0; adapter->EnumOutputs(index, output.address()) == S_OK && output; ++index) {
       if (output->GetDesc(&monitorDescription) == S_OK && targetMonitorId == monitorDescription.DeviceName)
@@ -107,16 +106,16 @@ Includes hpp implementations at the end of the file
   }
 
   // Find primary hardware adapter
-  static D3dResource<IDXGIAdapter1> __getHardwareAdapter(IDXGIFactory1* factory, const pandora::hardware::DisplayMonitor& target) {
+  static SharedResource<IDXGIAdapter1> __getHardwareAdapter(IDXGIFactory1* factory, const pandora::hardware::DisplayMonitor& target) {
     // try to find adapter associated with monitor (if not empty monitor)
     pandora::memory::LightWString targetDeviceString;
     if (!target.attributes().id.empty())
       targetDeviceString = target.adapterName();
 
-    D3dResource<IDXGIAdapter1> adapter;
-    D3dResource<IDXGIAdapter1> preferredAdapter;
+    SharedResource<IDXGIAdapter1> adapter;
+    SharedResource<IDXGIAdapter1> preferredAdapter;
 #   if defined(__dxgi1_6_h__) && defined(NTDDI_WIN10_RS4)
-      auto factoryV6 = D3dResource<IDXGIFactory6>::tryFromInterface(factory);
+      auto factoryV6 = SharedResource<IDXGIFactory6>::tryFromInterface(factory);
       if (factoryV6) {
         for (UINT i = 0; SUCCEEDED(factoryV6->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, 
                                                                         IID_PPV_ARGS(adapter.address()))); ++i) {
@@ -130,7 +129,7 @@ Includes hpp implementations at the end of the file
             if (!preferredAdapter) // store the highest perf. adapter, in case no result is found
               preferredAdapter = std::move(adapter);
           }
-          adapter.destroy(); // do not return current value if not appropriate
+          adapter.release(); // do not return current value if not appropriate
         }
         if (adapter)
           return adapter;
@@ -148,7 +147,7 @@ Includes hpp implementations at the end of the file
         if (!preferredAdapter) // store first adapter, in case no result is found
           preferredAdapter = std::move(adapter);
       }
-      adapter.destroy(); // do not return current value if not appropriate
+      adapter.release(); // do not return current value if not appropriate
     }
     
     if (!adapter)
@@ -176,18 +175,18 @@ Includes hpp implementations at the end of the file
   static uint32_t __getDxgiFactoryLevel(IDXGIFactory1* dxgiFactory) {
 #   if (defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2) || (defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE)
 #     if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
-        if (D3dResource<IDXGIFactory6>::tryFromInterface(dxgiFactory)) return 6u;
+        if (SharedResource<IDXGIFactory6>::tryFromInterface(dxgiFactory)) return 6u;
 #     endif
-      if (D3dResource<IDXGIFactory5>::tryFromInterface(dxgiFactory)) return 5u;
-      if (D3dResource<IDXGIFactory4>::tryFromInterface(dxgiFactory)) return 4u;
-      if (D3dResource<IDXGIFactory3>::tryFromInterface(dxgiFactory)) return 3u;
+      if (SharedResource<IDXGIFactory5>::tryFromInterface(dxgiFactory)) return 5u;
+      if (SharedResource<IDXGIFactory4>::tryFromInterface(dxgiFactory)) return 4u;
+      if (SharedResource<IDXGIFactory3>::tryFromInterface(dxgiFactory)) return 3u;
 #   endif
-    if (D3dResource<IDXGIFactory2>::tryFromInterface(dxgiFactory)) return 2u;
+    if (SharedResource<IDXGIFactory2>::tryFromInterface(dxgiFactory)) return 2u;
     return 1u;
   }
 
   // Create DXGI factory + configure DXGI debugger
-  static void __createDxgiFactory(D3dResource<IDXGIFactory1>& outDxgiFactory) { // throws
+  static void __createDxgiFactory(SharedResource<IDXGIFactory1>& outDxgiFactory) { // throws
     IDXGIFactory1* dxgiFactory = nullptr;
 #   if defined(_DEBUG) && defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
       IDXGIInfoQueue* dxgiInfoQueue;
@@ -215,20 +214,20 @@ Includes hpp implementations at the end of the file
   }
   
   // Get current DXGI factory of device
-  static inline void __getCurrentDxgiFactory(ID3D11Device* device, D3dResource<IDXGIFactory1>& outDxgiFactory) { // throws
-    auto dxgiDevice = D3dResource<IDXGIDevice>::fromInterface(device, "Renderer: DXGI access error");
-    D3dResource<IDXGIAdapter> adapter;
+  static inline void __getCurrentDxgiFactory(ID3D11Device* device, SharedResource<IDXGIFactory1>& outDxgiFactory) { // throws
+    auto dxgiDevice = SharedResource<IDXGIDevice>::fromInterface(device, "Renderer: DXGI access error");
+    SharedResource<IDXGIAdapter> adapter;
     auto result = dxgiDevice->GetAdapter(adapter.address());
     if (FAILED(result) || !adapter.hasValue())
       throwError(result, "Renderer: adapter access error");
     
-    outDxgiFactory = D3dResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: DXGI factory error");
+    outDxgiFactory = SharedResource<IDXGIFactory1>::fromChild(adapter.get(), "Renderer: DXGI factory error");
   }
   
   // If output information on DXGI factory is stale, try to create a new one
   static __forceinline void __refreshDxgiFactory(void* dxgiFactory) { // throws
     if (!((IDXGIFactory1*)dxgiFactory)->IsCurrent()) {
-      D3dResource<IDXGIFactory1> newFactory;
+      SharedResource<IDXGIFactory1> newFactory;
       __createDxgiFactory(newFactory);
       dxgiFactory = (void*)newFactory.extract();
     }
@@ -237,9 +236,9 @@ Includes hpp implementations at the end of the file
 # ifdef _DEBUG
     // Configure device debugger
     static inline void __configureDeviceDebug(ID3D11Device* device) {
-      auto d3dDebug = D3dResource<ID3D11Debug>::tryFromInterface(device);
+      auto d3dDebug = SharedResource<ID3D11Debug>::tryFromInterface(device);
       if (d3dDebug) {
-        auto d3dInfoQueue = D3dResource<ID3D11InfoQueue>::tryFromInterface(d3dDebug.get());
+        auto d3dInfoQueue = SharedResource<ID3D11InfoQueue>::tryFromInterface(d3dDebug.get());
         if (d3dInfoQueue) {
           d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
           d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
@@ -289,9 +288,9 @@ Includes hpp implementations at the end of the file
 #   endif
 
     // create DXGI factory + get primary adapter (if not found, default adapter will be used instead)
-    D3dResource<IDXGIFactory1> dxgiFactory;
+    SharedResource<IDXGIFactory1> dxgiFactory;
     __createDxgiFactory(dxgiFactory); // throws
-    D3dResource<IDXGIAdapter1> adapter = __getHardwareAdapter(dxgiFactory.get(), monitor); // may be NULL (not found)
+    SharedResource<IDXGIAdapter1> adapter = __getHardwareAdapter(dxgiFactory.get(), monitor); // may be NULL (not found)
     bool isDefaultAdapter = !adapter.hasValue();
 
     // create rendering device + context
@@ -375,9 +374,9 @@ Includes hpp implementations at the end of the file
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
     bool isSuccess = false;
     try {
-      auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
+      auto dxgiDevice = SharedResource<IDXGIDevice>::tryFromInterface(this->_device);
       if (dxgiDevice) {
-        D3dResource<IDXGIAdapter> adapter;
+        SharedResource<IDXGIAdapter> adapter;
         if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
           
           DXGI_ADAPTER_DESC adapterInfo;
@@ -411,15 +410,15 @@ Includes hpp implementations at the end of the file
 #   if defined(NTDDI_WIN10_RS2) && NTDDI_VERSION >= NTDDI_WIN10_RS2
       if (_areColorSpacesAvailable()) {
         try {
-          auto dxgiDevice = D3dResource<IDXGIDevice>::tryFromInterface(this->_device);
+          auto dxgiDevice = SharedResource<IDXGIDevice>::tryFromInterface(this->_device);
           if (dxgiDevice) {
-            D3dResource<IDXGIAdapter> adapter;
+            SharedResource<IDXGIAdapter> adapter;
             if (SUCCEEDED(dxgiDevice->GetAdapter(adapter.address())) && adapter) {
 
-              D3dResource<IDXGIOutput> output;
+              SharedResource<IDXGIOutput> output;
               DXGI_OUTPUT_DESC1 monitorDescription;
               for (UINT index = 0; adapter->EnumOutputs(index, output.address()) == S_OK; ++index) {
-                auto outputV6 = D3dResource<IDXGIOutput6>::tryFromInterface(output.get());
+                auto outputV6 = SharedResource<IDXGIOutput6>::tryFromInterface(output.get());
                 if (outputV6) {
                   // if monitor found, verify color space
                   if (outputV6->GetDesc1(&monitorDescription) == S_OK && target.attributes().id == monitorDescription.DeviceName) {
@@ -442,7 +441,7 @@ Includes hpp implementations at the end of the file
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
       if (this->_dxgiLevel >= 5u) {
         BOOL isSupported = FALSE;
-        auto factoryV5 = D3dResource<IDXGIFactory5>::tryFromInterface((IDXGIFactory1*)this->_dxgiFactory);
+        auto factoryV5 = SharedResource<IDXGIFactory5>::tryFromInterface((IDXGIFactory1*)this->_dxgiFactory);
         return (factoryV5 && SUCCEEDED(factoryV5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &isSupported, sizeof(isSupported))) 
              && isSupported != FALSE);
       }
@@ -653,7 +652,7 @@ Includes hpp implementations at the end of the file
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
       DXGI_COLOR_SPACE_TYPE colorSpace = __getColorSpace(backBufferFormat);
 
-      auto swapChainV3 = D3dResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)swapChain);
+      auto swapChainV3 = SharedResource<IDXGISwapChain3>::tryFromInterface((IDXGISwapChain*)swapChain);
       if (swapChainV3) {
         UINT colorSpaceSupport = 0;
         if (SUCCEEDED(swapChainV3->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport))
@@ -739,13 +738,13 @@ Includes hpp implementations at the end of the file
             fullscnDescriptor.Windowed = TRUE;
         }
 
-        auto dxgiFactoryV2 = D3dResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_renderer->_dxgiFactory, "SwapChain: DXGI access error");
-        auto deviceV1 = D3dResource<ID3D11Device1>::fromInterface(this->_renderer->_device, "SwapChain: device access error");
+        auto dxgiFactoryV2 = SharedResource<IDXGIFactory2>::fromInterface((IDXGIFactory1*)this->_renderer->_dxgiFactory, "SwapChain: DXGI access error");
+        auto deviceV1 = SharedResource<ID3D11Device1>::fromInterface(this->_renderer->_device, "SwapChain: device access error");
         auto result = dxgiFactoryV2->CreateSwapChainForHwnd(deviceV1.get(), (HWND)window, &descriptor, &fullscnDescriptor, nullptr, (IDXGISwapChain1**)&_swapChain);
         if (FAILED(result) || this->_swapChain == nullptr)
           throwError(result, "Renderer: swap-chain not created");
 
-        this->_deviceContext11_1 = D3dResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context()).extract();
+        this->_deviceContext11_1 = SharedResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context()).extract();
         if (this->_deviceContext11_1 == nullptr)
           this->_flags |= SwapChain::OutputFlag::swapNoDiscard;
       }
@@ -788,7 +787,7 @@ Includes hpp implementations at the end of the file
 
     // create render-target view
     if (this->_renderTargetView == nullptr) {
-      D3dResource<ID3D11Texture2D> renderTarget;
+      SharedResource<ID3D11Texture2D> renderTarget;
       auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
       if (FAILED(targetResult) || !renderTarget.hasValue()) {
         throwError(targetResult, "SwapChain: render-target error"); return;

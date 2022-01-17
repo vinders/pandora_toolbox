@@ -21,8 +21,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <hardware/display_monitor.h>
-# include "./api/types.h"      // includes D3D11
-# include "./renderer_state.h" // includes D3D11
+# include "./_private/_shared_resource.h" // includes D3D11
 # include "./scissor.h"        // includes D3D11
 # include "./viewport.h"       // includes D3D11
 # include "./shader.h"         // includes D3D11
@@ -470,36 +469,36 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setVertexFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+          inline void setVertexFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
             this->_context->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
             /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+            inline void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
               this->_context->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
             /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+            inline void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
               this->_context->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
 #         ifndef __P_DISABLE_GEOMETRY_STAGE
             /// @brief Set array of sampler filters to the geometry shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+            inline void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
               this->_context->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
           /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+          inline void setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
             this->_context->PSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           /// @brief Set array of sampler filters to the compute shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setComputeFilterStates(uint32_t firstSlotIndex, const FilterStateArray::State* states, size_t length) noexcept {
+          inline void setComputeFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
             this->_context->CSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           

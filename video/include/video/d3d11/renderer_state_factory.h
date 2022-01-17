@@ -20,8 +20,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
-# include "./renderer.h"       // includes D3D11
-# include "./renderer_state.h" // includes D3D11
+# include "./_private/_shared_resource.h" // includes D3D11
+# include "./renderer.h"  // includes D3D11
 
   namespace pandora {
     namespace video {
