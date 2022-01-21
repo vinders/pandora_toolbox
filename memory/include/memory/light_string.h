@@ -133,4 +133,3 @@ namespace pandora {
     };
   }
 }
-#undef __p_assert
