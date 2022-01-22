@@ -94,7 +94,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline bool hasValue() const noexcept { return (_value != nullptr); } ///< Verify validity
           inline T& value() const noexcept { return _value; } ///< Read value (no verification -> call hasValue() first!)
           inline T* get() const noexcept { return _value; }   ///< Get value pointer
-          inline T** address() noexcept { release(); return &_value; } ///< Free previous value + get value address (for assignment)
+          inline T** address() noexcept { release(); return &_value; } ///< Free previous value + get address for assignment
           
           // -- cast helpers --
           
@@ -183,8 +183,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline size_t size() const noexcept { return _length; } ///< Number of slots currently filled in container
           static size_t maxSize() noexcept { return _MaxSize; }   ///< Max number of resources in container
           
-          inline _Type** get() noexcept { return _values; } ///< Get entire collection, to bind all (or first N) resources to Renderer instance
-          inline const _Type** get() const noexcept { return _values; } ///< Get entire collection (constant)
+          inline _Type** get() noexcept { return _values; } ///< Get collection, to bind all (or first N) resources
+          inline const _Type** get() const noexcept { return _values; } ///< Get collection (constant)
 
           inline _Type** getFrom(uint32_t index) const { ///< Get resource located at index (unsafe reference)
             if (index >= _length)
@@ -307,11 +307,62 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         };
         
         // ---
+
+        /// @brief Native Direct3D resource identifier for state manager
+        template <size_t _DwordCount>
+        class SharedResourceId final {
+        public:
+          SharedResourceId() noexcept = default;
+          inline SharedResourceId(const SharedResourceId<_DwordCount>& rhs) noexcept { memcpy(_id, rhs._id, _DwordCount*sizeof(uint32_t)); }
+          inline SharedResourceId<_DwordCount>& operator=(const SharedResourceId<_DwordCount>& rhs) noexcept {
+            memcpy(_id, rhs._id, _DwordCount * sizeof(uint32_t));
+            return *this;
+          }
+          ~SharedResourceId() noexcept = default;
+
+          inline bool operator==(const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) == 0); }
+          inline bool operator!=(const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) != 0); }
+          inline bool operator< (const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) < 0); }
+          inline bool operator<=(const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) <= 0); }
+          inline bool operator> (const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) > 0); }
+          inline bool operator>=(const SharedResourceId<_DwordCount>& rhs) const noexcept { return (_compare(_id, rhs._id) >= 0); }
+
+          inline uint32_t* id() noexcept { return this->_id; }                 ///< Get writable identifier
+          inline const uint32_t* id() const noexcept { return this->_id; }     ///< Get constant identifier
+          inline static size_t length() const noexcept { return _DwordCount; } ///< Get array size
+
+        private:
+          template <typename N = _DwordCount>
+          static inline int32_t _compare(typename std::enable_if<N == 1, const uint32_t*>::type lhs, const uint32_t* rhs) noexcept {
+            return (*(int32_t*)lhs - *(int32_t*)rhs);
+          }
+          template <typename N = _DwordCount>
+          static inline int64_t _compare(typename std::enable_if<N == 2, const uint32_t*>::type lhs, const uint32_t* rhs) noexcept {
+            return (*(int64_t*)lhs - *(int64_t*)rhs);
+          }
+          template <typename N = _DwordCount>
+          static inline int _compare(typename std::enable_if<N == 1, const uint32_t*>::type lhs, const uint32_t* rhs) noexcept {
+            return memcmp(lhs, rhs, N*sizeof(uint32_t));
+          }
+
+        private:
+          uint32_t _id[_DwordCount]{ 0 };
+        };
+
         
-        /// @brief Depth/stencil state driver resource - can be used with Renderer.setDepthStencilState
-        using DepthStencilState = SharedResource<ID3D11DepthStencilState>;
+        template <typename _Resource, size_t _IdDwordCount>
+        struct SharedResourceCache final { ///< Native Direct3D resource cache entry
+          SharedResourceId<_IdDwordCount> id;
+          _Resource handle;
+          int32_t instances = 0;
+        };
+
+        // ---
+        
         /// @brief Rasterizer state driver resource - can be used with Renderer.setRasterizerState
         using RasterizerState = SharedResource<ID3D11RasterizerState>;
+        /// @brief Depth/stencil state driver resource - can be used with Renderer.setDepthStencilState
+        using DepthStencilState = SharedResource<ID3D11DepthStencilState>;
         /// @brief Blend state driver resource - can be used with Renderer.setBlendState
         using BlendState = SharedResource<ID3D11BlendState>;
         
@@ -319,6 +370,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         using FilterState = SharedResource<ID3D11SamplerState>;
         /// @brief Array of sampler/filter state driver resources - can be used with Renderer.set<...>FilterStates
         using FilterStateArray = SharedResourceArray<ID3D11SamplerState, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT>;
+
+        // ---
+
+        using RasterizerStateId   = SharedResourceId<4>; ///< Rasterizer state driver resource ID
+        using DepthStencilStateId = SharedResourceId<2>; ///< Depth/stencil state driver resource ID
+        using BlendStateId        = SharedResourceId<1>; ///< Blend state driver resource ID (common)
+        using BlendStatePerTargetId = SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT>; ///< Blend state ID (split per target)
+
+        using RasterizerStateCache   = SharedResourceCache<RasterizerState,4>;   ///< Rasterizer state cached resource entry
+        using DepthStencilStateCache = SharedResourceCache<DepthStencilState,2>; ///< Depth/stencil state cached resource entry
+        using BlendStateCache        = SharedResourceCache<BlendState,1>;        ///< Blend state driver cached resource entry (common)
+        using BlendStatePerTargetCache = SharedResourceCache<BlendState,D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT>; ///< Blend state cache (split)
       }
     }
   }
