@@ -39,18 +39,24 @@ namespace pandora {
 
       inline LightVector() noexcept : _value(nullptr), _size(0), _allocSize(0) {}            ///< Create empty vector
       inline LightVector(size_t length) : _size(length), _allocSize(_getAllocSize(length)) { ///< Create vector of default constructed values
-        this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
-        _constructDefault((_DataType*)this->_value, this->_size);
+        if (this->_size > 0) {
+          this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
+          _constructDefault((_DataType*)this->_value, this->_size);
+        }
       }
       inline LightVector(const _DataType* value, size_t length) : _size(length), _allocSize(_getAllocSize(length)) { ///< Create initialized vector
-        this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
-        _constructCopyData((_DataType*)this->_value, value, length);
+        if (this->_size > 0) {
+          this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
+          _constructCopyData((_DataType*)this->_value, value, length);
+        }
       }
       inline ~LightVector() noexcept { clear(); }
 
       inline LightVector(const Type& rhs) : _size(rhs._size), _allocSize(_getAllocSize(rhs._size)) {
-        this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
-        _constructCopyData((_DataType*)this->_value, (const _DataType*)rhs._value, rhs._size);
+        if (this->_size > 0) {
+          this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
+          _constructCopyData((_DataType*)this->_value, (const _DataType*)rhs._value, rhs._size);
+        }
       }
       inline Type& operator=(const Type& rhs) { assign((const _DataType*)rhs._value, rhs._size); return *this; }
       
@@ -117,18 +123,18 @@ namespace pandora {
           this->_allocSize = _getAllocSize(length);
           _constructCopyData((_DataType*)this->_value, value, length);
         }
-        else {
+        else if (length > 0) {
           if (this->_size <= length) {
             _constructCopyData((_DataType*)this->_value + (intptr_t)this->_size, value + (intptr_t)this->_size, length - this->_size);
             _copyData((_DataType*)this->_value, value, this->_size);
           }
-          else if (length > 0) {
+          else {
             _destroy((_DataType*)this->_value + (intptr_t)length, this->_size - length);
             _copyData((_DataType*)this->_value, value, length);
           }
-          else
-            clear();
         }
+        else
+          clear();
         this->_size = length;
       }
 
