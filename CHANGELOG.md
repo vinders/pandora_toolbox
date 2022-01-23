@@ -1,6 +1,35 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.116.0.832
+2022-01-23 - c7cd1a0ccaaed65da4f67c26f463158fd235a8e0
+### features
+vinders (15):
+* hardware: X11 libraries: add XCB for Vulkan support
+* video: window resource builder: add system string to UTF-8 converter
+* video: Vulkan library/extension loader
+* video: Vulkan instance creation/config + debug messenger
+* video: Vulkan viewport (region for 3D projection + near/far clipping)
+* video: Vulkan scissor-test rectangle
+* video: Vulkan rendering device/context/queue
+* video: Vulkan renderer feature detection (VRAM size, HDR, screen tearing, limits)
+* video: Vulkan swap-chain creation (image buffers)
+* video: Vulkan shader builder/compiler + input layouts
+* cwork: custom cmake framework option: make runtime shader compilers optional
+* cwork: add options to disable tessellation/geometry stages (improve efficiency if they're not used)
+* memory: lightweight vector implementation (to avoid STL overhead)
+* video: Direct3D11 shader program: store shader stages + bind them together
+* video: Direct3D11 graphics pipeline stages/states: builder + params
+### fixes
+vinders (5):
+* video: Direct3D11 renderer: remove flush after changing/clearing render target (improve performance) + add public flush method
+* video: Direct3D11 renderer/swap-chain: improve color space & HDR support
+* video: Direct3D11 swap-chain: define present mode in constructor
+* video: Direct3D11 shader/layout: fix leak when moving instance + add copy constructor
+* video: Direct3D11 shared resource container + array: refactor
+
+---
+
 ## 0.101.1.724
 2021-08-31 - b61ec92a276d4d0600a8da99e6a568585f96794e
 ### features
