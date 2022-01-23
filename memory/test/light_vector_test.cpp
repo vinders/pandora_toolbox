@@ -17,6 +17,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #include <gtest/gtest.h>
+#include <mutex>
 #include <unordered_set>
 #include <memory/light_vector.h>
 
@@ -28,6 +29,7 @@ protected:
   //static void SetUpTestCase() {}
   //static void TearDownTestCase() {}
   void SetUp() override {
+    std::lock_guard<std::mutex> guard(registryLock);
     ctorCounter = dtorCounter = 0;
     registeredInstances.clear();
   }
@@ -35,6 +37,7 @@ protected:
 
   // Verify if constructed/destructed object instances match the expected state
   void CheckObjectRegistrar(bool isEmpty, bool objectsHaveExisted) {
+    std::lock_guard<std::mutex> guard(registryLock);
     if (isEmpty) {
       EXPECT_EQ(size_t{ 0 }, registeredInstances.size());
       EXPECT_EQ(ctorCounter, dtorCounter);
@@ -51,10 +54,12 @@ protected:
   }
 
 public:
+  static std::mutex registryLock;
   static std::unordered_set<void*> registeredInstances;
   static int32_t ctorCounter;
   static int32_t dtorCounter;
 };
+std::mutex LightVectorTest::registryLock;
 std::unordered_set<void*> LightVectorTest::registeredInstances;
 int32_t LightVectorTest::ctorCounter = 0;
 int32_t LightVectorTest::dtorCounter = 0;
@@ -65,15 +70,21 @@ int32_t LightVectorTest::dtorCounter = 0;
 struct _LightVectorData final {
   _LightVectorData(int a_, int b_) : a(a_), b(b_), isUserConstructed(true) {}
 
-  _LightVectorData() { LightVectorTest::registeredInstances.insert(this); ++LightVectorTest::ctorCounter; }
+  _LightVectorData() {
+    std::lock_guard<std::mutex> guard(LightVectorTest::registryLock);
+    LightVectorTest::registeredInstances.insert(this); ++LightVectorTest::ctorCounter;
+  }
   _LightVectorData(const _LightVectorData& rhs) : a(rhs.a), b(rhs.b) {
+    std::lock_guard<std::mutex> guard(LightVectorTest::registryLock);
     LightVectorTest::registeredInstances.insert(this); ++LightVectorTest::ctorCounter;
   }
   _LightVectorData(_LightVectorData&& rhs) noexcept : a(rhs.a), b(rhs.b) {
+    std::lock_guard<std::mutex> guard(LightVectorTest::registryLock);
     LightVectorTest::registeredInstances.insert(this); ++LightVectorTest::ctorCounter;
   }
   ~_LightVectorData() noexcept {
     if (!isUserConstructed) {
+      std::lock_guard<std::mutex> guard(LightVectorTest::registryLock);
       LightVectorTest::registeredInstances.erase(this); ++LightVectorTest::dtorCounter;
     }
   }
@@ -96,14 +107,6 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsInt) {
   EXPECT_EQ(size_t{0}, empty.size());
   EXPECT_EQ(size_t{0}, empty.length());
   EXPECT_TRUE(empty.empty());
-  for (auto& it : empty) {
-    EXPECT_FALSE(true);
-    ASSERT_TRUE(&it != nullptr);
-  }
-  for (auto& it : *emptyConst) {
-    EXPECT_FALSE(true);
-    ASSERT_TRUE(&it != nullptr);
-  }
 
   LightVector<int> empty2(0);
   EXPECT_TRUE(empty2.data() == nullptr);
@@ -208,7 +211,7 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsInt) {
   }
   nbIter = 0;
   for (auto& it : copied) {
-    EXPECT_TRUE(&it != nullptr);
+    EXPECT_EQ(prealloc[nbIter], it);
     ++nbIter;
   }
   EXPECT_EQ(16, nbIter);
@@ -235,7 +238,7 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsInt) {
   }
   nbIter = 0;
   for (auto& it : moved) {
-    EXPECT_TRUE(&it != nullptr);
+    EXPECT_EQ(data2[nbIter], it);
     ++nbIter;
   }
   EXPECT_EQ(3, nbIter);
@@ -261,14 +264,6 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsObject) {
     EXPECT_EQ(size_t{0}, empty.size());
     EXPECT_EQ(size_t{0}, empty.length());
     EXPECT_TRUE(empty.empty());
-    for (auto& it : empty) {
-      EXPECT_FALSE(true);
-      ASSERT_TRUE(&it != nullptr);
-    }
-    for (auto& it : *emptyConst) {
-      EXPECT_FALSE(true);
-      ASSERT_TRUE(&it != nullptr);
-    }
 
     LightVector<_LightVectorData> empty2(0);
     EXPECT_TRUE(empty2.data() == nullptr);
@@ -388,7 +383,8 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsObject) {
     }
     nbIter = 0;
     for (auto& it : copied) {
-      EXPECT_TRUE(&it != nullptr);
+      EXPECT_EQ(prealloc[nbIter].a, it.a);
+      EXPECT_EQ(prealloc[nbIter].b, it.b);
       ++nbIter;
     }
     EXPECT_EQ(16, nbIter);
@@ -417,7 +413,8 @@ TEST_F(LightVectorTest, vectorAccessorsCtorsObject) {
     }
     nbIter = 0;
     for (auto& it : moved) {
-      EXPECT_TRUE(&it != nullptr);
+      EXPECT_EQ(data2[nbIter].a, it.a);
+      EXPECT_EQ(data2[nbIter].b, it.b);
       ++nbIter;
     }
     EXPECT_EQ(3, nbIter);
@@ -764,7 +761,8 @@ TEST_F(LightVectorTest, vectorInsertObject) {
     for (int i = 4; i < 16; ++i) { // realloc
       _LightVectorData itemI{ i, 16-i };
       uint32_t index = (uint32_t)data.size() / 2u;
-      auto oldAtIndex = data[index];
+      auto oldAAtIndex = data[index].a;
+      auto oldBAtIndex = data[index].b;
       data.insert(index, itemI);
       EXPECT_FALSE(data.empty());
       EXPECT_EQ(static_cast<size_t>(i + 1), data.size());
@@ -772,8 +770,8 @@ TEST_F(LightVectorTest, vectorInsertObject) {
       EXPECT_EQ(item2.b, data[0].b);
       EXPECT_EQ(itemI.a, data[index].a);
       EXPECT_EQ(itemI.b, data[index].b);
-      EXPECT_EQ(oldAtIndex.a, data[index + 1u].a);
-      EXPECT_EQ(oldAtIndex.b, data[index + 1u].b);
+      EXPECT_EQ(oldAAtIndex, data[index + 1u].a);
+      EXPECT_EQ(oldBAtIndex, data[index + 1u].b);
       EXPECT_EQ(item1.a, data.back().a);
       EXPECT_EQ(item1.b, data.back().b);
     }

@@ -146,9 +146,9 @@ namespace pandora {
           if (this->_value != nullptr) {
             _constructMoveData((_DataType*)extValue, (_DataType*)this->_value, index);
             if (index < this->_size) {
-              _constructMoveData((_DataType*)extValue + (intptr_t)(index + 1u),
+              _constructMoveData((_DataType*)extValue + (intptr_t)index + (intptr_t)1,
                                  (_DataType*)this->_value + (intptr_t)index, this->_size - (size_t)index);
-              ((_DataType*)extValue)[index] = value;
+              _constructCopyOne((_DataType*)extValue + (intptr_t)index, value);
             }
             else
               _constructCopyOne((_DataType*)extValue + (intptr_t)this->_size, value);
@@ -164,10 +164,10 @@ namespace pandora {
         else {
           if (index < this->_size) {
             _shiftRight((_DataType*)this->_value, (intptr_t)index, this->_size);
-            ((_DataType*)_value)[index] = value;
+            *((_DataType*)_value + (intptr_t)index) = value;
           }
           else
-            _constructCopyOne((_DataType*)this->_value + (intptr_t)index, value);
+            _constructCopyOne((_DataType*)this->_value + (intptr_t)this->_size, value);
         }
         ++_size;
       }
@@ -246,7 +246,7 @@ namespace pandora {
       template <typename T = _DataType>
       static inline void _shiftLeft(__P_LTVEC_TYPE_CLASS(_DataType*) value, uint32_t erasedIndex, size_t totalSize) noexcept {
         _DataType* lhs = value + (intptr_t)erasedIndex;
-        _DataType* rhs = value + (intptr_t)(erasedIndex + 1u);
+        _DataType* rhs = value + (intptr_t)erasedIndex + (intptr_t)1u;
         for (const _DataType* endIt = value + (intptr_t)totalSize; rhs < endIt; ++lhs, ++rhs)
           *lhs = std::move(*rhs);
         (*lhs).~_DataType();
@@ -255,7 +255,7 @@ namespace pandora {
       static inline void _shiftRight(typename std::enable_if<std::is_class<T>::value
                                      && std::is_move_constructible<T>::value, _DataType*>::type value, uint32_t firstIndex, size_t oldTotalSize) noexcept {
         _DataType* lhs = value + (intptr_t)oldTotalSize;
-        _DataType* rhs = value + (intptr_t)(oldTotalSize - 1u);
+        _DataType* rhs = value + (intptr_t)oldTotalSize - (intptr_t)1u;
         new(lhs) _DataType(std::move(*rhs));
         --lhs; --rhs;
         for (const _DataType* firstIndexPos = value + (intptr_t)firstIndex; rhs >= firstIndexPos; --lhs, --rhs)
@@ -265,11 +265,11 @@ namespace pandora {
       static inline void _shiftRight(typename std::enable_if<std::is_class<T>::value
                                      && !std::is_move_constructible<T>::value, _DataType*>::type value, uint32_t firstIndex, size_t oldTotalSize) noexcept {
         _DataType* lhs = value + (intptr_t)oldTotalSize;
-        _DataType* rhs = value + (intptr_t)(oldTotalSize - 1u);
+        _DataType* rhs = value + (intptr_t)oldTotalSize - (intptr_t)1u;
         new(lhs) _DataType(*rhs);
         --lhs; --rhs;
         for (const _DataType* firstIndexPos = value + (intptr_t)firstIndex; rhs >= firstIndexPos; --lhs, --rhs)
-          *lhs = std::move(*rhs);
+          *lhs = *rhs;
       }
 
       template <typename T = _DataType>
@@ -279,7 +279,7 @@ namespace pandora {
       template <typename T = _DataType>
       static inline void _destroy(__P_LTVEC_TYPE_CLASS(_DataType*) lhs, size_t length) noexcept {
         for (const _DataType* lhsEnd = lhs + (intptr_t)length; lhs < lhsEnd; ++lhs)
-          (*lhs).~_DataType(); std::vector<int> a;
+          (*lhs).~_DataType();
       }
 
       // -- private -- trivial item types --
@@ -308,11 +308,13 @@ namespace pandora {
       }
       template <typename T = _DataType>
       static inline void _shiftLeft(__P_LTVEC_TYPE_TRIVIAL(_DataType*) value, uint32_t erasedIndex, size_t totalSize) noexcept {
-        memmove(value + (intptr_t)erasedIndex, value + (intptr_t)(erasedIndex + 1u), (totalSize - erasedIndex - 1u)*sizeof(_DataType));
+        memmove(value + (intptr_t)erasedIndex, value + (intptr_t)erasedIndex + (intptr_t)1u,
+                (totalSize - (size_t)erasedIndex - (size_t)1u)*sizeof(_DataType));
       }
       template <typename T = _DataType>
       static inline void _shiftRight(__P_LTVEC_TYPE_TRIVIAL(_DataType*) value, uint32_t firstIndex, size_t oldTotalSize) noexcept {
-        memmove(value + (intptr_t)(firstIndex + 1u), value + (intptr_t)firstIndex, (oldTotalSize - firstIndex)*sizeof(_DataType));
+        memmove(value + (intptr_t)firstIndex + (intptr_t)1u, value + (intptr_t)firstIndex,
+                (oldTotalSize - (size_t)firstIndex)*sizeof(_DataType));
       }
 
       template <typename T = _DataType>
