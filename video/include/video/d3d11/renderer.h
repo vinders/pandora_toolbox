@@ -20,6 +20,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
+# include <memory/light_vector.h>
 # include <hardware/display_monitor.h>
 # include "./_private/_shared_resource.h" // includes D3D11
 # include "./scissor.h"        // includes D3D11
@@ -30,6 +31,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     namespace video {
       namespace d3d11 {
         class SwapChain;
+        class GraphicsPipeline;
 
         /// @class Renderer
         /// @brief Direct3D rendering device and context (specific to adapter)
@@ -113,12 +115,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
-          inline void setViewport(const Viewport& viewport) noexcept { this->_context->RSSetViewports(1u, viewport.descriptor()); }
+          inline void setViewport(const Viewport& viewport) noexcept {
+            this->_context->RSSetViewports(1u, viewport.descriptor());
+            this->_currentViewportScissorId = 0;
+          }
 
           /// @brief Set rasterizer scissor-test rectangle(s)
           void setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept;
           /// @brief Set rasterizer scissor-test rectangle
-          inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept { this->_context->RSSetScissorRects(1u, rectangle.descriptor()); }
+          inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
+            this->_context->RSSetScissorRects(1u, rectangle.descriptor());
+            this->_currentViewportScissorId = 0;
+          }
           
           // ---
 
@@ -203,10 +211,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline void bindVertexIndexBuffer(BufferHandle indexBuffer, VertexIndexFormat indexFormat, uint32_t byteOffset = 0u) noexcept {
             this->_context->IASetIndexBuffer(indexBuffer, (DXGI_FORMAT)indexFormat, (UINT)byteOffset);
           }
-          /// @brief Set vertex polygon topology for input stage
+          /// @brief Set dynamic vertex polygon topology for input stage
           inline void setVertexTopology(VertexTopology topology) noexcept { this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)topology); }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
-            /// @brief Set vertex patch topology for input stage (for vertex/tessellation shaders)
+            /// @brief Set dynamic vertex patch topology for input stage (for vertex/tessellation shaders)
             /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
             void setVertexPatchTopology(uint32_t controlPoints) noexcept;
 #         endif
@@ -254,47 +262,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           // -- pipeline status operations - shaders --
 
-          /// @brief Bind display shader program to the graphics pipeline (topology, input-assembler stage, shader stages)
-          /// @param shaders  Display shader program (material)
-          void bindDisplayShaders(const ShaderProgram& shaders) noexcept;
-
-          /// @brief Bind input-layout object to the input-assembler stage
-          /// @param inputLayout  Native handle (ShaderInputLayout.handle()) or NULL to disable input.
-          inline void bindInputLayout(InputLayoutHandle inputLayout) noexcept { this->_context->IASetInputLayout((ID3D11InputLayout*)inputLayout); }
-          /// @brief Bind vertex shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind vertex shader.
-          inline void bindVertexShader(Shader::Handle shader) noexcept {
-            this->_context->VSSetShader((ID3D11VertexShader*)shader, nullptr, 0);
-            this->_currentStages[(unsigned int)ShaderType::vertex] = shader;
-          }
-#         ifndef __P_DISABLE_TESSELLATION_STAGE
-            /// @brief Bind tessellation-control/hull shader stage to the device
-            /// @param shader  Native handle (Shader.handle()) or NULL to unbind control/hull shader.
-            inline void bindTessCtrlShader(Shader::Handle shader) noexcept {
-              this->_context->HSSetShader((ID3D11HullShader*)shader, nullptr, 0);
-              this->_currentStages[(unsigned int)ShaderType::tessCtrl] = shader;
-            }
-            /// @brief Bind tessellation-evaluation/domain shader stage to the device
-            /// @param shader  Native handle (Shader.handle()) or NULL to unbind evaluation/domain shader.
-            inline void bindTessEvalShader(Shader::Handle shader) noexcept {
-              this->_context->DSSetShader((ID3D11DomainShader*)shader, nullptr, 0);
-              this->_currentStages[(unsigned int)ShaderType::tessEval] = shader;
-            }
-#         endif
-#         ifndef __P_DISABLE_GEOMETRY_STAGE
-            /// @brief Bind geometry shader stage to the device
-            /// @param shader  Native handle (Shader.handle()) or NULL to unbind geometry shader.
-            inline void bindGeometryShader(Shader::Handle shader) noexcept {
-              this->_context->GSSetShader((ID3D11GeometryShader*)shader, nullptr, 0);
-              this->_currentStages[(unsigned int)ShaderType::geometry] = shader;
-            }
-#         endif
-          /// @brief Bind fragment/pixel shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind fragment/pixel shader.
-          inline void bindFragmentShader(Shader::Handle shader) noexcept {
-            this->_context->PSSetShader((ID3D11PixelShader*)shader, nullptr, 0);
-            this->_currentStages[(unsigned int)ShaderType::fragment] = shader;
-          }
+          /// @brief Bind graphics pipeline to the rendering device
+          ///        (topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors)
+          /// @param pipeline  Valid graphics pipeline
+          void bindGraphicsPipeline(GraphicsPipeline& pipeline) noexcept;
           /// @brief Bind compute shader stage to the device
           /// @param shader  Native handle (Shader.handle()) or NULL to unbind compute shader.
           inline void bindComputeShader(Shader::Handle shader) noexcept { this->_context->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0); }
@@ -442,91 +413,95 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           // -- pipeline status operations - renderer states --
           
+          /// @brief Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
+          /// @remarks - The rasterizer state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
+          ///          - Setting rasterizer state dynamically is not possible in other APIs (Vulkan...). Avoid it for cross-API projects.
+          ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
+          inline void setRasterizerState(const RasterizerState& state) noexcept {
+            this->_context->RSSetState(state.get());
+            this->_currentRasterizerState = state.get();
+          }
           /// @brief Change output merger depth/stencil state (depth and/or stencil testing)
+          /// @remarks The depth/stencil state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
           inline void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept {
             this->_context->OMSetDepthStencilState(state.get(), (UINT)stencilRef);
+            this->_currentDepthStencilState = (this->_attachedPipeline != nullptr
+                                            && stencilRef == this->_attachedPipeline->stencilRef) ? state.get() : nullptr;
           }
-          
-          /// @brief Change device rasterizer mode (culling, clipping, depth-bias, wireframe...)
-          /// @remarks - The rasterizer should be configured at least once at the beginning of the program.
-          ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
-          inline void setRasterizerState(const RasterizerState& state) noexcept { this->_context->RSSetState(state.get()); }
-          
-          /// @brief Change output merger blend state (color/alpha blending with render-target(s)), or empty state to reset (BlendState{})
-          /// @remarks If the blend state uses BlendFactor::constantColor/constantInvColor, a default white color is used.
-          ///          To customize the constant color, use 'setBlendState(state, constantColorRgba)' instead.
-          inline void setBlendState(const BlendState& state) noexcept { this->_context->OMSetBlendState(state.get(), nullptr, 0xFFFFFFFFu); }
           /// @brief Change output merger blend state with constant factors (color/alpha blending with render-target(s))
-          /// @remarks The constant color is only used if the blend state uses BlendFactor::constantColor/constantInvColor.
-          inline void setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4]) noexcept {
+          /// @remarks - The blend state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
+          ///          - The constant color is only used if the blend state uses BlendFactor::constantColor/constantInvColor
+          ///            (defaults to factor 1.0 if 'constantColorRgba' is NULL).
+          inline void setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4] = nullptr) noexcept {
             this->_context->OMSetBlendState(state.get(), constantColorRgba, 0xFFFFFFFFu);
+            this->_currentBlendState = nullptr; // color may differ -> always report as different
           }
           
           // ---
           
-          /// @brief Max slots (or array size from first slot) for sample filters
-          constexpr inline size_t maxFilterStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+          /// @brief Max slots (or array size from first slot) for samplers/filters
+          constexpr inline size_t maxSamplerStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setVertexFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+          inline void setVertexSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
             this->_context->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
             /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselControlFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+            inline void setTesselControlSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
               this->_context->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
             /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselEvalFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+            inline void setTesselEvalSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
               this->_context->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
 #         ifndef __P_DISABLE_GEOMETRY_STAGE
             /// @brief Set array of sampler filters to the geometry shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setGeometryFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+            inline void setGeometrySamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
               this->_context->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
           /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setFragmentFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+          inline void setFragmentSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
             this->_context->PSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           /// @brief Set array of sampler filters to the compute shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setComputeFilterStates(uint32_t firstSlotIndex, const FilterStateArray::Resource* states, size_t length) noexcept {
+          inline void setComputeSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
             this->_context->CSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           
-          inline void clearVertexFilterStates() noexcept { ///< Reset all sampler filters in vertex shader stage
+          inline void clearVertexSamplerStates() noexcept { ///< Reset all sampler filters in vertex shader stage
             ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
             this->_context->VSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
           }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
-            inline void clearTesselControlFilterStates() noexcept { ///< Reset all sampler filters in tessellation-control/hull shader stage
+            inline void clearTesselControlSamplerStates() noexcept { ///< Reset all sampler filters in tessellation-control/hull shader stage
               ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
               this->_context->HSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
             }
-            inline void clearTesselEvalFilterStates() noexcept { ///< Reset all sampler filters in tessellation-evaluation/domain shader stage
+            inline void clearTesselEvalSamplerStates() noexcept { ///< Reset all sampler filters in tessellation-evaluation/domain shader stage
               ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
               this->_context->DSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
             }
 #         endif
 #         ifndef __P_DISABLE_GEOMETRY_STAGE
-            inline void clearGeometryFilterStates() noexcept { ///< Reset all sampler filters in geometry shader stage
+            inline void clearGeometrySamplerStates() noexcept { ///< Reset all sampler filters in geometry shader stage
               ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
               this->_context->GSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
             }
 #         endif
-          inline void clearFragmentFilterStates() noexcept { ///< Reset all sampler filters in fragment/pixel shader stage (standard)
+          inline void clearFragmentSamplerStates() noexcept { ///< Reset all sampler filters in fragment/pixel shader stage (standard)
             ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
             this->_context->PSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
           }
-          inline void clearComputeFilterStates() noexcept { ///< Reset all sampler filters in compute shader stage
+          inline void clearComputeSamplerStates() noexcept { ///< Reset all sampler filters in compute shader stage
             ID3D11SamplerState* empty[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] { nullptr };
             this->_context->CSSetSamplers(0, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT, &empty[0]);
           }
@@ -536,20 +511,47 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           inline bool _isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
+
+          void _addRasterizerState(const RasterizerStateId& id, const RasterizerState& handle);
+          void _addDepthStencilState(const DepthStencilStateId& id, const DepthStencilState& handle);
+          void _addBlendState(const BlendStateId& id, const BlendState& handle);
+          void _addBlendStatePerTarget(const BlendStatePerTargetId& id, const BlendState& handle);
+
+          void _removeRasterizerState(const RasterizerStateId& id) noexcept;
+          void _removeDepthStencilState(const DepthStencilStateId& id) noexcept;
+          void _removeBlendState(const BlendStateId& id) noexcept;
+          void _removeBlendStatePerTarget(const BlendStatePerTargetId& id) noexcept;
+
+          bool _findRasterizerState(const RasterizerStateId& id, RasterizerState& out) const noexcept;
+          bool _findDepthStencilState(const DepthStencilStateId& id, DepthStencilState& out) const noexcept;
+          bool _findBlendState(const BlendStateId& id, BlendState& out) const noexcept;
+          bool _findBlendStatePerTarget(const BlendStatePerTargetId& id, BlendState& out) const noexcept;
+
           friend class pandora::video::d3d11::SwapChain;
+          friend class pandora::video::d3d11::GraphicsPipeline;
           
         private:
           DeviceHandle _device = nullptr;
           DeviceContext _context = nullptr;
           D3D_FEATURE_LEVEL _deviceLevel = D3D_FEATURE_LEVEL_11_0;
-          
           void* _dxgiFactory = nullptr; // IDXGIFactory1*
           uint32_t _dxgiLevel = 1u;
-          Shader::Handle _currentStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1]{ nullptr };
-          VertexTopology _currentTopology = (VertexTopology)-1;
+
+          pandora::memory::LightVector<RasterizerStateCache> _rasterizerStateCache;
+          pandora::memory::LightVector<DepthStencilStateCache> _depthStencilStateCache;
+          pandora::memory::LightVector<BlendStateCache> _blendStateCache;
+          pandora::memory::LightVector<BlendStatePerTargetCache> _blendStatePerTargetCache;
+
+          std::shared_ptr<_DxPipelineStages> _attachedPipeline = nullptr;
+          // storage for dynamic state changes
+          ID3D11RasterizerState* _currentRasterizerState = nullptr;
+          ID3D11DepthStencilState* _currentDepthStencilState = nullptr;
+          ID3D11BlendState* _currentBlendState = nullptr;
+          uint64_t _currentViewportScissorId = 0;
         };
       }
     }
   }
 # include "./swap_chain.h" // includes D3D11
+# include "./graphics_pipeline.h" // includes D3D11
 #endif

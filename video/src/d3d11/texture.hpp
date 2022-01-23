@@ -30,6 +30,44 @@ static constexpr inline const char* __error_resCreationFailed() noexcept { retur
 static constexpr inline const char* __error_viewCreationFailed() noexcept { return "Texture: view creation failure"; }
 
 
+// -- sampler builder -- -------------------------------------------------------
+
+  SamplerParams::SamplerParams() noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_SAMPLER_DESC));
+    _params.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    _params.AddressU = _params.AddressV = _params.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    _params.MaxAnisotropy = 1;
+    _params.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+    _params.MinLOD = 1.f;
+  }
+  
+  void SamplerParams::_init(const TextureWrap textureWrapUVW[3], float lodMin, float lodMax) noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_SAMPLER_DESC));
+    textureWrap(textureWrapUVW);
+    _params.MinLOD = lodMin;
+    _params.MaxLOD = lodMax;
+  }
+  
+  SamplerParams& SamplerParams::borderColor(const ColorChannel rgba[4]) noexcept {
+    if (rgba)
+      memcpy(&_params.BorderColor[0], &rgba[0], 4u*sizeof(ColorChannel));
+    else
+      memset(&_params.BorderColor[0], 0, 4u*sizeof(ColorChannel));
+    return *this;
+  }
+
+  // ---
+
+  // Create sampler filter state - can be used to change sampler filter state when needed (setSamplerState)
+  SamplerState SamplerBuilder::create(const SamplerParams& params) {
+    ID3D11SamplerState* stateData = nullptr;
+    auto result = this->_device->CreateSamplerState(&(params.descriptor()), &stateData);
+    if (FAILED(result) || stateData == nullptr)
+      throwError(result, "Factory: sampler error");
+    return SamplerState(stateData);
+  }
+
+
 // -- texture params -- --------------------------------------------------------
 
 uint32_t Texture1DParams::maxMipLevels(uint32_t width) noexcept {

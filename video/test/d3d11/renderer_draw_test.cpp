@@ -16,8 +16,7 @@ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
-#ifndef _P_CI_DISABLE_SLOW_TESTS
-#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT) && defined(_P_VIDEO_SHADER_COMPILERS)
+#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT) && defined(_P_VIDEO_SHADER_COMPILERS) && !defined(_P_CI_DISABLE_SLOW_TESTS)
 # ifndef __MINGW32__
 #   pragma warning(push)
 #   pragma warning(disable : 4324)
@@ -26,7 +25,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <video/window.h>
 # include <video/d3d11/api/d3d_11.h>
 # include <video/d3d11/renderer.h>
-# include <video/d3d11/renderer_state_factory.h>
 # include <video/d3d11/camera_utils.h>
 # include <video/d3d11/texture.h>
 # include <video/d3d11/static_buffer.h>
@@ -175,8 +173,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererDrawTest, vertexBaseDrawingTest) {
     auto window = pandora::video::Window::Builder{}
-      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
-        ResizeMode::fixed)
+      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, ResizeMode::fixed)
       .setSize(__WIDTH,__HEIGHT)
       .create(L"_DRAW_TEST0", L"Test");
     window->show();
@@ -193,9 +190,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-
-    // shaders/input
+    // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
@@ -204,9 +199,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentBaseShaderText(), strlen(__fragmentBaseShaderText()), "PSMain")
                                           .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.handle() != nullptr);
+    ASSERT_TRUE(inputLayout.hasValue());
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
+
+    GraphicsPipeline::Builder builder(renderer);
+    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setInputLayout(inputLayout);
+    builder.setVertexTopology(VertexTopology::triangles);
+    builder.attachShaderStage(vertexShader);
+    builder.attachShaderStage(fragmentShader);
+    builder.setRasterizerState(RasterizerParams(CullMode::none));   // off
+    builder.setDepthStencilState(DepthStencilParams(false, false)); // off
+    builder.setBlendState(BlendParams(false));                      // off
+    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+    auto pipeline = builder.build();
+    ASSERT_FALSE(pipeline.isEmpty());
 
     // vertices
     float vertices1[] = { 
@@ -217,20 +226,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
 
     // drawing
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
-    renderer->setViewport(viewport);
-
     float color[4] = { 0.f,0.5f,0.6f,1.f };
     FLOAT gammaCorrectColor[4]{ 0 };
     renderer->sRgbToGammaCorrectColor(color, gammaCorrectColor);
 
+    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     renderer->clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
-    renderer->bindInputLayout(inputLayout.handle());
-    renderer->bindVertexShader(vertexShader.handle());
-    renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(VertexTopology::triangles);
-
+    renderer->bindGraphicsPipeline(pipeline);
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
+
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
     chain1.swapBuffers(nullptr);
     renderer->flush();
@@ -238,8 +242,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererDrawTest, vertexIndexedDrawingWithStatesTest) {
     auto window = pandora::video::Window::Builder{}
-                    .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
-                                    ResizeMode::fixed)
+                    .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, ResizeMode::fixed)
                     .setSize(__WIDTH,__HEIGHT)
                     .create(L"_DRAW_TEST1", L"Test");
     window->show();
@@ -247,7 +250,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
-    RendererStateFactory factory(*renderer);
 
     SwapChain::Descriptor params;
     params.width = __WIDTH;
@@ -257,9 +259,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
     
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-
-    // shaders/input
+    // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
@@ -269,26 +269,36 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentPosColorShaderText(), strlen(__fragmentPosColorShaderText()), "PSMain")
                                           .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.handle() != nullptr);
+    ASSERT_TRUE(inputLayout.hasValue());
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
+
+    GraphicsPipeline::Builder builder(renderer);
+    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setInputLayout(inputLayout);
+    builder.setVertexTopology(VertexTopology::triangles);
+    builder.attachShaderStage(vertexShader);
+    builder.attachShaderStage(fragmentShader);
+    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, depth clipping
+    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+    builder.setBlendState(BlendParams(false));          // off
+    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+    auto pipeline = builder.build();
+    ASSERT_FALSE(pipeline.isEmpty());
     
-    // states
+    // state buffers + samplers
     DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
-    EXPECT_TRUE(depthState);
-    
-    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
-    EXPECT_TRUE(rasterState);
-    
-    FilterStateArray values;
+
+    SamplerBuilder samplerBuilder(*renderer);
+    SamplerStateArray samplers;
     TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, values.size());
+    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+    ASSERT_EQ((size_t)1, samplers.size());
 
     // vertices
-    VertexPosColorData vertices1[] = { 
+    VertexPosColorData vertices1[] = {
       {{0.0f,0.5f,0.f,1.f},{1.f,0.f,0.f,1.f}}, {{0.5f,-0.5f,0.f,1.f},{0.f,1.f,0.f,1.f}}, {{-0.5f,-0.5f,0.f,1.f},{0.f,0.f,1.f,1.f}}
     };
     uint32_t indices1[] = { 0,1,2 };
@@ -296,17 +306,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     StaticBuffer vertexIndex1(*renderer, BaseBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
 
     // drawing
-    renderer->setRasterizerState(rasterState);
-    renderer->setDepthStencilState(depthState);
-    renderer->setFragmentFilterStates(0, values.get(), values.size());
+    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->setViewport(viewport);
-
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindInputLayout(inputLayout.handle());
-    renderer->bindVertexShader(vertexShader.handle());
-    renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(VertexTopology::triangles);
+    renderer->bindGraphicsPipeline(pipeline);
    
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
@@ -317,8 +320,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererDrawTest, vertexInstanceIndexedDrawingWithStatesTest) {
     auto window = pandora::video::Window::Builder{}
-      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
-        ResizeMode::fixed)
+      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, ResizeMode::fixed)
       .setSize(__WIDTH,__HEIGHT)
       .create(L"_DRAW_TEST2", L"Test");
     window->show();
@@ -326,7 +328,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
-    RendererStateFactory factory(*renderer);
 
     SwapChain::Descriptor params;
     params.width = __WIDTH;
@@ -336,9 +337,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-
-    // shaders/input
+    // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -350,23 +349,33 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
                                           .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.handle() != nullptr);
+    ASSERT_TRUE(inputLayout.hasValue());
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // states
+    GraphicsPipeline::Builder builder(renderer);
+    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setInputLayout(inputLayout);
+    builder.setVertexTopology(VertexTopology::triangles);
+    builder.attachShaderStage(vertexShader);
+    builder.attachShaderStage(fragmentShader);
+    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, depth clipping
+    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+    builder.setBlendState(BlendParams(false));          // off
+    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+    auto pipeline = builder.build();
+    ASSERT_FALSE(pipeline.isEmpty());
+
+    // state buffers + samplers
     DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
-    EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
-    EXPECT_TRUE(rasterState);
-
-    FilterStateArray values;
+    SamplerBuilder samplerBuilder(*renderer);
+    SamplerStateArray samplers;
     TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, values.size());
+    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+    ASSERT_EQ((size_t)1, samplers.size());
 
     // vertices
     VertexPosColorData vertices1[] = { 
@@ -380,17 +389,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
 
     // drawing
-    renderer->setRasterizerState(rasterState);
-    renderer->setDepthStencilState(depthState);
-    renderer->setFragmentFilterStates(0, values.get(), values.size());
+    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->setViewport(viewport);
-
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindInputLayout(inputLayout.handle());
-    renderer->bindVertexShader(vertexShader.handle());
-    renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(VertexTopology::triangles);
+    renderer->bindGraphicsPipeline(pipeline);
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
@@ -404,8 +406,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererDrawTest, vertexInstanceDrawingWithStatesCamTest) {
     auto window = pandora::video::Window::Builder{}
-      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
-        ResizeMode::fixed)
+      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, ResizeMode::fixed)
       .setSize(__WIDTH,__HEIGHT)
       .create(L"_DRAW_TEST3", L"Test");
     window->show();
@@ -413,7 +414,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
-    RendererStateFactory factory(*renderer);
 
     SwapChain::Descriptor params;
     params.width = __WIDTH;
@@ -423,9 +423,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-
-    // shaders/input
+    // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -437,23 +435,33 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
                                           .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.handle() != nullptr);
+    ASSERT_TRUE(inputLayout.hasValue());
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // states
+    GraphicsPipeline::Builder builder(renderer);
+    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setInputLayout(inputLayout);
+    builder.setVertexTopology(VertexTopology::triangles);
+    builder.attachShaderStage(vertexShader);
+    builder.attachShaderStage(fragmentShader);
+    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, depth clipping
+    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+    builder.setBlendState(BlendParams(false));          // off
+    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+    auto pipeline = builder.build();
+    ASSERT_FALSE(pipeline.isEmpty());
+
+    // state buffers + samplers
     DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
-    EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
-    EXPECT_TRUE(rasterState);
-
-    FilterStateArray values;
+    SamplerBuilder samplerBuilder(*renderer);
+    SamplerStateArray samplers;
     TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, values.size());
+    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+    ASSERT_EQ((size_t)1, samplers.size());
 
     // vertices
     VertexPosColorData vertices1[] = { 
@@ -487,17 +495,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     StaticBuffer camBuffer(*renderer, BaseBufferType::uniform, sizeof(CamBuffer), &camData, true);
 
     // drawing
-    renderer->setRasterizerState(rasterState);
-    renderer->setDepthStencilState(depthState);
-    renderer->setFragmentFilterStates(0, values.get(), values.size());
+    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->setViewport(viewport);
-
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindInputLayout(inputLayout.handle());
-    renderer->bindVertexShader(vertexShader.handle());
-    renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(VertexTopology::triangles);
+    renderer->bindGraphicsPipeline(pipeline);
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
@@ -668,8 +669,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererDrawTest, vertexInstanceTextureLightDrawingTest) {
     auto window = pandora::video::Window::Builder{}
-      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, 
-        ResizeMode::fixed)
+      .setDisplayMode(pandora::video::WindowType::window, WindowBehavior::globalContext|WindowBehavior::topMost, ResizeMode::fixed)
       .setSize(__WIDTH,__HEIGHT)
       .create(L"_DRAW_TEST4", L"Test");
     window->show();
@@ -677,7 +677,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
-    RendererStateFactory factory(*renderer);
 
     SwapChain::Descriptor params;
     params.width = __WIDTH;
@@ -687,9 +686,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
     ASSERT_FALSE(chain1.isEmpty());
 
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-
-    // shaders/input
+    // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -703,23 +700,33 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
     auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceTexLightShaderText(), strlen(__fragmentInstanceTexLightShaderText()), "PSMain")
                                           .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.handle() != nullptr);
+    ASSERT_TRUE(inputLayout.hasValue());
     ASSERT_FALSE(vertexShader.isEmpty());
     ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // states
+    GraphicsPipeline::Builder builder(renderer);
+    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setInputLayout(inputLayout);
+    builder.setVertexTopology(VertexTopology::triangles);
+    builder.attachShaderStage(vertexShader);
+    builder.attachShaderStage(fragmentShader);
+    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, depth clipping
+    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+    builder.setBlendState(BlendParams(false));          // off
+    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+    auto pipeline = builder.build();
+    ASSERT_FALSE(pipeline.isEmpty());
+
+    // state buffers + samplers
     DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    DepthStencilState depthState = factory.createDepthStencilTestState(DepthStencilParams{}); // default depth test (less)
     ASSERT_FALSE(depthBuffer.isEmpty());
-    EXPECT_TRUE(depthState);
 
-    RasterizerState rasterState(factory.createRasterizerState(RasterizerParams{})); // standard: back-cull, filled, clockwise, depth clipping
-    EXPECT_TRUE(rasterState);
-
-    FilterStateArray values;
+    SamplerBuilder samplerBuilder(*renderer);
+    SamplerStateArray samplers;
     TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    values.append(factory.createFilterState(FilterParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, values.size());
+    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+    ASSERT_EQ((size_t)1, samplers.size());
 
     // vertices
     VertexTexLightData vertices1[] = { 
@@ -772,18 +779,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     StaticBuffer camBuffer(*renderer, BaseBufferType::uniform, sizeof(CamLightData), &camLightData, true);
 
     // drawing
-    renderer->setRasterizerState(rasterState);
-    renderer->setDepthStencilState(depthState);
-    renderer->setFragmentFilterStates(0, values.get(), values.size());
+    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->setViewport(viewport);
-    renderer->setScissorRectangles(nullptr, 0);
-
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindInputLayout(inputLayout.handle());
-    renderer->bindVertexShader(vertexShader.handle());
-    renderer->bindFragmentShader(fragmentShader.handle());
-    renderer->setVertexTopology(VertexTopology::triangles);
+    renderer->bindGraphicsPipeline(pipeline);
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexTexLightData), (unsigned int)sizeof(InstanceData) };
@@ -800,5 +799,4 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ifndef __MINGW32__
 #   pragma warning(pop)
 # endif
-#endif
 #endif

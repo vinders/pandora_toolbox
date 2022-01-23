@@ -22,8 +22,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cassert>
 # include <cstdint>
 # include <cstring>
-# include <stdexcept>
 # include <memory>
+# include <memory/light_vector.h>
 # include "video/d3d11/api/types.h" // includes D3D11
 
   namespace pandora {
@@ -190,14 +190,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline _Type** get() noexcept { return _values; } ///< Get collection, to bind all (or first N) resources
           inline const _Type** get() const noexcept { return _values; } ///< Get collection (constant)
 
-          inline _Type** getFrom(uint32_t index) const { ///< Get resource located at index (unsafe reference)
-            if (index >= _length)
-              throw std::out_of_range("SharedResourceArray.at: index out of range");
+          inline const _Type** getFrom(uint32_t index) const { ///< Get resource located at index (unsafe reference)
+            assert(index < _length);
+            return &_values[index];
+          }
+          inline _Type** getFrom(uint32_t index) { ///< Get resource located at index (unsafe reference)
+            assert(index < _length);
             return &_values[index];
           }
           inline SharedResource<_Type> at(uint32_t index) const { ///< Get resource located at index (shared object)
-            if (index >= _length)
-              throw std::out_of_range("SharedResourceArray.at: index out of range");
+            assert(index < _length);
             if (_values[index] != nullptr)
               _values[index]->AddRef();
             return SharedResource<_Type>(_values[index]);
@@ -205,6 +207,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           // -- operations --
           
+          /// @brief Append new shared resource (if max size not reached)
+          inline bool append(const SharedResource<_Type>& res) noexcept { return append(SharedResource<_Type>(res)); }
           /// @brief Append new shared resource (if max size not reached)
           /// @warning Source object is invalidated (even on failure)
           inline bool append(SharedResource<_Type>&& res) noexcept { return append(res.extract()); }
@@ -220,6 +224,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return false;
           }
           
+          /// @brief Insert new shared resource at index (and shift following indices)
+          ///        (if max size not reached && index <= length)
+          inline bool insert(uint32_t index, const SharedResource<_Type>& res) noexcept { return insert(index, SharedResource<_Type>(res)); }
           /// @brief Insert new shared resource at index (and shift following indices)
           ///        (if max size not reached && index <= length)
           /// @warning Source object is invalidated (even on failure)
@@ -241,6 +248,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return true;
           }
           
+          /// @brief Replace existing resource with shared resource at index (if index < length)
+          inline bool replace(uint32_t index, const SharedResource<_Type>& res) noexcept { return replace(index, SharedResource<_Type>(res)); }
           /// @brief Replace existing resource with shared resource at index (if index < length)
           /// @warning Source object is invalidated (even on failure)
           inline bool replace(uint32_t index, SharedResource<_Type>&& res) noexcept { return replace(index, res.extract()); }
@@ -318,7 +327,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         public:
           SharedResourceId() noexcept = default;
           inline SharedResourceId(const SharedResourceId<_DwordCount>& rhs) noexcept { memcpy(_id, rhs._id, _DwordCount*sizeof(uint32_t)); }
+          inline SharedResourceId(SharedResourceId<_DwordCount>&& rhs) noexcept { memcpy(_id, rhs._id, _DwordCount*sizeof(uint32_t)); }
           inline SharedResourceId<_DwordCount>& operator=(const SharedResourceId<_DwordCount>& rhs) noexcept {
+            memcpy(_id, rhs._id, _DwordCount * sizeof(uint32_t));
+            return *this;
+          }
+          inline SharedResourceId<_DwordCount>& operator=(SharedResourceId<_DwordCount>&& rhs) noexcept {
             memcpy(_id, rhs._id, _DwordCount * sizeof(uint32_t));
             return *this;
           }
@@ -363,9 +377,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         // ---
 
-        /// @brief Data input layout for shader object(s) - usage: GraphicsPipeline::Builder
-        using InputLayout = SharedResource<ID3D11InputLayout>;
-        
         /// @brief Rasterizer state driver resource - usage: GraphicsPipeline::Builder / Renderer.setRasterizerState
         using RasterizerState = SharedResource<ID3D11RasterizerState>;
         /// @brief Depth/stencil state driver resource -usage: GraphicsPipeline::Builder / Renderer.setDepthStencilState
@@ -377,6 +388,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         using SamplerState = SharedResource<ID3D11SamplerState>;
         /// @brief Array of sampler/filter state driver resources - usage: Renderer.set<...>SamplerStates
         using SamplerStateArray = SharedResourceArray<ID3D11SamplerState, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT>;
+        /// @brief Data input layout for shader object(s) - usage: GraphicsPipeline::Builder
+        using InputLayout = SharedResource<ID3D11InputLayout>;
 
         // ---
 
@@ -407,11 +420,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           RasterizerState rasterizerState;
           DepthStencilState depthStencilState;
           BlendState blendState;
-          uint32_t stencilRef = 1u;
 
           // input format
           InputLayout inputLayout;
           VertexTopology topology = VertexTopology::triangles;
+          uint32_t stencilRef = 1u;
           // output constraints
           pandora::memory::LightVector<D3D11_VIEWPORT> viewports;
           pandora::memory::LightVector<D3D11_RECT> scissorTests;

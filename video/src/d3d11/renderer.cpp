@@ -28,7 +28,9 @@ Includes hpp implementations at the end of the file
 # include <cstddef>
 # include <cstring>
 # include <cmath>
+# include <mutex>
 # include <stdexcept>
+# include <thread/spin_lock.h>
 # include <memory/light_string.h>
 
 # define NOMINMAX
@@ -73,7 +75,7 @@ Includes hpp implementations at the end of the file
 
 # include "video/d3d11/renderer.h"
 # include "video/d3d11/swap_chain.h"
-# include "video/d3d11/renderer_state_factory.h"
+# include "video/d3d11/graphics_pipeline.h"
 
 # include "video/d3d11/shader.h"
 # include "video/d3d11/depth_stencil_buffer.h"
@@ -86,6 +88,7 @@ Includes hpp implementations at the end of the file
 
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
+  using pandora::memory::LightVector;
 
 
 // -----------------------------------------------------------------------------
@@ -328,6 +331,7 @@ Includes hpp implementations at the end of the file
     try {
       // release device context
       if (this->_context) {
+        this->_attachedPipeline = nullptr;
         this->_context->Flush();
         this->_context->Release();
       }
@@ -346,8 +350,11 @@ Includes hpp implementations at the end of the file
       _deviceLevel(rhs._deviceLevel),
       _dxgiFactory(rhs._dxgiFactory),
       _dxgiLevel(rhs._dxgiLevel),
-      _currentTopology(rhs._currentTopology) {
-    memcpy(this->_currentStages, rhs._currentStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
+      _attachedPipeline(std::move(rhs._attachedPipeline)),
+      _rasterizerStateCache(std::move(rhs._rasterizerStateCache)),
+      _depthStencilStateCache(std::move(rhs._depthStencilStateCache)),
+      _blendStateCache(std::move(rhs._blendStateCache)),
+      _blendStatePerTargetCache(std::move(rhs._blendStatePerTargetCache)) {
     rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
     rhs._context = nullptr;
@@ -359,8 +366,11 @@ Includes hpp implementations at the end of the file
     this->_deviceLevel = rhs._deviceLevel;
     this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;
-    memcpy(this->_currentStages, rhs._currentStages, (__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX+1)*sizeof(Shader::Handle));
-    this->_currentTopology = rhs._currentTopology;
+    this->_attachedPipeline = std::move(rhs._attachedPipeline);
+    this->_rasterizerStateCache = std::move(rhs._rasterizerStateCache);
+    this->_depthStencilStateCache = std::move(rhs._depthStencilStateCache);
+    this->_blendStateCache = std::move(rhs._blendStateCache);
+    this->_blendStatePerTargetCache = std::move(rhs._blendStatePerTargetCache);
     rhs._device = nullptr;
     rhs._context = nullptr;
     rhs._dxgiFactory = nullptr;
@@ -463,6 +473,7 @@ Includes hpp implementations at the end of the file
       for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
         memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_VIEWPORT));
       this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
+      this->_currentViewportScissorId = 0;
     }
   }
 
@@ -477,6 +488,7 @@ Includes hpp implementations at the end of the file
       for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
         memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_RECT));
       this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
+      this->_currentViewportScissorId = 0;
     }
   }
   
@@ -560,8 +572,11 @@ Includes hpp implementations at the end of the file
     }
 # endif
 
-  // Bind display shader program to the graphics pipeline (topology, input-assembler stage, shader stages)
-  void Renderer::bindDisplayShaders(const ShaderProgram& shaders) noexcept {
+  // ---
+
+  // Bind graphics pipeline to the rendering device
+  // -> topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors
+  void Renderer::bindGraphicsPipeline(GraphicsPipeline& pipeline) noexcept {
     static_assert((unsigned int)ShaderType::vertex == 0 && (unsigned int)ShaderType::fragment == 1
 #            ifndef __P_DISABLE_GEOMETRY_STAGE
                && (unsigned int)ShaderType::geometry == 2
@@ -573,40 +588,234 @@ Includes hpp implementations at the end of the file
                  && (unsigned int)ShaderType::tessCtrl == 2 && (unsigned int)ShaderType::tessEval == 3
 #              endif
 #            endif
-             ,"ShaderType enum: value order inconsistent with Renderer::bindDisplayShaders");
-    const Shader::Handle* newStage = shaders.shaderStages();
-    Shader::Handle* oldStage = this->_currentStages;
+             ,"ShaderType enum values inconsistent with Renderer::bindGraphicsPipeline");
 
-    if (this->_currentTopology != shaders.topology()) {
-      this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)shaders.topology());
-      this->_currentTopology = shaders.topology();
+    GraphicsPipeline::Handle pipelineHandle = pipeline.handle(); // copy shared_ptr only once
+    SharedResource<ID3D11DeviceChild>* newShaderStage = pipelineHandle->shaderStages;
+
+    // Previous pipeline exists -> only apply different params
+    if (pipelineHandle != nullptr) {
+      if (this->_attachedPipeline != nullptr) {
+        SharedResource<ID3D11DeviceChild>* oldShaderStage = this->_attachedPipeline->shaderStages;
+
+        // -> shader stages + input format
+        if (pipelineHandle->topology != this->_attachedPipeline->topology)
+          this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipelineHandle->topology);
+        if (*newShaderStage != *oldShaderStage) {
+          this->_context->IASetInputLayout(pipelineHandle->inputLayout.get());
+          this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
+        }
+        if (*(++newShaderStage) != *(++oldShaderStage))
+          this->_context->PSSetShader((ID3D11PixelShader*)newShaderStage->get(), nullptr, 0);
+#       if !defined(__P_DISABLE_GEOMETRY_STAGE)
+          if (*(++newShaderStage) != *(++oldShaderStage))
+            this->_context->GSSetShader((ID3D11GeometryShader*)newShaderStage->get(), nullptr, 0);
+#       endif
+#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
+          if (*(++newShaderStage) != *(++oldShaderStage))
+            this->_context->HSSetShader((ID3D11HullShader*)newShaderStage->get(), nullptr, 0);
+          if (*(++newShaderStage) != *(++oldShaderStage))
+            this->_context->DSSetShader((ID3D11DomainShader*)newShaderStage->get(), nullptr, 0);
+#       endif
+
+        // -> pipeline states
+        if (pipelineHandle->rasterizerState.get() != this->_currentRasterizerState) {
+          this->_context->RSSetState(pipelineHandle->rasterizerState.get());
+          this->_currentRasterizerState = pipelineHandle->rasterizerState.get();
+        }
+        if (pipelineHandle->depthStencilState.get() != this->_currentDepthStencilState
+          || pipelineHandle->stencilRef != this->_attachedPipeline->stencilRef) {
+          this->_context->OMSetDepthStencilState(pipelineHandle->depthStencilState.get(), (UINT)pipelineHandle->stencilRef);
+          this->_currentDepthStencilState = pipelineHandle->depthStencilState.get();
+        }
+        if (pipelineHandle->blendState.get() != this->_currentBlendState) {
+          this->_context->OMSetBlendState(pipelineHandle->blendState.get(), pipelineHandle->blendConstant, 0xFFFFFFFFu);
+          this->_currentBlendState = pipelineHandle->blendState.get();
+        }
+
+        // -> viewport(s) / scissor(s)
+        if (pipelineHandle->viewportScissorId != this->_currentViewportScissorId) {
+          this->_context->RSSetViewports((UINT)pipelineHandle->viewports.size(), pipelineHandle->viewports.data());
+          this->_context->RSSetScissorRects((UINT)pipelineHandle->scissorTests.size(), pipelineHandle->scissorTests.data());
+          this->_currentViewportScissorId = pipelineHandle->viewportScissorId;
+        }
+      }
+      // No previous pipeline -> assign all
+      else {
+        // -> shader stages + input format
+        this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipelineHandle->topology);
+        this->_context->IASetInputLayout(pipelineHandle->inputLayout.get());
+        this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
+        this->_context->PSSetShader((ID3D11PixelShader*)(++newShaderStage)->get(), nullptr, 0);
+#       if !defined(__P_DISABLE_GEOMETRY_STAGE)
+          this->_context->GSSetShader((ID3D11GeometryShader*)(++newShaderStage)->get(), nullptr, 0);
+#       endif
+#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
+          this->_context->HSSetShader((ID3D11HullShader*)(++newShaderStage)->get(), nullptr, 0);
+          this->_context->DSSetShader((ID3D11DomainShader*)(++newShaderStage)->get(), nullptr, 0);
+#       endif
+
+        // -> pipeline states
+        this->_context->RSSetState(pipelineHandle->rasterizerState.get());
+        this->_currentRasterizerState = pipelineHandle->rasterizerState.get();
+        this->_context->OMSetDepthStencilState(pipelineHandle->depthStencilState.get(), (UINT)pipelineHandle->stencilRef);
+        this->_currentDepthStencilState = pipelineHandle->depthStencilState.get();
+        this->_context->OMSetBlendState(pipelineHandle->blendState.get(), pipelineHandle->blendConstant, 0xFFFFFFFFu);
+        this->_currentBlendState = pipelineHandle->blendState.get();
+
+        // -> viewport(s) / scissor(s)
+        this->_context->RSSetViewports((UINT)pipelineHandle->viewports.size(), pipelineHandle->viewports.data());
+        this->_context->RSSetScissorRects((UINT)pipelineHandle->scissorTests.size(), pipelineHandle->scissorTests.data());
+        this->_currentViewportScissorId = pipelineHandle->viewportScissorId;
+      }
     }
-    if (*oldStage != *newStage) {
-      this->_context->IASetInputLayout((ID3D11InputLayout*)&(shaders.inputLayout()));
-      this->_context->VSSetShader((ID3D11VertexShader*)*newStage, nullptr, 0);
-      *oldStage = *newStage;
-    }
-    if (*(++oldStage) != *(++newStage)) {
-      this->_context->PSSetShader((ID3D11PixelShader*)*newStage, nullptr, 0);
-      *oldStage = *newStage;
+    // Empty pipeline -> unbind
+    else {
+      this->_context->VSSetShader(nullptr, nullptr, 0);
+      this->_context->PSSetShader(nullptr, nullptr, 0);
+#     if !defined(__P_DISABLE_GEOMETRY_STAGE)
+        this->_context->GSSetShader(nullptr, nullptr, 0);
+#     endif
+#     if !defined(__P_DISABLE_TESSELLATION_STAGE)
+        this->_context->HSSetShader(nullptr, nullptr, 0);
+        this->_context->DSSetShader(nullptr, nullptr, 0);
+#     endif
+      this->_context->IASetInputLayout(nullptr);
+      this->_context->RSSetState(nullptr);
+      this->_context->OMSetDepthStencilState(nullptr, (UINT)1);
+      this->_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
     }
 
-#   if !defined(__P_DISABLE_GEOMETRY_STAGE)
-      if (*(++oldStage) != *(++newStage)) {
-        this->_context->GSSetShader((ID3D11GeometryShader*)*newStage, nullptr, 0);
-        *oldStage = *newStage;
+    this->_attachedPipeline = std::move(pipelineHandle); // move shared_ptr
+  }
+
+
+// -- pipeline state cache -- --------------------------------------------------
+
+  static pandora::thread::SpinLock g_resourceCacheLock;
+  static constexpr inline uint32_t __indexNotFound() noexcept { return (uint32_t)-1; }
+
+  template <typename _Resource, size_t _IdSize>
+  static uint32_t __binarySearch(const SharedResourceCache<_Resource,_IdSize>* collec, size_t length,
+                                 const SharedResourceId<_IdSize>& target) noexcept {
+    if (length == 0)
+      return __indexNotFound();
+
+    uint32_t first = 0, last = static_cast<uint32_t>(length)-1u, mid;
+    while (first < last) {
+      mid = (first + last) >> 1;
+      if (collec[mid].id < target)
+        first = mid + 1u;
+      else
+        last = mid;
+    }
+    return (collec[first].id == target) ? first : __indexNotFound();
+  }
+
+  template <typename _Resource, size_t _IdSize>
+  static __forceinline void __insertInPlace(LightVector<SharedResourceCache<_Resource,_IdSize> >& collec,
+                                            const SharedResourceId<_IdSize>& target, const _Resource& handle) {
+    uint32_t insertPos = 0;
+    if (!collec.empty()) {
+      uint32_t first = 0, last = static_cast<uint32_t>(collec.size()) - 1, mid;
+      while (first < last) {
+        mid = (first + last) >> 1;
+        if (collec[mid].id < target)
+          first = mid + 1;
+        else
+          last = mid;
       }
-#   endif
-#   ifndef __P_DISABLE_TESSELLATION_STAGE
-      if (*(++oldStage) != *(++newStage)) {
-        this->_context->HSSetShader((ID3D11HullShader*)*newStage, nullptr, 0);
-        *oldStage = *newStage;
+
+      if (collec[first].id == target) { // already exists: increase instance counter
+        ++(collec[first].instances);
+        return;
       }
-      if (*(++oldStage) != *(++newStage)) {
-        this->_context->DSSetShader((ID3D11DomainShader*)*newStage, nullptr, 0);
-        *oldStage = *newStage;
-      }
-#   endif
+      insertPos = (collec[first].id > target) ? first : first + 1u; // new entry: store ordered position
+    }
+    try { collec.insert(insertPos, SharedResourceCache<_Resource, _IdSize>{ target, handle, 1 }); } catch (...) {}
+  }
+
+  // ---
+
+  void Renderer::_addRasterizerState(const RasterizerStateId& id, const RasterizerState& handle) {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    __insertInPlace(this->_rasterizerStateCache, id, handle);
+  }
+  void Renderer::_addDepthStencilState(const DepthStencilStateId& id, const DepthStencilState& handle) {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    __insertInPlace(this->_depthStencilStateCache, id, handle);
+  }
+  void Renderer::_addBlendState(const BlendStateId& id, const BlendState& handle) {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    __insertInPlace(this->_blendStateCache, id, handle);
+  }
+  void Renderer::_addBlendStatePerTarget(const BlendStatePerTargetId& id, const BlendState& handle) {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    __insertInPlace(this->_blendStatePerTargetCache, id, handle);
+  }
+
+  void Renderer::_removeRasterizerState(const RasterizerStateId& id) noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_rasterizerStateCache.data(), this->_rasterizerStateCache.size(), id);
+    if (index != __indexNotFound() && --(this->_rasterizerStateCache[index].instances) < 1)
+      this->_rasterizerStateCache.erase(index);
+  }
+  void Renderer::_removeDepthStencilState(const DepthStencilStateId& id) noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_depthStencilStateCache.data(), this->_depthStencilStateCache.size(), id);
+    if (index != __indexNotFound() && --(this->_depthStencilStateCache[index].instances) < 1)
+      this->_depthStencilStateCache.erase(index);
+  }
+  void Renderer::_removeBlendState(const BlendStateId& id) noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_blendStateCache.data(), this->_blendStateCache.size(), id);
+    if (index != __indexNotFound() && --(this->_blendStateCache[index].instances) < 1)
+      this->_blendStateCache.erase(index);
+  }
+  void Renderer::_removeBlendStatePerTarget(const BlendStatePerTargetId& id) noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_blendStatePerTargetCache.data(), this->_blendStatePerTargetCache.size(), id);
+    if (index != __indexNotFound() && --(this->_blendStatePerTargetCache[index].instances) < 1)
+      this->_blendStatePerTargetCache.erase(index);
+  }
+
+  // ---
+
+  bool Renderer::_findRasterizerState(const RasterizerStateId& id, RasterizerState& out) const noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_rasterizerStateCache.data(), this->_rasterizerStateCache.size(), id);
+    if (index != __indexNotFound()) {
+      out = this->_rasterizerStateCache[index].handle;
+      return true;
+    }
+    return false;
+  }
+  bool Renderer::_findDepthStencilState(const DepthStencilStateId& id, DepthStencilState& out) const noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_depthStencilStateCache.data(), this->_depthStencilStateCache.size(), id);
+    if (index != __indexNotFound()) {
+      out = this->_depthStencilStateCache[index].handle;
+      return true;
+    }
+    return false;
+  }
+  bool Renderer::_findBlendState(const BlendStateId& id, BlendState& out) const noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_blendStateCache.data(), this->_blendStateCache.size(), id);
+    if (index != __indexNotFound()) {
+      out = this->_blendStateCache[index].handle;
+      return true;
+    }
+    return false;
+  }
+  bool Renderer::_findBlendStatePerTarget(const BlendStatePerTargetId& id, BlendState& out) const noexcept {
+    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
+    uint32_t index = __binarySearch(this->_blendStatePerTargetCache.data(), this->_blendStatePerTargetCache.size(), id);
+    if (index != __indexNotFound()) {
+      out = this->_blendStatePerTargetCache[index].handle;
+      return true;
+    }
+    return false;
   }
 
 
@@ -972,7 +1181,7 @@ Includes hpp implementations at the end of the file
 
 
 // -----------------------------------------------------------------------------
-// _d3d_resource.h -- error messages
+// _shared_resource.h -- error messages
 // -----------------------------------------------------------------------------
 
   // Exception class with LightString
@@ -1078,7 +1287,7 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 // Include hpp implementations
 // -----------------------------------------------------------------------------
-# include "./renderer_state_factory.hpp"
+# include "./graphics_pipeline.hpp"
 # include "./buffers.hpp"
 # include "./texture.hpp"
 # include "./texture_reader_writer.hpp"
