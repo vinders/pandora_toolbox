@@ -48,16 +48,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @remarks The same RasterizerParams can (and should) be used to build multiple GraphicsPipeline (if needed).
         class RasterizerParams final {
         public:
-          /// @brief Create default rasterizer params: filled, back-face culling, clockwise order, depth clipping.
+          /// @brief Create default rasterizer params: filled, back-face culling, clockwise order, no depth clipping.
           RasterizerParams() noexcept;
           /// @brief Initialize rasterizer config params
+          /// @param renderer          Renderer associated with the pipeline built (used to verify feature support).
           /// @param cull              Identify polygons to hide: back-facing, front-facing, none.
           /// @param fill              Filled/wireframe polygon rendering.
           /// @param isFrontClockwise  Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
           /// @param depthClipping     Enable clipping based on distance
           /// @param scissorClipping   Enable scissor-rectangle clipping
-          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill, bool isFrontClockwise = true, 
-                           bool depthClipping = true, bool scissorClipping = false) noexcept;
+          RasterizerParams(const Renderer& renderer, CullMode cull, FillMode fill = FillMode::fill,
+                           bool isFrontClockwise = true, bool depthClipping = false, bool scissorClipping = false) noexcept;
           
           RasterizerParams(const RasterizerParams&) = default;
           RasterizerParams& operator=(const RasterizerParams&) = default;
@@ -70,14 +71,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
           inline RasterizerParams& cullMode(CullMode cull) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
           /// @brief Set filled/wireframe polygon rendering
-          inline RasterizerParams& fillMode(FillMode fill) noexcept {
+          inline RasterizerParams& fillMode(const Renderer&, FillMode fill) noexcept {
             if (fill == FillMode::linesAA) { _params.FillMode = D3D11_FILL_WIREFRAME;  _params.AntialiasedLineEnable = TRUE; }
             else                           { _params.FillMode = (D3D11_FILL_MODE)fill; _params.AntialiasedLineEnable = FALSE; }
             return *this;
           }
           
           /// @brief Enable clipping based on distance
-          inline RasterizerParams& depthClipping(bool isEnabled) noexcept { _params.DepthClipEnable = isEnabled ? TRUE : FALSE; return *this; }
+          inline RasterizerParams& depthClipping(const Renderer&, bool isEnabled) noexcept {
+            _params.DepthClipEnable = isEnabled ? TRUE : FALSE; return *this;
+          }
           /// @brief Enable scissor-rectangle clipping
           inline RasterizerParams& scissorClipping(bool isEnabled) noexcept { _params.ScissorEnable = isEnabled ? TRUE : FALSE; return *this; }
           
@@ -128,7 +131,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param backFaceDepthFailedOp  Operation on back depth/stencil pixel when depth-test fails.
           /// @param backFacePassedOp       Operation on back stencil pixel when depth-test passes.
           inline DepthStencilParams(StencilCompare depthComp, StencilOp frontFaceDepthFailedOp, StencilOp frontFacePassedOp, 
-                                    StencilOp backFaceDepthFailedOp, StencilOp backFacePassedOp) noexcept {
+                                    StencilOp backFaceDepthFailedOp, StencilOp backFacePassedOp, uint32_t stencilRef = 1u) noexcept
+            : _stencilRef(stencilRef) {
             _init(TRUE, FALSE, (D3D11_COMPARISON_FUNC)depthComp, D3D11_COMPARISON_ALWAYS, D3D11_COMPARISON_ALWAYS);
             frontFaceOp(frontFacePassedOp, frontFaceDepthFailedOp, frontFacePassedOp);
             backFaceOp(backFacePassedOp, backFaceDepthFailedOp, backFacePassedOp);
@@ -142,7 +146,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param backFacePassedOp       Operation on back stencil pixel when depth/stencil-tests pass.
           inline DepthStencilParams(StencilCompare frontFaceComp, StencilCompare backFaceComp, 
                                     StencilOp frontFaceFailedOp, StencilOp frontFacePassedOp,
-                                    StencilOp backFaceFailedOp, StencilOp backFacePassedOp) noexcept {
+                                    StencilOp backFaceFailedOp, StencilOp backFacePassedOp, uint32_t stencilRef = 1u) noexcept
+            : _stencilRef(stencilRef) {
             _init(FALSE, TRUE, D3D11_COMPARISON_ALWAYS, (D3D11_COMPARISON_FUNC)frontFaceComp, (D3D11_COMPARISON_FUNC)backFaceComp);
             frontFaceOp(frontFaceFailedOp, frontFaceFailedOp, frontFacePassedOp);
             backFaceOp(backFaceFailedOp, backFaceFailedOp, backFacePassedOp);
@@ -159,7 +164,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param backFacePassedOp       Operation on back stencil pixel when depth/stencil-tests pass.
           inline DepthStencilParams(StencilCompare depthComp, StencilCompare frontFaceComp, StencilCompare backFaceComp, 
                                     StencilOp frontFaceFailedOp, StencilOp frontFaceDepthFailedOp, StencilOp frontFacePassedOp,
-                                    StencilOp backFaceFailedOp, StencilOp backFaceDepthFailedOp, StencilOp backFacePassedOp) noexcept {
+                                    StencilOp backFaceFailedOp, StencilOp backFaceDepthFailedOp, StencilOp backFacePassedOp,
+                                    uint32_t stencilRef = 1u) noexcept : _stencilRef(stencilRef) {
             _init(TRUE, TRUE, (D3D11_COMPARISON_FUNC)depthComp, (D3D11_COMPARISON_FUNC)frontFaceComp, (D3D11_COMPARISON_FUNC)backFaceComp);
             frontFaceOp(frontFaceFailedOp, frontFaceDepthFailedOp, frontFacePassedOp);
             backFaceOp(backFaceFailedOp, backFaceDepthFailedOp, backFacePassedOp);
@@ -201,6 +207,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _params.BackFace.StencilPassOp = (D3D11_STENCIL_OP)passed;
             return *this;
           }
+
+          /// @brief Set depth/stencil operation reference (default: 1)
+          DepthStencilParams& stencilReference(uint32_t stencilRef) noexcept { _stencilRef = stencilRef; return *this; }
+          /// @brief Get depth/stencil operation reference
+          inline uint32_t stencilReference() const noexcept { return _stencilRef; }
           
           // -- depth/stencil masks --
           
@@ -210,7 +221,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return *this;
           }
           /// @brief Set pixel read/write mask for stencil-test (default: 0xFF)
-          inline DepthStencilParams& stencilMask(uint8_t stencilReadMask, uint8_t stencilWriteMask) noexcept { 
+          inline DepthStencilParams& stencilMask(uint32_t stencilReadMask, uint32_t stencilWriteMask) noexcept { 
             _params.StencilReadMask = (UINT8)stencilReadMask;
             _params.StencilWriteMask = (UINT8)stencilWriteMask;
             return *this;
@@ -226,6 +237,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         private:
           D3D11_DEPTH_STENCIL_DESC _params;
+          uint32_t _stencilRef = 1u;
         };
         
         
@@ -319,11 +331,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           BlendPerTargetParams& operator=(const BlendPerTargetParams&) = default;
           ~BlendPerTargetParams() noexcept = default;
 
-          /// @brief Max number of blend targets
-          constexpr inline size_t maxBlendTargets() noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
-
           /// @brief Enable blending for a specific render-target
-          /// @param targetIndex     Index of the target to specify (must be below 'maxBlendTargets()' (usually 8))
+          /// @param targetIndex     Index of the target to specify (must be below 'Renderer.maxRenderTargets()' (usually 8))
           /// @param srcColorFactor  Pre-blend operation to perform on pixel shader output RGB value (any value)
           /// @param destColorFactor Pre-blend operation to perform on existing render-target RGB value (any value)
           /// @param colorBlendOp    Color blend operation (between srcColorFactor and destColorFactor)
@@ -336,7 +345,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                BlendFactor srcAlphaFactor, BlendFactor destAlphaFactor, BlendOp alphaBlendOp,
                                                ColorComponentFlag mask = ColorComponentFlag::all) noexcept;
           /// @brief Disable blending for a specific render-target
-          /// @param targetIndex  Index of the target to disable (must be below 'maxBlendTargets()' (usually 8))
+          /// @param targetIndex  Index of the target to disable (must be below 'Renderer.maxRenderTargets()' (usually 8))
           inline BlendPerTargetParams& disableTargetBlend(uint32_t targetIndex) noexcept {
             assert(targetIndex < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
             _params.RenderTarget[targetIndex].BlendEnable = FALSE;
@@ -419,7 +428,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @brief Bind vertex shader input layout description (optional)
             /// @warning Required if vertex shader uses input locations.
             /// @remarks Pass an empty InputLayout object to reset.
-            inline Builder& setInputLayout(const InputLayout& inputLayout) { this->_params.inputLayout = inputLayout; return *this; }
+            inline Builder& setInputLayout(InputLayout inputLayout) { this->_params.inputLayout = std::move(inputLayout); return *this; }
+
             /// @brief Set vertex polygon topology for input stage
             inline Builder& setVertexTopology(VertexTopology topology) noexcept { this->_params.topology = topology; return *this; }
 #           ifndef __P_DISABLE_TESSELLATION_STAGE
@@ -460,7 +470,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @brief Bind depth/stencil test state (required)
             /// @warning Required to use a depth/stencil buffer when rendering.
             /// @throws runtime_error on creation failure
-            Builder& setDepthStencilState(const DepthStencilParams& state, uint32_t stencilRef = 1u);
+            Builder& setDepthStencilState(const DepthStencilParams& state);
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
             /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
             ///                           (defaults to white if set to NULL).
@@ -547,7 +557,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
         private:
           // Create pipeline object -- reserved for internal use or advanced usage
-          // -> throws: logic_error if some required states/stages haven't been set (or if renderer is NULL).
+          // -> throws: logic_error if some required states/stages haven't been set.
           GraphicsPipeline(GraphicsPipeline::Builder& builder);
         
         private:

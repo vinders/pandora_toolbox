@@ -28,10 +28,9 @@ Implementation included in renderer.cpp
     ZeroMemory(&_params, sizeof(D3D11_RASTERIZER_DESC));
     _params.CullMode = D3D11_CULL_BACK;
     _params.FillMode = D3D11_FILL_SOLID;
-    _params.DepthClipEnable = TRUE;
   }
   
-  RasterizerParams::RasterizerParams(CullMode cull, FillMode fill, bool isFrontClockwise,
+  RasterizerParams::RasterizerParams(const Renderer&, CullMode cull, FillMode fill, bool isFrontClockwise,
                                      bool depthClipping, bool scissorClipping) noexcept {
     ZeroMemory(&_params, sizeof(D3D11_RASTERIZER_DESC));
     
@@ -306,10 +305,10 @@ Implementation included in renderer.cpp
     return *this;
   }
   // Bind depth/stencil test state (required)
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setDepthStencilState(const DepthStencilParams& state, uint32_t stencilRef) { // throws
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setDepthStencilState(const DepthStencilParams& state) { // throws
     this->_params.depthStencilState.release();
     this->_params.depthStencilCacheId = state.computeId();
-    this->_params.stencilRef = stencilRef;
+    this->_params.stencilRef = state.stencilReference();
 
     if (!this->_renderer->_findDepthStencilState(this->_params.depthStencilCacheId, this->_params.depthStencilState))
       this->_params.depthStencilState = createDepthStencilState(state);

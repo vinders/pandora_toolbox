@@ -155,7 +155,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       pipelineBuilder.setRenderTargetFormat(nullptr, 0);//TODO
       pipelineBuilder.setInputLayout(inputLayout);
       pipelineBuilder.setVertexTopology(VertexTopology::triangles);
-      pipelineBuilder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
+      pipelineBuilder.setRasterizerState(RasterizerParams(*renderer, CullMode::cullBack, FillMode::fill, true, false, false));
       pipelineBuilder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
                                                               StencilOp::decrementWrap, StencilOp::invert), 1u);
       pipelineBuilder.setBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,

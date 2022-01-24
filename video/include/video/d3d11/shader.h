@@ -46,6 +46,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           Shader& operator=(const Shader& rhs);
           Shader& operator=(Shader&& rhs) noexcept;
           ~Shader() noexcept { release(); }
+
           void release() noexcept; ///< Destroy shader object
           
           
