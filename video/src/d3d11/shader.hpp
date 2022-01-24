@@ -117,7 +117,7 @@ Implementation included in renderer.cpp
     }
   }
 
-  Shader& Shader::operator=(const Shader& rhs) noexcept {
+  Shader& Shader::operator=(const Shader& rhs) {
     release();
     this->_handle = rhs._handle;
     this->_type = rhs._type;

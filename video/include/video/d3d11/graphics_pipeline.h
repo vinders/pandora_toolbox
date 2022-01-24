@@ -377,7 +377,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         ///          - Try to limit the number of dynamic state changes to improve efficiency.
         class GraphicsPipeline final {
         public:
-          using Handle = std::shared_ptr<_DxPipelineStages>; ///< Bindable graphics pipeline handle
+          using Handle = GraphicsPipelineHandle; ///< Bindable graphics pipeline handle
 
           /// @brief Empty pipeline -- not usable (only useful to store variable not immediately initialized)
           /// @remarks Use GraphicsPipeline::Builder to create an initialized pipeline.
@@ -484,7 +484,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
             ///                        Must be the same as 'viewportCount' if 'isDynamicCount' is false.
             /// @param useDynamicCount Allow viewport/scissor-test count to be different (always supported with Direct3D11).
-            /// @warning The latest Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
+            /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
+            /// @warning The current Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
             ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!
             Builder& setViewports(const Viewport viewports[], size_t viewportCount,
                                   const ScissorRectangle scissorTests[], size_t scissorCount,
@@ -553,143 +554,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           std::shared_ptr<_DxPipelineStages> _pipeline = nullptr;
           std::shared_ptr<Renderer> _renderer = nullptr;
         };
-
-
-        
-
-        // ---
-
-        /*
-		enum IMAGE_LAYOUT
-		{
-			IMAGE_LAYOUT_UNDEFINED,					// invalid state
-			IMAGE_LAYOUT_RENDERTARGET,				// render target, write enabled
-			IMAGE_LAYOUT_DEPTHSTENCIL,				// depth stencil, write enabled
-			IMAGE_LAYOUT_DEPTHSTENCIL_READONLY,		// depth stencil, read only
-			IMAGE_LAYOUT_SHADER_RESOURCE,			// shader resource, read only
-			IMAGE_LAYOUT_SHADER_RESOURCE_COMPUTE,	// shader resource, read only, non-pixel shader
-			IMAGE_LAYOUT_UNORDERED_ACCESS,			// shader resource, write enabled
-			IMAGE_LAYOUT_COPY_SRC,					// copy from
-			IMAGE_LAYOUT_COPY_DST,					// copy to
-			IMAGE_LAYOUT_SHADING_RATE_SOURCE,		// shading rate control per tile
-		};
-        struct RenderPassAttachment
-		{
-			enum TYPE
-			{
-				RENDERTARGET,
-				DEPTH_STENCIL,
-				RESOLVE,
-				SHADING_RATE_SOURCE
-			} type = RENDERTARGET;
-			enum LOAD_OPERATION
-			{
-				LOADOP_LOAD,
-				LOADOP_CLEAR,
-				LOADOP_DONTCARE,
-			} loadop = LOADOP_LOAD;
-			const Texture* texture = nullptr;
-			int subresource = -1;
-			enum STORE_OPERATION
-			{
-				STOREOP_STORE,
-				STOREOP_DONTCARE,
-			} storeop = STOREOP_STORE;
-			IMAGE_LAYOUT initial_layout = IMAGE_LAYOUT_UNDEFINED;	// layout before the render pass
-			IMAGE_LAYOUT subpass_layout = IMAGE_LAYOUT_UNDEFINED;	// layout within the render pass
-			IMAGE_LAYOUT final_layout = IMAGE_LAYOUT_UNDEFINED;		// layout after the render pass
-
-			static RenderPassAttachment RenderTarget(
-				const Texture* resource = nullptr,
-				LOAD_OPERATION load_op = LOADOP_LOAD,
-				STORE_OPERATION store_op = STOREOP_STORE,
-				IMAGE_LAYOUT initial_layout = IMAGE_LAYOUT_SHADER_RESOURCE,
-				IMAGE_LAYOUT subpass_layout = IMAGE_LAYOUT_RENDERTARGET,
-				IMAGE_LAYOUT final_layout = IMAGE_LAYOUT_SHADER_RESOURCE
-			)
-			{
-				RenderPassAttachment attachment;
-				attachment.type = RENDERTARGET;
-				attachment.texture = resource;
-				attachment.loadop = load_op;
-				attachment.storeop = store_op;
-				attachment.initial_layout = initial_layout;
-				attachment.subpass_layout = subpass_layout;
-				attachment.final_layout = final_layout;
-				return attachment;
-			}
-
-			static RenderPassAttachment DepthStencil(
-				const Texture* resource = nullptr,
-				LOAD_OPERATION load_op = LOADOP_LOAD,
-				STORE_OPERATION store_op = STOREOP_STORE,
-				IMAGE_LAYOUT initial_layout = IMAGE_LAYOUT_DEPTHSTENCIL,
-				IMAGE_LAYOUT subpass_layout = IMAGE_LAYOUT_DEPTHSTENCIL,
-				IMAGE_LAYOUT final_layout = IMAGE_LAYOUT_DEPTHSTENCIL
-			)
-			{
-				RenderPassAttachment attachment;
-				attachment.type = DEPTH_STENCIL;
-				attachment.texture = resource;
-				attachment.loadop = load_op;
-				attachment.storeop = store_op;
-				attachment.initial_layout = initial_layout;
-				attachment.subpass_layout = subpass_layout;
-				attachment.final_layout = final_layout;
-				return attachment;
-			}
-
-			static RenderPassAttachment Resolve(
-				const Texture* resource = nullptr,
-				IMAGE_LAYOUT initial_layout = IMAGE_LAYOUT_SHADER_RESOURCE,
-				IMAGE_LAYOUT final_layout = IMAGE_LAYOUT_SHADER_RESOURCE
-			)
-			{
-				RenderPassAttachment attachment;
-				attachment.type = RESOLVE;
-				attachment.texture = resource;
-				attachment.initial_layout = initial_layout;
-				attachment.final_layout = final_layout;
-				return attachment;
-			}
-
-			static RenderPassAttachment ShadingRateSource(
-				const Texture* resource = nullptr,
-				IMAGE_LAYOUT initial_layout = IMAGE_LAYOUT_SHADING_RATE_SOURCE,
-				IMAGE_LAYOUT final_layout = IMAGE_LAYOUT_SHADING_RATE_SOURCE
-			)
-			{
-				RenderPassAttachment attachment;
-				attachment.type = SHADING_RATE_SOURCE;
-				attachment.texture = resource;
-				attachment.initial_layout = initial_layout;
-				attachment.subpass_layout = IMAGE_LAYOUT_SHADING_RATE_SOURCE;
-				attachment.final_layout = final_layout;
-				return attachment;
-			}
-		};
-        struct RenderPassDesc {
-			enum FLAGS {
-				FLAG_EMPTY = 0,
-				FLAG_ALLOW_UAV_WRITES = 1 << 0,
-			};
-			uint32_t _flags = FLAG_EMPTY;
-			std::vector<RenderPassAttachment> attachments;
-	    };
-        */
-
-        class RenderPass final {
-        public:
-
-        private:
-
-        };
-
-
-		
-
-
-        
       }
     }
   }

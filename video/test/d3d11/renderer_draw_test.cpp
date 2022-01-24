@@ -232,7 +232,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     renderer->clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
 
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
@@ -309,7 +309,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
    
     renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
@@ -392,7 +392,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
@@ -498,7 +498,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
@@ -782,7 +782,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
     renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
     renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexTexLightData), (unsigned int)sizeof(InstanceData) };

@@ -533,7 +533,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(size_t{ 0 }, pipeline.handle()->viewports.size());
     EXPECT_EQ(size_t{ 0 }, pipeline.handle()->scissorTests.size());
     EXPECT_EQ((uint64_t)0, pipeline.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport (+ set same state params -> read from cache)
     Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 100.f);
@@ -571,7 +571,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(100.f, pipelineViewport.handle()->viewports[0].MaxDepth);
     EXPECT_EQ(size_t{ 0 }, pipelineViewport.handle()->scissorTests.size());
     EXPECT_EQ((uint64_t)1LL, pipelineViewport.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport + scissor test (+ different state params + split blending)
     Viewport viewports[]{ Viewport(0.f, 0.f, 800.f, 600.f, 0.1f, 1.f), Viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 100.f) };
@@ -630,7 +630,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((LONG)410, pipelineViewportScissor.handle()->scissorTests[1].right);
     EXPECT_EQ((LONG)320, pipelineViewportScissor.handle()->scissorTests[1].bottom);
     EXPECT_EQ((uint64_t)2LL, pipelineViewportScissor.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline);
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     builder.detachShaderStage(ShaderType::vertex);
     EXPECT_ANY_THROW(builder.build());

@@ -576,7 +576,7 @@ Includes hpp implementations at the end of the file
 
   // Bind graphics pipeline to the rendering device
   // -> topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors
-  void Renderer::bindGraphicsPipeline(GraphicsPipeline& pipeline) noexcept {
+  void Renderer::bindGraphicsPipeline(GraphicsPipelineHandle pipeline) noexcept {
     static_assert((unsigned int)ShaderType::vertex == 0 && (unsigned int)ShaderType::fragment == 1
 #            ifndef __P_DISABLE_GEOMETRY_STAGE
                && (unsigned int)ShaderType::geometry == 2
@@ -589,20 +589,18 @@ Includes hpp implementations at the end of the file
 #              endif
 #            endif
              ,"ShaderType enum values inconsistent with Renderer::bindGraphicsPipeline");
-
-    GraphicsPipeline::Handle pipelineHandle = pipeline.handle(); // copy shared_ptr only once
-    SharedResource<ID3D11DeviceChild>* newShaderStage = pipelineHandle->shaderStages;
+    SharedResource<ID3D11DeviceChild>* newShaderStage = pipeline->shaderStages;
 
     // Previous pipeline exists -> only apply different params
-    if (pipelineHandle != nullptr) {
+    if (pipeline != nullptr) {
       if (this->_attachedPipeline != nullptr) {
         SharedResource<ID3D11DeviceChild>* oldShaderStage = this->_attachedPipeline->shaderStages;
 
         // -> shader stages + input format
-        if (pipelineHandle->topology != this->_attachedPipeline->topology)
-          this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipelineHandle->topology);
+        if (pipeline->topology != this->_attachedPipeline->topology)
+          this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipeline->topology);
         if (*newShaderStage != *oldShaderStage) {
-          this->_context->IASetInputLayout(pipelineHandle->inputLayout.get());
+          this->_context->IASetInputLayout(pipeline->inputLayout.get());
           this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
         }
         if (*(++newShaderStage) != *(++oldShaderStage))
@@ -619,32 +617,32 @@ Includes hpp implementations at the end of the file
 #       endif
 
         // -> pipeline states
-        if (pipelineHandle->rasterizerState.get() != this->_currentRasterizerState) {
-          this->_context->RSSetState(pipelineHandle->rasterizerState.get());
-          this->_currentRasterizerState = pipelineHandle->rasterizerState.get();
+        if (pipeline->rasterizerState.get() != this->_currentRasterizerState) {
+          this->_context->RSSetState(pipeline->rasterizerState.get());
+          this->_currentRasterizerState = pipeline->rasterizerState.get();
         }
-        if (pipelineHandle->depthStencilState.get() != this->_currentDepthStencilState
-          || pipelineHandle->stencilRef != this->_attachedPipeline->stencilRef) {
-          this->_context->OMSetDepthStencilState(pipelineHandle->depthStencilState.get(), (UINT)pipelineHandle->stencilRef);
-          this->_currentDepthStencilState = pipelineHandle->depthStencilState.get();
+        if (pipeline->depthStencilState.get() != this->_currentDepthStencilState
+          || pipeline->stencilRef != this->_attachedPipeline->stencilRef) {
+          this->_context->OMSetDepthStencilState(pipeline->depthStencilState.get(), (UINT)pipeline->stencilRef);
+          this->_currentDepthStencilState = pipeline->depthStencilState.get();
         }
-        if (pipelineHandle->blendState.get() != this->_currentBlendState) {
-          this->_context->OMSetBlendState(pipelineHandle->blendState.get(), pipelineHandle->blendConstant, 0xFFFFFFFFu);
-          this->_currentBlendState = pipelineHandle->blendState.get();
+        if (pipeline->blendState.get() != this->_currentBlendState) {
+          this->_context->OMSetBlendState(pipeline->blendState.get(), pipeline->blendConstant, 0xFFFFFFFFu);
+          this->_currentBlendState = pipeline->blendState.get();
         }
 
         // -> viewport(s) / scissor(s)
-        if (pipelineHandle->viewportScissorId != this->_currentViewportScissorId) {
-          this->_context->RSSetViewports((UINT)pipelineHandle->viewports.size(), pipelineHandle->viewports.data());
-          this->_context->RSSetScissorRects((UINT)pipelineHandle->scissorTests.size(), pipelineHandle->scissorTests.data());
-          this->_currentViewportScissorId = pipelineHandle->viewportScissorId;
+        if (pipeline->viewportScissorId != this->_currentViewportScissorId) {
+          this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
+          this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
+          this->_currentViewportScissorId = pipeline->viewportScissorId;
         }
       }
       // No previous pipeline -> assign all
       else {
         // -> shader stages + input format
-        this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipelineHandle->topology);
-        this->_context->IASetInputLayout(pipelineHandle->inputLayout.get());
+        this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipeline->topology);
+        this->_context->IASetInputLayout(pipeline->inputLayout.get());
         this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
         this->_context->PSSetShader((ID3D11PixelShader*)(++newShaderStage)->get(), nullptr, 0);
 #       if !defined(__P_DISABLE_GEOMETRY_STAGE)
@@ -654,22 +652,20 @@ Includes hpp implementations at the end of the file
           this->_context->HSSetShader((ID3D11HullShader*)(++newShaderStage)->get(), nullptr, 0);
           this->_context->DSSetShader((ID3D11DomainShader*)(++newShaderStage)->get(), nullptr, 0);
 #       endif
-
         // -> pipeline states
-        this->_context->RSSetState(pipelineHandle->rasterizerState.get());
-        this->_currentRasterizerState = pipelineHandle->rasterizerState.get();
-        this->_context->OMSetDepthStencilState(pipelineHandle->depthStencilState.get(), (UINT)pipelineHandle->stencilRef);
-        this->_currentDepthStencilState = pipelineHandle->depthStencilState.get();
-        this->_context->OMSetBlendState(pipelineHandle->blendState.get(), pipelineHandle->blendConstant, 0xFFFFFFFFu);
-        this->_currentBlendState = pipelineHandle->blendState.get();
-
+        this->_context->RSSetState(pipeline->rasterizerState.get());
+        this->_currentRasterizerState = pipeline->rasterizerState.get();
+        this->_context->OMSetDepthStencilState(pipeline->depthStencilState.get(), (UINT)pipeline->stencilRef);
+        this->_currentDepthStencilState = pipeline->depthStencilState.get();
+        this->_context->OMSetBlendState(pipeline->blendState.get(), pipeline->blendConstant, 0xFFFFFFFFu);
+        this->_currentBlendState = pipeline->blendState.get();
         // -> viewport(s) / scissor(s)
-        this->_context->RSSetViewports((UINT)pipelineHandle->viewports.size(), pipelineHandle->viewports.data());
-        this->_context->RSSetScissorRects((UINT)pipelineHandle->scissorTests.size(), pipelineHandle->scissorTests.data());
-        this->_currentViewportScissorId = pipelineHandle->viewportScissorId;
+        this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
+        this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
+        this->_currentViewportScissorId = pipeline->viewportScissorId;
       }
     }
-    // Empty pipeline -> unbind
+    // Empty pipeline -> unbind current
     else {
       this->_context->VSSetShader(nullptr, nullptr, 0);
       this->_context->PSSetShader(nullptr, nullptr, 0);
@@ -686,7 +682,7 @@ Includes hpp implementations at the end of the file
       this->_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
     }
 
-    this->_attachedPipeline = std::move(pipelineHandle); // move shared_ptr
+    this->_attachedPipeline = std::move(pipeline); // move shared_ptr
   }
 
 
@@ -713,8 +709,8 @@ Includes hpp implementations at the end of the file
   }
 
   template <typename _Resource, size_t _IdSize>
-  static __forceinline void __insertInPlace(LightVector<SharedResourceCache<_Resource,_IdSize> >& collec,
-                                            const SharedResourceId<_IdSize>& target, const _Resource& handle) {
+  static inline void __insertInPlace(LightVector<SharedResourceCache<_Resource,_IdSize> >& collec,
+                                     const SharedResourceId<_IdSize>& target, const _Resource& handle) {
     uint32_t insertPos = 0;
     if (!collec.empty()) {
       uint32_t first = 0, last = static_cast<uint32_t>(collec.size()) - 1, mid;

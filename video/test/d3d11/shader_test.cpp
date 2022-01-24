@@ -98,7 +98,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
       ASSERT_TRUE(renderer->device() != nullptr);
       GraphicsPipeline::Builder pipelineBuilder(renderer);
-      GraphicsPipeline emptyPipeline; // used to unbind
 
       D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -162,8 +161,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       pipelineBuilder.setBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,
                                                 BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add));
       auto pipeline = pipelineBuilder.build();
-      renderer->bindGraphicsPipeline(pipeline);
-      renderer->bindGraphicsPipeline(emptyPipeline);
+      renderer->bindGraphicsPipeline(pipeline.handle());
+      renderer->bindGraphicsPipeline(nullptr);
     
       const char* vertexShaderText = "cbuffer MatrixBuffer {"
         "  matrix worldMatrix;"
@@ -198,8 +197,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       pipelineBuilder.attachShaderStage(vertexShader2);
 
       pipeline = pipelineBuilder.build();
-      renderer->bindGraphicsPipeline(pipeline);
-      renderer->bindGraphicsPipeline(emptyPipeline);
+      renderer->bindGraphicsPipeline(pipeline.handle());
+      renderer->bindGraphicsPipeline(nullptr);
     }
 # endif
 #endif

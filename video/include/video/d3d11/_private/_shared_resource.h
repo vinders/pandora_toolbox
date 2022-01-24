@@ -39,9 +39,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // ---
         
         /// @brief    RAII container for native Direct3D resources (lightweight version of ComPtr)
-        /// @warning  Windows and D3D11 API headers must have been included!
         template <typename T>
-        struct SharedResource final {
+        class SharedResource final {
+        public:
           SharedResource() noexcept = default; ///< Empty resource
           inline SharedResource(T* value) noexcept : _value(value) {} ///< Initialized resource
           inline ~SharedResource() noexcept { release(); }  ///< Safe destruction (if scope exit or exception)
@@ -430,6 +430,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           pandora::memory::LightVector<D3D11_RECT> scissorTests;
           uint64_t viewportScissorId = 0;
         };
+        using GraphicsPipelineHandle = std::shared_ptr<_DxPipelineStages>; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())
       }
     }
   }

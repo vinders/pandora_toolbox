@@ -38,12 +38,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           Shader(Handle handle, ShaderType type) : _handle(handle), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
-          Shader(const Shader& rhs) noexcept : _handle(rhs._handle), _type(rhs._type) {
+          Shader(const Shader& rhs) : _handle(rhs._handle), _type(rhs._type) {
             if (rhs._handle != nullptr)
               ((ID3D11DeviceChild*)rhs._handle)->AddRef();
           }
           Shader(Shader&& rhs) noexcept : _handle(rhs._handle), _type(rhs._type) { rhs._handle = nullptr; }
-          Shader& operator=(const Shader& rhs) noexcept;
+          Shader& operator=(const Shader& rhs);
           Shader& operator=(Shader&& rhs) noexcept;
           ~Shader() noexcept { release(); }
           void release() noexcept; ///< Destroy shader object

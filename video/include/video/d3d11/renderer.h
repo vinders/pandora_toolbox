@@ -101,28 +101,44 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///            (can be cast to DXGI_COLOR_SPACE_TYPE values to verify the actual value).
           ///          - Returns "unknown" if the detection fails, for example if color spaces are not supported
           ///            (in that case, it's better to default to sRGB and let the user choose to enable HDR).
+          ///          - Not supported by other APIs (Vulkan, OpenGL...): they'll return "unknown".
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept;
           
           /// @brief Screen tearing supported (variable refresh rate display)
           bool isTearingAvailable() const noexcept;
           
           
+          // -- pipeline status operations - shaders / states --
+
+          /// @brief Bind graphics pipeline to the rendering device
+          ///        (topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors)
+          /// @param pipeline  Valid graphics pipeline
+          void bindGraphicsPipeline(GraphicsPipelineHandle pipeline) noexcept;
+          /// @brief Bind compute shader stage to the device
+          /// @param shader  Native handle (Shader.handle()) or NULL to unbind compute shader.
+          inline void bindComputeShader(Shader::Handle shader) noexcept { this->_context->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0); }
+
+
           // -- render target operations --
 
           /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
           constexpr inline size_t maxViewports() noexcept { return D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
+          /// @warning Should only be used if the GraphicsPipeline was configured with dynamic viewports.
           void setViewports(const Viewport* viewports, size_t numberViewports) noexcept;
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
+          /// @warning Should only be used if the GraphicsPipeline was configured with dynamic viewports.
           inline void setViewport(const Viewport& viewport) noexcept {
             this->_context->RSSetViewports(1u, viewport.descriptor());
             this->_currentViewportScissorId = 0;
           }
 
           /// @brief Set rasterizer scissor-test rectangle(s)
+          /// @warning Should only be used if the GraphicsPipeline was configured with dynamic scissor-test.
           void setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept;
           /// @brief Set rasterizer scissor-test rectangle
+          /// @warning Should only be used if the GraphicsPipeline was configured with dynamic scissor-test.
           inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
             this->_context->RSSetScissorRects(1u, rectangle.descriptor());
             this->_currentViewportScissorId = 0;
@@ -259,18 +275,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                                  (INT)vertexOffsetFromIndex, (UINT)instanceOffset);
           }
           
-          
-          // -- pipeline status operations - shaders --
 
-          /// @brief Bind graphics pipeline to the rendering device
-          ///        (topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors)
-          /// @param pipeline  Valid graphics pipeline
-          void bindGraphicsPipeline(GraphicsPipeline& pipeline) noexcept;
-          /// @brief Bind compute shader stage to the device
-          /// @param shader  Native handle (Shader.handle()) or NULL to unbind compute shader.
-          inline void bindComputeShader(Shader::Handle shader) noexcept { this->_context->CSSetShader((ID3D11ComputeShader*)shader, nullptr, 0); }
-          
-          
           // -- pipeline status operations - constant/uniform buffers --
           
           /// @brief Max slots (or array size from first slot) for constant/uniform buffers
