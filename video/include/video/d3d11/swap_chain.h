@@ -21,6 +21,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
 # include <memory>
+# include <stdexcept>
 # include "../window_handle.h"
 # include "../common_types.h"
 # include "./api/types.h" // includes D3D11
