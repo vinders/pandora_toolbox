@@ -22,7 +22,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstddef>
 # include <cstdint>
 # include <memory/light_string.h>
-# include "./api/types.h"      // includes vulkan
+# include "video/vulkan/_private/_shared_resource.h" // includes vulkan
+# include "./api/types.h" // includes vulkan
 
 # ifdef _WINDOWS
 #   define __SYSTEM_PATH_CHAR wchar_t
@@ -33,44 +34,37 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace vulkan {
-        class InputLayout;
-        
         /// @class Shader
         /// @brief GPU shading program/effects for Vulkan renderer
         class Shader final {
         public:
-          using Handle = VkShaderModule;
+          using Handle = SharedResource<VkShaderModule>;
           
           /// @brief Create usable shader stage object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
-          Shader(Handle handle, ShaderType type, DeviceResourceManager device, const char* entryPoint = "main");
+          Shader(Handle handle, ShaderType type, const char* entryPoint = "main")
+            : _handle(std::move(handle)), _entryPoint(entryPoint), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
-          Shader(const Shader&) = delete;
-          Shader(Shader&& rhs) noexcept
-            : _stageInfo(rhs._stageInfo), _entryPoint(std::move(rhs._entryPoint)), _context(rhs._context) {
-            rhs._stageInfo.module = VK_NULL_HANDLE;
+          Shader(const Shader& rhs) = default;
+          Shader(Shader&& rhs) noexcept : _handle(std::move(rhs._handle)), _entryPoint(std::move(rhs._entryPoint)), _type(rhs._type) {
+            rhs._handle = nullptr;
           }
-          Shader& operator=(const Shader&) = delete;
-          Shader& operator=(Shader&& rhs) noexcept {
-            this->_stageInfo=rhs._stageInfo; this->_entryPoint=std::move(rhs._entryPoint); this->_context=rhs._context;
-            rhs._stageInfo.module = VK_NULL_HANDLE;
-            return *this;
-          }
+          Shader& operator=(const Shader& rhs) = default;
+          Shader& operator=(Shader&& rhs) noexcept;
           ~Shader() noexcept { release(); }
-          void release() noexcept; ///< Destroy shader object
+
+          inline void release() noexcept { this->_handle = nullptr; } ///< Destroy shader object
           
           
           // -- accessors --
           
           /// @brief Get native shader handle -- for internal use or advanced features
-          inline Handle handle() const noexcept { return (Handle)this->_stageInfo.module; }
-          inline ShaderType type() const noexcept { return (ShaderType)this->_stageInfo.stage; } ///< Get shader category/model type
-          inline bool isEmpty() const noexcept { return (this->_stageInfo.module == VK_NULL_HANDLE); } ///< Verify if initialized (false) or empty/moved/released (true)
-          /// @brief Get native shader stage info -- should only be used to customize advanced settings: 'pSpecializationInfo', 'flags'...
-          inline VkPipelineShaderStageCreateInfo& descriptor() noexcept { return this->_stageInfo; }
-          inline const VkPipelineShaderStageCreateInfo& descriptor() const noexcept { return this->_stageInfo; }
+          inline Handle handle() const noexcept { return this->_handle; }
+          inline ShaderType type() const noexcept { return (ShaderType)this->_type; } ///< Get shader category/model type
+          inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
 
+          inline const char* entryPoint() const noexcept { return this->_entryPoint.c_str(); } ///< Reserved for internal use
 
           // -- create/compile shaders --
           
@@ -148,10 +142,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///            { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MyVertexType, pos) },
             ///            { 1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(MyVertexType, texcoord) },
             ///            { 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(MyVertexType, normal) }};
-            /// @remarks - The input layout is validated against shared input signature.
-            ///          - The input layout may be bound with any other shader that has the same input signature.
+            /// @remarks - The input layout may be bound with any other shader that has the same input signature.
             ///          - For engines with material shaders with different inputs, it's easier to verify shader params with reflection, instead of hardcoding them.
-            /// @throws runtime_error if shader type isn't vertex or compute.
+            /// @throws bad_alloc on allocation failure.
             InputLayout createInputLayout(VkVertexInputBindingDescription* inputBindings, size_t bindingsLength,
                                           VkVertexInputAttributeDescription* layoutAttributes, size_t attributesLength) const;
             
@@ -171,39 +164,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           };
           
         private:
-          VkPipelineShaderStageCreateInfo _stageInfo{};
+          Handle _handle;
           pandora::memory::LightString _entryPoint;
-          DeviceResourceManager _context = VK_NULL_HANDLE;
-        };
-        
-        // ---
-        
-        /// @class InputLayout
-        /// @brief Data input layout for shader object(s)
-        class InputLayout final {
-        public:
-          /// @brief Create usable input layout object -- reserved for internal use or advanced usage
-          InputLayout(InputLayoutDescription&& description) : _description(std::move(description)) {}
-          
-          InputLayout() noexcept = default;
-          InputLayout(const InputLayout&) = delete;
-          InputLayout(InputLayout&& rhs) noexcept = default;
-          InputLayout& operator=(const InputLayout&) = delete;
-          InputLayout& operator=(InputLayout&& rhs) noexcept = default;
-          ~InputLayout() noexcept { release(); }
-          /// @brief Destroy input layout
-          inline void release() noexcept {
-            this->_description.bindings.clear();
-            this->_description.attributes.clear();
-          }
-          
-          inline InputLayoutHandle handle() const noexcept { return &(this->_description); } ///< Get native handle
-          inline bool isEmpty() const noexcept { ///< Verify if initialized (false) or empty/moved/released (true)
-            return (this->_description.bindings.length() == 0);
-          } 
-        
-        private:
-          InputLayoutDescription _description;
+          ShaderType _type = ShaderType::vertex;
         };
       }
     }

@@ -147,37 +147,23 @@ Implementation included in renderer.cpp
     if (device == VK_NULL_HANDLE)
       throw std::invalid_argument("Shader: device context is NULL");
 
-    VkShaderModuleCreateInfo shaderInfo;
-    memset(&shaderInfo, 0, sizeof(VkShaderModuleCreateInfo));
+    VkShaderModuleCreateInfo shaderInfo{};
     shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shaderInfo.codeSize = this->_length;
     shaderInfo.pCode = reinterpret_cast<const uint32_t*>(this->_data);
 
     VkShaderModule shaderModule;
-    auto result = vkCreateShaderModule(device, &shaderInfo, nullptr, &shaderModule);
-    if (result != VK_SUCCESS)
+    auto result = vkCreateShaderModule(device->handle(), &shaderInfo, nullptr, &shaderModule);
+    if (result != VK_SUCCESS || shaderModule == VK_NULL_HANDLE)
       throwError(result, "Shader: creation error");
-    return Shader(shaderModule, this->_type, device, this->_entryPoint.c_str());
+    return Shader(std::make_shared<ScopedResource<VkShaderModule> >(shaderModule, std::move(device), vkDestroyShaderModule),
+                  this->_type, this->_entryPoint.c_str());
   }
 
-  // Create usable shader stage object
-  Shader::Shader(Shader::Handle handle, ShaderType type, DeviceResourceManager device, const char* entryPoint)
-    : _entryPoint(entryPoint), _context(device) {
-    _stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    _stageInfo.stage = (VkShaderStageFlagBits)type;
-    _stageInfo.module = (VkShaderModule)handle;
-    _stageInfo.pName = this->_entryPoint.c_str();
-  }
-  
-  // Destroy shader object
-  void Shader::release() noexcept {
-    if (this->_stageInfo.module != VK_NULL_HANDLE) {
-      try {
-        vkDestroyShaderModule(this->_context, this->_stageInfo.module, nullptr);
-        this->_stageInfo.module = VK_NULL_HANDLE;
-      }
-      catch (...) {}
-    }
+  Shader& Shader::operator=(Shader&& rhs) noexcept {
+    this->_handle=std::move(rhs._handle); this->_entryPoint=std::move(rhs._entryPoint); this->_type=rhs._type;
+    rhs._handle = nullptr;
+    return *this;
   }
   
   // ---
@@ -185,18 +171,19 @@ Implementation included in renderer.cpp
   // Create input layout for shader object
   InputLayout Shader::Builder::createInputLayout(VkVertexInputBindingDescription* inputBindings, size_t bindingsLength,
                                                  VkVertexInputAttributeDescription* layoutAttributes, size_t attributesLength) const {
-    if (this->_type != ShaderType::vertex && this->_type != ShaderType::compute)
-      throw std::runtime_error("Shader.createInputLayout: incorrect shader type");
-
-    InputLayoutDescription layout;
-    layout.bindings = DynamicArray<VkVertexInputBindingDescription>(bindingsLength);
+    InputLayout layout = std::make_shared<InputLayoutDescription>();
+    layout->bindings = DynamicArray<VkVertexInputBindingDescription>(bindingsLength);
     if (bindingsLength)
-      memcpy(layout.bindings.value, inputBindings, bindingsLength*sizeof(VkVertexInputBindingDescription));
-    layout.attributes = DynamicArray<VkVertexInputAttributeDescription>(attributesLength);
+      memcpy(layout->bindings.value, inputBindings, bindingsLength*sizeof(VkVertexInputBindingDescription));
+    layout->attributes = DynamicArray<VkVertexInputAttributeDescription>(attributesLength);
     if (attributesLength)
-      memcpy(layout.attributes.value, layoutAttributes, attributesLength*sizeof(VkVertexInputAttributeDescription));
+      memcpy(layout->attributes.value, layoutAttributes, attributesLength*sizeof(VkVertexInputAttributeDescription));
 
-    return InputLayout(std::move(layout));
+#   if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+      return layout;
+#   else
+      return std::move(layout);
+#   endif
   }
 
 #endif

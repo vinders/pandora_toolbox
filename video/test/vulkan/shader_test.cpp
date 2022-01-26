@@ -92,7 +92,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
       { 1, 0, VK_FORMAT_R32G32_SFLOAT,    3*sizeof(float) }};
     auto inputLayout = binaryBuilder.createInputLayout(&inputBindings, 1, layoutAttributes, sizeof(layoutAttributes)/sizeof(*layoutAttributes));
-    EXPECT_TRUE(inputLayout.handle() != nullptr);
+    EXPECT_TRUE(inputLayout.get() != nullptr);
   }
 
   // ---
@@ -113,7 +113,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(vertexShader.handle() != nullptr);
       EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader.isEmpty());
-      EXPECT_TRUE(inputLayout.handle() != nullptr);
+      EXPECT_TRUE(inputLayout.get() != nullptr);
     
       auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/vulkan/test_fragment.frag"), "PSMain")
                             .createShader(renderer.resourceManager());
@@ -162,7 +162,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(vertexShader2.handle() != nullptr);
       EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader2.isEmpty());
-      EXPECT_TRUE(inputLayout2.handle() != nullptr);
+      EXPECT_TRUE(inputLayout2.get() != nullptr);
     }
 # endif
 

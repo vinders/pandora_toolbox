@@ -40,7 +40,6 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
       namespace vulkan {
         using DeviceHandle = VkPhysicalDevice;  ///< Physical device access/resources
         using DeviceContext = VkDevice;         ///< Device rendering context
-        using DeviceResourceManager = VkDevice; ///< Device resource manager
         using SwapChainHandle = VkSwapchainKHR; ///< Swap-chain (framebuffer container/swapper)
         
         using TextureHandle = VkImage;          ///< Generic texture resource handle
@@ -58,7 +57,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           DynamicArray<VkVertexInputAttributeDescription> attributes;
         };
         using InputLayoutHandle = const InputLayoutDescription*; ///< Input layout representation, for shader input stage
-        
+
         
         // -- rasterizer settings --
         
@@ -66,7 +65,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         enum class FillMode : int/*VkPolygonMode*/ {
           fill  = VK_POLYGON_MODE_FILL, ///< Filled/solid polygons
           lines = VK_POLYGON_MODE_LINE, ///< Lines/wireframe
-          linesAA = (VK_POLYGON_MODE_LINE | 0x8000000) ///< Anti-aliased lines/wireframe
+          linesAA = (VK_POLYGON_MODE_LINE | 0x8000000) ///< Anti-aliased lines/wireframe (requires adding extension "VK_EXT_line_rasterization")
         };
         /// @brief Rasterizer culling mode
         enum class CullMode : int/*VkCullModeFlagBits*/ {
@@ -77,11 +76,13 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 
         /// @brief Texture addressing mode (out-of-bounds coord management)
         enum class TextureWrap : int/*VkSamplerAddressMode*/ {
-          clampToBorder = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,     ///< Coordinates outside of the textures are set to the configured border color (set in sampler descriptor or shader).
+          clampToBorder = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,     ///< Coordinates outside of the textures are set to the configured border color
+                                                                       ///  (set in sampler descriptor or shader).
           clampToEdge   = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,       ///< Coordinates outside of the textures are set to the edge color.
           repeat        = VK_SAMPLER_ADDRESS_MODE_REPEAT,              ///< Texture is repeated at every junction.
           repeatMirror  = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,     ///< Texture is repeated and flipped at every junction.
-          mirrorOnce    = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ///< Texture is mirrored once horizontally/vertically below '0' coords, then clamped to each edge colors.
+          mirrorOnce    = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ///< Texture is mirrored once horizontally/vertically below '0' coords,
+                                                                       ///  then clamped to each edge colors.
         };
         /// @brief Texture minify/magnify/mip-map filter type
         enum class TextureFilter : int/*VkFilter*/ {
@@ -356,6 +357,18 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           fragment = VK_SHADER_STAGE_FRAGMENT_BIT, ///< Fragment/pixel shader: process rasterized fragment -> outputs pixel/depth data.
           compute  = VK_SHADER_STAGE_COMPUTE_BIT   ///< Compute shader: GPU calculations (not supported below OpenGL 4.3).
         };
+
+#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
+#         if !defined(__P_DISABLE_GEOMETRY_STAGE)
+#           define __P_MAX_DISPLAY_SHADER_NUMBER 5
+#         else
+#           define __P_MAX_DISPLAY_SHADER_NUMBER 4
+#         endif
+#       elif !defined(__P_DISABLE_GEOMETRY_STAGE)
+#         define __P_MAX_DISPLAY_SHADER_NUMBER 3
+#       else
+#         define __P_MAX_DISPLAY_SHADER_NUMBER 2
+#       endif
       }
     }
   }
