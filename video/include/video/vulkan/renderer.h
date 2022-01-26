@@ -21,8 +21,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdint>
 # include <memory>
+# include <string>
+# include <unordered_set>
 # include <hardware/display_monitor.h>
 # include "./api/_private/_dynamic_array.h"
+# include "video/vulkan/_private/_shared_resource.h" // includes vulkan
 # include "./api/types.h"      // includes vulkan
 # include "./scissor.h"        // includes vulkan
 # include "./viewport.h"       // includes vulkan
@@ -121,12 +124,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           /// @brief Create default list of vulkan features (all basic standard features enabled)
           /// @remarks Used to create a Renderer object.
-          ///          Should be fine-tuned to improve performance or to support special shader features.
+          ///          Should be fine-tuned before use, to improve performance or to support special shader features.
           static VkPhysicalDeviceFeatures defaultFeatures() noexcept;
           /// @brief Get list of features enabled in vulkan renderer
           inline const VkPhysicalDeviceFeatures& enabledFeatures() const noexcept { return *(this->_features); }
           /// @brief Get limits of physical device associated with device context
           inline const VkPhysicalDeviceLimits& deviceLimits() const noexcept { return this->_physicalDeviceInfo->limits; }
+          /// @brief Verify if a device extension is enabled in vulkan renderer
+          inline bool isExtensionEnabled(const std::string& name) const noexcept {
+            return (this->_deviceExtensions.find(name) != this->_deviceExtensions.end());
+          }
           
           /// @brief Flush command buffers
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
@@ -143,7 +150,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           };
           
           inline DeviceHandle device() const noexcept { return this->_physicalDevice; }  ///< Get physical rendering device (VkPhysicalDevice)
-          inline DeviceContext context() const noexcept { return this->_deviceContext; } ///< Get logical device context (VkDevice)
+          inline DeviceContext context() const noexcept { return this->_deviceContext->handle(); } ///< Get logical device context (VkDevice)
           inline DeviceResourceManager resourceManager() const noexcept { return this->_deviceContext; } ///< Get resource manager (to build resources such as shaders)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
           inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
@@ -172,6 +179,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
           
           
+          // -- pipeline status operations - shaders / states --
+
+          /// @brief Bind graphics pipeline to the rendering device
+          ///        (topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors)
+          /// @param pipeline  Valid graphics pipeline
+          void bindGraphicsPipeline(GraphicsPipelineHandle pipeline) noexcept {
+            this->_boundPipeline = pipeline;
+            //...
+          }
+
+
           // -- render target operations --
 
           /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
@@ -205,13 +223,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
           inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
-          
-          // -- pipeline status operations - shaders --
-
-          inline void bindGraphicsPipeline(VkPipeline pipeline) noexcept {
-            this->_boundPipeline = pipeline;
-            //...
-          }
 
           
         private:
@@ -223,17 +234,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
         private:
           std::shared_ptr<VulkanInstance> _instance = nullptr;
+          std::shared_ptr<ScopedDeviceContext> _deviceContext = nullptr;
+          std::unordered_set<std::string> _deviceExtensions;
           std::unique_ptr<VkPhysicalDeviceFeatures> _features = nullptr;
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
-          DeviceContext _deviceContext = VK_NULL_HANDLE;
           DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
 
           VkPipeline _boundPipeline = VK_NULL_HANDLE;
         };
-
-        // Throw native error message (or default if no message available)
-        void throwError(VkResult result, const char* messagePrefix);
       }
     }
   }

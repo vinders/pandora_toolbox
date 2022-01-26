@@ -59,7 +59,6 @@ Includes hpp implementations at the end of the file
 
 # include "video/vulkan/renderer.h"
 # include "video/vulkan/swap_chain.h"
-// # include "video/vulkan/renderer_state_factory.h"
 # include "video/vulkan/shader.h"
 # include "video/vulkan/graphics_pipeline.h"
 // # include "video/vulkan/depth_stencil_buffer.h"
@@ -116,8 +115,7 @@ Includes hpp implementations at the end of the file
     // ---
 
     static void __createDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& outMessenger) noexcept {
-      VkDebugUtilsMessengerCreateInfoEXT messengerInfo;
-      memset(&messengerInfo, 0, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
+      VkDebugUtilsMessengerCreateInfoEXT messengerInfo{};
       messengerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
       messengerInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
@@ -158,8 +156,7 @@ Includes hpp implementations at the end of the file
     VulkanLoader& loader = VulkanLoader::instance();
 
     // application identification
-    VkApplicationInfo appInfo;
-    memset(&appInfo, 0, sizeof(appInfo));
+    VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = appName;
     appInfo.applicationVersion = appVersion;
@@ -194,8 +191,7 @@ Includes hpp implementations at the end of the file
       enabledExtensions.value[enabledExtCount - 1] = "VK_KHR_display";
 
     // create vulkan instance
-    VkInstanceCreateInfo instanceInfo;
-    memset(&instanceInfo, 0, sizeof(instanceInfo));
+    VkInstanceCreateInfo instanceInfo{};
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
     instanceInfo.ppEnabledExtensionNames = enabledExtensions.value;
@@ -241,8 +237,7 @@ Includes hpp implementations at the end of the file
 // -- feature / extension support -- -------------------------------------------
 
   VkPhysicalDeviceFeatures Renderer::defaultFeatures() noexcept {
-    VkPhysicalDeviceFeatures defaultFeatures;
-    memset(&defaultFeatures, 0, sizeof(VkPhysicalDeviceFeatures));
+    VkPhysicalDeviceFeatures defaultFeatures{};
     defaultFeatures.alphaToOne = defaultFeatures.depthBiasClamp = defaultFeatures.depthBounds = defaultFeatures.depthClamp
       = defaultFeatures.dualSrcBlend = defaultFeatures.fillModeNonSolid = defaultFeatures.imageCubeArray
       = defaultFeatures.independentBlend = defaultFeatures.multiDrawIndirect = defaultFeatures.multiViewport
@@ -306,6 +301,7 @@ Includes hpp implementations at the end of the file
     if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
         "VK_EXT_extended_dynamic_state",
+        "VK_EXT_depth_clip_enable",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -318,6 +314,7 @@ Includes hpp implementations at the end of the file
         "VK_KHR_shader_float_controls",
         "VK_KHR_spirv_1_4", // not available in 1.0
         "VK_EXT_extended_dynamic_state",
+        "VK_EXT_depth_clip_enable",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -334,6 +331,7 @@ Includes hpp implementations at the end of the file
         "VK_KHR_shader_float16_int8",
         "VK_KHR_shader_float_controls",
         "VK_EXT_extended_dynamic_state",
+        "VK_EXT_depth_clip_enable",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
       return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
@@ -524,8 +522,7 @@ Includes hpp implementations at the end of the file
                      const VkPhysicalDeviceFeatures& requestedFeatures, bool areFeaturesRequired,
                      const char** deviceExtensions, size_t extensionCount, size_t commandQueueCount)
     : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
-      _physicalDevice(VK_NULL_HANDLE),
-      _deviceContext(VK_NULL_HANDLE) {
+      _physicalDevice(VK_NULL_HANDLE) {
     // find hardware adapter for monitor
     if (commandQueueCount < 1u)
       commandQueueCount = 1u;
@@ -565,8 +562,7 @@ Includes hpp implementations at the end of the file
     }
 
     // create rendering device
-    VkDeviceCreateInfo deviceInfo;
-    memset(&deviceInfo, 0, sizeof(VkDeviceCreateInfo));
+    VkDeviceCreateInfo deviceInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pQueueCreateInfos = cmdQueueInfos.value;
     deviceInfo.queueCreateInfoCount = (uint32_t)cmdQueueInfos.length();
@@ -591,10 +587,14 @@ Includes hpp implementations at the end of the file
       defaultExt = __defaultDeviceExtensions(deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
       deviceInfo.ppEnabledExtensionNames = defaultExt.value;
     }
+    for (uint32_t i = 0; i < deviceInfo.enabledExtensionCount; ++i)
+      this->_deviceExtensions.emplace(deviceInfo.ppEnabledExtensionNames[i]);
 
-    VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &(this->_deviceContext));
-    if (result != VK_SUCCESS)
+    VkDevice deviceContextHandle = VK_NULL_HANDLE;
+    VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &deviceContextHandle);
+    if (result != VK_SUCCESS || deviceContextHandle == VK_NULL_HANDLE)
       throwError(result, "Vulkan: failed to create logical device");
+    this->_deviceContext = std::make_shared<ScopedDeviceContext>(deviceContextHandle);
 
     // get command queue handles
     this->_graphicsQueuesPerFamily = DynamicArray<Renderer::CommandQueues>(cmdQueueFamilyIndices.length());
@@ -604,7 +604,7 @@ Includes hpp implementations at the end of the file
       family.commandQueues = DynamicArray<VkQueue>(commandQueueCount);
       for (size_t queue = 0; queue < commandQueueCount; ++queue) {
         VkQueue* target = &(family.commandQueues.value[queue]);
-        vkGetDeviceQueue(this->_deviceContext, family.familyIndex, (uint32_t)queue, target);
+        vkGetDeviceQueue(deviceContextHandle, family.familyIndex, (uint32_t)queue, target);
         if (*target == VK_NULL_HANDLE)
           throw std::runtime_error("Vulkan: failed to obtain command queue access");
       }
@@ -614,16 +614,23 @@ Includes hpp implementations at the end of the file
 
 // -- device/context destruction/move -- ---------------------------------------
 
+  // Destroy rendering context handle
+  void ScopedDeviceContext::release() noexcept {
+    if (this->_handle != VK_NULL_HANDLE) {
+      vkDeviceWaitIdle(this->_handle);
+      try { vkDestroyDevice(this->_handle, nullptr); } catch (...) {}
+      this->_handle = VK_NULL_HANDLE;
+    }
+  }
   // Destroy device and context resources
   void Renderer::_destroy() noexcept {
-    if (this->_deviceContext != VK_NULL_HANDLE) {
+    if (this->_deviceContext != nullptr) {
       flush();
-      vkDeviceWaitIdle(this->_deviceContext);
-      vkDestroyDevice(this->_deviceContext, nullptr);
+      this->_deviceContext = nullptr; // release
+
       this->_graphicsQueuesPerFamily.clear();
       this->_features = nullptr;
       this->_physicalDeviceInfo = nullptr;
-      this->_deviceContext = VK_NULL_HANDLE;
       this->_physicalDevice = VK_NULL_HANDLE;
     }
     this->_instance.reset();
@@ -634,13 +641,13 @@ Includes hpp implementations at the end of the file
       _features(std::move(rhs._features)),
       _physicalDeviceInfo(std::move(rhs._physicalDeviceInfo)),
       _physicalDevice(rhs._physicalDevice),
-      _deviceContext(rhs._deviceContext),
+      _deviceContext(std::move(rhs._deviceContext)),
       _graphicsQueuesPerFamily(std::move(rhs._graphicsQueuesPerFamily)) {
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
-    rhs._deviceContext = VK_NULL_HANDLE;
+    rhs._deviceContext = nullptr;
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
@@ -648,13 +655,13 @@ Includes hpp implementations at the end of the file
     this->_features = std::move(rhs._features);
     this->_physicalDeviceInfo = std::move(rhs._physicalDeviceInfo);
     this->_physicalDevice = rhs._physicalDevice;
-    this->_deviceContext = rhs._deviceContext;
+    this->_deviceContext = std::move(rhs._deviceContext);
     this->_graphicsQueuesPerFamily = std::move(rhs._graphicsQueuesPerFamily);
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
     rhs._physicalDevice = VK_NULL_HANDLE;
-    rhs._deviceContext = VK_NULL_HANDLE;
+    rhs._deviceContext = nullptr;
     return *this;
   }
 
@@ -705,28 +712,26 @@ Includes hpp implementations at the end of the file
       return;
     }
 
-    VkFenceCreateInfo fenceInfo;
-    memset(&fenceInfo, 0, sizeof(VkFenceCreateInfo));
+    VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = 0;
 
     VkFence fence;
-    if (vkCreateFence(this->_deviceContext, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+    if (vkCreateFence(this->_deviceContext->handle(), &fenceInfo, nullptr, &fence) != VK_SUCCESS)
       return;
 
-    VkSubmitInfo submitInfo;
-    memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+    VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
     if (vkQueueSubmit(this->_graphicsCommandQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
-      vkDestroyFence(this->_deviceContext, fence, nullptr);
+      vkDestroyFence(this->_deviceContext->handle(), fence, nullptr);
       return;
     }
 
-    vkWaitForFences(this->_deviceContext, 1, &fence, true, 10000000000);
-    vkResetFences(this->_deviceContext, 1, &fence);
-    vkDestroyFence(this->_deviceContext, fence, nullptr);*/
+    vkWaitForFences(this->_deviceContext->handle(), 1, &fence, true, 10000000000);
+    vkResetFences(this->_deviceContext->handle(), 1, &fence);
+    vkDestroyFence(this->_deviceContext->handle(), fence, nullptr);*/
   }
 
 
@@ -1010,8 +1015,7 @@ Includes hpp implementations at the end of the file
     auto presentMode = _findPresentMode(this->_presentMode, this->_framebufferCount); // throws
 
     // build swap-chain
-    VkSwapchainCreateInfoKHR createInfo;
-    memset(&createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
+    VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = this->_windowSurface;
     createInfo.minImageCount = this->_framebufferCount;
@@ -1301,7 +1305,6 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 // Include hpp implementations
 // -----------------------------------------------------------------------------
-// # include "./renderer_state_factory.hpp"
 // # include "./buffers.hpp"
 // # include "./texture.hpp"
 // # include "./texture_reader_writer.hpp"
