@@ -369,8 +369,6 @@ Implementation included in renderer.cpp
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setViewports(const Viewport viewports[], size_t viewportCount,
                                                         const ScissorRectangle scissorTests[], size_t scissorCount,
                                                         bool useDynamicCount) noexcept {
-    assert(useDynamicCount || viewportCount == scissorCount);
-
     if (viewports != nullptr) {
       this->_viewports = DynamicArray<VkViewport>(viewportCount);
       for (size_t i = 0; i < viewportCount; ++i)
@@ -399,14 +397,19 @@ Implementation included in renderer.cpp
 
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
+    //set dynamic states
+    //...
+
     //create RenderPass + PipelineLayout
     //...
 
-    //if (nb_render_targets != this->_globalPipelineParams.pColorBlendState.attachmentCount) {
+    //if (nb_render_targets > this->_globalPipelineParams.pColorBlendState.attachmentCount) {
       // allouer plus grand + copier
       // _params.pAttachments = &attachementState; _params.attachmentCount = nb_render_targets;
       //...
     //}
+    // else if nb_render_targets < this->_globalPipelineParams.pColorBlendState.attachmentCount)
+      // this->_globalPipelineParams.pColorBlendState.attachmentCount = nb_render_targets;
     return GraphicsPipeline(this->_globalPipelineParams, this->_renderer, parentCache);
   }
 

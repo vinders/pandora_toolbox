@@ -523,17 +523,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param viewports       Pointer to viewport (if 'viewportCount' is 1) or array of viewports.
             ///                        Set to NULL to use dynamic viewports (a call to Renderer.setViewport(s) is then mandatory).
             /// @param viewportCount   Number of viewports (array size of 'viewports', if not NULL).
-            ///                        Must be the same as 'scissorCount' if 'isDynamicCount' is false.
+            ///                        Even if 'viewports' is NULL, this value must be set if 'useDynamicCount' is false.
             /// @param scissorTests    Pointer to scissor-test rectangle (if 'scissorCount' is 1) or array of scissor-test rectangles.
             ///                        Set to NULL to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
-            ///                        Must be the same as 'viewportCount' if 'isDynamicCount' is false.
-            /// @param useDynamicCount Allow viewport/scissor-test count to be different:
+            ///                        Even if 'scissorTests' is NULL, this value must be set if 'useDynamicCount' is false.
+            /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
             ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
             Builder& setViewports(const Viewport viewports[], size_t viewportCount,
                                   const ScissorRectangle scissorTests[], size_t scissorCount,
-                                  bool useDynamicCount = true) noexcept;
+                                  bool useDynamicCount = false) noexcept;
 
 
             // -- pipeline build --

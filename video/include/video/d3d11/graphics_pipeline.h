@@ -485,12 +485,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param viewports       Pointer to viewport (if 'viewportCount' is 1) or array of viewports.
             ///                        Set to NULL to use dynamic viewports (a call to Renderer.setViewport(s) is then mandatory).
             /// @param viewportCount   Number of viewports (array size of 'viewports', if not NULL).
-            ///                        Must be the same as 'scissorCount' if 'isDynamicCount' is false.
+            ///                        Even if 'viewports' is NULL, this value should be set if 'useDynamicCount' is false.
             /// @param scissorTests    Pointer to scissor-test rectangle (if 'scissorCount' is 1) or array of scissor-test rectangles.
             ///                        Set to NULL to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
-            ///                        Must be the same as 'viewportCount' if 'isDynamicCount' is false.
-            /// @param useDynamicCount Allow viewport/scissor-test count to be different (always supported with Direct3D11).
+            ///                        Even if 'scissorTests' is NULL, this value should be set if 'useDynamicCount' is false.
+            /// @param useDynamicCount For cross-API projects: allow different viewport/scissor counts to be set during dynamic bindings:
+            ///                        ignored with Direct3D11 (dynamic binding always allowed with different count).
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
             /// @warning The current Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
             ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!

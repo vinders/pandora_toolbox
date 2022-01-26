@@ -347,11 +347,11 @@ Implementation included in renderer.cpp
 
   // Set viewports and scissor-test rectangles (optional: dynamic viewports if ignored)
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setViewports(const Viewport viewports[], size_t viewportCount,
-                                                        const ScissorRectangle scissorTests[], size_t scissorCount,
-                                                        bool useDynamicCount) noexcept {
-    assert(useDynamicCount || viewportCount == scissorCount);
-    this->_viewports = viewports; this->_viewportCount = viewportCount;
-    this->_scissorTests = scissorTests; this->_scissorCount = scissorCount;
+                                                        const ScissorRectangle scissorTests[], size_t scissorCount, bool) noexcept {
+    this->_viewports = viewports;
+    this->_viewportCount = (viewports != nullptr) ? viewportCount : 0;
+    this->_scissorTests = scissorTests;
+    this->_scissorCount = (scissorTests != nullptr) ? scissorCount : 0;
 
     if (viewportCount + scissorCount != 0) {
       this->_params.viewportScissorId = ++_lastViewportScissorId;
