@@ -22,93 +22,403 @@ Implementation included in renderer.cpp
 #if defined(_VIDEO_VULKAN_SUPPORT)
 // includes + namespaces: in renderer.cpp
 
-  // Create usable shader stage object -- reserved for internal use or advanced usage
-  GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Renderer> renderer, const VkGraphicsPipelineCreateInfo& pipelineInfo,
-                                     VkPipelineCache parentCache)
+// -- RasterizerParams - rasterizer state params -- ----------------------------
+
+  RasterizerParams::RasterizerParams() noexcept {
+    _params.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    _params.cullMode = VK_CULL_MODE_BACK_BIT;
+    _params.polygonMode = VK_POLYGON_MODE_FILL;
+    _params.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    _params.depthClampEnable = VK_TRUE;
+    _params.lineWidth = 1.f;
+    _depthClipping.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
+    _lineRasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT;
+  }
+  
+  RasterizerParams::RasterizerParams(CullMode cull, FillMode fill, bool isFrontClockwise,
+                                     bool depthClipping, bool scissorClipping) noexcept {
+    _params.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    _params.cullMode = (VkCullModeFlags)cull;
+    _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+    _params.depthClampEnable = VK_TRUE;
+    _depthClipping.depthClipEnable = depthClipping ? VK_TRUE : VK_FALSE;
+    fillMode(fill);
+    _params.lineWidth = 1.f;
+    _useScissorClipping = scissorClipping;
+  }
+
+  // ---
+
+  // Set filled/wireframe polygon rendering
+  RasterizerParams& RasterizerParams::fillMode(FillMode fill) noexcept {
+    if (fill == FillMode::linesAA) {
+      _params.polygonMode = VK_POLYGON_MODE_LINE;
+      _lineRasterization.lineRasterizationMode = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
+    }
+    else {
+      _params.polygonMode = (VkPolygonMode)fill;
+      _lineRasterization.lineRasterizationMode = (VkLineRasterizationModeEXT)0;
+    }
+    return *this;
+  }
+
+// -- DepthStencilParams - depth/stencil testing state params -- ---------------
+
+  void DepthStencilParams::_init(VkBool32 enableDepth, VkBool32 enableStencil, VkCompareOp depthComp, 
+                                 VkCompareOp frontFaceComp, VkCompareOp backFaceComp) noexcept {
+    _params.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    _params.depthTestEnable = enableDepth;
+    _params.depthCompareOp = depthComp;
+    _params.depthWriteEnable = VK_TRUE;
+
+    _params.stencilTestEnable = enableStencil;
+    _params.front.compareOp = frontFaceComp;
+    _params.back.compareOp = backFaceComp;
+    _params.front.compareMask = _params.back.compareMask = _params.front.writeMask = _params.back.writeMask = 0xFF;
+  }
+
+// -- BlendParams - blend state params -- --------------------------------------
+
+  BlendParams::BlendParams(BlendFactor srcColorFactor, BlendFactor destColorFactor, BlendOp colorBlendOp,
+                           BlendFactor srcAlphaFactor, BlendFactor destAlphaFactor, BlendOp alphaBlendOp,
+                           ColorComponentFlag mask) noexcept {
+    _params.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    _attachementState.blendEnable = VK_TRUE;
+    _attachementState.colorWriteMask = (VkColorComponentFlags)mask;
+    
+    _attachementState.srcColorBlendFactor = (VkBlendFactor)srcColorFactor;
+    _attachementState.dstColorBlendFactor = (VkBlendFactor)destColorFactor;
+    _attachementState.colorBlendOp = (VkBlendOp)colorBlendOp;
+    _attachementState.srcAlphaBlendFactor = (VkBlendFactor)srcAlphaFactor;
+    _attachementState.dstAlphaBlendFactor = (VkBlendFactor)destAlphaFactor;
+    _attachementState.alphaBlendOp = (VkBlendOp)alphaBlendOp;
+    // no attachment here -> bound at pipeline creation (+ duplicated for each existing target)
+  }
+
+  BlendParams& BlendParams::blendConstant(const ColorChannel constantColorRgba[4]) noexcept {
+    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorChannel)*4u);
+    return *this;
+  }
+
+  // ---
+
+  BlendPerTargetParams& BlendPerTargetParams::setTargetBlend(uint32_t targetIndex,
+                                              BlendFactor srcColorFactor, BlendFactor destColorFactor, BlendOp colorBlendOp,
+                                              BlendFactor srcAlphaFactor, BlendFactor destAlphaFactor, BlendOp alphaBlendOp,
+                                              ColorComponentFlag mask) noexcept {
+    VkPipelineColorBlendAttachmentState target{};
+    target.blendEnable = VK_TRUE;
+    target.colorWriteMask = (VkColorComponentFlags)mask;
+    target.srcColorBlendFactor = (VkBlendFactor)srcColorFactor;
+    target.dstColorBlendFactor = (VkBlendFactor)destColorFactor;
+    target.colorBlendOp = (VkBlendOp)colorBlendOp;
+    target.srcAlphaBlendFactor = (VkBlendFactor)srcAlphaFactor;
+    target.dstAlphaBlendFactor = (VkBlendFactor)destAlphaFactor;
+    target.alphaBlendOp = (VkBlendOp)alphaBlendOp;
+
+    if (_attachementsPerTarget.size() <= targetIndex) {
+      if (_attachementsPerTarget.size() < targetIndex) {
+        VkPipelineColorBlendAttachmentState disabled{};
+        disabled.blendEnable = VK_FALSE;
+        while (_attachementsPerTarget.size() < targetIndex)
+          _attachementsPerTarget.push_back(disabled);
+      }
+      _attachementsPerTarget.push_back(target);
+    }
+    else
+      _attachementsPerTarget[targetIndex] = target;
+
+    return *this; // no attachment here -> bound at pipeline creation (+ add missing targets)
+  }
+
+  BlendPerTargetParams& BlendPerTargetParams::disableTargetBlend(uint32_t targetIndex) noexcept {
+    VkPipelineColorBlendAttachmentState disabled{};
+    disabled.blendEnable = VK_FALSE;
+
+    if (_attachementsPerTarget.size() <= targetIndex) {
+      while (_attachementsPerTarget.size() <= targetIndex)
+        _attachementsPerTarget.push_back(disabled);
+    }
+    else
+      _attachementsPerTarget[targetIndex] = disabled;
+
+    return *this;
+  }
+
+  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorChannel constantColorRgba[4]) noexcept {
+    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorChannel)*4u);
+    return *this;
+  }
+
+
+// -----------------------------------------------------------------------------
+// graphics pipeline builder
+// -----------------------------------------------------------------------------
+
+// -- GraphicsPipeline -- ------------------------------------------------------
+
+  // Create pipeline object -- reserved for internal use or advanced usage
+  GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer, VkPipelineCache cache)
     : _renderer(std::move(renderer)),
-      _renderPass(pipelineInfo.renderPass),
-      _pipelineLayout(pipelineInfo.layout) {
-    auto result = vkCreateGraphicsPipelines(this->_renderer->context(), parentCache, 1, &pipelineInfo, nullptr, &(this->_pipeline));
-    if (result != VK_SUCCESS || this->_pipeline == VK_NULL_HANDLE)
+      _renderPass(createInfo.renderPass),
+      _pipelineLayout(createInfo.layout) {
+    assert(this->_renderer != nullptr && createInfo.renderPass != VK_NULL_HANDLE && createInfo.layout != VK_NULL_HANDLE);
+    if (createInfo.stageCount == 0)
+      throw std::logic_error("GraphicsPipeline: vertex shader required");
+    if (createInfo.pRasterizationState == nullptr || createInfo.pDepthStencilState == nullptr || createInfo.pColorBlendState == nullptr)
+      throw std::logic_error("GraphicsPipeline: missing required pipeline state");
+
+    auto result = vkCreateGraphicsPipelines(this->_renderer->context(), cache, 1, &createInfo, nullptr, &(this->_pipelineHandle));
+    if (result != VK_SUCCESS || this->_pipelineHandle == VK_NULL_HANDLE)
       throwError(result, "GraphicsPipeline: creation error");
   }
 
-  void GraphicsPipeline::release() noexcept { ///< Destroy pipeline object
-    if (this->_pipeline != VK_NULL_HANDLE) {
-      try {
-        if (this->_renderer->_boundPipeline == this->_pipeline)
-          this->_renderer->bindGraphicsPipeline(VK_NULL_HANDLE);
-        vkDestroyPipeline(this->_renderer->context(), (VkPipeline)this->_pipeline, nullptr);
-      }
-      catch (...) {}
-      this->_pipeline = VK_NULL_HANDLE;
+  // Destroy pipeline object
+  void GraphicsPipeline::release() noexcept {
+    // destroy pipeline
+    if (this->_pipelineHandle != VK_NULL_HANDLE) {
+      if (this->_renderer->_boundPipeline == this->_pipelineHandle)
+        this->_renderer->bindGraphicsPipeline(VK_NULL_HANDLE);
+
+      try { vkDestroyPipeline(this->_renderer->context(), this->_pipelineHandle, nullptr); } catch (...) {}
+      this->_pipelineHandle = VK_NULL_HANDLE;
     }
-    if (this->_pipelineLayout != VK_NULL_HANDLE) {
-      try {
-        vkDestroyPipelineLayout(this->_renderer->context(), this->_pipelineLayout, nullptr);
-        vkDestroyRenderPass(this->_renderer->context(), this->_renderPass, nullptr);
-      }
-      catch (...) {}
-      this->_pipelineLayout = VK_NULL_HANDLE;
+    // destroy pipeline components
+    if (this->_renderPass != VK_NULL_HANDLE) {
+      try { vkDestroyRenderPass(this->_renderer->context(), this->_renderPass, nullptr); } catch (...) {}
       this->_renderPass = VK_NULL_HANDLE;
     }
+    if (this->_pipelineLayout != VK_NULL_HANDLE) {
+      try { vkDestroyPipelineLayout(this->_renderer->context(), this->_pipelineLayout, nullptr); } catch (...) {}
+      this->_pipelineLayout = VK_NULL_HANDLE;
+    }
   }
+
+
+// -- GraphicsPipeline.Builder -- ----------------------------------------------
+
+  // Create pipeline builder
+  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) : _renderer(renderer) { // throws
+    if (this->_renderer == nullptr)
+      throw std::logic_error("GraphicsPipeline.Builder: renderer is NULL");
+
+    this->_inputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    this->_inputTopology.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    this->_inputTopology.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    this->_inputTopology.primitiveRestartEnable = VK_FALSE;
+    this->_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    this->_viewportState.viewportCount = this->_viewportState.scissorCount = 1u;
+    this->_multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+#   ifndef __P_DISABLE_TESSELLATION_STAGE
+      this->_tessellationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+#   endif
+
+    this->_globalPipelineParams.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    this->_globalPipelineParams.pVertexInputState = &(this->_inputState);
+    this->_globalPipelineParams.pInputAssemblyState = &(this->_inputTopology);
+    this->_globalPipelineParams.pViewportState = &(this->_viewportState);
+    this->_globalPipelineParams.pStages = this->_shaderStages;
+  }
+
+  // ---
+
+  // Bind vertex shader input layout description (optional)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputLayout(InputLayout inputLayout) noexcept {
+    this->_inputState.pVertexBindingDescriptions = inputLayout->bindings.value;
+    this->_inputState.vertexBindingDescriptionCount = static_cast<uint32_t>(inputLayout->bindings.length());
+    this->_inputState.pVertexAttributeDescriptions = inputLayout->attributes.value;
+    this->_inputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputLayout->attributes.length());
+    this->_inputLayout = std::move(inputLayout);
+    return *this;
+  }
+  // Set custom vertex shader input layout description (optional) -- only for Vulkan
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputLayout(VkVertexInputBindingDescription* inputBindings, size_t bindingsLength,
+                                                          VkVertexInputAttributeDescription* layoutAttributes, size_t attributesLength) noexcept {
+    this->_inputState.pVertexBindingDescriptions = inputBindings;
+    this->_inputState.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingsLength);
+    this->_inputState.pVertexAttributeDescriptions = layoutAttributes;
+    this->_inputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributesLength);
+    return *this;
+  }
+
+  // Bind shader stages to pipeline (required)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setShaderStages(const Shader shaders[], size_t shaderCount) { // throws
+    if (shaderCount > __P_MAX_DISPLAY_SHADER_NUMBER)
+      throw std::invalid_argument("GraphicsPipeline::Builder: invalid shader types (check project options)");
+    this->_globalPipelineParams.stageCount = static_cast<uint32_t>(shaderCount);
+
+    VkPipelineShaderStageCreateInfo* current = this->_shaderStages;
+    const Shader* itEnd = shaders + (intptr_t)shaderCount;
+    for (const Shader* it = shaders; it < itEnd; ++it, ++current) {
+      if (it->type() == ShaderType::compute)
+        throw std::invalid_argument("GraphicsPipeline::Builder: invalid shader type (compute)");
+      current->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      current->stage = (VkShaderStageFlagBits)it->type();
+      current->module = it->handle()->value();
+      current->pName = it->entryPoint();
+    }
+  }
+  // Remove all shader stages
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::clearShaderStages() noexcept {
+    this->_globalPipelineParams.stageCount = 0;
+    return *this;
+  }
+
+  // Bind (or replace) shader module for a specific stage (at least vertex+fragment or compute required)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::attachShaderStage(const Shader& shaderModule) { // throws
+    if (shaderModule.type() == ShaderType::compute)
+      throw std::invalid_argument("GraphicsPipeline::Builder: invalid shader type (compute)");
+
+    VkPipelineShaderStageCreateInfo* target;
+    const VkPipelineShaderStageCreateInfo* itEnd = this->_shaderStages + (intptr_t)this->_globalPipelineParams.stageCount;
+    for (target = this->_shaderStages; target < itEnd; ++target) {
+      if (target->stage == (VkShaderStageFlagBits)shaderModule.type())
+        break;
+    }
+    if (target >= itEnd) {
+      if (this->_globalPipelineParams.stageCount >= __P_MAX_DISPLAY_SHADER_NUMBER)
+        throw std::invalid_argument("GraphicsPipeline::Builder: too many shader types (check project options)");
+
+      target = &_shaderStages[this->_globalPipelineParams.stageCount];
+      target->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      target->stage = (VkShaderStageFlagBits)shaderModule.type();
+      this->_globalPipelineParams.stageCount += 1u;
+    }
+    target->module = shaderModule.handle()->value();
+    target->pName = shaderModule.entryPoint();
+    return *this;
+  }
+  // Remove a shader stage
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::detachShaderStage(ShaderType stage) noexcept {
+    const VkPipelineShaderStageCreateInfo* itLast = this->_shaderStages + ((intptr_t)this->_globalPipelineParams.stageCount - 1);
+    for (VkPipelineShaderStageCreateInfo* it = this->_shaderStages; it <= itLast; ++it) {
+      if (it->stage == (VkShaderStageFlagBits)stage) {
+        if (it < itLast)
+          memmove(it, it + (intptr_t)1, (itLast - it)*sizeof(VkPipelineShaderStageCreateInfo));
+        this->_globalPipelineParams.stageCount -= 1u;
+        break;
+      }
+    }
+    return *this;
+  }
+
+  // ---
+
+  // Bind rasterization state (required)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerState(const RasterizerParams& state) noexcept {
+    this->_globalPipelineParams.pRasterizationState = &(state.descriptor());
+
+    // update chained list - depth clipping
+    if (state._depthClippingDesc().depthClipEnable && this->_renderer->isExtensionEnabled("VK_EXT_depth_clip_enable")) {
+      if (state.descriptor().pNext != &(state._depthClippingDesc())) { // enabled && available -> insert in chained list
+        state._depthClippingDesc().pNext = state.descriptor().pNext;
+        state.descriptor().pNext = &(state._depthClippingDesc());
+      }
+    }
+    else if (state.descriptor().pNext == &(state._depthClippingDesc())) { // disabled || unavailable -> remove from chained list
+      state.descriptor().pNext = nullptr;
+      if (state._depthClippingDesc().pNext) {
+        state.descriptor().pNext = state._depthClippingDesc().pNext;
+        state._depthClippingDesc().pNext = nullptr;
+      }
+    }
+    // update chained list - line rasterization state (for AA)
+    if (state._lineStateDesc().lineRasterizationMode && state.descriptor().polygonMode == VK_POLYGON_MODE_LINE
+    && this->_renderer->isExtensionEnabled("VK_EXT_line_rasterization")) { // enabled && available -> insert in chained list
+      if (state.descriptor().pNext == &(state._depthClippingDesc())) {
+        state._lineStateDesc().pNext = state._depthClippingDesc().pNext;
+        state._depthClippingDesc().pNext = &(state._lineStateDesc());
+      }
+      else {
+        state._lineStateDesc().pNext = state.descriptor().pNext;
+        state.descriptor().pNext = &(state._lineStateDesc());
+      }
+    }
+    else { // disabled || unavailable -> remove from chained list
+      if (state._depthClippingDesc().pNext == &(state._lineStateDesc())) {
+        state._depthClippingDesc().pNext = state._lineStateDesc().pNext;
+        state._lineStateDesc().pNext = nullptr;
+      }
+      else if (state.descriptor().pNext == &(state._lineStateDesc())) {
+        state.descriptor().pNext = state._lineStateDesc().pNext;
+        state._lineStateDesc().pNext = nullptr;
+      }
+    }
+    return *this;
+  }
+
+  // Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setBlendState(const BlendParams& state) noexcept {
+    this->_globalPipelineParams.pColorBlendState = &state.descriptor();
+    state.descriptor().pAttachments = &(state._attachDesc());
+    state.descriptor().attachmentCount = 1u;
+    return *this;
+  }
+  // Bind color/alpha blending state -- customized per render-target (one of the 2 methods required)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setBlendState(const BlendPerTargetParams& state) noexcept {
+    this->_globalPipelineParams.pColorBlendState = &state.descriptor();
+    state.descriptor().pAttachments = state._attachDesc().data();
+    state.descriptor().attachmentCount = static_cast<uint32_t>(state._attachDesc().size());
+    return *this;
+  }
+
+  // ---
+
+  // Set viewports and scissor-test rectangles (optional: dynamic viewports if ignored)
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setViewports(const Viewport viewports[], size_t viewportCount,
+                                                        const ScissorRectangle scissorTests[], size_t scissorCount,
+                                                        bool useDynamicCount) noexcept {
+    assert(useDynamicCount || viewportCount == scissorCount);
+
+    if (viewports != nullptr) {
+      this->_viewports = DynamicArray<VkViewport>(viewportCount);
+      for (size_t i = 0; i < viewportCount; ++i)
+        memcpy(&(this->_viewports.value[i]), viewports[i].descriptor(), sizeof(VkViewport));
+      this->_viewportState.pViewports = this->_viewports.value;
+    }
+    else {
+      this->_viewports.clear();
+      this->_viewportState.pViewports = nullptr;
+    }
+    this->_viewportState.viewportCount = static_cast<uint32_t>(viewportCount);
+
+    if (scissorTests != nullptr) {
+      this->_scissors = DynamicArray<VkRect2D>(scissorCount);
+      for (size_t i = 0; i < scissorCount; ++i)
+        memcpy(&(this->_scissors.value[i]), scissorTests[i].descriptor(), sizeof(VkViewport));
+      this->_viewportState.pScissors = this->_scissors.value;
+    }
+    else {
+      this->_scissors.clear();
+      this->_viewportState.pScissors = nullptr;
+    }
+    this->_viewportState.scissorCount = static_cast<uint32_t>(scissorCount);
+    return *this;
+  }
+
+  // Build a graphics pipeline (based on current params)
+  GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
+    //create RenderPass + PipelineLayout
+    //...
+
+    //if (nb_render_targets != this->_globalPipelineParams.pColorBlendState.attachmentCount) {
+      // allouer plus grand + copier
+      // _params.pAttachments = &attachementState; _params.attachmentCount = nb_render_targets;
+      //...
+    //}
+    return GraphicsPipeline(this->_globalPipelineParams, this->_renderer, parentCache);
+  }
+
+
+
 
 
   // -- GraphicsPipeline::Builder - setters -- ---------------------------------
 
-  GraphicsPipeline::Builder::Builder() noexcept {
-    this-> _inputLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    this->_inputTopology.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    this->_inputTopology.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    this->_inputTopology.primitiveRestartEnable = VK_FALSE;
-    this->_viewport.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    this->_viewport.viewportCount = this->_viewport.scissorCount = 1u;
-
-    this->_graphicsPipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    this->_graphicsPipeline.pVertexInputState = &(this->_inputLayout);
-    this->_graphicsPipeline.pInputAssemblyState = &(this->_inputTopology);
-    this->_graphicsPipeline.pViewportState = &(this->_viewport);
-  }
-
-  // -- pipeline stages --
-
-  // Bind vertex shader input layout + set vertex topology
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputLayout(InputLayoutHandle inputLayout,
-                                                                       VertexTopology topology) noexcept {
-    this->_inputLayout.vertexBindingDescriptionCount = static_cast<uint32_t>(inputLayout->bindings.length());
-    this->_inputLayout.pVertexBindingDescriptions = inputLayout->bindings.value;
-    this->_inputLayout.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputLayout->attributes.length());
-    this->_inputLayout.pVertexAttributeDescriptions = inputLayout->attributes.value;
-    this->_inputTopology.topology = (VkPrimitiveTopology)topology;
-    return *this;
-  }
-
-  // Bind shader stages to pipeline
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setShaderStages(const Shader shaders[], size_t shaderCount) {
-    this->_graphicsPipeline.stageCount = static_cast<uint32_t>(shaderCount);
-    this->_shaderStages = DynamicArray<VkPipelineShaderStageCreateInfo>(shaderCount);
-    for (auto* it = this->_shaderStages.value; shaderCount; ++it, ++shaders, --shaderCount)
-      memcpy(it, &(shaders->descriptor()), sizeof(VkPipelineShaderStageCreateInfo));
-    this->_graphicsPipeline.pStages = this->_shaderStages.value;
-    return *this;
-  }
-
-  // Set viewports and scissor-test rectangles
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setViewports(const Viewport::Descriptor viewports[], const ScissorRectangle::Descriptor scissorTests[],
-    size_t viewportCount, bool isDynamicCount) noexcept {
-    this->_viewport.viewportCount = this->_viewport.scissorCount = static_cast<uint32_t>(viewportCount);
-    this->_viewport.pViewports = viewports;
-    this->_viewport.pScissors = scissorTests;
-    this->_useDynamicViewportCount = isDynamicCount;
-    return *this;
-  }
-
-  // -- rendering states --
-
 # define __P_MAX_DYNAMIC_STATE_COUNT 18
 
-  // Set Vulkan-specific dynamic state flags
+  /*// Set Vulkan-specific dynamic state flags
   uint32_t GraphicsPipeline::Builder::_setDynamicState(VkInstance instance, VkDynamicState* dynamicStates) noexcept {
     VulkanLoader& loader = VulkanLoader::instance();
 
@@ -154,18 +464,6 @@ Implementation included in renderer.cpp
     }
     static_assert(__P_MAX_DYNAMIC_STATE_COUNT >= 18, "GraphicsPipeline.Builder: dynamicStates array too small");
     return dynamicStateCount;
-  }
-
-  // Set Vulkan-specific pipeline flags
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setFlags(VkPipelineCreateFlagBits flags, GraphicsPipeline::Handle basePipeline, 
-                                                                 int32_t basePipelineIndex, VkPipelineCache parentCache) noexcept {
-    this->_graphicsPipeline.flags = flags;
-    if (basePipeline != VK_NULL_HANDLE)
-      this->_graphicsPipeline.flags |= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-    this->_graphicsPipeline.basePipelineHandle = (VkPipeline)basePipeline;
-    this->_graphicsPipeline.basePipelineIndex = basePipelineIndex;
-    this->_parentCache = parentCache;
-    return *this;
   }
 
 
@@ -214,7 +512,7 @@ Implementation included in renderer.cpp
       this->_graphicsPipeline.pDynamicState = nullptr;
 
     // create render-pass + pipeline layout
-    /*DynamicArray<VkAttachmentDescription> colorAttachments(renderTargetCount);
+    /-*DynamicArray<VkAttachmentDescription> colorAttachments(renderTargetCount);
     memset(colorAttachments.value, 0, renderTargetCount*sizeof(VkAttachmentDescription));
     for (size_t i = 0; i < renderTargetCount; ++i) {
       auto& colorAttachment = colorAttachments.value[i];
@@ -231,7 +529,7 @@ Implementation included in renderer.cpp
       colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
       colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //TODO: optimiser uniquement si mode "LOAD" (keep)
       colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //TODO: gérer swap-chain / swap-chain shared / texture-target for texture / staging texture-target
-    }*/
+    }*-/
 
     //...
     //this->_graphicsPipeline.layout = pipelineLayout;
@@ -243,6 +541,6 @@ Implementation included in renderer.cpp
 
     // create graphics pipeline
     return GraphicsPipeline(renderer, this->_graphicsPipeline, this->_parentCache);
-  }
+  }*/
 
 #endif
