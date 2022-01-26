@@ -30,7 +30,7 @@ Implementation included in renderer.cpp
     _params.FillMode = D3D11_FILL_SOLID;
   }
   
-  RasterizerParams::RasterizerParams(const Renderer&, CullMode cull, FillMode fill, bool isFrontClockwise,
+  RasterizerParams::RasterizerParams(CullMode cull, FillMode fill, bool isFrontClockwise,
                                      bool depthClipping, bool scissorClipping) noexcept {
     ZeroMemory(&_params, sizeof(D3D11_RASTERIZER_DESC));
     
@@ -257,6 +257,14 @@ Implementation included in renderer.cpp
 
   uint64_t GraphicsPipeline::Builder::_lastViewportScissorId = 0;
 
+  // Create pipeline builder
+  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) noexcept : _renderer(renderer) { // throws
+    if (this->_renderer == nullptr)
+      throw std::logic_error("GraphicsPipeline.Builder: renderer is NULL");
+  }
+
+  // ---
+
 # ifndef __P_DISABLE_TESSELLATION_STAGE
     // Set vertex patch topology for input stage (required for tessellation shaders)
     GraphicsPipeline::Builder& GraphicsPipeline::Builder::setPatchTopology(uint32_t controlPoints) noexcept {
@@ -269,8 +277,6 @@ Implementation included in renderer.cpp
       return *this;
     }
 # endif
-
-  // ---
 
   // Bind shader stages to pipeline (required)
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setShaderStages(const Shader shaders[], size_t shaderCount) {

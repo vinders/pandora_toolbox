@@ -210,7 +210,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
     builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams(*renderer, CullMode::none)); // off
+    builder.setRasterizerState(RasterizerParams(CullMode::none)); // off
     builder.setDepthStencilState(DepthStencilParams(false, false)); // off
     builder.setBlendState(BlendParams(false));                      // off
     builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);

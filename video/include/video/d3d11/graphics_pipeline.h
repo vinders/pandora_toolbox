@@ -51,13 +51,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Create default rasterizer params: filled, back-face culling, clockwise order, no depth clipping.
           RasterizerParams() noexcept;
           /// @brief Initialize rasterizer config params
-          /// @param renderer          Renderer associated with the pipeline built (used to verify feature support).
           /// @param cull              Identify polygons to hide: back-facing, front-facing, none.
           /// @param fill              Filled/wireframe polygon rendering.
           /// @param isFrontClockwise  Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
           /// @param depthClipping     Enable clipping based on distance
           /// @param scissorClipping   Enable scissor-rectangle clipping
-          RasterizerParams(const Renderer& renderer, CullMode cull, FillMode fill = FillMode::fill,
+          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill,
                            bool isFrontClockwise = true, bool depthClipping = false, bool scissorClipping = false) noexcept;
           
           RasterizerParams(const RasterizerParams&) = default;
@@ -71,14 +70,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
           inline RasterizerParams& cullMode(CullMode cull) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
           /// @brief Set filled/wireframe polygon rendering
-          inline RasterizerParams& fillMode(const Renderer&, FillMode fill) noexcept {
+          inline RasterizerParams& fillMode(FillMode fill) noexcept {
             if (fill == FillMode::linesAA) { _params.FillMode = D3D11_FILL_WIREFRAME;  _params.AntialiasedLineEnable = TRUE; }
             else                           { _params.FillMode = (D3D11_FILL_MODE)fill; _params.AntialiasedLineEnable = FALSE; }
             return *this;
           }
           
           /// @brief Enable clipping based on distance
-          inline RasterizerParams& depthClipping(const Renderer&, bool isEnabled) noexcept {
+          inline RasterizerParams& depthClipping(bool isEnabled) noexcept {
             _params.DepthClipEnable = isEnabled ? TRUE : FALSE; return *this;
           }
           /// @brief Enable scissor-rectangle clipping
@@ -414,9 +413,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public:
             /// @brief Create pipeline builder
             /// @throws logic_error if renderer is NULL.
-            Builder(std::shared_ptr<Renderer> renderer) noexcept : _renderer(renderer) {
-              assert(this->_renderer != nullptr);
-            }
+            Builder(std::shared_ptr<Renderer> renderer) noexcept;
             Builder(const Builder&) = delete;
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;

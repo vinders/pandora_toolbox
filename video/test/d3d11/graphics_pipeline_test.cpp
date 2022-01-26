@@ -47,14 +47,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
     GraphicsPipeline::Builder builder(renderer);
 
+    EXPECT_ANY_THROW(GraphicsPipeline::Builder(nullptr));
+
     // rasterizer state
-    RasterizerParams paramsR1(*renderer, CullMode::none, FillMode::lines, false, true, false);
+    RasterizerParams paramsR1(CullMode::none, FillMode::lines, false, true, false);
     RasterizerState valR1 = builder.createRasterizerState(paramsR1);
     EXPECT_TRUE(valR1);
     EXPECT_TRUE(valR1.hasValue());
     EXPECT_TRUE(valR1.get() != nullptr);
     renderer->setRasterizerState(valR1);
-    RasterizerParams paramsR2(*renderer, CullMode::cullBack, FillMode::fill, true, true, true);
+    RasterizerParams paramsR2(CullMode::cullBack, FillMode::fill, true, true, true);
     RasterizerState valR2(builder.createRasterizerState(paramsR2));
     EXPECT_TRUE(valR2);
     EXPECT_TRUE(valR2.hasValue());
@@ -289,8 +291,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // rasterizer
     RasterizerParams raster;
-    raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(*renderer, FillMode::lines)
-          .depthClipping(*renderer, false).scissorClipping(true).depthBias(1, 2.f, 3.f);
+    raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(FillMode::lines)
+          .depthClipping(false).scissorClipping(true).depthBias(1, 2.f, 3.f);
     EXPECT_EQ((BOOL)TRUE, raster.descriptor().FrontCounterClockwise);
     EXPECT_EQ(D3D11_CULL_FRONT, raster.descriptor().CullMode);
     EXPECT_EQ(D3D11_FILL_WIREFRAME, raster.descriptor().FillMode);
@@ -301,7 +303,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((FLOAT)2.f, raster.descriptor().DepthBiasClamp);
     EXPECT_EQ((FLOAT)3.f, raster.descriptor().SlopeScaledDepthBias);
 
-    RasterizerParams raster2(*renderer, CullMode::none, FillMode::fill, false, true, true);
+    RasterizerParams raster2(CullMode::none, FillMode::fill, false, true, true);
     EXPECT_EQ((BOOL)TRUE, raster2.descriptor().FrontCounterClockwise);
     EXPECT_EQ(D3D11_CULL_NONE, raster2.descriptor().CullMode);
     EXPECT_EQ(D3D11_FILL_SOLID, raster2.descriptor().FillMode);
@@ -506,7 +508,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_ANY_THROW(builder.build());
     builder.setShaderStages(&vertexShader, size_t{ 1u });
     EXPECT_ANY_THROW(builder.build());
-    builder.setRasterizerState(RasterizerParams(*renderer, CullMode::cullBack, FillMode::fill, true, false, false));
+    builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
     EXPECT_ANY_THROW(builder.build());
     builder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
                                                     StencilOp::decrementWrap, StencilOp::invert, 2u));
@@ -542,7 +544,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // create pipeline with viewport (+ set same state params -> read from cache)
     Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 100.f);
     builder.setVertexTopology(VertexTopology::triangles);
-    builder.setRasterizerState(RasterizerParams(*renderer, CullMode::cullBack, FillMode::fill, true, false, false));
+    builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
     builder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
                                                     StencilOp::decrementWrap, StencilOp::invert, 1u));
     builder.setBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,
@@ -585,7 +587,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                      BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add)
                   .setTargetBlend(1, BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::subtract,
                                      BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::subtract);
-    builder.setRasterizerState(RasterizerParams(*renderer, CullMode::none, FillMode::fill, true, false, false));
+    builder.setRasterizerState(RasterizerParams(CullMode::none, FillMode::fill, true, false, false));
     builder.setDepthStencilState(DepthStencilParams(StencilCompare::greater, StencilOp::zero, StencilOp::keep,
                                                     StencilOp::zero, StencilOp::keep, 1u));
     builder.setBlendState(blendPerTarget);
