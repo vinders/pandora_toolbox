@@ -464,10 +464,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @brief Bind rasterization state (required)
             /// @throws runtime_error on creation failure
             Builder& setRasterizerState(const RasterizerParams& state);
-            /// @brief Bind depth/stencil test state (required)
+            /// @brief Bind depth/stencil test state (required if depth buffer used)
             /// @warning Required to use a depth/stencil buffer when rendering.
             /// @throws runtime_error on creation failure
             Builder& setDepthStencilState(const DepthStencilParams& state);
+            /// @brief Remove depth/stencil test state (if no depth buffer is used)
+            Builder& clearDepthStencilState() noexcept {
+              this->_params.depthStencilState.release(); return *this;
+            }
+
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
             /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
             ///                           (defaults to white if set to NULL).

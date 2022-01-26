@@ -207,7 +207,7 @@ Implementation included in renderer.cpp
     assert(builder._renderer != nullptr);
     if (!builder._params.shaderStages[(size_t)ShaderType::vertex].hasValue())
       throw std::logic_error("GraphicsPipeline: vertex shader required");
-    if (!builder._params.rasterizerState.hasValue() || !builder._params.depthStencilState.hasValue() || !builder._params.blendState.hasValue())
+    if (!builder._params.rasterizerState.hasValue() || !builder._params.blendState.hasValue())
       throw std::logic_error("GraphicsPipeline: missing required pipeline state");
 
     this->_pipeline = std::make_shared<_DxPipelineStages>(builder._params); // copy pipeline states + shader stages
@@ -230,7 +230,8 @@ Implementation included in renderer.cpp
 
     // register pipeline states to cache
     this->_renderer->_addRasterizerState(builder._params.rasterizerCacheId, builder._params.rasterizerState);
-    this->_renderer->_addDepthStencilState(builder._params.depthStencilCacheId, builder._params.depthStencilState);
+    if (builder._params.depthStencilState.hasValue())
+      this->_renderer->_addDepthStencilState(builder._params.depthStencilCacheId, builder._params.depthStencilState);
     if (builder._params.blendPerTargetCacheId == nullptr)
       this->_renderer->_addBlendState(builder._params.blendCacheId, builder._params.blendState);
     else
@@ -242,7 +243,8 @@ Implementation included in renderer.cpp
     if (this->_pipeline != nullptr) {
       // unregister pipeline states from cache
       this->_renderer->_removeRasterizerState(this->_pipeline->rasterizerCacheId);
-      this->_renderer->_removeDepthStencilState(this->_pipeline->depthStencilCacheId);
+      if (this->_pipeline->depthStencilState.hasValue())
+        this->_renderer->_removeDepthStencilState(this->_pipeline->depthStencilCacheId);
       if (this->_pipeline->blendPerTargetCacheId == nullptr)
         this->_renderer->_removeBlendState(this->_pipeline->blendCacheId);
       else

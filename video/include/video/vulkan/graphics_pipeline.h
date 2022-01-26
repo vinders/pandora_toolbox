@@ -325,8 +325,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         class BlendPerTargetParams final {
         public:
           /// @brief Create empty blend params (disabled for all targets).
-          BlendPerTargetParams() noexcept { _params.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO; }
-
+          BlendPerTargetParams() noexcept;
           BlendPerTargetParams(const BlendPerTargetParams&) = default;
           BlendPerTargetParams(BlendPerTargetParams&&) noexcept = default;
           BlendPerTargetParams& operator=(const BlendPerTargetParams&) = default;
@@ -497,13 +496,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @warning The current RasterizerParams must be kept alive as long as the Builder is used.
             ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
             Builder& setRasterizerState(const RasterizerParams& state) noexcept;
-            /// @brief Bind depth/stencil test state (required)
+            /// @brief Bind depth/stencil test state (required if depth buffer used)
             /// @warning Required to use a depth/stencil buffer when rendering.
             /// @warning The current DepthStencilParams must be kept alive as long as the Builder is used.
             ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
             Builder& setDepthStencilState(const DepthStencilParams& state) noexcept {
               this->_globalPipelineParams.pDepthStencilState = &(state.descriptor()); return *this;
             }
+            /// @brief Remove depth/stencil test state (if no depth buffer is used)
+            Builder& clearDepthStencilState() noexcept {
+              this->_globalPipelineParams.pDepthStencilState = nullptr; return *this;
+            }
+
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
             /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
             ///                           (defaults to white if set to NULL).

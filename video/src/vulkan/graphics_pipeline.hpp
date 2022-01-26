@@ -29,7 +29,7 @@ Implementation included in renderer.cpp
     _params.cullMode = VK_CULL_MODE_BACK_BIT;
     _params.polygonMode = VK_POLYGON_MODE_FILL;
     _params.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    _params.depthClampEnable = VK_TRUE;
+    _params.depthClampEnable = VK_FALSE;
     _params.lineWidth = 1.f;
     _depthClipping.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
     _lineRasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT;
@@ -41,7 +41,7 @@ Implementation included in renderer.cpp
     _params.cullMode = (VkCullModeFlags)cull;
     _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-    _params.depthClampEnable = VK_TRUE;
+    _params.depthClampEnable = VK_FALSE;
     _depthClipping.depthClipEnable = depthClipping ? VK_TRUE : VK_FALSE;
     fillMode(fill);
     _params.lineWidth = 1.f;
@@ -84,6 +84,7 @@ Implementation included in renderer.cpp
                            BlendFactor srcAlphaFactor, BlendFactor destAlphaFactor, BlendOp alphaBlendOp,
                            ColorComponentFlag mask) noexcept {
     _params.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    _params.logicOp = VK_LOGIC_OP_COPY;
     _attachementState.blendEnable = VK_TRUE;
     _attachementState.colorWriteMask = (VkColorComponentFlags)mask;
     
@@ -102,6 +103,11 @@ Implementation included in renderer.cpp
   }
 
   // ---
+
+  BlendPerTargetParams::BlendPerTargetParams() noexcept {
+    _params.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    _params.logicOp = VK_LOGIC_OP_COPY;
+  }
 
   BlendPerTargetParams& BlendPerTargetParams::setTargetBlend(uint32_t targetIndex,
                                               BlendFactor srcColorFactor, BlendFactor destColorFactor, BlendOp colorBlendOp,
@@ -166,7 +172,7 @@ Implementation included in renderer.cpp
     assert(this->_renderer != nullptr && createInfo.renderPass != VK_NULL_HANDLE && createInfo.layout != VK_NULL_HANDLE);
     if (createInfo.stageCount == 0)
       throw std::logic_error("GraphicsPipeline: vertex shader required");
-    if (createInfo.pRasterizationState == nullptr || createInfo.pDepthStencilState == nullptr || createInfo.pColorBlendState == nullptr)
+    if (createInfo.pRasterizationState == nullptr || createInfo.pColorBlendState == nullptr)
       throw std::logic_error("GraphicsPipeline: missing required pipeline state");
 
     auto result = vkCreateGraphicsPipelines(this->_renderer->context(), cache, 1, &createInfo, nullptr, &(this->_pipelineHandle));
@@ -210,6 +216,8 @@ Implementation included in renderer.cpp
     this->_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     this->_viewportState.viewportCount = this->_viewportState.scissorCount = 1u;
     this->_multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    this->_multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    this->_multisampleState.minSampleShading = 1.0f;
 #   ifndef __P_DISABLE_TESSELLATION_STAGE
       this->_tessellationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
 #   endif
@@ -258,6 +266,7 @@ Implementation included in renderer.cpp
       current->module = it->handle()->value();
       current->pName = it->entryPoint();
     }
+    return *this;
   }
   // Remove all shader stages
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::clearShaderStages() noexcept {
@@ -392,13 +401,23 @@ Implementation included in renderer.cpp
       this->_viewportState.pScissors = nullptr;
     }
     this->_viewportState.scissorCount = static_cast<uint32_t>(scissorCount);
+
+    this->_useDynamicViewportCount = useDynamicCount;
     return *this;
   }
+
+  // ---
 
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
     //set dynamic states
     //...
+    VulkanLoader& loader = VulkanLoader::instance();
+    if (this->_useDynamicViewportCount) {
+      if (!loader.isDynamicViewportCountSupported(this->_renderer->vkInstance()))
+        throw std::runtime_error("GraphicsPipeline.Builder: dynamic viewport count not supported by driver");
+      //...
+    }
 
     //create RenderPass + PipelineLayout
     //...
