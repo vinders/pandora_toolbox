@@ -17,6 +17,10 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
+# ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 26451)
+# endif
 # include <gtest/gtest.h>
 # include <memory>
 # include <video/d3d11/renderer.h>
@@ -386,4 +390,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(tex3D.resourceView() != nullptr);
   }
 
+# ifdef _MSC_VER
+#   pragma warning(pop)
+# endif
 #endif
