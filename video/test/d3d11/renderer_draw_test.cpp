@@ -211,8 +211,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     builder.attachShaderStage(vertexShader);
     builder.attachShaderStage(fragmentShader);
     builder.setRasterizerState(RasterizerParams(CullMode::none)); // off
-    builder.setDepthStencilState(DepthStencilParams(false, false)); // off
-    builder.setBlendState(BlendParams(false));                      // off
+    builder.setBlendState(BlendParams(false));                    // off
     builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
     auto pipeline = builder.build();
     ASSERT_FALSE(pipeline.isEmpty());

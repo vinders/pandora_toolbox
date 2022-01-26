@@ -639,6 +639,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindGraphicsPipeline(pipeline.handle());
 
     builder.detachShaderStage(ShaderType::vertex);
+    builder.clearDepthStencilState();
     EXPECT_ANY_THROW(builder.build());
 
     // move
