@@ -208,7 +208,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
 
           /// @brief Set depth/stencil operation reference (default: 1)
-          DepthStencilParams& stencilReference(uint32_t stencilRef) noexcept { _stencilRef = stencilRef; return *this; }
+          inline DepthStencilParams& stencilReference(uint32_t stencilRef) noexcept { _stencilRef = stencilRef; return *this; }
           /// @brief Get depth/stencil operation reference
           inline uint32_t stencilReference() const noexcept { return _stencilRef; }
           
@@ -413,7 +413,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public:
             /// @brief Create pipeline builder
             /// @throws logic_error if renderer is NULL.
-            Builder(std::shared_ptr<Renderer> renderer) noexcept;
+            Builder(std::shared_ptr<Renderer> renderer);
             Builder(const Builder&) = delete;
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;

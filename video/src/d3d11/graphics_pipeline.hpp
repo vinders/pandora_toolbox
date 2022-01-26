@@ -258,7 +258,7 @@ Implementation included in renderer.cpp
   uint64_t GraphicsPipeline::Builder::_lastViewportScissorId = 0;
 
   // Create pipeline builder
-  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) noexcept : _renderer(renderer) { // throws
+  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) : _renderer(renderer) { // throws
     if (this->_renderer == nullptr)
       throw std::logic_error("GraphicsPipeline.Builder: renderer is NULL");
   }
