@@ -298,7 +298,14 @@ Includes hpp implementations at the end of the file
 
   // List of default/standard device extensions (used if no custom list provided)
   static DynamicArray<const char*> __defaultDeviceExtensions(uint32_t& outExtCount, uint32_t featureLevel) {
-    if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
+    if (__P_VK_API_VERSION_NOVARIANT(featureLevel) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
+      const char* extensions[] {
+        "VK_EXT_depth_clip_enable",
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+      };
+      return __getSupportedExtensions<sizeof(extensions)/sizeof(*extensions)>(extensions, outExtCount);
+    }
+    else if (__P_VK_API_VERSION_NOVARIANT(featureLevel) == __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
         "VK_EXT_extended_dynamic_state",
         "VK_EXT_depth_clip_enable",
