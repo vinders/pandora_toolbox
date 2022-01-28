@@ -355,7 +355,7 @@ Implementation included in renderer.cpp
     this->_scissorTests = scissorTests;
     this->_scissorCount = (scissorTests != nullptr) ? scissorCount : 0;
 
-    if (viewportCount + scissorCount != 0) {
+    if (viewports != nullptr || scissorTests != nullptr) {
       this->_params.viewportScissorId = ++_lastViewportScissorId;
       if (_lastViewportScissorId == 0)
         ++_lastViewportScissorId;

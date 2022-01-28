@@ -529,11 +529,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             /// @brief Set viewports and scissor-test rectangles (optional: dynamic viewports if ignored)
             /// @param viewports       Pointer to viewport (if 'viewportCount' is 1) or array of viewports.
-            ///                        Set to NULL to use dynamic viewports (a call to Renderer.setViewport(s) is then mandatory).
+            ///                        Set to NULL with viewportCount > 0 to use dynamic viewports (with Renderer.setViewport(s)).
             /// @param viewportCount   Number of viewports (array size of 'viewports', if not NULL).
             ///                        Even if 'viewports' is NULL, this value must be set if 'useDynamicCount' is false.
             /// @param scissorTests    Pointer to scissor-test rectangle (if 'scissorCount' is 1) or array of scissor-test rectangles.
-            ///                        Set to NULL to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
+            ///                        Set to NULL with scissorCount > 0 to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
             ///                        Even if 'scissorTests' is NULL, this value must be set if 'useDynamicCount' is false.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:

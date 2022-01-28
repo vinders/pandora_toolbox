@@ -436,7 +436,7 @@ Implementation included in renderer.cpp
         throw std::runtime_error("Vulkan: extension for dynamic states (viewport count) not enabled");
     }
     
-    if (viewports != nullptr && viewportCount > 0) {
+    if (viewports != nullptr) {
       this->_viewports = DynamicArray<VkViewport>(viewportCount);
       for (size_t i = 0; i < viewportCount; ++i)
         memcpy(&(this->_viewports.value[i]), viewports[i].descriptor(), sizeof(VkViewport));
@@ -448,7 +448,7 @@ Implementation included in renderer.cpp
     }
     this->_viewportsDesc.viewportCount = static_cast<uint32_t>(viewportCount);
 
-    if (scissorTests != nullptr && scissorCount > 0) {
+    if (scissorTests != nullptr) {
       this->_scissors = DynamicArray<VkRect2D>(scissorCount);
       for (size_t i = 0; i < scissorCount; ++i)
         memcpy(&(this->_scissors.value[i]), scissorTests[i].descriptor(), sizeof(VkRect2D));
@@ -518,11 +518,11 @@ Implementation included in renderer.cpp
       dynamicState[++dynamicStateCount] = VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT;
       ++dynamicStateCount;
     }
-    if (_viewportsDesc.pViewports == nullptr || _useDynamicViewportCount) { // +1 -> 15
+    if ((_viewportsDesc.pViewports == nullptr && _viewportsDesc.viewportCount) || _useDynamicViewportCount) { // +1 -> 15
       dynamicState[dynamicStateCount] = VK_DYNAMIC_STATE_VIEWPORT;
       ++dynamicStateCount;
     }
-    if (_viewportsDesc.pScissors == nullptr || _useDynamicViewportCount) { // +1 -> 16
+    if ((_viewportsDesc.pScissors == nullptr && _viewportsDesc.scissorCount) || _useDynamicViewportCount) { // +1 -> 16
       dynamicState[dynamicStateCount] = VK_DYNAMIC_STATE_SCISSOR;
       ++dynamicStateCount;
     }
