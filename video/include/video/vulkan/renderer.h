@@ -185,7 +185,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///        (topology, input-assembler stage, shader stages, pipeline states, viewport/scissor descriptors)
           /// @param pipeline  Valid graphics pipeline
           void bindGraphicsPipeline(GraphicsPipelineHandle pipeline) noexcept {
-            this->_boundPipeline = pipeline;
+            this->_attachedPipeline = pipeline;
             //...
           }
 
@@ -241,7 +241,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
           DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
 
-          VkPipeline _boundPipeline = VK_NULL_HANDLE;
+          VkPipeline _attachedPipeline = VK_NULL_HANDLE;
         };
       }
     }

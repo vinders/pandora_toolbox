@@ -63,14 +63,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE; return *this;
           }
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
-          inline RasterizerParams& cullMode(CullMode cull) noexcept { _params.cullMode = (VkCullModeFlags)cull; return *this; }
+          /// @remarks To be able to change the cull-mode and/or vertex-order dynamically, set isDynamic=true
+          ///          (required extension VK_EXT_extended_dynamic_state, or Vulkan 1.3+).
+          inline RasterizerParams& cullMode(CullMode cull, bool isDynamic = false) noexcept {
+            _params.cullMode = (VkCullModeFlags)cull; _useDynamicCulling = isDynamic; return *this;
+          }
           /// @brief Set filled/wireframe polygon rendering
-          RasterizerParams& fillMode(FillMode fill) noexcept;
+          inline RasterizerParams& fillMode(FillMode fill) noexcept { _params.polygonMode = (VkPolygonMode)fill; return *this; }
           
           /// @brief Enable clipping based on distance
-          RasterizerParams& depthClipping(bool isEnabled) noexcept {
-            _depthClipping.depthClipEnable = isEnabled ? VK_TRUE : VK_FALSE; return *this;
-          }
+          inline RasterizerParams& depthClipping(bool isEnabled) noexcept { _useDepthClipping = isEnabled; return *this; }
           /// @brief Enable scissor-rectangle clipping
           inline RasterizerParams& scissorClipping(bool isEnabled) noexcept { _useScissorClipping = isEnabled; return *this; }
           
@@ -86,18 +88,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             return *this;
           }
           
-          inline VkPipelineRasterizationStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native vulkan descriptor
-          inline VkPipelineRasterizationDepthClipStateCreateInfoEXT& _depthClippingDesc() const noexcept { return this->_depthClipping; }
-          inline VkPipelineRasterizationLineStateCreateInfoEXT& _lineStateDesc() const noexcept { return this->_lineRasterization; }
-       
-        private:
-          void _copy(const RasterizerParams& rhs) noexcept;
+          inline VkPipelineRasterizationStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
+          inline const VkPipelineRasterizationStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
+          inline bool _isDepthClippingEnabled() const noexcept { return this->_useDepthClipping; }
+          inline bool _isScissorClippingEnabled() const noexcept { return this->_useScissorClipping; }
+          inline bool _isDynamicCullingEnabled() const noexcept { return this->_useDynamicCulling; }
 
         private:
-          mutable VkPipelineRasterizationStateCreateInfo _params{};
-          mutable VkPipelineRasterizationDepthClipStateCreateInfoEXT _depthClipping{};
-          mutable VkPipelineRasterizationLineStateCreateInfoEXT _lineRasterization{};
+          VkPipelineRasterizationStateCreateInfo _params{};
+          bool _useDepthClipping = false;
           bool _useScissorClipping = false;
+          bool _useDynamicCulling = false;
         };
         
         
@@ -175,18 +176,25 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DepthStencilParams& operator=(const DepthStencilParams&) = default;
           ~DepthStencilParams() noexcept = default;
 
+          /// @brief Enable/disable depth-test
+          /// @remarks To be able to change the depth test dynamically, set isDynamic=true
+          ///          (required extension VK_EXT_extended_dynamic_state, or Vulkan 1.3+).
+          inline DepthStencilParams& enableDepthTest(bool isEnabled, bool isDynamic = false) noexcept {
+            _params.depthTestEnable = isEnabled ? TRUE : FALSE; _useDynamicDepthTest = isDynamic;  return *this;
+          }
+          /// @brief Enable/disable stencil-test
+          /// @remarks To be able to change the stencil test dynamically, set isDynamic=true
+          ///          (required extension VK_EXT_extended_dynamic_state, or Vulkan 1.3+).
+          inline DepthStencilParams& enableStencilTest(bool isEnabled, bool isDynamic = false) noexcept {
+            _params.stencilTestEnable = isEnabled ? TRUE : FALSE; _useDynamicStencilTest = isDynamic; return *this;
+          }
+
 
           // -- depth/stencil test operations --
 
-          /// @brief Enable/disable depth-test
-          inline DepthStencilParams& enableDepthTest(bool isEnabled) noexcept { _params.depthTestEnable = isEnabled ? TRUE : FALSE; return *this; }
           /// @brief Set depth-test comparison
           inline DepthStencilParams& depthTest(StencilCompare comp) noexcept { _params.depthCompareOp = (VkCompareOp)comp; return *this; }
 
-          /// @brief Enable/disable stencil-test
-          inline DepthStencilParams& enableStencilTest(bool isEnabled) noexcept {
-            _params.stencilTestEnable = isEnabled ? TRUE : FALSE; return *this;
-          }
           /// @brief Set front stencil-test comparison
           inline DepthStencilParams& frontFaceStencilTest(StencilCompare comp) noexcept {
             _params.front.compareOp=(VkCompareOp)comp; return *this;
@@ -232,6 +240,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           inline VkPipelineDepthStencilStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
           inline const VkPipelineDepthStencilStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
+          inline bool _isDynamicDepthTestEnabled() const noexcept { return this->_useDynamicDepthTest; }
+          inline bool _isDynamicStencilTestEnabled() const noexcept { return this->_useDynamicStencilTest; }
           
         private:
           void _init(VkBool32 enableDepth, VkBool32 enableStencil, VkCompareOp depthComp, 
@@ -239,6 +249,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         private:
           VkPipelineDepthStencilStateCreateInfo _params{};
+          bool _useDynamicDepthTest = false;
+          bool _useDynamicStencilTest = false;
         };
         
         
@@ -296,8 +308,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
 
           /// @brief Set constant factor (RGBA) for constant blend factors
-          /// @remarks The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
-          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4]) noexcept;
+          /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
+          ///          - To be able to change the constant factor dynamically, set isDynamic=true.
+          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool isDynamic = false) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return _params.blendConstants; }
           
@@ -308,12 +321,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Enable/disable blending
           inline BlendParams& enable(bool isEnabled) noexcept { _attachementState.blendEnable = isEnabled ? VK_TRUE : VK_FALSE; return *this; }
           
-          inline VkPipelineColorBlendStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
+          inline VkPipelineColorBlendStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
+          inline const VkPipelineColorBlendStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
           inline const VkPipelineColorBlendAttachmentState& _attachDesc() const noexcept { return this->_attachementState; }
+          inline bool _isDynamicConstantEnabled() const noexcept { return this->_useDynamicBlendConstants; }
 
         private:
-          mutable VkPipelineColorBlendStateCreateInfo _params{};
+          VkPipelineColorBlendStateCreateInfo _params{};
           VkPipelineColorBlendAttachmentState _attachementState{};
+          bool _useDynamicBlendConstants = false;
         };
 
         // ---
@@ -350,19 +366,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           BlendPerTargetParams& disableTargetBlend(uint32_t targetIndex) noexcept;
 
           /// @brief Set constant factor (RGBA) for constant blend factors
-          /// @remarks The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
-          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4]) noexcept;
+          /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
+          ///          - To be able to change the constant factor dynamically, set isDynamic=true.
+          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool isDynamic = false) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return _params.blendConstants; }
 
-          inline VkPipelineColorBlendStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
+          inline VkPipelineColorBlendStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
+          inline const VkPipelineColorBlendStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
           inline const pandora::memory::LightVector<VkPipelineColorBlendAttachmentState>& _attachDesc() const noexcept {
             return this->_attachementsPerTarget;
           }
+          inline bool _isDynamicConstantEnabled() const noexcept { return this->_useDynamicBlendConstants; }
           
         private:
-          mutable VkPipelineColorBlendStateCreateInfo _params{};
+          VkPipelineColorBlendStateCreateInfo _params{};
           pandora::memory::LightVector<VkPipelineColorBlendAttachmentState> _attachementsPerTarget;
+          bool _useDynamicBlendConstants = false;
         };
 
 
@@ -433,7 +453,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;
             Builder& operator=(Builder&&) noexcept = default;
-            ~Builder() noexcept = default;
+            ~Builder() noexcept;
 
             // -- vertex input layout --
 
@@ -453,7 +473,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             inline Builder& setVertexTopology(VertexTopology topology) noexcept {
               this->_inputTopology.topology = (VkPrimitiveTopology)topology;
 #             ifndef __P_DISABLE_TESSELLATION_STAGE
-                this->_globalPipelineParams.pTessellationState = nullptr;
+                this->_descriptor.pTessellationState = nullptr;
 #             endif
               return *this;
             }
@@ -462,8 +482,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               /// @param controlPoints  Number of patch control points: between 1 and 32 (other values will be clamped).
               inline Builder& setPatchTopology(uint32_t controlPoints) noexcept {
                 this->_inputTopology.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-                this->_tessellationState.patchControlPoints = controlPoints;
-                this->_globalPipelineParams.pTessellationState = &(this->_tessellationState);
+                this->_tessellationTopology.patchControlPoints = controlPoints;
+                this->_descriptor.pTessellationState = &(this->_tessellationTopology);
                 return *this;
               }
 #           endif
@@ -474,8 +494,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @warning - If tessellation stages are specified, a tessellation patch topology must be set (setPatchTopology).
             ///          - Vertex shaders with input data require an input layout description (setInputLayout).
             /// @throws invalid_argument if unsupported shaders are provided (compute shaders, or shaders disabled by cmake options).
-            /// @warning The current Shader objects must be kept alive (and not released) as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!
             Builder& setShaderStages(const Shader shaders[], size_t shaderCount);
             /// @brief Remove all shader stages
             Builder& clearShaderStages() noexcept;
@@ -484,41 +502,27 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @warning - If tessellation stages are specified, a tessellation patch topology must be set (setPatchTopology).
             ///          - Vertex shaders with input data require an input layout description (setInputLayout).
             /// @throws invalid_argument if unsupported shaders are provided (compute shaders, or shaders disabled by cmake options).
-            /// @warning The current Shader objects must be kept alive (and not released) as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!
-            Builder& attachShaderStage(const Shader& shaderModule);
+            Builder& attachShaderStage(const Shader& shaderStage);
             /// @brief Remove a shader stage
             Builder& detachShaderStage(ShaderType stage) noexcept;
 
             // -- rendering pipeline states --
 
             /// @brief Bind rasterization state (required)
-            /// @warning The current RasterizerParams must be kept alive as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
-            Builder& setRasterizerState(const RasterizerParams& state) noexcept;
+            /// @throws runtime_error if dynamic culling/order is requested but not supported by current Renderer.
+            Builder& setRasterizerState(const RasterizerParams& state);
             /// @brief Bind depth/stencil test state (required if depth buffer used)
             /// @warning Required to use a depth/stencil buffer when rendering.
-            /// @warning The current DepthStencilParams must be kept alive as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
-            Builder& setDepthStencilState(const DepthStencilParams& state) noexcept {
-              this->_globalPipelineParams.pDepthStencilState = &(state.descriptor()); return *this;
-            }
+            /// @throws runtime_error if dynamic septh/stencil test is requested but not supported by current Renderer.
+            Builder& setDepthStencilState(const DepthStencilParams& state);
             /// @brief Remove depth/stencil test state (if no depth buffer is used)
-            Builder& clearDepthStencilState() noexcept {
-              this->_globalPipelineParams.pDepthStencilState = nullptr; return *this;
+            inline Builder& clearDepthStencilState() noexcept {
+              this->_descriptor.pDepthStencilState = nullptr; this->_useDynamicDepthTest = false;  return *this;
             }
 
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
-            /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
-            ///                           (defaults to white if set to NULL).
-            /// @warning The current BlendParams must be kept alive as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
             Builder& setBlendState(const BlendParams& state) noexcept;
             /// @brief Bind color/alpha blending state -- customized per render-target (one of the 2 methods required)
-            /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
-            ///                           (defaults to white if set to NULL).
-            /// @warning The current BlendPerTargetParams must be kept alive as long as the Builder is used.
-            ///          To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
             Builder& setBlendState(const BlendPerTargetParams& state) noexcept;
 
             // -- viewports & scissor tests --
@@ -535,9 +539,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
             ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
+            /// @throws runtime_error if dynamic count is requested but not supported by API.
             Builder& setViewports(const Viewport viewports[], size_t viewportCount,
                                   const ScissorRectangle scissorTests[], size_t scissorCount,
-                                  bool useDynamicCount = false) noexcept;
+                                  bool useDynamicCount = false);
 
 
             // -- pipeline build --
@@ -549,12 +554,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @warning The pipeline will need to be used with compatible render-targets only.
             /// @throws - invalid_argument if no render target description is provided;
             ///         - logic_error if some required states/stages haven't been set;
-            Builder& setRenderTargetFormat(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1) {
-              //if (renderTargets == nullptr || renderTargetCount == 0)
-              //  throw std::invalid_argument("GraphicsPipeline: no render target provided");
-              //... use render targets + MSAA params -> generate MSAA targets
-              return *this;
-            }
+            Builder& setRenderTargetFormat(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1);
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @param parentCache  Pipeline cache to use for creation -- specific to vulkan (do not fill param for cross-API projects)
@@ -566,39 +566,53 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             // -- Vulkan pipeline settings --
 
             /// @brief Native pipeline creation info -- should only be used to customize advanced settings: flags, parentCache...
-            inline VkGraphicsPipelineCreateInfo& descriptor() noexcept { return this->_globalPipelineParams; }
+            inline VkGraphicsPipelineCreateInfo& descriptor() noexcept { return this->_descriptor; }
 
           private:
-            uint32_t _setDynamicState(VkInstance instance, VkDynamicState* dynamicStates) noexcept;
+            uint32_t _setDynamicState(VkDynamicState* dynamicState) noexcept;
+            inline bool _isExtendedDynamicStateSupported() const noexcept {
+              return (__P_VK_API_VERSION_NOVARIANT(this->_renderer->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
+                   || this->_renderer->isExtensionEnabled("VK_EXT_extended_dynamic_state"));
+            }
 
           private:
-            VkPipelineShaderStageCreateInfo _shaderStages[__P_MAX_DISPLAY_SHADER_NUMBER]{};
-            VkPipelineMultisampleStateCreateInfo _multisampleState{};
-            VkPipelineViewportStateCreateInfo _viewportState{};
-            VkPipelineVertexInputStateCreateInfo _inputState{};
+            VkPipelineShaderStageCreateInfo _shaderStagesDesc[__P_MAX_DISPLAY_SHADER_NUMBER]{};
+            Shader _shaderStagesObj[__P_MAX_DISPLAY_SHADER_NUMBER]{};
+
+            VkPipelineRasterizationStateCreateInfo _rasterizationDesc{};
+            VkPipelineDepthStencilStateCreateInfo _depthStencilDesc{};
+            VkPipelineMultisampleStateCreateInfo _multisampleDesc{};
+            VkPipelineColorBlendStateCreateInfo _blendDesc{};
+            VkPipelineRasterizationLineStateCreateInfoEXT _lineRasterDesc{};
+
+            VkPipelineViewportStateCreateInfo _viewportsDesc{};
+            VkPipelineVertexInputStateCreateInfo _inputLayoutDesc{};
             VkPipelineInputAssemblyStateCreateInfo _inputTopology{};
 #           ifndef __P_DISABLE_TESSELLATION_STAGE
-              VkPipelineTessellationStateCreateInfo _tessellationState{};
+              VkPipelineTessellationStateCreateInfo _tessellationTopology{};
 #           endif
-            InputLayout _inputLayout = nullptr;
+            VkPipelineRasterizationDepthClipStateCreateInfoEXT _depthClippingDesc{};
+            InputLayout _inputLayoutObj = nullptr;
+
+            VkGraphicsPipelineCreateInfo _descriptor{}; // main descriptor
+            std::shared_ptr<Renderer> _renderer = nullptr;
+
+            DynamicArray<VkPipelineColorBlendAttachmentState> _attachementsPerTarget;
             DynamicArray<VkViewport> _viewports;
             DynamicArray<VkRect2D> _scissors;
-
-            VkGraphicsPipelineCreateInfo _globalPipelineParams{};
-            std::shared_ptr<Renderer> _renderer = nullptr;
-            bool _copyCommonBlending = true;
+            bool _useBlendPerTarget = false;
             bool _useDynamicCulling = false;
-            bool _useBlendConstants = false;
             bool _useDynamicDepthTest = false;
             bool _useDynamicStencilTest = false;
+            bool _useDynamicBlendConstants = false;
             bool _useDynamicViewportCount = false;
           };
           
         private:
           GraphicsPipeline::Handle _pipelineHandle = VK_NULL_HANDLE;
           std::shared_ptr<Renderer> _renderer = nullptr;
-          VkRenderPass _renderPass = VK_NULL_HANDLE; // stored to guarantee lifetime
-          VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE; // stored to guarantee lifetime
+          VkRenderPass _renderPass = VK_NULL_HANDLE; // stored to guarantee lifetime & destruction
+          VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE; // stored to guarantee lifetime & destruction
         };
       }
     }
