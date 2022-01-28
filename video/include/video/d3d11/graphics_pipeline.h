@@ -68,7 +68,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _params.FrontCounterClockwise = isFrontClockwise ? FALSE : TRUE; return *this;
           }
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
-          inline RasterizerParams& cullMode(CullMode cull) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
+          /// @remarks Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
+          inline RasterizerParams& cullMode(CullMode cull, bool = true) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
           /// @brief Set filled/wireframe polygon rendering
           inline RasterizerParams& fillMode(FillMode fill) noexcept {
             if (fill == FillMode::linesAA) { _params.FillMode = D3D11_FILL_WIREFRAME;  _params.AntialiasedLineEnable = TRUE; }
@@ -174,16 +175,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DepthStencilParams& operator=(const DepthStencilParams&) = default;
           ~DepthStencilParams() noexcept = default;
 
+          /// @brief Enable/disable depth-test
+          /// @remarks The 2nd bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
+          inline DepthStencilParams& enableDepthTest(bool isEnabled, bool = true) noexcept {
+            _params.DepthEnable = isEnabled ? TRUE : FALSE; return *this;
+          }
+          /// @brief Enable/disable stencil-test
+          /// @remarks The 2nd bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
+          inline DepthStencilParams& enableStencilTest(bool isEnabled, bool = true) noexcept {
+            _params.StencilEnable = isEnabled ? TRUE : FALSE; return *this;
+          }
+
 
           // -- depth/stencil test operations --
 
-          /// @brief Enable/disable depth-test
-          inline DepthStencilParams& enableDepthTest(bool isEnabled) noexcept { _params.DepthEnable = isEnabled ? TRUE : FALSE; return *this; }
           /// @brief Set depth-test comparison
           inline DepthStencilParams& depthTest(StencilCompare comp) noexcept { _params.DepthFunc = (D3D11_COMPARISON_FUNC)comp; return *this; }
 
-          /// @brief Enable/disable stencil-test
-          inline DepthStencilParams& enableStencilTest(bool isEnabled) noexcept { _params.StencilEnable = isEnabled ? TRUE : FALSE; return *this; }
           /// @brief Set front stencil-test comparison
           inline DepthStencilParams& frontFaceStencilTest(StencilCompare comp) noexcept {
             _params.FrontFace.StencilFunc=(D3D11_COMPARISON_FUNC)comp; return *this;
@@ -294,8 +302,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
 
           /// @brief Set constant factor (RGBA) for constant blend factors
-          /// @remarks The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
-          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4]) noexcept;
+          /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
+          ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
+          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
           
@@ -352,8 +361,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
 
           /// @brief Set constant factor (RGBA) for constant blend factors
-          /// @remarks The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
-          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4]) noexcept;
+          /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
+          ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
+          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
 
@@ -451,7 +461,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @brief Bind (or replace) shader module for a specific stage (at least vertex+fragment or compute required)
             /// @warning - If tessellation stages are specified, a tessellation patch topology must be set (setPatchTopology).
             ///          - Vertex shaders with input data require an input layout description (setInputLayout).
-            Builder& attachShaderStage(const Shader& shaderModule);
+            Builder& attachShaderStage(const Shader& shaderStage);
             /// @brief Remove a shader stage
             inline Builder& detachShaderStage(ShaderType stage) noexcept {
               assert((unsigned int)stage <= __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX);
@@ -474,13 +484,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             }
 
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
-            /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
-            ///                           (defaults to white if set to NULL).
             /// @throws runtime_error on creation failure
             Builder& setBlendState(const BlendParams& state);
             /// @brief Bind color/alpha blending state -- customized per render-target (one of the 2 methods required)
-            /// @param constantColorRgba  Only used if the blend state uses BlendFactor::constantColor/constantInvColor
-            ///                           (defaults to white if set to NULL).
             /// @throws runtime_error on creation failure
             Builder& setBlendState(const BlendPerTargetParams& state);
 

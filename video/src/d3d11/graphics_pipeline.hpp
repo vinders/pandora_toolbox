@@ -116,7 +116,7 @@ Implementation included in renderer.cpp
     _params.RenderTarget->BlendOpAlpha = (D3D11_BLEND_OP)alphaBlendOp;
   }
 
-  BlendParams& BlendParams::blendConstant(const ColorChannel constantColorRgba[4]) noexcept {
+  BlendParams& BlendParams::blendConstant(const ColorChannel constantColorRgba[4], bool) noexcept {
     memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorChannel)*4u);
     return *this;
   }
@@ -145,7 +145,7 @@ Implementation included in renderer.cpp
     return *this;
   }
 
-  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorChannel constantColorRgba[4]) noexcept {
+  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorChannel constantColorRgba[4], bool) noexcept {
     memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorChannel)*4u);
     return *this;
   }
@@ -293,11 +293,11 @@ Implementation included in renderer.cpp
     return *this;
   }
   // Bind (or replace) shader module for a specific stage (at least vertex+fragment or compute required)
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::attachShaderStage(const Shader& shaderModule) {
-    assert((unsigned int)shaderModule.type() <= __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX);
-    if (shaderModule.handle() != nullptr)
-      ((ID3D11DeviceChild*)shaderModule.handle())->AddRef();
-    this->_params.shaderStages[(unsigned int)shaderModule.type()] = (ID3D11DeviceChild*)shaderModule.handle();
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::attachShaderStage(const Shader& shaderStage) {
+    assert((unsigned int)shaderStage.type() <= __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX);
+    if (shaderStage.handle() != nullptr)
+      ((ID3D11DeviceChild*)shaderStage.handle())->AddRef();
+    this->_params.shaderStages[(unsigned int)shaderStage.type()] = (ID3D11DeviceChild*)shaderStage.handle();
     return *this;
   }
 

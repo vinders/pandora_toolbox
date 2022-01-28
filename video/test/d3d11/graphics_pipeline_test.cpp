@@ -337,6 +337,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ZERO, depth.descriptor().DepthWriteMask);
     EXPECT_EQ((UINT8)0, depth.descriptor().StencilReadMask);
     EXPECT_EQ((UINT8)1, depth.descriptor().StencilWriteMask);
+    EXPECT_EQ((uint32_t)1, depth.stencilReference());
     auto depthId = depth.computeId();
 
     DepthStencilParams depth2(StencilCompare::greaterEqual, StencilOp::invert, StencilOp::replace,
@@ -353,6 +354,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth2.descriptor().DepthWriteMask);
     EXPECT_EQ((UINT8)0xFF, depth2.descriptor().StencilReadMask);
     EXPECT_EQ((UINT8)0xFF, depth2.descriptor().StencilWriteMask);
+    EXPECT_EQ((uint32_t)1, depth2.stencilReference());
     auto depthId2 = depth2.computeId();
 
     DepthStencilParams depth3(StencilCompare::notEqual, StencilCompare::lessEqual, StencilOp::replace,
@@ -369,6 +371,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth3.descriptor().DepthWriteMask);
     EXPECT_EQ((UINT8)0xFF, depth3.descriptor().StencilReadMask);
     EXPECT_EQ((UINT8)0xFF, depth3.descriptor().StencilWriteMask);
+    EXPECT_EQ((uint32_t)1, depth3.stencilReference());
     auto depthId3 = depth3.computeId();
 
     DepthStencilParams depth4(StencilCompare::greaterEqual, StencilCompare::equal, StencilCompare::notEqual, 
@@ -388,6 +391,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(D3D11_DEPTH_WRITE_MASK_ALL, depth4.descriptor().DepthWriteMask);
     EXPECT_EQ((UINT8)0xFF, depth4.descriptor().StencilReadMask);
     EXPECT_EQ((UINT8)0xFF, depth4.descriptor().StencilWriteMask);
+    EXPECT_EQ((uint32_t)1, depth4.stencilReference());
     auto depthId4 = depth4.computeId();
 
     EXPECT_TRUE(depthId != depthId2);
@@ -405,7 +409,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          .blendConstant(color).targetWriteMask(ColorComponentFlag::red).enable(false);
     EXPECT_EQ((BOOL)FALSE, blend.descriptor().IndependentBlendEnable);
     EXPECT_EQ((BOOL)FALSE, blend.descriptor().RenderTarget->BlendEnable);
-    EXPECT_EQ((UINT8)D3D10_COLOR_WRITE_ENABLE_RED, blend.descriptor().RenderTarget->RenderTargetWriteMask);
+    EXPECT_EQ((UINT8)D3D11_COLOR_WRITE_ENABLE_RED, blend.descriptor().RenderTarget->RenderTargetWriteMask);
     EXPECT_EQ(D3D11_BLEND_INV_DEST_COLOR, blend.descriptor().RenderTarget->SrcBlend);
     EXPECT_EQ(D3D11_BLEND_INV_DEST_ALPHA, blend.descriptor().RenderTarget->DestBlend);
     EXPECT_EQ(D3D11_BLEND_OP_SUBTRACT, blend.descriptor().RenderTarget->BlendOp);
@@ -542,7 +546,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport (+ set same state params -> read from cache)
-    Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 100.f);
+    Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
     builder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
@@ -574,13 +578,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(10.f, pipelineViewport.handle()->viewports[0].TopLeftX);
     EXPECT_EQ(20.f, pipelineViewport.handle()->viewports[0].TopLeftY);
     EXPECT_EQ(0.1f, pipelineViewport.handle()->viewports[0].MinDepth);
-    EXPECT_EQ(100.f, pipelineViewport.handle()->viewports[0].MaxDepth);
+    EXPECT_EQ(1.f, pipelineViewport.handle()->viewports[0].MaxDepth);
     EXPECT_EQ(size_t{ 0 }, pipelineViewport.handle()->scissorTests.size());
-    EXPECT_EQ((uint64_t)1LL, pipelineViewport.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline.handle());
+    EXPECT_NE((uint64_t)0, pipelineViewport.handle()->viewportScissorId);
+    EXPECT_TRUE(pipeline.handle()->viewportScissorId < pipelineViewport.handle()->viewportScissorId);
+    renderer->bindGraphicsPipeline(pipelineViewport.handle());
 
     // create pipeline with viewport + scissor test (+ different state params + split blending)
-    Viewport viewports[]{ Viewport(0.f, 0.f, 800.f, 600.f, 0.1f, 1.f), Viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 100.f) };
+    Viewport viewports[]{ Viewport(0.f, 0.f, 800.f, 600.f, 0.1f, 1.f), Viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f) };
     ScissorRectangle scissors[]{ ScissorRectangle(0, 0, 800, 600), ScissorRectangle(10, 20, 400, 300) };
     BlendPerTargetParams blendPerTarget;
     blendPerTarget.setTargetBlend(0, BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add,
@@ -625,7 +630,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(10.f, pipelineViewportScissor.handle()->viewports[1].TopLeftX);
     EXPECT_EQ(20.f, pipelineViewportScissor.handle()->viewports[1].TopLeftY);
     EXPECT_EQ(0.1f, pipelineViewportScissor.handle()->viewports[1].MinDepth);
-    EXPECT_EQ(100.f, pipelineViewportScissor.handle()->viewports[1].MaxDepth);
+    EXPECT_EQ(1.f, pipelineViewportScissor.handle()->viewports[1].MaxDepth);
     EXPECT_EQ(size_t{ 2u }, pipelineViewportScissor.handle()->scissorTests.size());
     EXPECT_EQ((LONG)0, pipelineViewportScissor.handle()->scissorTests[0].left);
     EXPECT_EQ((LONG)0, pipelineViewportScissor.handle()->scissorTests[0].top);
@@ -635,8 +640,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((LONG)20, pipelineViewportScissor.handle()->scissorTests[1].top);
     EXPECT_EQ((LONG)410, pipelineViewportScissor.handle()->scissorTests[1].right);
     EXPECT_EQ((LONG)320, pipelineViewportScissor.handle()->scissorTests[1].bottom);
-    EXPECT_EQ((uint64_t)2LL, pipelineViewportScissor.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline.handle());
+    EXPECT_NE((uint64_t)0, pipelineViewportScissor.handle()->viewportScissorId);
+    EXPECT_TRUE(pipelineViewport.handle()->viewportScissorId < pipelineViewportScissor.handle()->viewportScissorId);
+    renderer->bindGraphicsPipeline(pipelineViewportScissor.handle());
 
     builder.detachShaderStage(ShaderType::vertex);
     builder.clearDepthStencilState();
