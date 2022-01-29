@@ -740,56 +740,48 @@ Includes hpp implementations at the end of the file
 
   // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
   void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
-    if (numberViewports) {
-      if (numberViewports > maxViewports())
-        numberViewports = maxViewports();
+    if (numberViewports > maxViewports())
+      numberViewports = maxViewports();
     
-      if (numberViewports <= 16) { // avoid huge cost of dynamic alloc if possible
-        VkViewport data[16]{};
-        VkViewport* out = &data[numberViewports - 1u];
-        for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
-          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
-        //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values);
-      }
-      else {
-        auto data = DynamicArray<VkViewport>(numberViewports);
+    __if_constexpr (sizeof(Viewport) == sizeof(VkViewport)) {
+      //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, (const VkViewport*)viewports);
+    }
+    else {
+      auto data = DynamicArray<VkViewport>(numberViewports);
+      if (numberViewports) {
         VkViewport* out = &(data.value[numberViewports - 1u]);
         for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
-          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkViewport));
-        //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, values.get());
+          memcpy((void*)out, (void*)it, sizeof(VkViewport));
       }
+      //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, data.get());
     }
   }
   // Replace rasterizer viewport (3D -> 2D projection rectangle)
   void Renderer::setViewport(const Viewport& viewports) noexcept {
-    //vkCmdSetViewport(<CMDQUEUE...>, 0, 1, viewport.descriptor());
+    //vkCmdSetViewport(<CMDQUEUE...>, 0, 1, (const VkViewport*)&viewport);
   }
 
   // Set rasterizer scissor-test rectangle(s)
   void Renderer::setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept {
-    if (numberRectangles) {
-      if (numberRectangles > maxViewports())
-        numberRectangles = maxViewports();
+    if (numberRectangles > maxViewports())
+      numberRectangles = maxViewports();
 
-      if (numberRectangles <= 16) { // avoid huge cost of dynamic alloc if possible
-        VkRect2D data[16]{};
-        VkRect2D* out = &data[numberRectangles - 1u];
-        for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
-          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
-        //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values);
-      }
-      else {
-        auto data = DynamicArray<VkRect2D>(numberRectangles);
+    __if_constexpr (sizeof(ScissorRectangle) == sizeof(VkRect2D)) {
+      //vkCmdSetScissor(<CMDQUEUE...>, 0, numberRectangles, (const VkRect2D*)rectangles);
+    }
+    else {
+      auto data = DynamicArray<VkRect2D>(numberRectangles);
+      if (numberRectangles) {
         VkRect2D* out = &(data.value[numberRectangles - 1u]);
         for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
-          memcpy((void*)out, (void*)it->descriptor(), sizeof(VkRect2D));
-        //vkCmdSetScissor(<CMDQUEUE...>, 0, numberViewports, values.get());
+          memcpy((void*)out, (void*)it, sizeof(VkRect2D));
       }
+      //vkCmdSetScissor(<CMDQUEUE...>, 0, numberRectangles, data.get());
     }
   }
   // Set rasterizer scissor-test rectangle
   void Renderer::setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
-    //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, rectangle.descriptor());
+    //vkCmdSetScissor(<CMDQUEUE...>, 0, 1, (const VkRect2D*)&rectangle);
   }
 
 

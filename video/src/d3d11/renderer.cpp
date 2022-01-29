@@ -86,6 +86,12 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/texture_writer.h"
 # include "video/d3d11/camera_utils.h"
 
+# if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+#   define __if_constexpr if constexpr
+# else
+#   define __if_constexpr if
+# endif
+
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
   using pandora::memory::LightVector;
@@ -464,32 +470,42 @@ Includes hpp implementations at the end of the file
 
   // Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
   void Renderer::setViewports(const Viewport* viewports, size_t numberViewports) noexcept {
-    if (numberViewports) {
-      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
-      if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
-        numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-    
-      D3D11_VIEWPORT* out = &values[numberViewports - 1u];
-      for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
-        memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_VIEWPORT));
-      this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
-      this->_currentViewportScissorId = 0;
+    if (numberViewports > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
+      numberViewports = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+
+    __if_constexpr (sizeof(Viewport) == sizeof(D3D11_VIEWPORT)) {
+      this->_context->RSSetViewports((UINT)numberViewports, (const D3D11_VIEWPORT*)viewports);
     }
+    else {
+      D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
+      if (numberViewports) {
+        D3D11_VIEWPORT* out = &values[numberViewports - 1u];
+        for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
+          memcpy((void*)out, (void*)it, sizeof(D3D11_VIEWPORT));
+      }
+      this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
+    }
+    this->_currentViewportScissorId = 0;
   }
 
   // Set rasterizer scissor-test rectangle(s)
   void Renderer::setScissorRectangles(const ScissorRectangle* rectangles, size_t numberRectangles) noexcept {
-    if (numberRectangles) {
-      D3D11_RECT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
-      if (numberRectangles > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
-        numberRectangles = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+    if (numberRectangles > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
+      numberRectangles = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
 
-      D3D11_RECT* out = &values[numberRectangles - 1u];
-      for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
-        memcpy((void*)out, (void*)it->descriptor(), sizeof(D3D11_RECT));
-      this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
-      this->_currentViewportScissorId = 0;
+    __if_constexpr(sizeof(Viewport) == sizeof(D3D11_RECT)) {
+      this->_context->RSSetScissorRects((UINT)numberRectangles, (const D3D11_RECT*)rectangles);
     }
+    else {
+      D3D11_RECT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
+      if (numberRectangles) {
+        D3D11_RECT* out = &values[numberRectangles - 1u];
+        for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
+          memcpy((void*)out, (void*)it, sizeof(D3D11_RECT));
+      }
+      this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
+    }
+    this->_currentViewportScissorId = 0;
   }
   
   // ---
@@ -1289,6 +1305,7 @@ Includes hpp implementations at the end of the file
 # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"
 # include "./camera_utils.hpp"
+# undef __if_constexpr
 
 # ifndef __MINGW32__
 #   pragma warning(pop)

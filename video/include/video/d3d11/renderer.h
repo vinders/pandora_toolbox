@@ -130,7 +130,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Replace rasterizer viewport (3D -> 2D projection rectangle)
           /// @warning Should only be used if the GraphicsPipeline was configured with dynamic viewports.
           inline void setViewport(const Viewport& viewport) noexcept {
-            this->_context->RSSetViewports(1u, viewport.descriptor());
+            this->_context->RSSetViewports(1u, (const D3D11_VIEWPORT*)&viewport);
             this->_currentViewportScissorId = 0;
           }
 
@@ -140,7 +140,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Set rasterizer scissor-test rectangle
           /// @warning Should only be used if the GraphicsPipeline was configured with dynamic scissor-test.
           inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
-            this->_context->RSSetScissorRects(1u, rectangle.descriptor());
+            this->_context->RSSetScissorRects(1u, (const D3D11_RECT*)&rectangle);
             this->_currentViewportScissorId = 0;
           }
           

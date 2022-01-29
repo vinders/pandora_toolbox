@@ -28,10 +28,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class Viewport
         /// @brief Viewport - 2D window rectangle where 3D scene is projected
         /// @remarks Direct3D11 viewports are based on top-left corner.
-        class Viewport final {
+        class Viewport final : private D3D11_VIEWPORT {
         public:
           Viewport() noexcept { ///< Empty viewport (size: 0; 0)
-            _params.TopLeftX=_params.TopLeftY=_params.Width=_params.Height=_params.MinDepth=0.f; _params.MaxDepth=1.f;
+            TopLeftX=TopLeftY=Width=Height=MinDepth=0.f; MaxDepth=1.f;
           }
           Viewport(const Viewport&) = default;
           Viewport(Viewport&&) noexcept = default;
@@ -41,15 +41,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
           /// @brief Create viewport (located at origin [0;0])
           Viewport(uint32_t width, uint32_t height) noexcept {
-            _params.TopLeftX=_params.TopLeftY=_params.MinDepth=0.f; _params.MaxDepth=1.f;
-            _params.Width=(FLOAT)width; _params.Height=(FLOAT)height;
+            TopLeftX=TopLeftY=MinDepth=0.f; MaxDepth=1.f;
+            Width=(FLOAT)width; Height=(FLOAT)height;
           }
           /// @brief Create viewport (or fractional viewport) at specific position - native
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
           Viewport(float x, float y, float width, float height, float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            _params.TopLeftX=(FLOAT)x; _params.TopLeftY=(FLOAT)y; _params.Width=(FLOAT)width; _params.Height=(FLOAT)height;
-            _params.MinDepth=(FLOAT)nearClipping; _params.MaxDepth=(FLOAT)farClipping;
+            TopLeftX=(FLOAT)x; TopLeftY=(FLOAT)y; Width=(FLOAT)width; Height=(FLOAT)height;
+            MinDepth=(FLOAT)nearClipping; MaxDepth=(FLOAT)farClipping;
           }
 
           // ---
@@ -83,8 +83,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'resizeFromTopLeft'/'resizeFromBottomLeft' builders.
           inline void resize(float x, float y, float width, float height) noexcept { 
-            _params.TopLeftX = (FLOAT)x; _params.TopLeftY = (FLOAT)y;
-            _params.Width = (FLOAT)width; _params.Height = (FLOAT)height; 
+            TopLeftX = (FLOAT)x; TopLeftY = (FLOAT)y;
+            Width = (FLOAT)width; Height = (FLOAT)height; 
           }
 
           /// @brief Change viewport size and position - from top-left coordinates (API-independant coords)
@@ -108,33 +108,27 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           /// @brief Change viewport depth-clipping range
           inline void setDepthRange(float nearClipping, float farClipping) noexcept { 
-            _params.MinDepth=(FLOAT)nearClipping; _params.MaxDepth=(FLOAT)farClipping;
+            MinDepth=(FLOAT)nearClipping; MaxDepth=(FLOAT)farClipping;
           }
 
           // -- accessors --
         
-          /// @brief Verify if x()/y() coords are based on top-left corner (true: D3D/Vulkan) or bottom-left corner (false: OpenGL)
+          /// @brief Verify if coordX()/coordY() coords are based on top-left corner (true: D3D/Vulkan) or bottom-left corner (false: OpenGL)
           constexpr inline bool isFromTopLeft() const noexcept { return true; }
-          constexpr inline float x() const noexcept { return (float)this->_params.TopLeftX; }  ///< X coord
-          constexpr inline float y() const noexcept  { return (float)this->_params.TopLeftY; } ///< Y coord
-          constexpr inline float width() const noexcept  { return (float)this->_params.Width; }  ///< Viewport width
-          constexpr inline float height() const noexcept { return (float)this->_params.Height; } ///< Viewport height
+          constexpr inline float coordX() const noexcept { return (float)this->TopLeftX; }  ///< X coord
+          constexpr inline float coordY() const noexcept  { return (float)this->TopLeftY; } ///< Y coord
+          constexpr inline float sizeX() const noexcept  { return (float)this->Width; } ///< Viewport width
+          constexpr inline float sizeY() const noexcept { return (float)this->Height; } ///< Viewport height
         
-          constexpr inline float nearClipping() const noexcept { return (float)this->_params.MinDepth; }///< Near clipping plane (min depth)
-          constexpr inline float farClipping() const noexcept  { return (float)this->_params.MaxDepth; } ///< Far clipping plane (max depth)
+          constexpr inline float nearClipping() const noexcept { return (float)this->MinDepth; }///< Near clipping plane (min depth)
+          constexpr inline float farClipping() const noexcept  { return (float)this->MaxDepth; } ///< Far clipping plane (max depth)
         
           constexpr inline bool operator==(const Viewport& rhs) const noexcept {
-            return (_params.TopLeftX==rhs._params.TopLeftX && _params.TopLeftY==rhs._params.TopLeftY
-                 && _params.Width==rhs._params.Width       && _params.Height==rhs._params.Height 
-                 && _params.MinDepth==rhs._params.MinDepth && _params.MaxDepth==rhs._params.MaxDepth);
+            return (TopLeftX==rhs.TopLeftX && TopLeftY==rhs.TopLeftY
+                 && Width==rhs.Width       && Height==rhs.Height 
+                 && MinDepth==rhs.MinDepth && MaxDepth==rhs.MaxDepth);
           }
           constexpr inline bool operator!=(const Viewport& rhs) const noexcept { return !(this->operator==(rhs)); }
-      
-          inline D3D11_VIEWPORT* descriptor() noexcept { return &(this->_params); } ///< Get native Direct3D descriptor
-          inline const D3D11_VIEWPORT* descriptor() const noexcept { return &(this->_params); } ///< Get native Direct3D descriptor
-        
-        private:
-          D3D11_VIEWPORT _params;
         };
       }
     }

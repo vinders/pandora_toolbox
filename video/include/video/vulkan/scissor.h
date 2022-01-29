@@ -28,13 +28,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class ScissorRectangle
         /// @brief Boundaries for scissor test: pixels located out of the rectangle are cut
         ///        The scissor-test occurs after the fragment shader, to remove pixels out of bounds.
-        class ScissorRectangle final {
+        class ScissorRectangle final : private VkRect2D {
         public:
-          using Descriptor = VkRect2D;
-
           ScissorRectangle() noexcept { ///< Empty rectangle (size: 0; 0)
-            _params.offset.x = _params.offset.y = 0;
-            _params.extent.width = _params.extent.height = 0;
+            offset.x = offset.y = 0;
+            extent.width = extent.height = 0;
           }
           ScissorRectangle(const ScissorRectangle&) = default;
           ScissorRectangle(ScissorRectangle&&) noexcept = default;
@@ -46,10 +44,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
           ScissorRectangle(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height) noexcept {
-            _params.offset.x = offsetX;
-            _params.offset.y = offsetY;
-            _params.extent.width = width;
-            _params.extent.height = height;
+            offset.x = offsetX;
+            offset.y = offsetY;
+            extent.width = width;
+            extent.height = height;
           }
           
           // ---
@@ -67,22 +65,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- accessors --
 
-          constexpr inline int32_t x() const noexcept { return this->_params.offset.x; }  ///< X coord
-          constexpr inline int32_t y() const noexcept  { return this->_params.offset.y; } ///< Y coord
-          constexpr inline uint32_t width() const noexcept  { return this->_params.extent.width; }  ///< Rectangle width
-          constexpr inline uint32_t height() const noexcept { return this->_params.extent.height; } ///< Rectangle height
+          constexpr inline int32_t x() const noexcept { return this->offset.x; }  ///< X coord
+          constexpr inline int32_t y() const noexcept  { return this->offset.y; } ///< Y coord
+          constexpr inline uint32_t width() const noexcept  { return this->extent.width; }  ///< Rectangle width
+          constexpr inline uint32_t height() const noexcept { return this->extent.height; } ///< Rectangle height
 
           constexpr inline bool operator==(const ScissorRectangle& rhs) const noexcept {
-            return (_params.offset.x==rhs._params.offset.x   && _params.offset.y==rhs._params.offset.y
-                 && _params.extent.width==rhs._params.extent.width && _params.extent.height==rhs._params.extent.height);
+            return (offset.x==rhs.offset.x   && offset.y==rhs.offset.y
+                 && extent.width==rhs.extent.width && extent.height==rhs.extent.height);
           }
           constexpr inline bool operator!=(const ScissorRectangle& rhs) const noexcept { return !(this->operator==(rhs)); }
-
-          inline Descriptor* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-          inline const Descriptor* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-
-        private:
-          Descriptor _params{};
         };
       }
     }

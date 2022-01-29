@@ -46,6 +46,11 @@ Implementation included in renderer.cpp
     _useScissorClipping = scissorClipping;
   }
 
+  // Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
+  RasterizerParams& RasterizerParams::vertexOrder(bool isFrontClockwise) noexcept {
+    _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE; return *this;
+  }
+
 
 // -- DepthStencilParams - depth/stencil testing state params -- ---------------
 
@@ -154,10 +159,12 @@ Implementation included in renderer.cpp
 // -- GraphicsPipeline -- ------------------------------------------------------
 
   // Create pipeline object -- reserved for internal use or advanced usage
-  GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer, VkPipelineCache cache)
+  GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
+                                     SharedResource<VkRenderPass> renderPass, SharedResource<VkPipelineLayout> pipelineLayout,
+                                     VkPipelineCache cache)
     : _renderer(std::move(renderer)),
-      _renderPass(createInfo.renderPass),
-      _pipelineLayout(createInfo.layout) {
+      _renderPass(std::move(renderPass)),
+      _pipelineLayout(std::move(pipelineLayout)) {
     assert(this->_renderer != nullptr);
     if (createInfo.stageCount == 0)
       throw std::logic_error("GraphicsPipeline: vertex shader required");
@@ -180,14 +187,8 @@ Implementation included in renderer.cpp
       this->_pipelineHandle = VK_NULL_HANDLE;
     }
     // destroy pipeline components
-    if (this->_renderPass != VK_NULL_HANDLE) {
-      try { vkDestroyRenderPass(this->_renderer->context(), this->_renderPass, nullptr); } catch (...) {}
-      this->_renderPass = VK_NULL_HANDLE;
-    }
-    if (this->_pipelineLayout != VK_NULL_HANDLE) {
-      try { vkDestroyPipelineLayout(this->_renderer->context(), this->_pipelineLayout, nullptr); } catch (...) {}
-      this->_pipelineLayout = VK_NULL_HANDLE;
-    }
+    this->_renderPass.reset();
+    this->_pipelineLayout.reset();
   }
 
 
@@ -226,10 +227,7 @@ Implementation included in renderer.cpp
     for (int i = 0; i < __P_MAX_DISPLAY_SHADER_NUMBER; ++i)
       _shaderStagesObj[i].release();
     _inputLayoutObj.reset();
-
-    _attachementsPerTarget.clear();
-    _viewports.clear();
-    _scissors.clear();
+    _blendAttachmentsPerTarget.clear();
 
     _renderer.reset();
   }
@@ -397,12 +395,12 @@ Implementation included in renderer.cpp
     memcpy(&_blendDesc, &state.descriptor(), sizeof(VkPipelineColorBlendStateCreateInfo));
     _descriptor.pColorBlendState = &_blendDesc;
 
-    if (_attachementsPerTarget.length() < size_t{ 1u })
-      _attachementsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(size_t{ 1u });
-    memcpy(_attachementsPerTarget.value, &state._attachDesc(), sizeof(VkPipelineColorBlendAttachmentState));
+    if (_blendAttachmentsPerTarget.length() < size_t{ 1u })
+      _blendAttachmentsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(size_t{ 1u });
+    memcpy(_blendAttachmentsPerTarget.value, &state._attachDesc(), sizeof(VkPipelineColorBlendAttachmentState));
     _useBlendPerTarget = false;
 
-    _blendDesc.pAttachments = _attachementsPerTarget.value;
+    _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
     _blendDesc.attachmentCount = 1u;
     _useDynamicBlendConstants = state._isDynamicConstantEnabled(); // no need for extensions
     return *this;
@@ -412,12 +410,12 @@ Implementation included in renderer.cpp
     memcpy(&_blendDesc, &state.descriptor(), sizeof(VkPipelineColorBlendStateCreateInfo));
     _descriptor.pColorBlendState = &_blendDesc;
 
-    if (_attachementsPerTarget.length() < state._attachDesc().size())
-      _attachementsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(state._attachDesc().size());
-    memcpy(_attachementsPerTarget.value, state._attachDesc().data(), sizeof(VkPipelineColorBlendAttachmentState)*state._attachDesc().size());
+    if (_blendAttachmentsPerTarget.length() < state._attachDesc().size())
+      _blendAttachmentsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(state._attachDesc().size());
+    memcpy(_blendAttachmentsPerTarget.value, state._attachDesc().data(), sizeof(VkPipelineColorBlendAttachmentState)*state._attachDesc().size());
     _useBlendPerTarget = true;
 
-    _blendDesc.pAttachments = _attachementsPerTarget.value;
+    _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
     _blendDesc.attachmentCount = static_cast<uint32_t>(state._attachDesc().size());
     _useDynamicBlendConstants = state._isDynamicConstantEnabled(); // no need for extensions
     return *this;
@@ -436,30 +434,10 @@ Implementation included in renderer.cpp
         throw std::runtime_error("Vulkan: extension for dynamic states (viewport count) not enabled");
     }
     
-    if (viewports != nullptr) {
-      this->_viewports = DynamicArray<VkViewport>(viewportCount);
-      for (size_t i = 0; i < viewportCount; ++i)
-        memcpy(&(this->_viewports.value[i]), viewports[i].descriptor(), sizeof(VkViewport));
-      this->_viewportsDesc.pViewports = this->_viewports.value;
-    }
-    else {
-      this->_viewports.clear();
-      this->_viewportsDesc.pViewports = nullptr;
-    }
+    this->_viewports = viewports;
+    this->_scissorTests = scissorTests;
     this->_viewportsDesc.viewportCount = static_cast<uint32_t>(viewportCount);
-
-    if (scissorTests != nullptr) {
-      this->_scissors = DynamicArray<VkRect2D>(scissorCount);
-      for (size_t i = 0; i < scissorCount; ++i)
-        memcpy(&(this->_scissors.value[i]), scissorTests[i].descriptor(), sizeof(VkRect2D));
-      this->_viewportsDesc.pScissors = this->_scissors.value;
-    }
-    else {
-      this->_scissors.clear();
-      this->_viewportsDesc.pScissors = nullptr;
-    }
     this->_viewportsDesc.scissorCount = static_cast<uint32_t>(scissorCount);
-
     this->_useDynamicViewportCount = useDynamicCount;
     return *this;
   }
@@ -468,12 +446,14 @@ Implementation included in renderer.cpp
 // -- GraphicsPipeline.Builder - build -- --------------------------------------
 
   // Provide render-targets to determine the number of targets, their respective format and multisampling (required)
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderTargetFormat(void* renderTargets, size_t targetCount,
-    uint32_t sampleCount) {
-    //if (renderTargets == nullptr || renderTargetCount == 0)
-    //  throw std::invalid_argument("GraphicsPipeline: no render target provided");
-    //...
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderAttachments(void* renderTargets, size_t targetCount,
+                                                                              uint32_t sampleCount) { // throws
+    VkRenderPass renderPassHandle = VK_NULL_HANDLE;
 
+    _descriptor.renderPass = renderPassHandle;
+    _attachmentCount = static_cast<uint32_t>(targetCount);
+
+    // multisampling
     _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)sampleCount;
     if (sampleCount > 1 && _renderer->enabledFeatures().sampleRateShading) {
       _multisampleDesc.sampleShadingEnable = VK_TRUE;
@@ -518,11 +498,11 @@ Implementation included in renderer.cpp
       dynamicState[++dynamicStateCount] = VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT;
       ++dynamicStateCount;
     }
-    if ((_viewportsDesc.pViewports == nullptr && _viewportsDesc.viewportCount) || _useDynamicViewportCount) { // +1 -> 15
+    if ((_viewports == nullptr && _viewportsDesc.viewportCount) || _useDynamicViewportCount) { // +1 -> 15
       dynamicState[dynamicStateCount] = VK_DYNAMIC_STATE_VIEWPORT;
       ++dynamicStateCount;
     }
-    if ((_viewportsDesc.pScissors == nullptr && _viewportsDesc.scissorCount) || _useDynamicViewportCount) { // +1 -> 16
+    if ((_scissorTests == nullptr && _viewportsDesc.scissorCount) || _useDynamicViewportCount) { // +1 -> 16
       dynamicState[dynamicStateCount] = VK_DYNAMIC_STATE_SCISSOR;
       ++dynamicStateCount;
     }
@@ -556,6 +536,29 @@ Implementation included in renderer.cpp
 
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
+    if (_descriptor.renderPass == VK_NULL_HANDLE)
+      throw std::invalid_argument("GraphicsPipeline: render-target(s) required");
+
+    // blend state - fix number of attachments
+    if (_attachmentCount != _blendDesc.attachmentCount && _blendDesc.attachmentCount != 0) {
+      if (_attachmentCount > _blendDesc.attachmentCount) {
+        if ((size_t)_attachmentCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
+          DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_attachmentCount);
+          if (_blendAttachmentsPerTarget.length() > 0)
+            memcpy(resizedBlendPerTarget.value, _blendAttachmentsPerTarget.value,
+                    _blendAttachmentsPerTarget.length()*sizeof(VkPipelineColorBlendAttachmentState));
+          _blendAttachmentsPerTarget = std::move(resizedBlendPerTarget);
+          _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
+        }
+
+        if (!_useBlendPerTarget) { // grouped blend -> copy first value to every slot
+          for (uint32_t i = _blendDesc.attachmentCount; i < _attachmentCount; ++i)
+            memcpy(&(_blendAttachmentsPerTarget.value[i]), _blendAttachmentsPerTarget.value, sizeof(VkPipelineColorBlendAttachmentState));
+        }
+      }
+      _blendDesc.attachmentCount = _attachmentCount;
+    }
+
     // configure dynamic states
     VkDynamicState dynamicStateFlags[__P_MAX_DYNAMIC_STATE_COUNT];
     uint32_t dynamicStateFlagsCount = _setDynamicState(dynamicStateFlags);
@@ -568,18 +571,32 @@ Implementation included in renderer.cpp
       dynamicStateDesc.bind();
     }
 
+    // apply viewports/scissor-tests
+    __if_constexpr (sizeof(Viewport) == sizeof(VkViewport) && sizeof(ScissorRectangle) == sizeof(VkRect2D)) {
+      _viewportsDesc.pViewports = (const VkViewport*)_viewports;
+      _viewportsDesc.pScissors = (const VkRect2D*)_scissorTests;
+    }
+    else { // realign data (only for weird compilers where alignment differs)
+      DynamicArray<VkViewport> fixedViewports;
+      const Viewport* srcViewports = (const Viewport*)this->_viewportsDesc.pViewports;
+      if (this->_viewportsDesc.pViewports != nullptr) {
+        fixedViewports = DynamicArray<VkViewport>(this->_viewportsDesc.viewportCount);
+        for (uint32_t i = 0; i < this->_viewportsDesc.viewportCount; ++i)
+          memcpy(&fixedViewports.value[i], &srcViewports[i], sizeof(VkViewport));
+      }
+      DynamicArray<VkRect2D> fixedScissors;
+      const ScissorRectangle* srcScissors = (const ScissorRectangle*)this->_viewportsDesc.pScissors;
+      if (this->_viewportsDesc.pScissors != nullptr) {
+        fixedScissors = DynamicArray<VkRect2D>(this->_viewportsDesc.scissorCount);
+        for (uint32_t i = 0; i < this->_viewportsDesc.scissorCount; ++i)
+          memcpy(&fixedScissors.value[i], &srcScissors[i], sizeof(VkViewport));
+      }
 
-    //create RenderPass + PipelineLayout
-    //...
-
-    //if (nb_render_targets > this->_globalPipelineParams.pColorBlendState.attachmentCount) {
-      // allouer plus grand + copier
-      // _params.pAttachments = &attachementState; _params.attachmentCount = nb_render_targets;
-      //...
-    //}
-    // else if nb_render_targets < this->_globalPipelineParams.pColorBlendState.attachmentCount)
-      // this->_globalPipelineParams.pColorBlendState.attachmentCount = nb_render_targets;
-    return GraphicsPipeline(this->_descriptor, this->_renderer, parentCache);
+      _viewportsDesc.pViewports = fixedViewports.value;
+      _viewportsDesc.pScissors = fixedScissors.value;
+      return GraphicsPipeline(_descriptor, _renderer, _renderPassObj, _pipelineLayoutObj, parentCache);
+    }
+    return GraphicsPipeline(_descriptor, _renderer, _renderPassObj, _pipelineLayoutObj, parentCache);
   }
 
 
@@ -589,8 +606,7 @@ Implementation included in renderer.cpp
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::create(std::shared_ptr<Renderer> renderer,
                                                      GraphicsPipeline::RenderTargetDescription renderTargets[], size_t renderTargetCount) {
-    if (renderer == nullptr || renderTargetCount == 0 || renderTargets == nullptr)
-      throw std::invalid_argument("GraphicsPipeline: renderer or renderTargets is NULL");
+    
 
     // create render-pass + pipeline layout
     /-*DynamicArray<VkAttachmentDescription> colorAttachments(renderTargetCount);

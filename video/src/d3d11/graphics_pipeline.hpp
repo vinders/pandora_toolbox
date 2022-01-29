@@ -215,17 +215,27 @@ Implementation included in renderer.cpp
     // copy viewport/scissor descriptors
     this->_pipeline->viewports = pandora::memory::LightVector<D3D11_VIEWPORT>(builder._viewportCount);
     if (builder._viewportCount > 0) {
-      D3D11_VIEWPORT* lhs = this->_pipeline->viewports.data();
-      const Viewport* rhs = builder._viewports;
-      for (D3D11_VIEWPORT* lhsEnd = lhs + (intptr_t)builder._viewportCount; lhs < lhsEnd; ++lhs, ++rhs)
-        memcpy(lhs, rhs->descriptor(), sizeof(D3D11_VIEWPORT));
+      __if_constexpr (sizeof(Viewport) == sizeof(D3D11_VIEWPORT)) {
+        memcpy(this->_pipeline->viewports.data(), builder._viewports, sizeof(D3D11_VIEWPORT)*builder._viewportCount);
+      }
+      else {
+        D3D11_VIEWPORT* lhs = this->_pipeline->viewports.data();
+        const Viewport* rhs = builder._viewports;
+        for (D3D11_VIEWPORT* lhsEnd = lhs + (intptr_t)builder._viewportCount; lhs < lhsEnd; ++lhs, ++rhs)
+          memcpy(lhs, rhs, sizeof(D3D11_VIEWPORT));
+      }
     }
     this->_pipeline->scissorTests = pandora::memory::LightVector<D3D11_RECT>(builder._scissorCount);
     if (builder._scissorCount > 0) {
-      D3D11_RECT* lhs = this->_pipeline->scissorTests.data();
-      const ScissorRectangle* rhs = builder._scissorTests;
-      for (D3D11_RECT* lhsEnd = lhs + (intptr_t)builder._scissorCount; lhs < lhsEnd; ++lhs, ++rhs)
-        memcpy(lhs, rhs->descriptor(), sizeof(D3D11_RECT));
+      __if_constexpr (sizeof(ScissorRectangle) == sizeof(D3D11_RECT)) {
+        memcpy(this->_pipeline->scissorTests.data(), builder._scissorTests, sizeof(D3D11_RECT)*builder._scissorCount);
+      }
+      else {
+        D3D11_RECT* lhs = this->_pipeline->scissorTests.data();
+        const ScissorRectangle* rhs = builder._scissorTests;
+        for (D3D11_RECT* lhsEnd = lhs + (intptr_t)builder._scissorCount; lhs < lhsEnd; ++lhs, ++rhs)
+          memcpy(lhs, rhs, sizeof(D3D11_RECT));
+      }
     }
 
     // register pipeline states to cache

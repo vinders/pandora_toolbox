@@ -59,9 +59,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ~RasterizerParams() noexcept = default;
           
           /// @brief Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
-          inline RasterizerParams& vertexOrder(bool isFrontClockwise) noexcept {
-            _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE; return *this;
-          }
+          RasterizerParams& vertexOrder(bool isFrontClockwise) noexcept;
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
           /// @remarks To be able to change the cull-mode and/or vertex-order dynamically, set isDynamic=true
           ///          (required extension VK_EXT_extended_dynamic_state, or Vulkan 1.3+).
@@ -410,7 +408,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Create pipeline object -- reserved for internal use or advanced usage (prefer GraphicsPipeline::Builder)
           // -> throws: - logic_error if some required states/stages haven't been set.
           //            - runtime_error if pipeline creation fails.
-          GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer, VkPipelineCache cache);
+          GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
+                           SharedResource<VkRenderPass> renderPass, SharedResource<VkPipelineLayout> pipelineLayout,
+                           VkPipelineCache cache);
 
           GraphicsPipeline(const GraphicsPipeline&) = delete;
           GraphicsPipeline(GraphicsPipeline&& rhs) noexcept
@@ -539,7 +539,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
             ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
-            /// @throws runtime_error if dynamic count is requested but not supported by API.
+            /// @throws runtime_error if dynamic count is requested but not supported by driver.
+            /// @warning The current Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
+            ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!
             Builder& setViewports(const Viewport viewports[], size_t viewportCount,
                                   const ScissorRectangle scissorTests[], size_t scissorCount,
                                   bool useDynamicCount = false);
@@ -547,14 +549,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             // -- pipeline build --
 
-            /// @brief Provide render-targets to determine the number of targets, their respective format and multisampling (required)
+            /// @brief Provide render attachments to determine the number of targets, their respective format and multisampling (required)
             /// @param renderTargets  Pointer to render-target (if 'targetCount' is 1) or array of render-targets. Can't be NULL!
             /// @param targetCount    Array size of 'renderTargets'.
             /// @param sampleCount    Sample count for multisampling (anti-aliasing). Use 0 or 1 to disable multisampling.
             /// @warning The pipeline will need to be used with compatible render-targets only.
             /// @throws - invalid_argument if no render target description is provided;
-            ///         - logic_error if some required states/stages haven't been set;
-            Builder& setRenderTargetFormat(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1);
+            ///         - runtime_error if render-pass creation fails.
+            Builder& setRenderAttachments(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1);
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @param parentCache  Pipeline cache to use for creation -- specific to vulkan (do not fill param for cross-API projects)
@@ -597,9 +599,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             VkGraphicsPipelineCreateInfo _descriptor{}; // main descriptor
             std::shared_ptr<Renderer> _renderer = nullptr;
 
-            DynamicArray<VkPipelineColorBlendAttachmentState> _attachementsPerTarget;
-            DynamicArray<VkViewport> _viewports;
-            DynamicArray<VkRect2D> _scissors;
+            SharedResource<VkRenderPass> _renderPassObj;
+            SharedResource<VkPipelineLayout> _pipelineLayoutObj;
+            DynamicArray<VkPipelineColorBlendAttachmentState> _blendAttachmentsPerTarget;
+            const Viewport* _viewports = nullptr;
+            const ScissorRectangle* _scissorTests = nullptr;
+            uint32_t _attachmentCount = 0;
             bool _useBlendPerTarget = false;
             bool _useDynamicCulling = false;
             bool _useDynamicDepthTest = false;
@@ -611,8 +616,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         private:
           GraphicsPipeline::Handle _pipelineHandle = VK_NULL_HANDLE;
           std::shared_ptr<Renderer> _renderer = nullptr;
-          VkRenderPass _renderPass = VK_NULL_HANDLE; // stored to guarantee lifetime & destruction
-          VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE; // stored to guarantee lifetime & destruction
+          SharedResource<VkRenderPass> _renderPass = nullptr; // stored to guarantee lifetime & destruction
+          SharedResource<VkPipelineLayout> _pipelineLayout = nullptr; // stored to guarantee lifetime & destruction
         };
       }
     }

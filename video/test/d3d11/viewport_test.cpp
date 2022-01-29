@@ -37,82 +37,82 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11ViewportTest, createCopyMoveTest) {
     Viewport vp0;
-    EXPECT_EQ(0.f, vp0.x());
-    EXPECT_EQ(0.f, vp0.y());
-    EXPECT_EQ(0.f, vp0.width());
-    EXPECT_EQ(0.f, vp0.height());
+    EXPECT_EQ(0.f, vp0.coordX());
+    EXPECT_EQ(0.f, vp0.coordY());
+    EXPECT_EQ(0.f, vp0.sizeX());
+    EXPECT_EQ(0.f, vp0.sizeY());
     EXPECT_EQ(0.f, vp0.nearClipping());
     EXPECT_EQ(1.f, vp0.farClipping());
 
     Viewport vp1(640u,480u);
-    EXPECT_EQ(0.f, vp1.x());
-    EXPECT_EQ(0.f, vp1.y());
-    EXPECT_EQ(640.f, vp1.width());
-    EXPECT_EQ(480.f, vp1.height());
+    EXPECT_EQ(0.f, vp1.coordX());
+    EXPECT_EQ(0.f, vp1.coordY());
+    EXPECT_EQ(640.f, vp1.sizeX());
+    EXPECT_EQ(480.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
     Viewport vp2(0.f,0.f, 640.f,480.f);
-    EXPECT_EQ(0.f, vp2.x());
-    EXPECT_EQ(0.f, vp2.y());
-    EXPECT_EQ(640.f, vp2.width());
-    EXPECT_EQ(480.f, vp2.height());
+    EXPECT_EQ(0.f, vp2.coordX());
+    EXPECT_EQ(0.f, vp2.coordY());
+    EXPECT_EQ(640.f, vp2.sizeX());
+    EXPECT_EQ(480.f, vp2.sizeY());
     EXPECT_EQ(0.f, vp2.nearClipping());
     EXPECT_EQ(1.f, vp2.farClipping());
     
     Viewport vp3(320.f,240.f, 640.f,480.f);
-    EXPECT_EQ(320.f, vp3.x());
-    EXPECT_EQ(240.f, vp3.y());
-    EXPECT_EQ(640.f, vp3.width());
-    EXPECT_EQ(480.f, vp3.height());
+    EXPECT_EQ(320.f, vp3.coordX());
+    EXPECT_EQ(240.f, vp3.coordY());
+    EXPECT_EQ(640.f, vp3.sizeX());
+    EXPECT_EQ(480.f, vp3.sizeY());
     EXPECT_EQ(0.f, vp3.nearClipping());
     EXPECT_EQ(1.f, vp3.farClipping());
 
     Viewport vp4(0.f,0.f, 640.f,480.f, 0.5f,1.2f);
-    EXPECT_EQ(0.f, vp4.x());
-    EXPECT_EQ(0.f, vp4.y());
-    EXPECT_EQ(640.f, vp4.width());
-    EXPECT_EQ(480.f, vp4.height());
+    EXPECT_EQ(0.f, vp4.coordX());
+    EXPECT_EQ(0.f, vp4.coordY());
+    EXPECT_EQ(640.f, vp4.sizeX());
+    EXPECT_EQ(480.f, vp4.sizeY());
     EXPECT_EQ(0.5f, vp4.nearClipping());
     EXPECT_EQ(1.2f, vp4.farClipping());
     
     Viewport vp5(320.f,240.f, 640.f,480.f, 0.1f,1.2f);
-    EXPECT_EQ(320.f, vp5.x());
-    EXPECT_EQ(240.f, vp5.y());
-    EXPECT_EQ(640.f, vp5.width());
-    EXPECT_EQ(480.f, vp5.height());
+    EXPECT_EQ(320.f, vp5.coordX());
+    EXPECT_EQ(240.f, vp5.coordY());
+    EXPECT_EQ(640.f, vp5.sizeX());
+    EXPECT_EQ(480.f, vp5.sizeY());
     EXPECT_EQ(0.1f, vp5.nearClipping());
     EXPECT_EQ(1.2f, vp5.farClipping());
     
     Viewport copied(vp5);
-    EXPECT_EQ(320.f, copied.x());
-    EXPECT_EQ(240.f, copied.y());
-    EXPECT_EQ(640.f, copied.width());
-    EXPECT_EQ(480.f, copied.height());
+    EXPECT_EQ(320.f, copied.coordX());
+    EXPECT_EQ(240.f, copied.coordY());
+    EXPECT_EQ(640.f, copied.sizeX());
+    EXPECT_EQ(480.f, copied.sizeY());
     EXPECT_EQ(0.1f, copied.nearClipping());
     EXPECT_EQ(1.2f, copied.farClipping());
     
     Viewport moved(std::move(vp5));
-    EXPECT_EQ(320.f, moved.x());
-    EXPECT_EQ(240.f, moved.y());
-    EXPECT_EQ(640.f, moved.width());
-    EXPECT_EQ(480.f, moved.height());
+    EXPECT_EQ(320.f, moved.coordX());
+    EXPECT_EQ(240.f, moved.coordY());
+    EXPECT_EQ(640.f, moved.sizeX());
+    EXPECT_EQ(480.f, moved.sizeY());
     EXPECT_EQ(0.1f, moved.nearClipping());
     EXPECT_EQ(1.2f, moved.farClipping());
     
     vp5 = std::move(vp4);
-    EXPECT_EQ(0.f, vp5.x());
-    EXPECT_EQ(0.f, vp5.y());
-    EXPECT_EQ(640.f, vp5.width());
-    EXPECT_EQ(480.f, vp5.height());
+    EXPECT_EQ(0.f, vp5.coordX());
+    EXPECT_EQ(0.f, vp5.coordY());
+    EXPECT_EQ(640.f, vp5.sizeX());
+    EXPECT_EQ(480.f, vp5.sizeY());
     EXPECT_EQ(0.5f, vp5.nearClipping());
     EXPECT_EQ(1.2f, vp5.farClipping());
     
     vp5 = vp3;
-    EXPECT_EQ(320.f, vp5.x());
-    EXPECT_EQ(240.f, vp5.y());
-    EXPECT_EQ(640.f, vp5.width());
-    EXPECT_EQ(480.f, vp5.height());
+    EXPECT_EQ(320.f, vp5.coordX());
+    EXPECT_EQ(240.f, vp5.coordY());
+    EXPECT_EQ(640.f, vp5.sizeX());
+    EXPECT_EQ(480.f, vp5.sizeY());
     EXPECT_EQ(0.f, vp5.nearClipping());
     EXPECT_EQ(1.f, vp5.farClipping());
     EXPECT_TRUE(vp5 == vp3);
@@ -123,84 +123,84 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11ViewportTest, viewportSettersTest) {
     Viewport vp1(640u,480u);
-    EXPECT_EQ(0.f, vp1.x());
-    EXPECT_EQ(0.f, vp1.y());
-    EXPECT_EQ(640.f, vp1.width());
-    EXPECT_EQ(480.f, vp1.height());
+    EXPECT_EQ(0.f, vp1.coordX());
+    EXPECT_EQ(0.f, vp1.coordY());
+    EXPECT_EQ(640.f, vp1.sizeX());
+    EXPECT_EQ(480.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
     vp1.resize(10.f,20.f, 240.f,180.f);
-    EXPECT_EQ(10.f, vp1.x());
-    EXPECT_EQ(20.f, vp1.y());
-    EXPECT_EQ(240.f, vp1.width());
-    EXPECT_EQ(180.f, vp1.height());
+    EXPECT_EQ(10.f, vp1.coordX());
+    EXPECT_EQ(20.f, vp1.coordY());
+    EXPECT_EQ(240.f, vp1.sizeX());
+    EXPECT_EQ(180.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
 
     vp1.resizeFromBottomLeft(200u, 40,50, 260u,120u);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(30.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(30.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
     vp1.resizeFromTopLeft(800u, 40,50, 260u,120u);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(50.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(50.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
     
     vp1.setDepthRange(0.4f, 1.6f);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(50.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(50.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.4f, vp1.nearClipping());
     EXPECT_EQ(1.6f, vp1.farClipping());
   }
 
   TEST_F(D3d11ViewportTest, viewportFPSettersTest) {
     Viewport vp1(0.f,0.f,640.f,480.f);
-    EXPECT_EQ(0.f, vp1.x());
-    EXPECT_EQ(0.f, vp1.y());
-    EXPECT_EQ(640.f, vp1.width());
-    EXPECT_EQ(480.f, vp1.height());
+    EXPECT_EQ(0.f, vp1.coordX());
+    EXPECT_EQ(0.f, vp1.coordY());
+    EXPECT_EQ(640.f, vp1.sizeX());
+    EXPECT_EQ(480.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
 
     vp1.resize(10.f,20.f, 240.f,180.f);
-    EXPECT_EQ(10.f, vp1.x());
-    EXPECT_EQ(20.f, vp1.y());
-    EXPECT_EQ(240.f, vp1.width());
-    EXPECT_EQ(180.f, vp1.height());
+    EXPECT_EQ(10.f, vp1.coordX());
+    EXPECT_EQ(20.f, vp1.coordY());
+    EXPECT_EQ(240.f, vp1.sizeX());
+    EXPECT_EQ(180.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
 
     vp1.resizeFromBottomLeft(200.f, 40.f,50.f, 260.f,120.f);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(30.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(30.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
 
     vp1.resizeFromTopLeft(800.f, 40.f,50.f, 260.f,120.f);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(50.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(50.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.f, vp1.nearClipping());
     EXPECT_EQ(1.f, vp1.farClipping());
 
     vp1.setDepthRange(0.4f, 1.6f);
-    EXPECT_EQ(40.f, vp1.x());
-    EXPECT_EQ(50.f, vp1.y());
-    EXPECT_EQ(260.f, vp1.width());
-    EXPECT_EQ(120.f, vp1.height());
+    EXPECT_EQ(40.f, vp1.coordX());
+    EXPECT_EQ(50.f, vp1.coordY());
+    EXPECT_EQ(260.f, vp1.sizeX());
+    EXPECT_EQ(120.f, vp1.sizeY());
     EXPECT_EQ(0.4f, vp1.nearClipping());
     EXPECT_EQ(1.6f, vp1.farClipping());
   }
@@ -215,10 +215,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto reverted1 = Viewport::fromBottomLeft(800u, 320,240, 640u,480u, 0.1f,1.2f);
     auto reverted2 = Viewport::fromTopLeft(800u, 320,80, 640u,480u, 0.1f,1.2f);
     EXPECT_TRUE(reverted1 == reverted2);
-    EXPECT_EQ(320.f, reverted1.x());
-    EXPECT_EQ(80.f, reverted1.y());
-    EXPECT_EQ(640.f, reverted1.width());
-    EXPECT_EQ(480.f, reverted1.height());
+    EXPECT_EQ(320.f, reverted1.coordX());
+    EXPECT_EQ(80.f, reverted1.coordY());
+    EXPECT_EQ(640.f, reverted1.sizeX());
+    EXPECT_EQ(480.f, reverted1.sizeY());
     EXPECT_EQ(0.1f, reverted1.nearClipping());
     EXPECT_EQ(1.2f, reverted1.farClipping());
   }
@@ -229,10 +229,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto reverted1 = Viewport::fromBottomLeft(800.f, 320.f,240.f, 640.f,480.f, 0.1f,1.2f);
     auto reverted2 = Viewport::fromTopLeft(800.f, 320.f,80.f, 640.f,480.f, 0.1f,1.2f);
     EXPECT_TRUE(reverted1 == reverted2);
-    EXPECT_EQ(320.f, reverted1.x());
-    EXPECT_EQ(80.f, reverted1.y());
-    EXPECT_EQ(640.f, reverted1.width());
-    EXPECT_EQ(480.f, reverted1.height());
+    EXPECT_EQ(320.f, reverted1.coordX());
+    EXPECT_EQ(80.f, reverted1.coordY());
+    EXPECT_EQ(640.f, reverted1.sizeX());
+    EXPECT_EQ(480.f, reverted1.sizeY());
     EXPECT_EQ(0.1f, reverted1.nearClipping());
     EXPECT_EQ(1.2f, reverted1.farClipping());
   }

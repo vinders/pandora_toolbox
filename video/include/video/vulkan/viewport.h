@@ -28,12 +28,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class Viewport
         /// @brief Viewport - 2D window rectangle where 3D scene is projected
         /// @remarks Vulkan viewports are based on top-left corner.
-        class Viewport final {
+        class Viewport final : private VkViewport {
         public:
-          using Descriptor = VkViewport;
-
           Viewport() noexcept { ///< Empty viewport (size: 0; 0)
-            _params.x=_params.y=_params.width=_params.height=_params.minDepth=0.f; _params.maxDepth=1.f;
+            x=y=width=height=minDepth=0.f; maxDepth=1.f;
           }
           Viewport(const Viewport&) = default;
           Viewport(Viewport&&) noexcept = default;
@@ -42,16 +40,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ~Viewport() noexcept = default;
         
           /// @brief Create viewport (located at origin [0;0])
-          Viewport(uint32_t width, uint32_t height) noexcept {
-            _params.x=_params.y=_params.minDepth=0.f; _params.maxDepth=1.f;
-            _params.width=(float)width; _params.height=(float)height;
+          Viewport(uint32_t sizeX, uint32_t sizeY) noexcept {
+            x=y=minDepth=0.f; maxDepth=1.f;
+            width=(float)sizeX; height=(float)sizeY;
           }
           /// @brief Create viewport (or fractional viewport) at specific position - native
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
-          Viewport(float x, float y, float width, float height, float nearClipping = 0.f, float farClipping = 1.f) noexcept {
-            _params.x=x; _params.y=y; _params.width=width; _params.height=height;
-            _params.minDepth=nearClipping; _params.maxDepth=farClipping;
+          Viewport(float coordX, float coordY, float sizeX, float sizeY, float nearClipping = 0.f, float farClipping = 1.f) noexcept {
+            x=coordX; y=coordY; width=sizeX; height=sizeY;
+            minDepth=nearClipping; maxDepth=farClipping;
           }
 
           // ---
@@ -84,58 +82,52 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Change viewport size (or fractional size) and position - native
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'resizeFromTopLeft'/'resizeFromBottomLeft' builders.
-          inline void resize(float x, float y, float width, float height) noexcept { 
-            _params.x = x; _params.y = y;
-            _params.width = width; _params.height = height; 
+          inline void resize(float coordX, float coordY, float sizeX, float sizeY) noexcept { 
+            x = coordX; y = coordY;
+            width = sizeX; height = sizeY; 
           }
           /// @brief Change viewport size and position - from top-left coordinates (API-independant coords)
-          inline void resizeFromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY, uint32_t width, uint32_t height) noexcept { 
-            resize((float)topLeftX, (float)topLeftY, (float)width, (float)height);
+          inline void resizeFromTopLeft(uint32_t /*windowHeight*/, int32_t topLeftX, int32_t topLeftY, uint32_t sizeX, uint32_t sizeY) noexcept { 
+            resize((float)topLeftX, (float)topLeftY, (float)sizeX, (float)sizeY);
           }
           /// @brief Change fractional viewport size and position - from top-left coordinates (API-independant coords)
-          inline void resizeFromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float width, float height) noexcept { 
-            resize(topLeftX, topLeftY, width, height);
+          inline void resizeFromTopLeft(float /*windowHeight*/, float topLeftX, float topLeftY, float sizeX, float sizeY) noexcept { 
+            resize(topLeftX, topLeftY, sizeX, sizeY);
           }
 
           /// @brief Change viewport size and position - from bottom-left coordinates (API-independant coords)
-          inline void resizeFromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY, uint32_t width, uint32_t height) noexcept { 
-            int32_t topY = (int32_t)windowHeight - bottomLeftY - (int32_t)height;
-            resize((float)bottomLeftX, (float)topY, (float)width, (float)height);
+          inline void resizeFromBottomLeft(uint32_t windowHeight, int32_t bottomLeftX, int32_t bottomLeftY, uint32_t sizeX, uint32_t sizeY) noexcept { 
+            int32_t topY = (int32_t)windowHeight - bottomLeftY - (int32_t)sizeY;
+            resize((float)bottomLeftX, (float)topY, (float)sizeX, (float)sizeY);
           }
           /// @brief Change fractional viewport size and position - from bottom-left coordinates (API-independant coords)
-          inline void resizeFromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float width, float height) noexcept { 
-            resize(bottomLeftX, windowHeight - bottomLeftY - height, width, height);
+          inline void resizeFromBottomLeft(float windowHeight, float bottomLeftX, float bottomLeftY, float sizeX, float sizeY) noexcept { 
+            resize(bottomLeftX, windowHeight - bottomLeftY - sizeY, sizeX, sizeY);
           }
 
           /// @brief Change viewport depth-clipping range
           inline void setDepthRange(float nearClipping, float farClipping) noexcept { 
-            _params.minDepth=nearClipping; _params.maxDepth=farClipping;
+            minDepth=nearClipping; maxDepth=farClipping;
           }
 
           // -- accessors --
         
-          /// @brief Verify if x()/y() coords are based on top-left corner (true: D3D/Vulkan) or bottom-left corner (false: OpenGL)
+          /// @brief Verify if coordX()/coordY() are based on top-left corner (true: D3D/Vulkan) or bottom-left corner (false: OpenGL)
           constexpr inline bool isFromTopLeft() const noexcept { return true; }
-          constexpr inline float x() const noexcept { return this->_params.x; }  ///< X coord
-          constexpr inline float y() const noexcept  { return this->_params.y; } ///< Y coord
-          constexpr inline float width() const noexcept  { return this->_params.width; }  ///< Viewport width
-          constexpr inline float height() const noexcept { return this->_params.height; } ///< Viewport height
+          constexpr inline float coordX() const noexcept { return this->x; }  ///< X coord
+          constexpr inline float coordY() const noexcept  { return this->y; } ///< Y coord
+          constexpr inline float sizeX() const noexcept  { return this->width; } ///< Viewport width
+          constexpr inline float sizeY() const noexcept { return this->height; } ///< Viewport height
         
-          constexpr inline float nearClipping() const noexcept { return this->_params.minDepth; }///< Near clipping plane (min depth)
-          constexpr inline float farClipping() const noexcept  { return this->_params.maxDepth; } ///< Far clipping plane (max depth)
+          constexpr inline float nearClipping() const noexcept { return this->minDepth; }///< Near clipping plane (min depth)
+          constexpr inline float farClipping() const noexcept  { return this->maxDepth; } ///< Far clipping plane (max depth)
         
           constexpr inline bool operator==(const Viewport& rhs) const noexcept {
-            return (_params.x==rhs._params.x && _params.y==rhs._params.y
-                 && _params.width==rhs._params.width       && _params.height==rhs._params.height 
-                 && _params.minDepth==rhs._params.minDepth && _params.maxDepth==rhs._params.maxDepth);
+            return (x==rhs.x               && y==rhs.y
+                 && width==rhs.width       && height==rhs.height 
+                 && minDepth==rhs.minDepth && maxDepth==rhs.maxDepth);
           }
           constexpr inline bool operator!=(const Viewport& rhs) const noexcept { return !(this->operator==(rhs)); }
-      
-          inline Descriptor* descriptor() noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-          inline const Descriptor* descriptor() const noexcept { return &(this->_params); } ///< Get native Vulkan descriptor
-        
-        private:
-          Descriptor _params{};
         };
       }
     }

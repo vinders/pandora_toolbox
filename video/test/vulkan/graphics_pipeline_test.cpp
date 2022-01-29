@@ -163,11 +163,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(FillMode::lines)
           .depthClipping(false).scissorClipping(true).depthBias(1, 2.f, 3.f);
     EXPECT_EQ(VK_FRONT_FACE_COUNTER_CLOCKWISE, raster.descriptor().frontFace);
-    EXPECT_EQ(VK_CULL_MODE_FRONT_BIT, raster.descriptor().cullMode);
+    EXPECT_EQ((VkCullModeFlags)VK_CULL_MODE_FRONT_BIT, raster.descriptor().cullMode);
     EXPECT_EQ(VK_POLYGON_MODE_LINE, raster.descriptor().polygonMode);
     EXPECT_FALSE(raster._isDepthClippingEnabled());
     EXPECT_TRUE(raster._isScissorClippingEnabled());
-    EXPECT_EQ(VK_TRUE, raster.descriptor().depthBiasEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, raster.descriptor().depthBiasEnable);
     EXPECT_EQ(1.f, raster.descriptor().depthBiasConstantFactor);
     EXPECT_EQ(2.f, raster.descriptor().depthBiasClamp);
     EXPECT_EQ(3.f, raster.descriptor().depthBiasSlopeFactor);
@@ -175,11 +175,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     RasterizerParams raster2(CullMode::none, FillMode::fill, false, true, true);
     EXPECT_EQ(VK_FRONT_FACE_COUNTER_CLOCKWISE, raster2.descriptor().frontFace);
-    EXPECT_EQ(VK_CULL_MODE_NONE, raster2.descriptor().cullMode);
+    EXPECT_EQ((VkCullModeFlags)VK_CULL_MODE_NONE, raster2.descriptor().cullMode);
     EXPECT_EQ(VK_POLYGON_MODE_FILL, raster2.descriptor().polygonMode);
     EXPECT_TRUE(raster2._isDepthClippingEnabled());
     EXPECT_TRUE(raster2._isScissorClippingEnabled());
-    EXPECT_EQ(VK_FALSE, raster2.descriptor().depthBiasEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, raster2.descriptor().depthBiasEnable);
     EXPECT_EQ(0.f, raster2.descriptor().depthBiasConstantFactor);
     EXPECT_EQ(0.f, raster2.descriptor().depthBiasClamp);
     EXPECT_EQ(0.f, raster2.descriptor().depthBiasSlopeFactor);
@@ -192,8 +192,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          .frontFaceOp(StencilOp::decrementClamp, StencilOp::incrementClamp, StencilOp::replace)
          .backFaceOp(StencilOp::invert, StencilOp::zero, StencilOp::incrementWrap)
          .depthMask(false).stencilMask((uint8_t)0, (uint8_t)1);
-    EXPECT_EQ(VK_FALSE, depth.descriptor().depthTestEnable);
-    EXPECT_EQ(VK_TRUE, depth.descriptor().stencilTestEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, depth.descriptor().depthTestEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth.descriptor().stencilTestEnable);
     EXPECT_EQ(VK_COMPARE_OP_ALWAYS, depth.descriptor().depthCompareOp);
     EXPECT_EQ(VK_COMPARE_OP_EQUAL, depth.descriptor().front.compareOp);
     EXPECT_EQ(VK_COMPARE_OP_GREATER, depth.descriptor().back.compareOp);
@@ -203,7 +203,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(VK_STENCIL_OP_INVERT, depth.descriptor().back.failOp);
     EXPECT_EQ(VK_STENCIL_OP_ZERO, depth.descriptor().back.depthFailOp);
     EXPECT_EQ(VK_STENCIL_OP_INCREMENT_AND_WRAP, depth.descriptor().back.passOp);
-    EXPECT_EQ(VK_FALSE, depth.descriptor().depthWriteEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, depth.descriptor().depthWriteEnable);
     EXPECT_EQ((uint32_t)0, depth.descriptor().front.compareMask);
     EXPECT_EQ((uint32_t)0, depth.descriptor().back.compareMask);
     EXPECT_EQ((uint32_t)1, depth.descriptor().front.writeMask);
@@ -215,8 +215,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     DepthStencilParams depth2(StencilCompare::greaterEqual, StencilOp::invert, StencilOp::replace,
                               StencilOp::incrementClamp, StencilOp::decrementClamp);
-    EXPECT_EQ(VK_TRUE, depth2.descriptor().depthTestEnable);
-    EXPECT_EQ(VK_FALSE, depth2.descriptor().stencilTestEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth2.descriptor().depthTestEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, depth2.descriptor().stencilTestEnable);
     EXPECT_EQ(VK_COMPARE_OP_GREATER_OR_EQUAL, depth2.descriptor().depthCompareOp);
     EXPECT_EQ(VK_COMPARE_OP_ALWAYS, depth2.descriptor().front.compareOp);
     EXPECT_EQ(VK_COMPARE_OP_ALWAYS, depth2.descriptor().back.compareOp);
@@ -224,7 +224,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(VK_STENCIL_OP_REPLACE, depth2.descriptor().front.passOp);
     EXPECT_EQ(VK_STENCIL_OP_INCREMENT_AND_CLAMP, depth2.descriptor().back.depthFailOp);
     EXPECT_EQ(VK_STENCIL_OP_DECREMENT_AND_CLAMP, depth2.descriptor().back.passOp);
-    EXPECT_EQ(VK_TRUE, depth2.descriptor().depthWriteEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth2.descriptor().depthWriteEnable);
     EXPECT_EQ((uint32_t)0xFF, depth2.descriptor().front.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth2.descriptor().back.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth2.descriptor().front.writeMask);
@@ -236,8 +236,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     DepthStencilParams depth3(StencilCompare::notEqual, StencilCompare::lessEqual, StencilOp::replace,
                               StencilOp::invert, StencilOp::decrementClamp, StencilOp::incrementClamp);
-    EXPECT_EQ(VK_FALSE, depth3.descriptor().depthTestEnable);
-    EXPECT_EQ(VK_TRUE, depth3.descriptor().stencilTestEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, depth3.descriptor().depthTestEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth3.descriptor().stencilTestEnable);
     EXPECT_EQ(VK_COMPARE_OP_ALWAYS, depth3.descriptor().depthCompareOp);
     EXPECT_EQ(VK_COMPARE_OP_NOT_EQUAL, depth3.descriptor().front.compareOp);
     EXPECT_EQ(VK_COMPARE_OP_LESS_OR_EQUAL, depth3.descriptor().back.compareOp);
@@ -245,7 +245,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(VK_STENCIL_OP_INVERT, depth3.descriptor().front.passOp);
     EXPECT_EQ(VK_STENCIL_OP_DECREMENT_AND_CLAMP, depth3.descriptor().back.failOp);
     EXPECT_EQ(VK_STENCIL_OP_INCREMENT_AND_CLAMP, depth3.descriptor().back.passOp);
-    EXPECT_EQ(VK_TRUE, depth3.descriptor().depthWriteEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth3.descriptor().depthWriteEnable);
     EXPECT_EQ((uint32_t)0xFF, depth3.descriptor().front.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth3.descriptor().back.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth3.descriptor().front.writeMask);
@@ -258,8 +258,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     DepthStencilParams depth4(StencilCompare::greaterEqual, StencilCompare::equal, StencilCompare::notEqual, 
                               StencilOp::replace, StencilOp::invert, StencilOp::zero, StencilOp::incrementClamp,
                               StencilOp::decrementClamp, StencilOp::invert);
-    EXPECT_EQ(VK_TRUE, depth4.descriptor().depthTestEnable);
-    EXPECT_EQ(VK_TRUE, depth4.descriptor().stencilTestEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth4.descriptor().depthTestEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth4.descriptor().stencilTestEnable);
     EXPECT_EQ(VK_COMPARE_OP_GREATER_OR_EQUAL, depth4.descriptor().depthCompareOp);
     EXPECT_EQ(VK_COMPARE_OP_EQUAL, depth4.descriptor().front.compareOp);
     EXPECT_EQ(VK_COMPARE_OP_NOT_EQUAL, depth4.descriptor().back.compareOp);
@@ -269,7 +269,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(VK_STENCIL_OP_INCREMENT_AND_CLAMP, depth4.descriptor().back.failOp);
     EXPECT_EQ(VK_STENCIL_OP_DECREMENT_AND_CLAMP, depth4.descriptor().back.depthFailOp);
     EXPECT_EQ(VK_STENCIL_OP_INVERT, depth4.descriptor().back.passOp);
-    EXPECT_EQ(VK_TRUE, depth4.descriptor().depthWriteEnable);
+    EXPECT_EQ((VkBool32)VK_TRUE, depth4.descriptor().depthWriteEnable);
     EXPECT_EQ((uint32_t)0xFF, depth4.descriptor().front.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth4.descriptor().back.compareMask);
     EXPECT_EQ((uint32_t)0xFF, depth4.descriptor().front.writeMask);
@@ -290,8 +290,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     blend.colorBlend(BlendFactor::destInvColor, BlendFactor::destInvAlpha, BlendOp::subtract)
          .alphaBlend(BlendFactor::constantInvAlpha, BlendFactor::constantAlpha, BlendOp::revSubtract)
          .blendConstant(color, true).targetWriteMask(ColorComponentFlag::red).enable(false);
-    EXPECT_EQ(VK_FALSE, blend._attachDesc().blendEnable);
-    EXPECT_EQ(VK_COLOR_COMPONENT_R_BIT, blend._attachDesc().colorWriteMask);
+    EXPECT_EQ((VkBool32)VK_FALSE, blend._attachDesc().blendEnable);
+    EXPECT_EQ((VkColorComponentFlags)VK_COLOR_COMPONENT_R_BIT, blend._attachDesc().colorWriteMask);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, blend._attachDesc().srcColorBlendFactor);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, blend._attachDesc().dstColorBlendFactor);
     EXPECT_EQ(VK_BLEND_OP_SUBTRACT, blend._attachDesc().colorBlendOp);
@@ -306,8 +306,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     BlendParams blend2(BlendFactor::destInvColor, BlendFactor::destInvAlpha, BlendOp::subtract,
                        BlendFactor::constantInvAlpha, BlendFactor::constantAlpha, BlendOp::revSubtract);
-    EXPECT_EQ(VK_TRUE, blend2._attachDesc().blendEnable);
-    EXPECT_EQ((VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT),
+    EXPECT_EQ((VkBool32)VK_TRUE, blend2._attachDesc().blendEnable);
+    EXPECT_EQ((VkColorComponentFlags)(VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT),
               blend2._attachDesc().colorWriteMask);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, blend2._attachDesc().srcColorBlendFactor);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, blend2._attachDesc().dstColorBlendFactor);
@@ -328,15 +328,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      BlendFactor::constantInvAlpha, BlendFactor::constantAlpha, BlendOp::revSubtract, ColorComponentFlag::red)
                   .disableTargetBlend(1).blendConstant(color, false);
     ASSERT_EQ(size_t{ 2u }, blendPerTarget._attachDesc().size());
-    EXPECT_EQ(VK_TRUE, blendPerTarget._attachDesc()[0].blendEnable);
-    EXPECT_EQ(VK_COLOR_COMPONENT_R_BIT, blendPerTarget._attachDesc()[0].colorWriteMask);
+    EXPECT_EQ((VkBool32)VK_TRUE, blendPerTarget._attachDesc()[0].blendEnable);
+    EXPECT_EQ((VkColorComponentFlags)VK_COLOR_COMPONENT_R_BIT, blendPerTarget._attachDesc()[0].colorWriteMask);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, blendPerTarget._attachDesc()[0].srcColorBlendFactor);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, blendPerTarget._attachDesc()[0].dstColorBlendFactor);
     EXPECT_EQ(VK_BLEND_OP_SUBTRACT, blendPerTarget._attachDesc()[0].colorBlendOp);
     EXPECT_EQ(VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA, blendPerTarget._attachDesc()[0].srcAlphaBlendFactor);
     EXPECT_EQ(VK_BLEND_FACTOR_CONSTANT_ALPHA, blendPerTarget._attachDesc()[0].dstAlphaBlendFactor);
     EXPECT_EQ(VK_BLEND_OP_REVERSE_SUBTRACT, blendPerTarget._attachDesc()[0].alphaBlendOp);
-    EXPECT_EQ(VK_FALSE, blendPerTarget._attachDesc()[1].blendEnable);
+    EXPECT_EQ((VkBool32)VK_FALSE, blendPerTarget._attachDesc()[1].blendEnable);
     EXPECT_EQ(color[0], blendPerTarget.blendConstant()[0]);
     EXPECT_EQ(color[1], blendPerTarget.blendConstant()[1]);
     EXPECT_EQ(color[2], blendPerTarget.blendConstant()[2]);
@@ -389,7 +389,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // create simple pipeline (no viewport)
     EXPECT_ANY_THROW(builder.build());
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
+    builder.setRenderAttachments(nullptr, 0);//TODO
     EXPECT_ANY_THROW(builder.build());
     builder.setInputLayout(inputBindings, size_t{ 1u }, layoutAttributes, size_t{ 2u });
     builder.setInputLayout(inputLayout);

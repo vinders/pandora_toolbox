@@ -28,10 +28,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @class ScissorRectangle
         /// @brief Boundaries for scissor test: pixels located out of the rectangle are cut.
         ///        The scissor-test occurs after the fragment shader, to remove pixels out of bounds.
-        class ScissorRectangle final {
+        class ScissorRectangle final : private D3D11_RECT {
         public:
           ScissorRectangle() noexcept { ///< Empty rectangle (size: 0; 0)
-            _params.left = _params.top = _params.right = _params.bottom = 0;
+            left = top = right = bottom = 0;
           }
           ScissorRectangle(const ScissorRectangle&) = default;
           ScissorRectangle(ScissorRectangle&&) noexcept = default;
@@ -43,10 +43,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning - Native API x/y coords: from top-left corner on Direct3D/Vulkan, from bottom-left corner on OpenGL.
           ///          - For API-independant coords, prefer 'fromTopLeft'/'fromBottomLeft' builders.
           ScissorRectangle(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height) noexcept {
-            _params.left = (LONG)offsetX;
-            _params.top = (LONG)offsetY;
-            _params.right = (LONG)offsetX + (LONG)width;
-            _params.bottom = (LONG)offsetY + (LONG)height;
+            left = (LONG)offsetX;
+            top = (LONG)offsetY;
+            right = (LONG)offsetX + (LONG)width;
+            bottom = (LONG)offsetY + (LONG)height;
           }
 
           // ---
@@ -64,22 +64,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- accessors --
 
-          constexpr inline int32_t x() const noexcept { return (int32_t)this->_params.left; } ///< X coord
-          constexpr inline int32_t y() const noexcept  { return (int32_t)this->_params.top; } ///< Y coord
-          constexpr inline uint32_t width() const noexcept  { return (uint32_t)this->_params.right - (uint32_t)this->_params.left; } ///< Rectangle width
-          constexpr inline uint32_t height() const noexcept { return (uint32_t)this->_params.bottom - (uint32_t)this->_params.top; } ///< Rectangle height
+          constexpr inline int32_t x() const noexcept { return (int32_t)this->left; } ///< X coord
+          constexpr inline int32_t y() const noexcept  { return (int32_t)this->top; } ///< Y coord
+          constexpr inline uint32_t width() const noexcept  { return (uint32_t)this->right - (uint32_t)this->left; } ///< Rectangle width
+          constexpr inline uint32_t height() const noexcept { return (uint32_t)this->bottom - (uint32_t)this->top; } ///< Rectangle height
 
           constexpr inline bool operator==(const ScissorRectangle& rhs) const noexcept {
-            return (_params.left==rhs._params.left   && _params.top==rhs._params.top
-                 && _params.right==rhs._params.right && _params.bottom==rhs._params.bottom);
+            return (left==rhs.left   && top==rhs.top
+                 && right==rhs.right && bottom==rhs.bottom);
           }
           constexpr inline bool operator!=(const ScissorRectangle& rhs) const noexcept { return !(this->operator==(rhs)); }
-
-          inline D3D11_RECT* descriptor() noexcept { return &(this->_params); } ///< Get native Direct3D descriptor
-          inline const D3D11_RECT* descriptor() const noexcept { return &(this->_params); } ///< Get native Direct3D descriptor
-
-        private:
-          D3D11_RECT _params;
         };
       }
     }
