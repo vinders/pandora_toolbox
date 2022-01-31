@@ -704,26 +704,6 @@ Includes hpp implementations at the end of the file
     outRgba[3] = colorRgba[3];
   }
 
-  //Get max supported sample count for multisampling (anti-aliasing)
-  uint32_t Renderer::maxColorSampleCount(DataFormat) const noexcept {
-    uint32_t sampleCount = 2u;
-    while ((uint32_t)_physicalDeviceInfo->limits.framebufferColorSampleCounts & sampleCount)
-      sampleCount <<= 1;
-    return (sampleCount >> 1);
-  }
-  uint32_t Renderer::maxDepthSampleCount(DataFormat) const noexcept {
-    uint32_t sampleCount = 2u;
-    while ((uint32_t)_physicalDeviceInfo->limits.framebufferDepthSampleCounts & sampleCount)
-      sampleCount <<= 1;
-    return (sampleCount >> 1);
-  }
-  uint32_t Renderer::maxStencilSampleCount(DataFormat) const noexcept {
-    uint32_t sampleCount = 2u;
-    while ((uint32_t)_physicalDeviceInfo->limits.framebufferStencilSampleCounts & sampleCount)
-      sampleCount <<= 1;
-    return (sampleCount >> 1);
-  }
-
   // ---
 
   // Flush command buffers

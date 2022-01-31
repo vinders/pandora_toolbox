@@ -34,7 +34,7 @@ Implementation included in renderer.cpp
   }
   
   RasterizerParams::RasterizerParams(CullMode cull, FillMode fill, bool isFrontClockwise,
-                                     bool depthClipping, bool scissorClipping) noexcept {
+                                     bool depthClipping, bool scissorClipping, uint32_t sampleCount) noexcept {
     _params.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     _params.cullMode = (VkCullModeFlags)cull;
     _params.frontFace = isFrontClockwise ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -42,6 +42,7 @@ Implementation included in renderer.cpp
     _params.depthClampEnable = VK_FALSE;
     _params.polygonMode = (VkPolygonMode)fill;
     _params.lineWidth = 1.f;
+    _sampleCount = sampleCount;
     _useDepthClipping = depthClipping;
     _useScissorClipping = scissorClipping;
   }
@@ -353,6 +354,16 @@ Implementation included in renderer.cpp
     memcpy(&_rasterizationDesc, &state.descriptor(), sizeof(VkPipelineRasterizationStateCreateInfo));
     _descriptor.pRasterizationState = &_rasterizationDesc;
 
+    _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)state._getSampleCount();
+    if (state._getSampleCount() > 1 && state._getMinSampleShading() != 0.f && _renderer->enabledFeatures().sampleRateShading) {
+      _multisampleDesc.sampleShadingEnable = VK_TRUE;
+      _multisampleDesc.minSampleShading = state._getMinSampleShading();
+    }
+    else {
+      _multisampleDesc.sampleShadingEnable = VK_FALSE;
+      _multisampleDesc.minSampleShading = 1.0f;
+    }
+
     if ((FillMode)_rasterizationDesc.polygonMode == FillMode::linesAA) {
       _rasterizationDesc.polygonMode = VK_POLYGON_MODE_LINE;
       if (this->_renderer->isExtensionEnabled("VK_EXT_line_rasterization")) {
@@ -472,25 +483,6 @@ Implementation included in renderer.cpp
 
 
 // -- GraphicsPipeline.Builder - build -- --------------------------------------
-
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(uint32_t renderTargetCount, RenderPass renderPass,
-                                                                      uint32_t sampleCount, float minSampleShading) noexcept {
-    _targetCount = renderTargetCount;
-    _renderPassObj = std::move(renderPass);
-
-    _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)sampleCount;
-    if (sampleCount > 1 && minSampleShading != 0.f && _renderer->enabledFeatures().sampleRateShading) {
-      _multisampleDesc.sampleShadingEnable = VK_TRUE;
-      _multisampleDesc.minSampleShading = minSampleShading;
-    }
-    else {
-      _multisampleDesc.sampleShadingEnable = VK_FALSE;
-      _multisampleDesc.minSampleShading = 1.0f;
-    }
-    return *this;
-  }
-
-  // ---
 
 # define __P_MAX_DYNAMIC_STATE_COUNT 17
 

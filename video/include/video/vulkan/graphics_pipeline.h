@@ -51,8 +51,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param isFrontClockwise  Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
           /// @param depthClipping     Enable clipping based on distance
           /// @param scissorClipping   Enable scissor-rectangle clipping
-          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill,
-                           bool isFrontClockwise = true, bool depthClipping = false, bool scissorClipping = false) noexcept;
+          /// @param sampleCount       Sample count for multisampling. Use 1 to disable multisampling.
+          ///                          Call Renderer.max{Color/Depth/Stencil}SampleCount to make sure the value is supported.
+          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill, bool isFrontClockwise = true,
+                           bool depthClipping = false, bool scissorClipping = false, uint32_t sampleCount = 1u) noexcept;
           
           RasterizerParams(const RasterizerParams&) noexcept = default;
           RasterizerParams& operator=(const RasterizerParams& rhs) = default;
@@ -68,6 +70,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           /// @brief Set filled/wireframe polygon rendering
           inline RasterizerParams& fillMode(FillMode fill) noexcept { _params.polygonMode = (VkPolygonMode)fill; return *this; }
+          /// @brief Set sample count for multisampling (anti-aliasing)
+          /// @param count       Sample count for multisampling. Use 1 to disable multisampling.
+          ///                    Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to make sure the value is supported.
+          /// @param minShading  Minimum fraction of sample shading (only used if 'sampleCount' > 1).
+          ///                    A value closer to 1.0 results in smoother shading (typical value example: 0.2).
+          ///                    Use 0 to disable sample rate shading.
+          inline RasterizerParams& sampleCount(uint32_t count, float minShading = 0.f) noexcept {
+            _sampleCount = count; _minSampleShading = minShading; return *this;
+          }
           
           /// @brief Enable clipping based on distance
           inline RasterizerParams& depthClipping(bool isEnabled) noexcept { _useDepthClipping = isEnabled; return *this; }
@@ -88,12 +99,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline VkPipelineRasterizationStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
           inline const VkPipelineRasterizationStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
+          inline uint32_t _getSampleCount() const noexcept { return this->_sampleCount; }
+          inline float _getMinSampleShading() const noexcept { return this->_minSampleShading; }
           inline bool _isDepthClippingEnabled() const noexcept { return this->_useDepthClipping; }
           inline bool _isScissorClippingEnabled() const noexcept { return this->_useScissorClipping; }
           inline bool _isDynamicCullingEnabled() const noexcept { return this->_useDynamicCulling; }
 
         private:
           VkPipelineRasterizationStateCreateInfo _params{};
+          uint32_t _sampleCount = 1u;
+          float _minSampleShading = 0.f;
           bool _useDepthClipping = false;
           bool _useScissorClipping = false;
           bool _useDynamicCulling = false;
@@ -554,22 +569,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///          - For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
             ///            Higher-level APIs (D3D11, OpenGL) do not have any concept of pipeline layouts.
             Builder& setGlobalLayout(GlobalLayout layout) noexcept {
-              _pipelineLayoutObj = (layout != nullptr && layout->hasValue()) ? std::move(layout) : nullptr;
+              _pipelineLayoutObj = std::move(layout);
               return *this;
             }
             /// @brief Provide render pass definition (format/inputs/dependencies) + number of render-targets (required)
             /// @param renderTargetCount  Number of render-targets used with this pipeline (framebuffers, texture targets...).
             /// @param renderPass         Render-pass definition object.
-            /// @param sampleCount  Sample count for multisampling (anti-aliasing). Use 0 or 1 to disable multisampling.
-            /// @param minSampleShading  Minimum fraction of sample shading (only used if 'sampleCount' > 1).
-            ///                          A value closer to 1.0 results in smoother shading (typical value example: 0.2).
-            ///                          Use 0 to disable sample rate shading.
             /// @remarks 'renderPass' can be build with 'createRenderPass'.
             /// @warning - The pipeline will need to be used with compatible render-targets only.
             ///          - For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
             ///            Higher-level APIs (D3D11, OpenGL) do not have any concept of render passes.
-            Builder& setRenderPass(uint32_t renderTargetCount, RenderPass renderPass,
-                                   uint32_t sampleCount = 1u, float minSampleShading = 0.f) noexcept;
+            inline Builder& setRenderPass(uint32_t renderTargetCount, RenderPass renderPass) noexcept {
+              _targetCount = renderTargetCount; _renderPassObj = std::move(renderPass); return *this;
+            }
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @param parentCache  Pipeline cache to use for creation -- specific to vulkan (do not fill param for cross-API projects)

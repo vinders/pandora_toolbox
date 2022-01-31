@@ -174,12 +174,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          (-> it's better to default to sRGB and let the user choose to optionally enable HDR).
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor&) const noexcept { return ColorSpace::unknown; }
 
-          /// @brief Get max supported color sample count for multisampling (anti-aliasing)
-          uint32_t maxColorSampleCount(DataFormat format) const noexcept;
-          /// @brief Get max supported depth sample count for multisampling (anti-aliasing)
-          uint32_t maxDepthSampleCount(DataFormat format) const noexcept;
-          /// @brief Get max supported stencil sample count for multisampling (anti-aliasing)
-          uint32_t maxStencilSampleCount(DataFormat format) const noexcept;
+          /// @brief Verify color sample count support for multisampling (must be a power of 2)
+          inline bool isColorSampleCountAvailable(DataFormat, uint32_t sampleCount) const noexcept {
+            return (((uint32_t)_physicalDeviceInfo->limits.framebufferColorSampleCounts & sampleCount) != 0);
+          }
+          /// @brief Verify depth sample count support for multisampling (must be a power of 2)
+          inline bool isDepthSampleCountAvailable(DepthStencilFormat, uint32_t sampleCount) const noexcept {
+            return (((uint32_t)_physicalDeviceInfo->limits.framebufferDepthSampleCounts & sampleCount) != 0);
+          }
+          /// @brief Verify stencil sample count support for multisampling (must be a power of 2)
+          inline bool isStencilSampleCountAvailable(DepthStencilFormat, uint32_t sampleCount) const noexcept {
+            return (((uint32_t)_physicalDeviceInfo->limits.framebufferStencilSampleCounts & sampleCount) != 0);
+          }
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
           inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
