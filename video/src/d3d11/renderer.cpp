@@ -452,6 +452,29 @@ Includes hpp implementations at the end of the file
       return ColorSpace::unknown;
   }
 
+  // Verify if a multisample mode is supported (MSAA) + get max quality level
+  bool Renderer::_isSampleCountSupported(DataFormat format, uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept {
+    try {
+      UINT qualityLevel = 0;
+      if ((((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels(_getDataFormatComponents(format), (UINT)sampleCount, &qualityLevel))) {
+        outMaxQualityLevel = (uint32_t)qualityLevel;
+        return (qualityLevel > 0);
+      }
+    }
+    catch (...) {}
+    return false;
+  }
+  // Get max supported sample count for multisampling (anti-aliasing)
+  uint32_t Renderer::_maxSampleCount(DXGI_FORMAT format) const noexcept {
+    UINT sampleCount = 2u;
+    try {
+      for (UINT qualityLevel = 1; SUCCEEDED(((ID3D11Device*)_device)->CheckMultisampleQualityLevels(format, sampleCount, &qualityLevel))
+                                  && qualityLevel != (UINT)0; sampleCount <<= 1);
+    }
+    catch (...) {}
+    return (static_cast<uint32_t>(sampleCount) >> 1);
+  }
+
   // Screen tearing supported (variable refresh rate display)
   bool Renderer::isTearingAvailable() const noexcept { 
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE

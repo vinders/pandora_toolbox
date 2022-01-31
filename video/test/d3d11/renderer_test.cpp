@@ -46,6 +46,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     auto colorSpace = renderer.getMonitorColorSpace(monitor);
     bool isHdrMonitor = (colorSpace == ColorSpace::hdr10_bt2084 || colorSpace == ColorSpace::scRgb);
+    uint32_t maxColorSamples = renderer.maxColorSampleCount(DataFormat::rgba8_sRGB);
+    uint32_t maxDepthSamples = renderer.maxDepthSampleCount(DataFormat::d32_f);
+    uint32_t maxStencilSamples = renderer.maxStencilSampleCount(DataFormat::d24_unorm_s8_ui);
+
     size_t dedicatedRam = 0, sharedRam = 0;
     EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
     EXPECT_TRUE(sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
@@ -53,12 +57,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const char* trueVal = "true";
     const char* falseVal = "false";
     printf("Direct3D context:\n > DXGI level: %u\n > Feature level: 11.%s\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
-           " > Max render views: %u\n > Max sampler/filter states: %u\n > Max anisotropy: %u\n > Monitor HDR capable: %s\n"
-           " > Tearing available: %s\n", 
+           " > Max render views: %u\n > Max sampler/filter states: %u\n > Max anisotropy: %u\n"
+           " > Max color samples: %u\n > Max depth samples: %u\n > Max stencil samples: %u\n"
+           " > Monitor HDR capable: %s\n > Tearing available: %s\n", 
            renderer.dxgiLevel(), ((uint32_t)renderer.featureLevel() > 0) ? "1+" : "0",
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            (uint32_t)renderer.maxRenderTargets(), (uint32_t)renderer.maxSamplerStateSlots(), 
            SamplerParams::maxAnisotropy(),
+           maxColorSamples, maxDepthSamples, maxStencilSamples,
            isHdrMonitor ? trueVal : falseVal,
            renderer.isTearingAvailable() ? trueVal : falseVal);
 

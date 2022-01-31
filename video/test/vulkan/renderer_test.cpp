@@ -75,6 +75,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       auto colorSpace = renderer.getMonitorColorSpace(monitor);
       EXPECT_TRUE(colorSpace == ColorSpace::unknown);
+      uint32_t maxColorSamples = renderer.maxColorSampleCount(DataFormat::rgba8_sRGB);
+      uint32_t maxDepthSamples = renderer.maxDepthSampleCount(DataFormat::d32_f);
+      uint32_t maxStencilSamples = renderer.maxStencilSampleCount(DataFormat::d24_unorm_s8_ui);
       size_t dedicatedRam = 0, sharedRam = 0;
       EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));
       EXPECT_TRUE(dedicatedRam > 0 || sharedRam > 0); // VRAM may be 0 on headless servers, but not shared RAM
@@ -82,9 +85,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       const char* trueVal = "true";
       const char* falseVal = "false";
       printf("Vulkan context:\n > API level: %u.%u\n > VRAM: %.3f MB\n > Shared RAM: %.3f MB\n"
+             " > Max color samples: %u\n > Max depth samples: %u\n > Max stencil samples: %u\n"
              " > Max render views: %u\n > Tearing available: %s\n", 
              VK_API_VERSION_MAJOR(renderer.featureLevel()), VK_API_VERSION_MINOR(renderer.featureLevel()),
              (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
+             maxColorSamples, maxDepthSamples, maxStencilSamples,
              (uint32_t)renderer.maxRenderTargets(),
              renderer.isTearingAvailable() ? trueVal : falseVal);
 

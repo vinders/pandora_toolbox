@@ -174,6 +174,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          (-> it's better to default to sRGB and let the user choose to optionally enable HDR).
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor&) const noexcept { return ColorSpace::unknown; }
 
+          /// @brief Get max supported color sample count for multisampling (anti-aliasing)
+          uint32_t maxColorSampleCount(DataFormat format) const noexcept;
+          /// @brief Get max supported depth sample count for multisampling (anti-aliasing)
+          uint32_t maxDepthSampleCount(DataFormat format) const noexcept;
+          /// @brief Get max supported stencil sample count for multisampling (anti-aliasing)
+          uint32_t maxStencilSampleCount(DataFormat format) const noexcept;
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
           inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
