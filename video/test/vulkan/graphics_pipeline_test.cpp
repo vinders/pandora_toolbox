@@ -387,9 +387,38 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto inputLayout = shaderBuilder.createInputLayout(inputBindings, size_t{ 1u }, layoutAttributes, size_t{ 2u });
     ASSERT_TRUE(inputLayout.get() != nullptr);
 
+    // create default render pass
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    auto globalLayout = builder.createGlobalLayout(pipelineLayoutInfo);
+    auto renderPass = builder.createRenderPass(renderPassInfo);
+
     // create simple pipeline (no viewport)
     EXPECT_ANY_THROW(builder.build());
-    builder.setRenderAttachments(nullptr, 0);//TODO
+    builder.setRenderPass(1, nullptr);//TODO
     EXPECT_ANY_THROW(builder.build());
     builder.setInputLayout(inputBindings, size_t{ 1u }, layoutAttributes, size_t{ 2u });
     builder.setInputLayout(inputLayout);
@@ -408,15 +437,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_ANY_THROW(builder.build());
     builder.setBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,
                                       BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add));
+    builder.setRenderPass(1u, renderPass);
 
-    /*GraphicsPipeline pipeline = builder.build();
-    ASSERT_TRUE(pipeline.handle() != nullptr);
-    EXPECT_FALSE(pipeline.isEmpty());
+    GraphicsPipeline pipeline = builder.build();
     EXPECT_TRUE(pipeline.handle() != VK_NULL_HANDLE);
-    renderer->bindGraphicsPipeline(pipeline.handle());*/
+    renderer->bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport (+ set same state params -> read from cache)
-    Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
     builder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
@@ -426,13 +453,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     builder.clearShaderStages();
     EXPECT_ANY_THROW(builder.build());
     builder.attachShaderStage(vertexShader);
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, useDynamics);
+    builder.setGlobalLayout(globalLayout);
 
-    /*GraphicsPipeline pipelineViewport = builder.build();
-    ASSERT_TRUE(pipelineViewport.handle() != nullptr);
-    EXPECT_FALSE(pipelineViewport.isEmpty());
-    EXPECT_TRUE(pipelineViewport.handle() != VK_NULL_HANDLE);
-    renderer->bindGraphicsPipeline(pipelineViewport.handle());*/
+    if (useDynamics) {
+      Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f);
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      GraphicsPipeline pipelineViewport = builder.build();
+      EXPECT_TRUE(pipelineViewport.handle() != VK_NULL_HANDLE);
+      renderer->bindGraphicsPipeline(pipelineViewport.handle());
+    }
 
     // create pipeline with viewport + scissor test (+ different state params + split blending)
     Viewport viewports[]{ Viewport(0.f, 0.f, 800.f, 600.f, 0.1f, 1.f), Viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f) };
@@ -448,11 +477,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     builder.setBlendState(blendPerTarget);
     builder.setViewports(viewports, size_t{ 2u }, scissors, size_t{ 2u }, false);
 
-    /*GraphicsPipeline pipelineViewportScissor = builder.build();
-    ASSERT_TRUE(pipelineViewportScissor.handle() != nullptr);
-    EXPECT_FALSE(pipelineViewportScissor.isEmpty());
+    GraphicsPipeline pipelineViewportScissor = builder.build();
     EXPECT_TRUE(pipelineViewportScissor.handle() != VK_NULL_HANDLE);
-    renderer->bindGraphicsPipeline(pipelineViewportScissor.handle());*/
+    renderer->bindGraphicsPipeline(pipelineViewportScissor.handle());
 
     Shader fakeFragmentShader = Shader(std::make_shared<ScopedResource<VkShaderModule> >(), ShaderType::fragment, "main");
     builder.attachShaderStage(fakeFragmentShader);
@@ -462,7 +489,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_ANY_THROW(builder.build());
 
     // move
-    /*auto pipelineHandle = pipeline.handle();
+    auto pipelineHandle = pipeline.handle();
     GraphicsPipeline moved(std::move(pipeline));
     EXPECT_TRUE(pipeline.handle() == VK_NULL_HANDLE);
     EXPECT_TRUE(moved.handle() != VK_NULL_HANDLE);
@@ -471,7 +498,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // release
     moved.release();
     EXPECT_TRUE(moved.handle() == VK_NULL_HANDLE);
-    EXPECT_TRUE(moved.isEmpty());*/
+    EXPECT_TRUE(moved.isEmpty());
   }
 
 #endif

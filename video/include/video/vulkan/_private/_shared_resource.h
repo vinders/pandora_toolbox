@@ -119,6 +119,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // ---
 
         using InputLayout = std::shared_ptr<InputLayoutDescription>; ///< Input layout representation, for shader input stage
+        using RenderPass = SharedResource<VkRenderPass>;             ///< Render-pass description object
+        using GlobalLayout = SharedResource<VkPipelineLayout>;       ///< Description object for globals: uniform buffers, storage buffers, samplers
         
         using GraphicsPipelineHandle = VkPipeline; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())
       }

@@ -746,7 +746,7 @@ Includes hpp implementations at the end of the file
     __if_constexpr (sizeof(Viewport) == sizeof(VkViewport)) {
       //vkCmdSetViewport(<CMDQUEUE...>, 0, numberViewports, (const VkViewport*)viewports);
     }
-    else {
+    else { // realign data (only for weird compilers where alignment differs)
       auto data = DynamicArray<VkViewport>(numberViewports);
       if (numberViewports) {
         VkViewport* out = &(data.value[numberViewports - 1u]);
@@ -769,7 +769,7 @@ Includes hpp implementations at the end of the file
     __if_constexpr (sizeof(ScissorRectangle) == sizeof(VkRect2D)) {
       //vkCmdSetScissor(<CMDQUEUE...>, 0, numberRectangles, (const VkRect2D*)rectangles);
     }
-    else {
+    else { // realign data (only for weird compilers where alignment differs)
       auto data = DynamicArray<VkRect2D>(numberRectangles);
       if (numberRectangles) {
         VkRect2D* out = &(data.value[numberRectangles - 1u]);

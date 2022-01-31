@@ -436,28 +436,52 @@ Implementation included in renderer.cpp
     
     this->_viewports = viewports;
     this->_scissorTests = scissorTests;
-    this->_viewportsDesc.viewportCount = static_cast<uint32_t>(viewportCount);
-    this->_viewportsDesc.scissorCount = static_cast<uint32_t>(scissorCount);
+    if (useDynamicCount) {
+      this->_viewportsDesc.viewportCount = this->_viewportsDesc.scissorCount = 0;
+    }
+    else {
+      assert(viewportCount != 0 && scissorCount != 0);
+      this->_viewportsDesc.viewportCount = static_cast<uint32_t>(viewportCount);
+      this->_viewportsDesc.scissorCount = static_cast<uint32_t>(scissorCount);
+    }
     this->_useDynamicViewportCount = useDynamicCount;
     return *this;
   }
 
 
+// -- GraphicsPipeline.Builder - Vulkan pipeline description factory -- --------
+
+  // Create pipeline layout for globals: uniforms, storages, samplers...
+  GlobalLayout GraphicsPipeline::Builder::createGlobalLayout(const VkPipelineLayoutCreateInfo& params) { // throws
+    VkPipelineLayout pipelineLayoutHandle = VK_NULL_HANDLE;
+    VkResult result = vkCreatePipelineLayout(_renderer->context(), &params, nullptr, &pipelineLayoutHandle);
+    if (result != VK_SUCCESS || pipelineLayoutHandle == VK_NULL_HANDLE)
+      throwError(result, "Vulkan: pipeline layout not created");
+
+    return std::make_shared<ScopedResource<VkPipelineLayout> >(pipelineLayoutHandle, this->_renderer->resourceManager(), vkDestroyPipelineLayout);
+  }
+  // Create render pass definition: targets, formats, inputs, dependencies
+  RenderPass GraphicsPipeline::Builder::createRenderPass(const VkRenderPassCreateInfo& params) { // throws
+    VkRenderPass renderPassHandle = VK_NULL_HANDLE;
+    VkResult result = vkCreateRenderPass(this->_renderer->context(), &params, nullptr, &renderPassHandle);
+    if (result != VK_SUCCESS || renderPassHandle == VK_NULL_HANDLE)
+      throwError(result, "Vulkan: render pass not created");
+
+    return std::make_shared<ScopedResource<VkRenderPass> >(renderPassHandle, this->_renderer->resourceManager(), vkDestroyRenderPass);
+  }
+
+
 // -- GraphicsPipeline.Builder - build -- --------------------------------------
 
-  // Provide render-targets to determine the number of targets, their respective format and multisampling (required)
-  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderAttachments(void* renderTargets, size_t targetCount,
-                                                                              uint32_t sampleCount) { // throws
-    VkRenderPass renderPassHandle = VK_NULL_HANDLE;
+  GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(uint32_t renderTargetCount, RenderPass renderPass,
+                                                                      uint32_t sampleCount, float minSampleShading) noexcept {
+    _targetCount = renderTargetCount;
+    _renderPassObj = std::move(renderPass);
 
-    _descriptor.renderPass = renderPassHandle;
-    _attachmentCount = static_cast<uint32_t>(targetCount);
-
-    // multisampling
     _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)sampleCount;
-    if (sampleCount > 1 && _renderer->enabledFeatures().sampleRateShading) {
+    if (sampleCount > 1 && minSampleShading != 0.f && _renderer->enabledFeatures().sampleRateShading) {
       _multisampleDesc.sampleShadingEnable = VK_TRUE;
-      _multisampleDesc.minSampleShading = 0.2f; // note: closer to 1 = smoother
+      _multisampleDesc.minSampleShading = minSampleShading;
     }
     else {
       _multisampleDesc.sampleShadingEnable = VK_FALSE;
@@ -536,14 +560,23 @@ Implementation included in renderer.cpp
 
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
-    if (_descriptor.renderPass == VK_NULL_HANDLE)
-      throw std::invalid_argument("GraphicsPipeline: render-target(s) required");
+    if (_renderPassObj == nullptr)
+      throw std::invalid_argument("GraphicsPipeline: renderpass required");
+    _descriptor.renderPass = _renderPassObj->value();
+
+    // create default pipeline layout (if none provided)
+    if (_pipelineLayoutObj == nullptr) {
+      VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+      pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+      _pipelineLayoutObj = createGlobalLayout(pipelineLayoutInfo);
+    }
+    _descriptor.layout = _pipelineLayoutObj->value();
 
     // blend state - fix number of attachments
-    if (_attachmentCount != _blendDesc.attachmentCount && _blendDesc.attachmentCount != 0) {
-      if (_attachmentCount > _blendDesc.attachmentCount) {
-        if ((size_t)_attachmentCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
-          DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_attachmentCount);
+    if (_targetCount != _blendDesc.attachmentCount && _blendDesc.attachmentCount != 0) {
+      if (_targetCount > _blendDesc.attachmentCount) {
+        if ((size_t)_targetCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
+          DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_targetCount);
           if (_blendAttachmentsPerTarget.length() > 0)
             memcpy(resizedBlendPerTarget.value, _blendAttachmentsPerTarget.value,
                     _blendAttachmentsPerTarget.length()*sizeof(VkPipelineColorBlendAttachmentState));
@@ -552,11 +585,11 @@ Implementation included in renderer.cpp
         }
 
         if (!_useBlendPerTarget) { // grouped blend -> copy first value to every slot
-          for (uint32_t i = _blendDesc.attachmentCount; i < _attachmentCount; ++i)
+          for (uint32_t i = _blendDesc.attachmentCount; i < _targetCount; ++i)
             memcpy(&(_blendAttachmentsPerTarget.value[i]), _blendAttachmentsPerTarget.value, sizeof(VkPipelineColorBlendAttachmentState));
         }
       }
-      _blendDesc.attachmentCount = _attachmentCount;
+      _blendDesc.attachmentCount = _targetCount;
     }
 
     // configure dynamic states
@@ -598,43 +631,5 @@ Implementation included in renderer.cpp
     }
     return GraphicsPipeline(_descriptor, _renderer, _renderPassObj, _pipelineLayoutObj, parentCache);
   }
-
-
-
-  /*// -- GraphicsPipeline::Builder - creation -- --------------------------------
-
-  // Build a graphics pipeline (based on current params)
-  GraphicsPipeline GraphicsPipeline::Builder::create(std::shared_ptr<Renderer> renderer,
-                                                     GraphicsPipeline::RenderTargetDescription renderTargets[], size_t renderTargetCount) {
-    
-
-    // create render-pass + pipeline layout
-    /-*DynamicArray<VkAttachmentDescription> colorAttachments(renderTargetCount);
-    memset(colorAttachments.value, 0, renderTargetCount*sizeof(VkAttachmentDescription));
-    for (size_t i = 0; i < renderTargetCount; ++i) {
-      auto& colorAttachment = colorAttachments.value[i];
-      colorAttachment.format = _getDataFormatComponents(renderTargets[i].backBufferFormat);
-      colorAttachment.samples = this->_graphicsPipeline.pMultisampleState->rasterizationSamples;
-      colorAttachment.loadOp = ((renderTargets[i].outputFlags & pandora::video::TargetOutputFlag::swapNoDiscard) == true)
-                             ? VK_ATTACHMENT_LOAD_OP_LOAD // requires VK_ACCESS_COLOR_ATTACHMENT_READ_BIT read access
-                             : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                             //TODO: gérer discard/clear/keep -> VK_ATTACHMENT_LOAD_OP_CLEAR si clear
-      colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-      colorAttachment.stencilLoadOp = (this->_graphicsPipeline.pDepthStencilState != nullptr)
-                                    ? colorAttachment.loadOp // requires VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT if type is "LOAD"
-                                    : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-      colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; //TODO: optimiser uniquement si mode "LOAD" (keep)
-      colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //TODO: gérer swap-chain / swap-chain shared / texture-target for texture / staging texture-target
-    }*-/
-
-    //...
-    //this->_graphicsPipeline.layout = pipelineLayout;
-    //this->_graphicsPipeline.renderPass = renderPass;
-    this->_graphicsPipeline.subpass = 0;
-
-    // create graphics pipeline
-    return GraphicsPipeline(renderer, this->_graphicsPipeline, this->_parentCache);
-  }*/
 
 #endif

@@ -414,12 +414,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           GraphicsPipeline(const GraphicsPipeline&) = delete;
           GraphicsPipeline(GraphicsPipeline&& rhs) noexcept
-            : _pipelineHandle(rhs._pipelineHandle), _renderer(std::move(_renderer)) {
+            : _pipelineHandle(rhs._pipelineHandle), _renderer(std::move(rhs._renderer)),
+              _renderPass(std::move(rhs._renderPass)), _pipelineLayout(std::move(rhs._pipelineLayout)) {
             rhs._pipelineHandle = VK_NULL_HANDLE;
           }
           GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
           GraphicsPipeline& operator=(GraphicsPipeline&& rhs) noexcept {
             this->_pipelineHandle=rhs._pipelineHandle; this->_renderer=std::move(rhs._renderer);
+            this->_renderPass = std::move(rhs._renderPass); this->_pipelineLayout = std::move(rhs._pipelineLayout);
             rhs._pipelineHandle = VK_NULL_HANDLE;
             return *this;
           }
@@ -431,12 +433,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline Handle handle() const noexcept { return this->_pipelineHandle; }
           /// @brief Verify if initialized (false) or empty/moved/released (true)
           inline bool isEmpty() const noexcept { return (this->_pipelineHandle == VK_NULL_HANDLE); }
-
-          /// @brief Bindable render target description (swap-chain / texture-target signature)
-          /*struct RenderTargetDescription final {
-            DataFormat backBufferFormat;
-            TargetOutputFlag outputFlags;
-          };*/
 
           // ---
 
@@ -532,10 +528,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///                        Set to NULL with viewportCount > 0 to use dynamic viewports (with Renderer.setViewport(s)).
             /// @param viewportCount   Number of viewports (array size of 'viewports', if not NULL).
             ///                        Even if 'viewports' is NULL, this value must be set if 'useDynamicCount' is false.
+            ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param scissorTests    Pointer to scissor-test rectangle (if 'scissorCount' is 1) or array of scissor-test rectangles.
             ///                        Set to NULL with scissorCount > 0 to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
             ///                        Even if 'scissorTests' is NULL, this value must be set if 'useDynamicCount' is false.
+            ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
             ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
@@ -549,14 +547,29 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             // -- pipeline build --
 
-            /// @brief Provide render attachments to determine the number of targets, their respective format and multisampling (required)
-            /// @param renderTargets  Pointer to render-target (if 'targetCount' is 1) or array of render-targets. Can't be NULL!
-            /// @param targetCount    Array size of 'renderTargets'.
-            /// @param sampleCount    Sample count for multisampling (anti-aliasing). Use 0 or 1 to disable multisampling.
-            /// @warning The pipeline will need to be used with compatible render-targets only.
-            /// @throws - invalid_argument if no render target description is provided;
-            ///         - runtime_error if render-pass creation fails.
-            Builder& setRenderAttachments(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1);
+            /// @brief Provide pipeline layout for globals: uniforms, storages, samplers... (optional)
+            /// @param layout  Pipeline layout description object.
+            /// @remarks 'layout' can be built with 'createGlobalLayout'.
+            /// @warning - Compatible uniforms/storages/samplers will need to be set.
+            ///          - For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
+            ///            Higher-level APIs (D3D11, OpenGL) do not have any concept of pipeline layouts.
+            Builder& setGlobalLayout(GlobalLayout layout) noexcept {
+              _pipelineLayoutObj = (layout != nullptr && layout->hasValue()) ? std::move(layout) : nullptr;
+              return *this;
+            }
+            /// @brief Provide render pass definition (format/inputs/dependencies) + number of render-targets (required)
+            /// @param renderTargetCount  Number of render-targets used with this pipeline (framebuffers, texture targets...).
+            /// @param renderPass         Render-pass definition object.
+            /// @param sampleCount  Sample count for multisampling (anti-aliasing). Use 0 or 1 to disable multisampling.
+            /// @param minSampleShading  Minimum fraction of sample shading (only used if 'sampleCount' > 1).
+            ///                          A value closer to 1.0 results in smoother shading (typical value example: 0.2).
+            ///                          Use 0 to disable sample rate shading.
+            /// @remarks 'renderPass' can be build with 'createRenderPass'.
+            /// @warning - The pipeline will need to be used with compatible render-targets only.
+            ///          - For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
+            ///            Higher-level APIs (D3D11, OpenGL) do not have any concept of render passes.
+            Builder& setRenderPass(uint32_t renderTargetCount, RenderPass renderPass,
+                                   uint32_t sampleCount = 1u, float minSampleShading = 0.f) noexcept;
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @param parentCache  Pipeline cache to use for creation -- specific to vulkan (do not fill param for cross-API projects)
@@ -565,9 +578,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             GraphicsPipeline build(VkPipelineCache parentCache = VK_NULL_HANDLE);
 
 
+            // -- Vulkan pipeline description factory --
+
+            /// @brief Create pipeline layout for globals: uniforms, storages, samplers...
+            /// @remarks The layout object can be used for multiple pipelines, as long as they share the same Renderer instance.
+            /// @warning For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
+            /// @throws runtime_error on creation failure
+            GlobalLayout createGlobalLayout(const VkPipelineLayoutCreateInfo& params);
+            /// @brief Create render pass definition: targets, formats, inputs, dependencies...
+            /// @remarks The render pass object can be used for multiple pipelines, as long as they share the same Renderer instance.
+            /// @warning For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
+            /// @throws runtime_error on creation failure
+            RenderPass createRenderPass(const VkRenderPassCreateInfo& params);
+
+
             // -- Vulkan pipeline settings --
 
-            /// @brief Native pipeline creation info -- should only be used to customize advanced settings: flags, parentCache...
+            /// @brief Native pipeline creation info -- should only be used to customize advanced settings: flags, cache...
             inline VkGraphicsPipelineCreateInfo& descriptor() noexcept { return this->_descriptor; }
 
           private:
@@ -599,12 +626,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             VkGraphicsPipelineCreateInfo _descriptor{}; // main descriptor
             std::shared_ptr<Renderer> _renderer = nullptr;
 
-            SharedResource<VkRenderPass> _renderPassObj;
-            SharedResource<VkPipelineLayout> _pipelineLayoutObj;
+            RenderPass _renderPassObj;
+            GlobalLayout _pipelineLayoutObj;
             DynamicArray<VkPipelineColorBlendAttachmentState> _blendAttachmentsPerTarget;
             const Viewport* _viewports = nullptr;
             const ScissorRectangle* _scissorTests = nullptr;
-            uint32_t _attachmentCount = 0;
+            uint32_t _targetCount = 0;
             bool _useBlendPerTarget = false;
             bool _useDynamicCulling = false;
             bool _useDynamicDepthTest = false;
