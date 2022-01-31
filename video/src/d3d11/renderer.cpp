@@ -449,30 +449,20 @@ Includes hpp implementations at the end of the file
         } catch (...) {}
       }
 #   endif
-      return ColorSpace::unknown;
+    return ColorSpace::unknown;
   }
 
   // Verify if a multisample mode is supported (MSAA) + get max quality level
-  bool Renderer::_isSampleCountSupported(DataFormat format, uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept {
+  bool Renderer::_isSampleCountSupported(DXGI_FORMAT format, UINT sampleCount, UINT& outMaxQualityLevel) const noexcept {
     try {
       UINT qualityLevel = 0;
-      if ((((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels(_getDataFormatComponents(format), (UINT)sampleCount, &qualityLevel))) {
-        outMaxQualityLevel = (uint32_t)qualityLevel;
-        return (qualityLevel > 0);
+      if (SUCCEEDED(((ID3D11Device*)this->_device)->CheckMultisampleQualityLevels(format, (UINT)sampleCount, &qualityLevel)) && qualityLevel > 0) {
+        outMaxQualityLevel = qualityLevel - 1u;
+        return true;
       }
     }
     catch (...) {}
     return false;
-  }
-  // Get max supported sample count for multisampling (anti-aliasing)
-  uint32_t Renderer::_maxSampleCount(DXGI_FORMAT format) const noexcept {
-    UINT sampleCount = 2u;
-    try {
-      for (UINT qualityLevel = 1; SUCCEEDED(((ID3D11Device*)_device)->CheckMultisampleQualityLevels(format, sampleCount, &qualityLevel))
-                                  && qualityLevel != (UINT)0; sampleCount <<= 1);
-    }
-    catch (...) {}
-    return (static_cast<uint32_t>(sampleCount) >> 1);
   }
 
   // Screen tearing supported (variable refresh rate display)
@@ -1031,14 +1021,13 @@ Includes hpp implementations at the end of the file
 
     // create render-target view
     if (this->_renderTargetView == nullptr) {
-      SharedResource<ID3D11Texture2D> renderTarget;
-      auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(renderTarget.address()));
-      if (FAILED(targetResult) || !renderTarget.hasValue()) {
+      auto targetResult = ((IDXGISwapChain*)this->_swapChain)->GetBuffer(0, IID_PPV_ARGS(&(this->_renderTarget)));
+      if (FAILED(targetResult) || this->_renderTarget == nullptr) {
         throwError(targetResult, "SwapChain: render-target error"); return;
       }
       
       CD3D11_RENDER_TARGET_VIEW_DESC viewDescriptor(D3D11_RTV_DIMENSION_TEXTURE2D, this->_backBufferFormat);
-      targetResult = this->_renderer->device()->CreateRenderTargetView(renderTarget.get(), &viewDescriptor, &(this->_renderTargetView));
+      targetResult = this->_renderer->device()->CreateRenderTargetView(this->_renderTarget, &viewDescriptor, &(this->_renderTargetView));
       if (FAILED(targetResult) || this->_renderTargetView == nullptr)
         throwError(targetResult, "SwapChain: view not created");
     }
@@ -1054,8 +1043,14 @@ Includes hpp implementations at the end of the file
         if (this->_renderTargetView) {
           this->_renderer->setActiveRenderTarget(nullptr);
           this->_renderer->context()->Flush();
+        }
+        if (this->_renderTargetView != nullptr) {
           this->_renderTargetView->Release();
           this->_renderTargetView = nullptr;
+        }
+        if (this->_renderTarget != nullptr) {
+          this->_renderTarget->Release();
+          this->_renderTarget = nullptr;
         }
 #       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
           if (this->_deviceContext11_1)
@@ -1088,6 +1083,7 @@ Includes hpp implementations at the end of the file
       _framebufferCount(rhs._framebufferCount),
       _backBufferFormat(rhs._backBufferFormat),
       _renderer(std::move(rhs._renderer)),
+      _renderTarget(rhs._renderTarget),
       _renderTargetView(rhs._renderTargetView)
 #     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
         , _deviceContext11_1(rhs._deviceContext11_1)
@@ -1095,6 +1091,7 @@ Includes hpp implementations at the end of the file
   {
     rhs._swapChain = nullptr;
     rhs._renderer = nullptr;
+    rhs._renderTarget = nullptr;
     rhs._renderTargetView = nullptr;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       rhs._deviceContext11_1 = nullptr;
@@ -1109,12 +1106,14 @@ Includes hpp implementations at the end of the file
     this->_framebufferCount = rhs._framebufferCount;
     this->_backBufferFormat = rhs._backBufferFormat;
     this->_renderer = std::move(rhs._renderer);
+    this->_renderTarget = rhs._renderTarget;
     this->_renderTargetView = rhs._renderTargetView;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       this->_deviceContext11_1 = rhs._deviceContext11_1;
 #   endif
     rhs._swapChain = nullptr;
     rhs._renderer = nullptr;
+    rhs._renderTarget = nullptr;
     rhs._renderTargetView = nullptr;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       rhs._deviceContext11_1 = nullptr;
@@ -1151,6 +1150,8 @@ Includes hpp implementations at the end of the file
       this->_renderer->setActiveRenderTarget(nullptr);
       this->_renderTargetView->Release();
       this->_renderTargetView = nullptr; // set to NULL -> tells _createOrRefreshTargetView to re-create it
+      this->_renderTarget->Release();
+      this->_renderTarget = nullptr;
       ((IDXGISwapChain*)this->_swapChain)->SetFullscreenState(FALSE, nullptr);
       this->_renderer->context()->Flush();
       

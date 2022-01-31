@@ -154,7 +154,7 @@ Implementation included in renderer.cpp
 
   // Create depth/stencil buffer for existing renderer/render-target
   DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, 
-                                         uint32_t width, uint32_t height) { // throws
+                                         uint32_t width, uint32_t height, uint32_t sampleCount) { // throws
     if (width == 0 || height == 0)
       throw std::invalid_argument("DepthStencil: width/height is 0");
     
@@ -166,10 +166,14 @@ Implementation included in renderer.cpp
     depthDescriptor.MipLevels = 1;
     depthDescriptor.ArraySize = 1;
     depthDescriptor.Format = (DXGI_FORMAT)format;
-    depthDescriptor.SampleDesc.Count = 1;
+    depthDescriptor.SampleDesc.Count = (UINT)sampleCount;
     depthDescriptor.SampleDesc.Quality = 0;
     depthDescriptor.Usage = D3D11_USAGE_DEFAULT;
     depthDescriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    if (sampleCount > 1u && !renderer._isSampleCountSupported((DXGI_FORMAT)format, sampleCount, depthDescriptor.SampleDesc.Quality)) {
+      depthDescriptor.SampleDesc.Count = 1u;
+      depthDescriptor.SampleDesc.Quality = 0;
+    }
     
     auto result = renderer.device()->CreateTexture2D(&depthDescriptor, nullptr, &(this->_depthStencilBuffer));
     if (FAILED(result) || this->_depthStencilBuffer == nullptr) {
@@ -180,8 +184,14 @@ Implementation included in renderer.cpp
     D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDescriptor;
     ZeroMemory(&depthViewDescriptor, sizeof(depthViewDescriptor));
     depthViewDescriptor.Format = (DXGI_FORMAT)format;
-    depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    depthViewDescriptor.Texture2D.MipSlice = 0;
+    if (depthDescriptor.SampleDesc.Count > 1u) {
+      depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+    }
+    else {
+      depthViewDescriptor.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+      depthViewDescriptor.Texture2D.MipSlice = 0;
+    }
+    
     
     result = renderer.device()->CreateDepthStencilView(this->_depthStencilBuffer, &depthViewDescriptor, &(this->_depthStencilView));
     if (FAILED(result) || this->_depthStencilView == nullptr)

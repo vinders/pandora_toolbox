@@ -31,6 +31,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     namespace video {
       namespace d3d11 {
         class SwapChain;
+        class Texture2D;
+        class TextureTarget2D;
+        class DepthStencilBuffer;
         class GraphicsPipeline;
 
         /// @class Renderer
@@ -104,12 +107,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - Not supported by other APIs (Vulkan, OpenGL...): they'll return "unknown".
           ColorSpace getMonitorColorSpace(const pandora::hardware::DisplayMonitor& target) const noexcept;
           
-          /// @brief Get max supported color sample count for multisampling (anti-aliasing)
-          inline uint32_t maxColorSampleCount(DataFormat format) const noexcept { return _maxSampleCount(_getDataFormatComponents(format)); }
-          /// @brief Get max supported depth sample count for multisampling (anti-aliasing)
-          inline uint32_t maxDepthSampleCount(DataFormat format) const noexcept { return _maxSampleCount(_getDataFormatComponents(format)); }
-          /// @brief Get max supported stencil sample count for multisampling (anti-aliasing)
-          inline uint32_t maxStencilSampleCount(DataFormat format) const noexcept { return _maxSampleCount(_getDataFormatComponents(format)); }
+          /// @brief Verify color sample count support for multisampling (must be a power of 2)
+          inline bool isColorSampleCountAvailable(DataFormat format, uint32_t sampleCount) const noexcept {
+            UINT qualityLevel = 0;
+            return _isSampleCountSupported(_getDataFormatComponents(format), (UINT)sampleCount, qualityLevel);
+          }
+          /// @brief Verify depth sample count support for multisampling (must be a power of 2)
+          inline bool isDepthSampleCountAvailable(DepthStencilFormat format, uint32_t sampleCount) const noexcept {
+            UINT qualityLevel = 0;
+            return _isSampleCountSupported((DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
+          }
+          /// @brief Verify stencil sample count support for multisampling (must be a power of 2)
+          inline bool isStencilSampleCountAvailable(DepthStencilFormat format, uint32_t sampleCount) const noexcept {
+            UINT qualityLevel = 0;
+            return _isSampleCountSupported((DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
+          }
           /// @brief Screen tearing supported (variable refresh rate display)
           bool isTearingAvailable() const noexcept;
           
@@ -522,8 +534,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           inline bool _isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          bool _isSampleCountSupported(DataFormat format, uint32_t sampleCount, uint32_t& outMaxQualityLevel) const noexcept;
-          uint32_t _maxSampleCount(DXGI_FORMAT format) const noexcept;
+          bool _isSampleCountSupported(DXGI_FORMAT format, UINT sampleCount, UINT& outMaxQualityLevel) const noexcept;
 
           void _addRasterizerState(const RasterizerStateId& id, const RasterizerState& handle);
           void _addDepthStencilState(const DepthStencilStateId& id, const DepthStencilState& handle);
@@ -541,6 +552,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool _findBlendStatePerTarget(const BlendStatePerTargetId& id, BlendState& out) const noexcept;
 
           friend class pandora::video::d3d11::SwapChain;
+          friend class pandora::video::d3d11::Texture2D;
+          friend class pandora::video::d3d11::TextureTarget2D;
+          friend class pandora::video::d3d11::DepthStencilBuffer;
           friend class pandora::video::d3d11::GraphicsPipeline;
           
         private:

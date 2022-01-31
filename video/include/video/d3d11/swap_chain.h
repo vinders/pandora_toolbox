@@ -138,6 +138,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @throws - domain_error: if new monitor uses a different adapter -> a new Renderer (with a new SwapChain) must be created (using current may crash).
           ///         - runtime_error: resize failure or incompatible monitor -> a new SwapChain must be created (using current swap-chain again may crash).
           bool resize(uint32_t width, uint32_t height);
+
+          /// @brief Resolve multisampled render-target into back-buffer (anti-aliasing)
+          /// @remarks To use anti-aliasing, follow those steps:
+          ///          * Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to verify if a sample count is supported (must be a power of 2);
+          ///          * When creating a GraphicsPipeline, create RasterizerParams with a supported 'sampleCount' above 1;
+          ///          * [optional] if a depth buffer is used, create it with the same 'sampleCount' value;
+          ///          * Create a TextureTarget2D object (Texture2DParams: use the same 'sampleCount' value and 1 mip level);
+          ///          * Use the render-target view of this TextureTarget2D for rendering;
+          ///          * Call SwapChain.resolve with the handle of this TextureTarget2D.
+          void resolve(TextureHandle2D multisampledTarget, uint32_t subresourceIndex = 0) noexcept {
+            this->_renderer->context()->ResolveSubresource(this->_renderTarget, 0, multisampledTarget,
+                                                           (UINT)subresourceIndex, this->_backBufferFormat);
+          }
           
           /// @brief Swap back-buffer(s) and front-buffer, to display drawn content on screen
           /// @param depthBuffer  Depth buffer associated with swap-chain, for resource cleanup.
@@ -165,6 +178,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DXGI_FORMAT _backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
           
           std::shared_ptr<Renderer> _renderer = nullptr;
+          TextureHandle2D _renderTarget = nullptr;
           RenderTargetView _renderTargetView = nullptr;
           void* _deviceContext11_1 = nullptr; // ID3D11DeviceContext1* - only used if supported
         };

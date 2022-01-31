@@ -70,19 +70,169 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
 
 // -- texture params -- --------------------------------------------------------
 
-uint32_t Texture1DParams::maxMipLevels(uint32_t width) noexcept {
-  return 1u + (uint32_t)log2f((float)width + 0.01f);
-}
-uint32_t Texture2DParams::maxMipLevels(uint32_t width, uint32_t height) noexcept {
-  uint32_t maxSize = (width >= height) ? width : height;
-  return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
-}
-uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t depth) noexcept {
-  uint32_t maxSize = (width >= height) ? width : height;
-  if (depth > maxSize)
-    maxSize = depth;
-  return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
-}
+  Texture1DParams::Texture1DParams(uint32_t width, DataFormat format, uint32_t arraySize, 
+                                   uint32_t mipLevels, uint32_t mostDetailedViewedMip, ResourceUsage usageType) noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_TEXTURE1D_DESC));
+    ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+            
+    size(width);
+    this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
+    arrayLength(arraySize, mipLevels, mostDetailedViewedMip);
+    _setTextureUsage(usageType, _params);
+  }
+
+  Texture1DParams& Texture1DParams::arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip) noexcept {
+    _params.ArraySize = (UINT)arraySize;
+    _params.MipLevels = (UINT)mipLevels;
+    if (arraySize <= 1u) {
+      _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
+      _viewParams.Texture1D.MipLevels = UINT(-1);
+      _viewParams.Texture1D.MostDetailedMip = (UINT)mostDetailedViewedMip;
+    }
+    else {
+      _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
+      _viewParams.Texture1DArray.MipLevels = UINT(-1);
+      _viewParams.Texture1DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
+      _viewParams.Texture1DArray.ArraySize = _params.ArraySize;
+    }
+    return *this;
+  }
+  uint32_t Texture1DParams::maxMipLevels(uint32_t width) noexcept {
+    return 1u + (uint32_t)log2f((float)width + 0.01f);
+  }
+
+  // ---
+
+  Texture2DParams::Texture2DParams(uint32_t width, uint32_t height, DataFormat format,
+                                   uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip,
+                                   ResourceUsage usageType, uint32_t sampleCount) noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
+    ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+    _params.SampleDesc.Count = (UINT)sampleCount;
+
+    size(width, height);
+    this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
+    arrayLength(arraySize, mipLevels, mostDetailedViewedMip);
+    _setTextureUsage(usageType, _params);
+  }
+
+  Texture2DParams& Texture2DParams::arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip) noexcept {
+    _params.ArraySize = (UINT)arraySize;
+    if (_params.SampleDesc.Count > 1u) {
+      _params.MipLevels = (UINT)1;
+      if (arraySize <= 1u) {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+      }
+      else {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY;
+        _viewParams.Texture2DMSArray.ArraySize = _params.ArraySize;
+      }
+    }
+    else {
+      _params.MipLevels = (UINT)mipLevels;
+      if (arraySize <= 1u) {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        _viewParams.Texture2D.MipLevels = UINT(-1);
+        _viewParams.Texture2D.MostDetailedMip = (UINT)mostDetailedViewedMip;
+      }
+      else {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+        _viewParams.Texture2DArray.MipLevels = UINT(-1);
+        _viewParams.Texture2DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
+        _viewParams.Texture2DArray.ArraySize = _params.ArraySize;
+      }
+    }
+    return *this;
+  }
+  Texture2DParams& Texture2DParams::sampleCount(uint32_t count) noexcept {
+    _params.SampleDesc.Count = (UINT)count;
+    if (_params.SampleDesc.Count > 1u) {
+      _params.MipLevels = (UINT)1;
+      if (_viewParams.ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2D) {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+      }
+      else if (_viewParams.ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2DARRAY) {
+        UINT arraySize = _viewParams.Texture2DArray.ArraySize;
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY;
+        _viewParams.Texture2DMSArray.ArraySize = arraySize;
+      }
+    }
+    else {
+      if (_viewParams.ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2DMS) {
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        _viewParams.Texture2D.MipLevels = UINT(-1);
+        _viewParams.Texture2D.MostDetailedMip = 0;
+      }
+      else if (_viewParams.ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY) {
+        UINT arraySize = _viewParams.Texture2DMSArray.ArraySize;
+        _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+        _viewParams.Texture2DArray.MipLevels = UINT(-1);
+        _viewParams.Texture2DArray.MostDetailedMip = 0;
+        _viewParams.Texture2DArray.ArraySize = arraySize;
+      }
+    }
+    return *this;
+  }
+
+  uint32_t Texture2DParams::maxMipLevels(uint32_t width, uint32_t height) noexcept {
+    uint32_t maxSize = (width >= height) ? width : height;
+    return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
+  }
+
+  // ---
+
+  TextureCube2DParams::TextureCube2DParams(uint32_t width, uint32_t height, DataFormat format,
+                                           uint32_t nbCubes, uint32_t mipLevels, uint32_t mostDetailedViewedMip,
+                                           ResourceUsage usageType) noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
+    ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+    _params.SampleDesc.Count = 1u;
+    _params.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+    size(width, height);
+    this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
+    arrayLength(nbCubes, mipLevels, mostDetailedViewedMip);
+    _setTextureUsage(usageType, _params);
+  }
+
+  TextureCube2DParams& TextureCube2DParams::arrayLength(uint32_t nbCubes, uint32_t mipLevels, uint32_t mostDetailedViewedMip) noexcept {
+    _params.ArraySize = (UINT)nbCubes * 6u;
+    _params.MipLevels = (UINT)mipLevels;
+    if (nbCubes <= 1u) {
+      _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+      _viewParams.TextureCube.MipLevels = UINT(-1);
+      _viewParams.TextureCube.MostDetailedMip = (UINT)mostDetailedViewedMip;
+    }
+    else {
+      _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
+      _viewParams.TextureCubeArray.MipLevels = UINT(-1);
+      _viewParams.TextureCubeArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
+      _viewParams.TextureCubeArray.NumCubes = (UINT)nbCubes;
+    }
+    return *this;
+  }
+
+  // ---
+
+  Texture3DParams::Texture3DParams(uint32_t width, uint32_t height, uint32_t depth, DataFormat format, 
+                                   uint32_t mipLevels, uint32_t mostDetailedViewedMip, ResourceUsage usageType) noexcept {
+    ZeroMemory(&_params, sizeof(D3D11_TEXTURE3D_DESC));
+    ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+    _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+    _viewParams.Texture3D.MipLevels = UINT(-1);
+
+    size(width, height, depth);
+    this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
+    mips(mipLevels, mostDetailedViewedMip);
+    _setTextureUsage(usageType, _params);
+  }
+
+  uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t depth) noexcept {
+    uint32_t maxSize = (width >= height) ? width : height;
+    if (depth > maxSize)
+      maxSize = depth;
+    return 1u + (uint32_t)log2f((float)maxSize + 0.01f);
+  }
 
 
 // -- texture containers -- ----------------------------------------------------
@@ -135,7 +285,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
   }
   
   // Create 2D texture resource and view from params
-  Texture2D::Texture2D(DeviceHandle device, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
+  Texture2D::Texture2D(Renderer& renderer, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
                        uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_STAGING) 
                  ? ((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD)
@@ -145,6 +295,14 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       _mipLevels((descriptor.MipLevels != 0)
                  ? (uint8_t)descriptor.MipLevels
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
+    if (descriptor.SampleDesc.Count > 1u) { // set MSAA quality (+ disable MSAA if not supported)
+      D3D11_TEXTURE2D_DESC* mutableDesc = const_cast<D3D11_TEXTURE2D_DESC*>(&descriptor);
+      if (!renderer._isSampleCountSupported(mutableDesc->Format, mutableDesc->SampleDesc.Count, mutableDesc->SampleDesc.Quality)) {
+        mutableDesc->SampleDesc.Count = 1u;
+        mutableDesc->SampleDesc.Quality = 0;
+      }
+    }
+
     HRESULT result;
     if (initData != nullptr) {
       uint32_t dataCount = descriptor.ArraySize ? this->_mipLevels * descriptor.ArraySize : this->_mipLevels;
@@ -159,16 +317,16 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
         it->pSysMem = *initData;
         it->SysMemPitch = (UINT)this->_rowBytes >> level;
       }
-      result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
+      result = renderer.device()->CreateTexture2D(&descriptor, subResData, &(this->_texture));
       free(subResData);
     }
     else
-      result = device->CreateTexture2D(&descriptor, nullptr, &(this->_texture));
+      result = renderer.device()->CreateTexture2D(&descriptor, nullptr, &(this->_texture));
     
     if (FAILED(result) || this->_texture == nullptr)
       throwError(result, __error_resCreationFailed());
     if (descriptor.BindFlags & D3D11_BIND_SHADER_RESOURCE) {
-      result = device->CreateShaderResourceView(this->_texture, &viewDescriptor, &(this->_resourceView));
+      result = renderer.device()->CreateShaderResourceView(this->_texture, &viewDescriptor, &(this->_resourceView));
       if (FAILED(result) || this->_resourceView == nullptr)
         throwError(result, __error_viewCreationFailed());
     }
@@ -239,7 +397,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
   // ---
   
   // Create 2D render-target texture resource and view from params
-  TextureTarget2D::TextureTarget2D(DeviceHandle device, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
+  TextureTarget2D::TextureTarget2D(Renderer& renderer, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
                                    uint32_t texelBytes, const uint8_t** initData)
     : _writeMode((descriptor.Usage != D3D11_USAGE_DYNAMIC) ? (D3D11_MAP)0 : D3D11_MAP_WRITE_DISCARD),
       _rowBytes((uint32_t)descriptor.Width * texelBytes),
@@ -248,6 +406,12 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       _mipLevels((descriptor.MipLevels != 0)
                  ? (uint8_t)descriptor.MipLevels
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
+
+    if (descriptor.SampleDesc.Count > 1u  // set MSAA quality (+ disable MSAA if not supported)
+    && !renderer._isSampleCountSupported(descriptor.Format, descriptor.SampleDesc.Count, descriptor.SampleDesc.Quality)) {
+      descriptor.SampleDesc.Count = 1u;
+      descriptor.SampleDesc.Quality = 0;
+    }
 
     D3D11_SUBRESOURCE_DATA* subResData = nullptr;
     if (initData != nullptr) {
@@ -272,7 +436,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       if (this->_mipLevels != 1u)
         descriptor.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
       
-      HRESULT result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
+      HRESULT result = renderer.device()->CreateTexture2D(&descriptor, subResData, &(this->_texture));
       descriptor.BindFlags = originalBindFlags;
       descriptor.MiscFlags = originalMiscFlags;
       if (subResData)
@@ -280,7 +444,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       if (FAILED(result) || this->_texture == nullptr)
         throwError(result, __error_resCreationFailed());
 
-      result = device->CreateShaderResourceView(this->_texture, viewDescriptor, &(this->_resourceView));
+      result = renderer.device()->CreateShaderResourceView(this->_texture, viewDescriptor, &(this->_resourceView));
       if (FAILED(result) || this->_resourceView == nullptr)
         throwError(result, __error_viewCreationFailed());
     }
@@ -288,7 +452,7 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
       auto originalBindFlags = descriptor.BindFlags;
       descriptor.BindFlags = D3D11_BIND_RENDER_TARGET;
       
-      HRESULT result = device->CreateTexture2D(&descriptor, subResData, &(this->_texture));
+      HRESULT result = renderer.device()->CreateTexture2D(&descriptor, subResData, &(this->_texture));
       descriptor.BindFlags = originalBindFlags;
       if (subResData)
         free(subResData);
@@ -296,9 +460,11 @@ uint32_t Texture3DParams::maxMipLevels(uint32_t width, uint32_t height, uint32_t
         throwError(result, __error_resCreationFailed());
     }
     
-    D3D11_RTV_DIMENSION targetDim = (descriptor.ArraySize == 1) ? D3D11_RTV_DIMENSION_TEXTURE2D : D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+    D3D11_RTV_DIMENSION targetDim = (descriptor.ArraySize == 1u)
+                                  ? ((descriptor.SampleDesc.Count > 1u) ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D)
+                                  : ((descriptor.SampleDesc.Count > 1u) ? D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D11_RTV_DIMENSION_TEXTURE2DARRAY);
     CD3D11_RENDER_TARGET_VIEW_DESC targetDescriptor(targetDim, descriptor.Format);
-    HRESULT result = device->CreateRenderTargetView(this->_texture, &targetDescriptor, &(this->_renderTargetView));
+    HRESULT result = renderer.device()->CreateRenderTargetView(this->_texture, &targetDescriptor, &(this->_renderTargetView));
     if (FAILED(result) || this->_renderTargetView == nullptr)
       throwError(result, "TextureTarget: render-target not created");
   }

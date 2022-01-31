@@ -214,17 +214,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline Texture1DParams(uint32_t width, DataFormat format = DataFormat::rgba8_sRGB, uint32_t arraySize = 1u, 
-                                 uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
-            ZeroMemory(&_params, sizeof(D3D11_TEXTURE1D_DESC));
-            ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-            
-            size(width);
-            this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
-            arrayLength(arraySize, mipLevels, mostDetailedViewedMip);
-            _setTextureUsage(usageType, _params);
-          }
-          
+          Texture1DParams(uint32_t width, DataFormat format = DataFormat::rgba8_sRGB, uint32_t arraySize = 1u, 
+                          uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept;
+
           Texture1DParams(const Texture1DParams&) = default;
           Texture1DParams& operator=(const Texture1DParams&) = default;
           ~Texture1DParams() noexcept = default;
@@ -239,22 +231,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline Texture1DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
-            _params.ArraySize = (UINT)arraySize;
-            _params.MipLevels = (UINT)mipLevels;
-            if (arraySize <= 1u) {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
-              _viewParams.Texture1D.MipLevels = UINT(-1);
-              _viewParams.Texture1D.MostDetailedMip = (UINT)mostDetailedViewedMip;
-            }
-            else {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
-              _viewParams.Texture1DArray.MipLevels = UINT(-1);
-              _viewParams.Texture1DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
-              _viewParams.Texture1DArray.ArraySize = _params.ArraySize;
-            }
-            return *this;
-          }
+          Texture1DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept;
           static uint32_t maxMipLevels(uint32_t width) noexcept; ///< Compute max available mip level (1 + floor(log2(max_dimension)))
 
           /// @brief Choose memory usage for texture: 'staticGpu' (or 'immutable') recommended, unless the texture data is updated regularly.
@@ -297,19 +274,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                   With 'immutable', resource data can only be set when building texture (texture constructor with 'initData').
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
-          /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline Texture2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
-                                 uint32_t arraySize = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
-                                 ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
-            ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
-            ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-            _params.SampleDesc.Count = 1;
-            
-            size(width, height);
-            this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
-            arrayLength(arraySize, mipLevels, mostDetailedViewedMip);
-            _setTextureUsage(usageType, _params);
-          }
+          /// @param sampleCount  Sample count for multisampling (anti-aliasing). Use 1 to disable multisampling.
+          ///                     Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to make sure the value is supported.
+          /// @warning With 'dynamicCpu' usage or with 'sampleCount' > 1, mipLevels value must always be '1' (0 not supported).
+          Texture2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
+                          uint32_t arraySize = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
+                          ResourceUsage usageType = ResourceUsage::staticGpu, uint32_t sampleCount = 1u) noexcept;
           
           Texture2DParams(const Texture2DParams&) = default;
           Texture2DParams& operator=(const Texture2DParams&) = default;
@@ -322,28 +292,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline Texture2DParams& texelFormat(DataFormat format) noexcept { ///< Set color format of each texture pixel
             this->_texelBytes = _setTextureFormat(format, _params, _viewParams); return *this;
           }
+          /// @brief Set sample count for multisampling (or 1 to disable it)
+          /// @warning Changing the sample count will reset mip level params.
+          Texture2DParams& sampleCount(uint32_t count) noexcept;
           
           /// @brief Set number of sub-textures: array length + mip-map level
           /// @param arraySize  Number of sub-textures in texture array (if value > 1, params only usable to create Texture2DArray instances)
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline Texture2DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
-            _params.ArraySize = (UINT)arraySize;
-            _params.MipLevels = (UINT)mipLevels;
-            if (arraySize <= 1u) {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-              _viewParams.Texture2D.MipLevels = UINT(-1);
-              _viewParams.Texture2D.MostDetailedMip = (UINT)mostDetailedViewedMip;
-            }
-            else {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-              _viewParams.Texture2DArray.MipLevels = UINT(-1);
-              _viewParams.Texture2DArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
-              _viewParams.Texture2DArray.ArraySize = _params.ArraySize;
-            }
-            return *this;
-          }
+          Texture2DParams& arrayLength(uint32_t arraySize, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept;
           static uint32_t maxMipLevels(uint32_t width, uint32_t height) noexcept; ///< Compute max available mip level (1 + floor(log2(max_dimension)))
 
           /// @brief Choose memory usage for texture: 'staticGpu' (or 'immutable') recommended, unless the texture data is updated regularly.
@@ -387,19 +345,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline TextureCube2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
-                                     uint32_t nbCubes = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
-                                     ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
-            ZeroMemory(&_params, sizeof(D3D11_TEXTURE2D_DESC));
-            ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-            _params.SampleDesc.Count = 1;
-            _params.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
-            
-            size(width, height);
-            this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
-            arrayLength(nbCubes, mipLevels, mostDetailedViewedMip);
-            _setTextureUsage(usageType, _params);
-          }
+          TextureCube2DParams(uint32_t width, uint32_t height, DataFormat format = DataFormat::rgba8_sRGB,
+                              uint32_t nbCubes = 1u, uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0,
+                              ResourceUsage usageType = ResourceUsage::staticGpu) noexcept;
           
           TextureCube2DParams(const TextureCube2DParams&) = default;
           TextureCube2DParams& operator=(const TextureCube2DParams&) = default;
@@ -418,22 +366,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param mipLevels  Generated mip-map levels: value from 1 (none) to N (1 + floor(log2(max_dimension))), or 0 to use max available levels.
           /// @param mostDetailedViewedMip  Highest detail mip level allowed when viewing texture (from 0 (highest) to 'mipLevels'-1 (lowest)).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline TextureCube2DParams& arrayLength(uint32_t nbCubes, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept {
-            _params.ArraySize = (UINT)nbCubes * 6u;
-            _params.MipLevels = (UINT)mipLevels;
-            if (nbCubes <= 1u) {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-              _viewParams.TextureCube.MipLevels = UINT(-1);
-              _viewParams.TextureCube.MostDetailedMip = (UINT)mostDetailedViewedMip;
-            }
-            else {
-              _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
-              _viewParams.TextureCubeArray.MipLevels = UINT(-1);
-              _viewParams.TextureCubeArray.MostDetailedMip = (UINT)mostDetailedViewedMip;
-              _viewParams.TextureCubeArray.NumCubes = (UINT)nbCubes;
-            }
-            return *this;
-          }
+          TextureCube2DParams& arrayLength(uint32_t nbCubes, uint32_t mipLevels, uint32_t mostDetailedViewedMip = 0) noexcept;
           /// @brief Compute max available mip level (1 + floor(log2(max_dimension)))
           static inline uint32_t maxMipLevels(uint32_t width, uint32_t height) noexcept { return Texture2DParams::maxMipLevels(width, height); }
 
@@ -481,18 +414,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                   Staging mode allows CPU read/write operations, but the texture can't be used for display in shaders
           ///                   (staging content is typically copied to/from other 'staticGpu' texture).
           /// @warning With 'dynamicCpu' usage, mipLevels value must always be '1' (0 not supported).
-          inline Texture3DParams(uint32_t width, uint32_t height, uint32_t depth, DataFormat format = DataFormat::rgba8_sRGB, 
-                                 uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept {
-            ZeroMemory(&_params, sizeof(D3D11_TEXTURE3D_DESC));
-            ZeroMemory(&_viewParams, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-            _viewParams.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
-            _viewParams.Texture3D.MipLevels = UINT(-1);
-            
-            size(width, height, depth);
-            this->_texelBytes = _setTextureFormat(format, _params, _viewParams);
-            mips(mipLevels, mostDetailedViewedMip);
-            _setTextureUsage(usageType, _params);
-          }
+          Texture3DParams(uint32_t width, uint32_t height, uint32_t depth, DataFormat format = DataFormat::rgba8_sRGB, 
+                          uint32_t mipLevels = 1u, uint32_t mostDetailedViewedMip = 0, ResourceUsage usageType = ResourceUsage::staticGpu) noexcept;
           
           Texture3DParams(const Texture3DParams&) = default;
           Texture3DParams& operator=(const Texture3DParams&) = default;
@@ -617,7 +540,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
           inline Texture2D(Renderer& renderer, const Texture2DParams& params, const uint8_t** initData = nullptr)
-            : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
+            : Texture2D(renderer, params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData) {}
 
           /// @brief Store texture resource and view created with external tool (such as DDSTextureLoader in DirectXTK)
           inline Texture2D(TextureHandle texture, TextureView resourceView, uint32_t rowBytes, uint32_t height,
@@ -653,7 +576,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline D3D11_MAP writeMode() const noexcept { return this->_writeMode; }     ///< Get mappable write mode (or 0 if static/immutable)
         
         protected:
-          Texture2D(DeviceHandle device, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
+          Texture2D(Renderer& renderer, const D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC& viewDescriptor,
                     uint32_t texelBytes, const uint8_t** initData);
         protected:
           TextureHandle2D _texture = nullptr;
@@ -775,7 +698,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
           inline Texture2DArray(Renderer& renderer, const Texture2DParams& params, const uint8_t** initData = nullptr)
-            : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
+            : Texture2D(renderer, params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
               _arraySize((uint8_t)params.descriptor().ArraySize) {}
           /// @brief Create texture resource array and view from params - 2D cube texture (or array of 2D cubes)
           /// @warning - 'initData' is required with 'immutable' usage.
@@ -785,7 +708,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - The length of each entry in 'initData' must be rowBytes*height (adjust for each mip level).
           /// @throws runtime_error on creation failure
           inline Texture2DArray(Renderer& renderer, const TextureCube2DParams& params, const uint8_t** initData = nullptr)
-            : Texture2D(renderer.device(), params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
+            : Texture2D(renderer, params.descriptor(), params.viewDescriptor(), params.texelBytes(), initData),
               _arraySize((uint8_t)params.descriptor().ArraySize) {}
           
           Texture2DArray() noexcept = default;
@@ -827,7 +750,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - The length of each entry in 'initData' must be rowBytes*height (no mips).
           /// @throws runtime_error on creation failure
           inline TextureTarget2D(Renderer& renderer, Texture2DParams& params, const uint8_t** initData = nullptr, bool isShaderResource = false)
-            : TextureTarget2D(renderer.device(), params.descriptor(), isShaderResource ? &(params.viewDescriptor()) : nullptr, 
+            : TextureTarget2D(renderer, params.descriptor(), isShaderResource ? &(params.viewDescriptor()) : nullptr, 
                               params.texelBytes(), initData) {}
           
           TextureTarget2D() noexcept = default;
@@ -867,7 +790,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           
         private:
-          TextureTarget2D(DeviceHandle device, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
+          TextureTarget2D(Renderer& renderer, D3D11_TEXTURE2D_DESC& descriptor, const D3D11_SHADER_RESOURCE_VIEW_DESC* viewDescriptor,
                           uint32_t texelBytes, const uint8_t** initData);
         private:
           TextureHandle2D _texture = nullptr;

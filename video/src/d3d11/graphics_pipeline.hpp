@@ -31,7 +31,7 @@ Implementation included in renderer.cpp
   }
   
   RasterizerParams::RasterizerParams(CullMode cull, FillMode fill, bool isFrontClockwise,
-                                     bool depthClipping, bool scissorClipping) noexcept {
+                                     bool depthClipping, bool scissorClipping, uint32_t sampleCount) noexcept {
     ZeroMemory(&_params, sizeof(D3D11_RASTERIZER_DESC));
     
     _params.CullMode = (D3D11_CULL_MODE)cull;
@@ -43,6 +43,7 @@ Implementation included in renderer.cpp
       _params.FillMode = (D3D11_FILL_MODE)fill;
     
     _params.FrontCounterClockwise = isFrontClockwise ? FALSE : TRUE;
+    _params.MultisampleEnable = (sampleCount > 1) ? TRUE : FALSE;
     _params.DepthClipEnable = depthClipping ? TRUE : FALSE;
     _params.ScissorEnable = scissorClipping ? TRUE : FALSE;
   }

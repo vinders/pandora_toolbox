@@ -56,8 +56,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param isFrontClockwise  Choose vertex order of front-facing polygons (true = clockwise / false = counter-clockwise)
           /// @param depthClipping     Enable clipping based on distance
           /// @param scissorClipping   Enable scissor-rectangle clipping
-          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill,
-                           bool isFrontClockwise = true, bool depthClipping = false, bool scissorClipping = false) noexcept;
+          /// @param sampleCount       Sample count for multisampling. Use 1 to disable multisampling.
+          ///                          Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to make sure the value is supported.
+          RasterizerParams(CullMode cull, FillMode fill = FillMode::fill, bool isFrontClockwise = true,
+                           bool depthClipping = false, bool scissorClipping = false, uint32_t sampleCount = 1u) noexcept;
           
           RasterizerParams(const RasterizerParams&) = default;
           RasterizerParams& operator=(const RasterizerParams&) = default;
@@ -75,6 +77,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             if (fill == FillMode::linesAA) { _params.FillMode = D3D11_FILL_WIREFRAME;  _params.AntialiasedLineEnable = TRUE; }
             else                           { _params.FillMode = (D3D11_FILL_MODE)fill; _params.AntialiasedLineEnable = FALSE; }
             return *this;
+          }
+          /// @brief Set sample count for multisampling (anti-aliasing)
+          /// @param count  Sample count for multisampling. Use 1 to disable multisampling.
+          ///               Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to make sure the value is supported.
+          /// @remarks Float param (minShading) is ignored: it only exists for compatibility with other APIs (Vulkan).
+          inline RasterizerParams& sampleCount(uint32_t count, float = 0.f) noexcept {
+            _params.MultisampleEnable = (count > 1) ? TRUE : FALSE; return *this;
           }
           
           /// @brief Enable clipping based on distance

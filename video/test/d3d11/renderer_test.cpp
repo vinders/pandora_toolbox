@@ -46,9 +46,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     auto colorSpace = renderer.getMonitorColorSpace(monitor);
     bool isHdrMonitor = (colorSpace == ColorSpace::hdr10_bt2084 || colorSpace == ColorSpace::scRgb);
-    uint32_t maxColorSamples = renderer.maxColorSampleCount(DataFormat::rgba8_sRGB);
-    uint32_t maxDepthSamples = renderer.maxDepthSampleCount(DataFormat::d32_f);
-    uint32_t maxStencilSamples = renderer.maxStencilSampleCount(DataFormat::d24_unorm_s8_ui);
+    uint32_t maxColorSamples = 64u, maxDepthSamples = 64u, maxStencilSamples = 64u;
+    while (!renderer.isColorSampleCountAvailable(DataFormat::rgba8_sRGB, maxColorSamples)
+          && maxColorSamples > 1) { maxColorSamples >>= 1; }
+    while (!renderer.isDepthSampleCountAvailable(DepthStencilFormat::d32_f, maxDepthSamples)
+          && maxDepthSamples > 1) { maxDepthSamples >>= 1; }
+    while (!renderer.isStencilSampleCountAvailable(DepthStencilFormat::d24_unorm_s8_ui, maxStencilSamples)
+          && maxStencilSamples > 1) { maxStencilSamples >>= 1; }
 
     size_t dedicatedRam = 0, sharedRam = 0;
     EXPECT_TRUE(renderer.getAdapterVramSize(dedicatedRam, sharedRam));

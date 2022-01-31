@@ -672,14 +672,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
     auto renderer = std::make_shared<Renderer>(monitor);
+    auto format = DataFormat::rgba8_sRGB;
 
     SwapChain::Descriptor params;
     params.width = __WIDTH;
     params.height = __HEIGHT;
     params.framebufferCount = 2u;
     params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
+    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, format);
     ASSERT_FALSE(chain1.isEmpty());
+
+    uint32_t sampleCount = 64u;
+    while ( ( !renderer->isColorSampleCountAvailable(DataFormat::rgba8_sRGB, sampleCount)
+           || !renderer->isDepthSampleCountAvailable(DepthStencilFormat::d32_f, sampleCount)) && sampleCount > 1) {
+      sampleCount >>= 1;
+    }
 
     // graphics pipeline
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
@@ -705,16 +712,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
     builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
+    builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false, sampleCount)); // anti-aliasing enabled
     builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
-    builder.setBlendState(BlendParams(false));          // off
+    builder.setBlendState(BlendParams{});               // default blending
     builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
     auto pipeline = builder.build();
     ASSERT_FALSE(pipeline.isEmpty());
 
     // state buffers + samplers
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT, sampleCount); // anti-aliasing enabled
     ASSERT_FALSE(depthBuffer.isEmpty());
+    Texture2DParams msaaTexParams(__WIDTH, __HEIGHT, format, 1u, 1u, 0, ResourceUsage::staticGpu, sampleCount);
+    TextureTarget2D msaaTarget(*renderer, msaaTexParams);
 
     SamplerBuilder samplerBuilder(*renderer);
     SamplerStateArray samplers;
@@ -774,8 +783,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // drawing
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
+    renderer->setActiveRenderTarget(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView());
+    renderer->clearView(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
     renderer->bindGraphicsPipeline(pipeline.handle());
 
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
@@ -786,6 +795,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
+
+    // resolve anti-aliasing
+    chain1.resolve(msaaTarget.handle(), 0);
     chain1.swapBuffers(depthBuffer.getDepthStencilView());
     renderer->flush();
   }
