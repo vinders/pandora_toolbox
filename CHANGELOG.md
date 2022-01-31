@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.116.0.832
-2022-01-23 - c7cd1a0ccaaed65da4f67c26f463158fd235a8e0
+## 0.117.0.855
+2022-01-31 - cec142e1d046060f94c09fbcc71fff59a179ae43
 ### features
-vinders (15):
+vinders (16):
 * hardware: X11 libraries: add XCB for Vulkan support
 * video: window resource builder: add system string to UTF-8 converter
 * video: Vulkan library/extension loader
@@ -18,8 +18,9 @@ vinders (15):
 * cwork: custom cmake framework option: make runtime shader compilers optional
 * cwork: add options to disable tessellation/geometry stages (improve efficiency if they're not used)
 * memory: lightweight vector implementation (to avoid STL overhead)
-* video: Direct3D11 shader program: store shader stages + bind them together
+* video: Direct3D11 graphics pipeline: store shader stages + bind them together
 * video: Direct3D11 graphics pipeline stages/states: builder + params
+* video: Vulkan graphics pipeline stages/states: builder + params
 ### fixes
 vinders (5):
 * video: Direct3D11 renderer: remove flush after changing/clearing render target (improve performance) + add public flush method
