@@ -476,7 +476,7 @@ Includes hpp implementations at the end of the file
     __if_constexpr (sizeof(Viewport) == sizeof(D3D11_VIEWPORT)) {
       this->_context->RSSetViewports((UINT)numberViewports, (const D3D11_VIEWPORT*)viewports);
     }
-    else {
+    else { // realign data (only for weird compilers where alignment differs)
       D3D11_VIEWPORT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
       if (numberViewports) {
         D3D11_VIEWPORT* out = &values[numberViewports - 1u];
@@ -496,7 +496,7 @@ Includes hpp implementations at the end of the file
     __if_constexpr(sizeof(Viewport) == sizeof(D3D11_RECT)) {
       this->_context->RSSetScissorRects((UINT)numberRectangles, (const D3D11_RECT*)rectangles);
     }
-    else {
+    else { // realign data (only for weird compilers where alignment differs)
       D3D11_RECT values[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE]{};
       if (numberRectangles) {
         D3D11_RECT* out = &values[numberRectangles - 1u];

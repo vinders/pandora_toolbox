@@ -205,7 +205,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline::Builder builder(renderer);
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
     builder.setInputLayout(inputLayout);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
@@ -274,7 +273,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline::Builder builder(renderer);
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
     builder.setInputLayout(inputLayout);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
@@ -354,7 +352,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline::Builder builder(renderer);
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
     builder.setInputLayout(inputLayout);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
@@ -440,7 +437,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline::Builder builder(renderer);
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
     builder.setInputLayout(inputLayout);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);
@@ -705,7 +701,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline::Builder builder(renderer);
     Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
     builder.setInputLayout(inputLayout);
     builder.setVertexTopology(VertexTopology::triangles);
     builder.attachShaderStage(vertexShader);

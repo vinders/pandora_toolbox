@@ -152,7 +152,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         pipelineBuilder.attachShaderStage(evalShader);
 #     endif
 
-      pipelineBuilder.setRenderTargetFormat(nullptr, 0);//TODO
       pipelineBuilder.setInputLayout(inputLayout);
       pipelineBuilder.setVertexTopology(VertexTopology::triangles);
       pipelineBuilder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));

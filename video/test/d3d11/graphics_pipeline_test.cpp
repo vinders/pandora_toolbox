@@ -501,8 +501,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // create simple pipeline (no viewport)
     EXPECT_ANY_THROW(builder.build());
-    builder.setRenderTargetFormat(nullptr, 0);//TODO
-    EXPECT_ANY_THROW(builder.build());
     builder.setInputLayout(inputLayout);
     EXPECT_ANY_THROW(builder.build());
 #   ifndef __P_DISABLE_TESSELLATION_STAGE

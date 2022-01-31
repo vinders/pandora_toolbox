@@ -497,10 +497,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///                        Set to NULL with viewportCount > 0 to use dynamic viewports (with Renderer.setViewport(s)).
             /// @param viewportCount   Number of viewports (array size of 'viewports', if not NULL).
             ///                        Even if 'viewports' is NULL, this value should be set if 'useDynamicCount' is false.
+            ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param scissorTests    Pointer to scissor-test rectangle (if 'scissorCount' is 1) or array of scissor-test rectangles.
             ///                        Set to NULL with scissorCount > 0 to use dynamic scissor-tests (with Renderer.setScissorRectangle(s)).
             /// @param scissorCount    Number of viewports/scissor-tests (and array size of 'viewports' and 'scissorTests' (if not NULL)).
             ///                        Even if 'scissorTests' is NULL, this value should be set if 'useDynamicCount' is false.
+            ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param useDynamicCount For cross-API projects: allow different viewport/scissor counts to be set during dynamic bindings:
             ///                        ignored with Direct3D11 (dynamic binding always allowed with different count).
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
@@ -508,24 +510,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///          To avoid unnecessary copies and processing, their lifetime is NOT guaranteed by the Builder instance!
             Builder& setViewports(const Viewport viewports[], size_t viewportCount,
                                   const ScissorRectangle scissorTests[], size_t scissorCount,
-                                  bool useDynamicCount = true) noexcept;
+                                  bool useDynamicCount = false) noexcept;
 
 
             // -- pipeline build --
-
-            /// @brief Provide render-targets to determine the number of targets, their respective format and multisampling (required)
-            /// @param renderTargets  Pointer to render-target (if 'targetCount' is 1) or array of render-targets. Can't be NULL!
-            /// @param targetCount    Array size of 'renderTargets'.
-            /// @param sampleCount    Sample count for multisampling (anti-aliasing). Use 0 or 1 to disable multisampling.
-            /// @warning The pipeline will need to be used with compatible render-targets only.
-            /// @throws - invalid_argument if no render target description is provided;
-            ///         - logic_error if some required states/stages haven't been set;
-            Builder& setRenderTargetFormat(void* renderTargets, size_t targetCount, uint32_t sampleCount = 1) {
-              //if (renderTargets == nullptr || renderTargetCount == 0)
-              //  throw std::invalid_argument("GraphicsPipeline: no render target provided");
-              //... use render targets + MSAA params -> generate MSAA targets
-              return *this;
-            }
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @throws logic_error if some required states/stages haven't been set;
