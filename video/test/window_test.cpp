@@ -27,6 +27,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # define _STR(str) str
 #endif
 
+#define __NO_CURSOR_TESTS 1
+
 using namespace pandora::video;
 
 struct WindowParams {
@@ -106,8 +108,7 @@ uint32_t WindowTest::_lastSizeY = 0;
     return false;
   }
   bool WindowTest::_onKeyboardEvent(Window*, KeyboardEvent, uint32_t, uint32_t) { return false; }
-  bool WindowTest::_onMouseEvent(Window*, MouseEvent, int32_t, int32_t, int32_t, uint8_t) { return false;
-  }
+  bool WindowTest::_onMouseEvent(Window*, MouseEvent, int32_t, int32_t, int32_t, uint8_t) { return false; }
 
 
   // -- window test procedure --
@@ -193,17 +194,19 @@ uint32_t WindowTest::_lastSizeY = 0;
     EXPECT_TRUE(window->contentScale() >= 1.0f);
     
     // verify cursor metrics
-    EXPECT_EQ(window->getCursorPosition(Window::CursorPositionType::relative).x + actualClientArea.x, window->getCursorPosition(Window::CursorPositionType::absolute).x);
-    EXPECT_EQ(window->getCursorPosition(Window::CursorPositionType::relative).y + actualClientArea.y, window->getCursorPosition(Window::CursorPositionType::absolute).y);
+#   if !defined(__NO_CURSOR_TESTS) || defined(_P_CI_DISABLE_SLOW_TESTS)
+      EXPECT_EQ(window->getCursorPosition(Window::CursorPositionType::relative).x + actualClientArea.x, window->getCursorPosition(Window::CursorPositionType::absolute).x);
+      EXPECT_EQ(window->getCursorPosition(Window::CursorPositionType::relative).y + actualClientArea.y, window->getCursorPosition(Window::CursorPositionType::absolute).y);
     
-    EXPECT_TRUE(window->setCursorPosition(10,12,Window::CursorPositionType::relative));
-    EXPECT_TRUE(window->pollCurrentWindowEvents());
-    EXPECT_EQ(10, window->getCursorPosition(Window::CursorPositionType::relative).x);
-    EXPECT_EQ(12, window->getCursorPosition(Window::CursorPositionType::relative).y);
-    EXPECT_TRUE(window->setCursorPosition(10,12,Window::CursorPositionType::absolute));
-    EXPECT_TRUE(window->pollCurrentWindowEvents());
-    EXPECT_EQ(10, window->getCursorPosition(Window::CursorPositionType::absolute).x);
-    EXPECT_EQ(12, window->getCursorPosition(Window::CursorPositionType::absolute).y);
+      EXPECT_TRUE(window->setCursorPosition(10,12,Window::CursorPositionType::relative));
+      EXPECT_TRUE(window->pollCurrentWindowEvents());
+      EXPECT_EQ(10, window->getCursorPosition(Window::CursorPositionType::relative).x);
+      EXPECT_EQ(12, window->getCursorPosition(Window::CursorPositionType::relative).y);
+      EXPECT_TRUE(window->setCursorPosition(10,12,Window::CursorPositionType::absolute));
+      EXPECT_TRUE(window->pollCurrentWindowEvents());
+      EXPECT_EQ(10, window->getCursorPosition(Window::CursorPositionType::absolute).x);
+      EXPECT_EQ(12, window->getCursorPosition(Window::CursorPositionType::absolute).y);
+#   endif
     
     // resources
 #   ifdef _WINDOWS
