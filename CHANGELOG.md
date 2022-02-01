@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.117.0.855
-2022-01-31 - cec142e1d046060f94c09fbcc71fff59a179ae43
+## 0.118.2.864
+2022-02-01 - ac78af2ba35f32a9be87b0d1311a339db50c83bd
 ### features
-vinders (16):
+vinders (17):
 * hardware: X11 libraries: add XCB for Vulkan support
 * video: window resource builder: add system string to UTF-8 converter
 * video: Vulkan library/extension loader
@@ -20,14 +20,17 @@ vinders (16):
 * memory: lightweight vector implementation (to avoid STL overhead)
 * video: Direct3D11 graphics pipeline: store shader stages + bind them together
 * video: Direct3D11 graphics pipeline stages/states: builder + params
+* video: Direct3D11 swap-chain/texture/depth-buffer: support multisampling
 * video: Vulkan graphics pipeline stages/states: builder + params
 ### fixes
-vinders (5):
+vinders (7):
 * video: Direct3D11 renderer: remove flush after changing/clearing render target (improve performance) + add public flush method
 * video: Direct3D11 renderer/swap-chain: improve color space & HDR support
 * video: Direct3D11 swap-chain: define present mode in constructor
-* video: Direct3D11 shader/layout: fix leak when moving instance + add copy constructor
 * video: Direct3D11 shared resource container + array: refactor
+* video: Direct3D11 shader/layout: fix leak when moving instance + add copy constructor
+* video: Direct3D11 texture-target: fix move operations
+* video: Direct3D11 swap-chain & texture-target: add buffer discard() + protect against double deletion
 
 ---
 
