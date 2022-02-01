@@ -10,7 +10,7 @@ Description : Example - rendering scene
 *******************************************************************************/
 #pragma once
 
-#include "display_pipeline.h"
+#include "renderer_context.h"
 #include "resources.h"
 #include "camera.h"
 
@@ -19,9 +19,9 @@ Description : Example - rendering scene
 class Scene final {
 public:
   // Create rendering scene components
-  Scene(DisplayPipeline& renderer, uint32_t width, uint32_t height, float sensitivity)
+  Scene(RendererContext& renderer, uint32_t width, uint32_t height, uint32_t aaSamples, float sensitivity)
     : _camera(width, height, sensitivity) {
-    init(renderer, width, height);
+    init(renderer, width, height, aaSamples);
   }
 
   Scene() = default;
@@ -29,10 +29,10 @@ public:
   Scene& operator=(const Scene&) = delete;
   ~Scene() noexcept { release(); }
 
-  // Re-initialize rendering scene components (must be called if the DisplayPipeline instance is re-created)
+  // Re-initialize rendering scene components (must be called if the RendererContext instance is re-created)
   // --> throws on scene creation failure
-  void init(DisplayPipeline& renderer, uint32_t width, uint32_t height);
-  // Destroy scene components (should be called before destroying associated DisplayPipeline)
+  void init(RendererContext& renderer, uint32_t width, uint32_t height, uint32_t aaSamples);
+  // Destroy scene components (should be called before destroying associated RendererContext)
   void release() noexcept;
 
   // Reconfigure camera
@@ -51,20 +51,25 @@ public:
   }
   // Report size change -> update UI
   void resizeScreen(uint32_t width, uint32_t height) noexcept;
+  // Report MSAA change -> update pipelines
+  void rebuildPipelines(uint32_t width, uint32_t height, uint32_t aaSamples);
 
   bool isUpdated() const noexcept { return _isUpdated; }
   void refreshScreen() noexcept { _isUpdated = true; }
 
-  // Compute and draw scene
-  // --> throws if device lost -> recreate DisplayPipeline + call init)
-  void render();
+  // Compute and draw scene 3D entities
+  // --> throws if device lost -> recreate RendererContext + call init)
+  void render3D();
+  // Compute and draw scene 2D entities
+  // --> throws if device lost -> recreate RendererContext + call init)
+  void render2D();
 
 
 private:
   void _setCameraViewProjection(bool isInit, video_api::Renderer& renderer, MatrixFloat4x4 modelWorldMatrix);
 
 private:
-  DisplayPipeline* _renderer = nullptr;
+  RendererContext* _renderer = nullptr;
   ResourceStorage _resources;
   Camera _camera;
   bool _isUpdated = false;

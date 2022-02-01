@@ -31,7 +31,7 @@ using namespace pandora::video;
 
 #define _CAM_SENSITIVITY 0.25f // --> this should be a user setting
 
-DisplayPipeline* g_renderer = nullptr;
+RendererContext* g_renderer = nullptr;
 Scene* g_currentScene = nullptr;
 uint32_t g_lastWidth = 0;
 uint32_t g_lastHeight = 0;
@@ -53,6 +53,20 @@ std::unique_ptr<Window> createWindow() { // throws on failure
          .setIcon(mainIcon)
          .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
          .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Simple Renderer"));
+}
+
+// ---
+
+// renderer re-creation after 'device lost' or state update error
+void reCreateRendererContext(Window* parentWindow, uint32_t width, uint32_t height) {
+  if (g_currentScene)
+    g_currentScene->release();
+  *g_renderer = RendererContext(pandora::hardware::DisplayMonitor{}, parentWindow->handle(), width, height,
+                                pandora::video::RefreshRate{}, g_renderer->isAntiAliasingEnabled(),
+                                g_renderer->isAnisotropicSampler(), g_renderer->hasVsync());
+  if (g_currentScene)
+    g_currentScene->init(*g_renderer, width, height, g_renderer->antiAliasingSamples());
+  // --> note: on failure, a message-box could be used to ask the user what to do (in fullscreen, don't forget to minimize first)
 }
 
 
@@ -95,12 +109,8 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
           if (g_currentScene)
             g_currentScene->resizeScreen(sizeX, sizeY);
         }
-        catch (...) { // device lost -> recreate renderer (on failure, exits)
-          if (g_currentScene) g_currentScene->release();
-          *g_renderer = DisplayPipeline(pandora::hardware::DisplayMonitor{}, sender->handle(), sizeX, sizeY,
-                                         pandora::video::RefreshRate{}, g_renderer->hasAnisotropy(), g_renderer->hasVsync());
-          if (g_currentScene) g_currentScene->init(*g_renderer, sizeX, sizeY);
-          // --> note: on failure, a message-box could be used to ask the user what to do (in fullscreen, don't forget to minimize first)
+        catch (...) { // device lost -> recreate renderer (on failure, exit)
+          reCreateRendererContext(sender, sizeX, sizeY);
         }
         // adapt camera size
         if (g_currentScene)
@@ -124,18 +134,25 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
       switch (keyCode) {
         case _P_VK_ESC: // ESC pressed -> close
           if (sender->displayMode() == WindowType::fullscreen)
-            sender->show(Window::VisibilityCommand::minimize); // minimize: do not show message-box in fullscreen!
+            sender->show(Window::VisibilityCommand::minimize); // minimize: do not show msg-box in fullscreen!
           Window::sendCloseEvent(sender->handle());
           break;
-        case _P_VK_F9:  // F9 -> toggle sampler (trilinear/anisotropic) -- default: trilinear
+        case _P_VK_F9:  // F9 -> toggle sampler (trilinear/anisotropic) -- default: anisotropic
           if (g_renderer) {
             g_renderer->toggleSampler();
             g_currentScene->refreshScreen();
           }
           break;
-        case _P_VK_F10: // F10 -> toggle vsync (on/off) -- default: off
+        case _P_VK_F8: // F8 -> toggle MSAA (on/off) -- default: off
           if (g_renderer)
-            g_renderer->toggleVsync(sender->handle());
+            try {
+              g_renderer->toggleAntiAliasing();
+              if (g_currentScene)
+                g_currentScene->rebuildPipelines(g_lastWidth, g_lastHeight, g_renderer->antiAliasingSamples());
+            }
+            catch (...) { // failure -> recreate renderer (on failure, exit)
+              reCreateRendererContext(sender, g_lastWidth, g_lastHeight);
+            }
           break;
       }
       break;
@@ -175,21 +192,23 @@ inline void mainAppLoop() {
     // create renderer
     g_lastWidth = window->getClientSize().width;
     g_lastHeight = window->getClientSize().height;
-    DisplayPipeline renderer(pandora::hardware::DisplayMonitor{}, window->handle(), g_lastWidth, g_lastHeight,
-                             pandora::video::RefreshRate{}, true, true);
+    RendererContext renderer(pandora::hardware::DisplayMonitor{}, window->handle(), g_lastWidth, g_lastHeight,
+                             pandora::video::RefreshRate{}, false, true, true);
     g_renderer = &renderer;
     // --> for this demo, the default/primary monitor is used, with a default rate (60Hz).
     //     In fullscreen, it's better to use the refresh rate associated with the desired DisplayMode.
 
     // create rendering scene
-    Scene defaultScene(renderer, g_lastWidth, g_lastHeight, _CAM_SENSITIVITY);
+    Scene defaultScene(renderer, g_lastWidth, g_lastHeight, renderer.antiAliasingSamples(), _CAM_SENSITIVITY);
     g_currentScene = &defaultScene;
     window->setCursorMode(Window::CursorMode::hiddenRaw);
 
     while (Window::pollEvents()) {
       if (g_isVisible && defaultScene.isUpdated()) {
-        renderer.enableRenderTarget(true);
-        defaultScene.render();  // draw in framebuffer
+        renderer.beginDrawing();
+        defaultScene.render3D(); // draw 3D entities in framebuffer
+        renderer.setDrawMode2D();
+        defaultScene.render2D(); // draw 2D entities in framebuffer
         renderer.swapBuffers(); // display frame
       }
       else { // window is hidden -> no rendering

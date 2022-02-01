@@ -16,20 +16,17 @@ Description : Example - rendering resources (materials, textures, meshes)
 #include <system/align.h>
 #include <system/preprocessor_tools.h>
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-# include <video/d3d11/renderer.h>
-# include <video/d3d11/shader.h>
+# include <video/d3d11/graphics_pipeline.h>
 # include <video/d3d11/texture.h>
 # include <video/d3d11/static_buffer.h>
   namespace video_api = pandora::video::d3d11;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
-# include <video/vulkan/renderer.h>
-# include <video/vulkan/shader.h>
+# include <video/vulkan/graphics_pipeline.h>
 # include <video/vulkan/texture.h>
 # include <video/vulkan/static_buffer.h>
   namespace video_api = pandora::video::vulkan;
 #else
-# include <video/openGL4/renderer.h>
-# include <video/openGL4/shader.h>
+# include <video/openGL4/graphics_pipeline.h>
 # include <video/openGL4/texture.h>
 # include <video/openGL4/static_buffer.h>
   namespace video_api = pandora::video::openGL4;
@@ -39,12 +36,21 @@ Description : Example - rendering resources (materials, textures, meshes)
 
 // -- identifiers --
 
-enum class ShaderProgramId : int {
-  tx2d,
+enum class PipelineStateId : int32_t {
+  entities2D = 0,
+  entities3D
+};
+enum class ShaderProgramId : int32_t {
+  tx2d = 0,
   shaded,
   textured
 };
 _P_SERIALIZABLE_ENUM(ShaderProgramId, tx2d, shaded, textured);
+
+using GraphicsPipelineId = int32_t;
+constexpr inline GraphicsPipelineId toGraphicsPipelineId(PipelineStateId states, ShaderProgramId shaders) noexcept {
+  return (((int32_t)states << 16) | (int32_t)shaders); // up to 65536 shader/states IDs
+}
 
 enum class MaterialId : int {
   none = 0,
@@ -73,7 +79,6 @@ struct Material final {
   float specular[3]; // specular color
   float shininess;   // specular shininess
 });
-
 // material texture maps
 struct TextureMap final {
   video_api::Texture2D diffuseMap;  // base texture
@@ -86,6 +91,11 @@ struct ShaderProgram final {
   video_api::InputLayout layout;
   video_api::Shader vertex;
   video_api::Shader fragment;
+  uint32_t strideBytes = 0;
+};
+// graphics pipeline (shaders + states)
+struct PipelineData final {
+  video_api::GraphicsPipeline pipeline;
   uint32_t strideBytes = 0;
 };
 
@@ -115,13 +125,13 @@ struct Mesh final {
   uint32_t indexCount = 0;
   MaterialId material = MaterialId::none;
   TextureMapId texture = TextureMapId::none;
-  ShaderProgramId shaders = ShaderProgramId::textured;
+  GraphicsPipelineId pipeline = toGraphicsPipelineId(PipelineStateId::entities3D, ShaderProgramId::textured);
 
-  Mesh() = default;
   Mesh(video_api::StaticBuffer&& vertices, video_api::StaticBuffer&& indices, uint32_t indexCount,
-    MaterialId material, TextureMapId texture, ShaderProgramId shaders)
+       MaterialId materialId, TextureMapId textureId, GraphicsPipelineId pipelineId)
     : vertices(std::move(vertices)), indices(std::move(indices)), indexCount(indexCount),
-      material(material), texture(texture), shaders(shaders) {}
+      material(materialId), texture(textureId), pipeline(pipelineId) {}
+  Mesh() = default;
   Mesh(Mesh&&) noexcept = default;
   Mesh& operator=(Mesh&&) noexcept = default;
   ~Mesh() noexcept {
@@ -136,7 +146,6 @@ struct Entity final {
   float position[3];
   float yaw;
 };
-
 // 2D/UI sprite entity
 struct SpriteEntity final {
   std::shared_ptr<video_api::StaticBuffer> vertices;
@@ -146,28 +155,26 @@ struct SpriteEntity final {
 // ---
 
 // Display resource storage
-// --> Shader programs, materials, texture maps to bind to renderer + existing model entities
+// --> Graphics pipelines, materials, texture maps to bind to renderer + existing model entities
 struct ResourceStorage final {
   std::map<MaterialId, Material> materials;
   std::map<TextureMapId, TextureMap> textureMaps;
   std::map<SpriteId, video_api::Texture2D> sprites;
   std::map<ShaderProgramId, ShaderProgram> shaders;
-  std::vector<Entity> entities;
-  std::vector<SpriteEntity> spriteEntities;
-  ShaderProgram spriteShader;
+  std::map<GraphicsPipelineId, PipelineData> pipelines;
+
+  std::vector<Entity> entities3D;       // 3D objects
+  std::vector<SpriteEntity> entities2D; // UI & sprites
   video_api::StaticBuffer cameraViewProjection;
   video_api::StaticBuffer activeMaterial;
   video_api::StaticBuffer activeLights;
 
   void clear() {
-    entities.clear();
-    sprites.clear();
+    entities3D.clear();
+    entities2D.clear();
     materials.clear();
     textureMaps.clear();
-    shaders.clear();
-    spriteShader.vertex.release();
-    spriteShader.fragment.release();
-    spriteShader.layout.release();
+    pipelines.clear();
     cameraViewProjection.release();
     activeMaterial.release();
     activeLights.release();
@@ -178,7 +185,11 @@ struct ResourceStorage final {
 
 // -- resource loaders --
 
-void loadShader(video_api::Renderer& renderer, ShaderProgramId id, ResourceStorage& out);
+void loadShaders(video_api::Renderer& renderer, ShaderProgramId programId, ResourceStorage& out);
+void loadPipeline(std::shared_ptr<video_api::Renderer>& renderer,
+                  PipelineStateId stateId, ShaderProgramId programId,
+                  uint32_t aaSamples, ResourceStorage& out);
 void loadMaterial(video_api::Renderer& renderer, MaterialId id, ResourceStorage& out);
 void loadTexture(video_api::Renderer& renderer, TextureMapId id, ResourceStorage& out);
-void loadSprite(video_api::Renderer& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out);
+void loadSprite(video_api::Renderer& renderer, SpriteId id,
+                uint32_t width, uint32_t height, ResourceStorage& out);

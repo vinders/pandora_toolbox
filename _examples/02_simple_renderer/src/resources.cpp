@@ -6,8 +6,9 @@ Pandora Toolbox examples has waived all copyright and related or neighboring rig
 to Pandora Toolbox examples.
 CC0 legalcode: see <http://creativecommons.org/publicdomain/zero/1.0/>.
 --------------------------------------------------------------------------------
-Description : Example - rendering scene
+Description : Example - rendering resources (materials, textures, meshes)
 *******************************************************************************/
+#include <cassert>
 #include <string>
 #include <stdexcept>
 #include <io/file_system_io.h>
@@ -37,10 +38,36 @@ static const wchar_t* __getWideResourceDir() noexcept {
 
 // -- resource file loaders --
 
-// --> shader input layouts are very specific to each API -> separate implementations
-// D3D11 note: using D3DReflect to guess layout is much better than hardcoding it. It wasn't used here for the sake of simplicity.
+// --> graphics pipeline states generator
+static void __loadPipelineStates(PipelineStateId id, GraphicsPipeline::Builder& inOutBuilder, uint32_t aaSamples) {
+  switch (id) {
+    case PipelineStateId::entities3D: {
+      inOutBuilder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, true, false, aaSamples));
+      inOutBuilder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::keep,
+                                                           StencilOp::decrementWrap, StencilOp::keep, 1));
+      inOutBuilder.setBlendState(BlendParams(BlendFactor::sourceAlpha, BlendFactor::sourceInvAlpha, BlendOp::add,
+                                              BlendFactor::one, BlendFactor::zero, BlendOp::add));
+      inOutBuilder.setViewports(nullptr, 1, nullptr, 1, false);
+      break;
+    }
+    case PipelineStateId::entities2D:
+    default: {
+      inOutBuilder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false));
+      inOutBuilder.setDepthStencilState(DepthStencilParams(StencilCompare::less, StencilOp::incrementWrap, StencilOp::keep,
+                                                           StencilOp::decrementWrap, StencilOp::keep, 1));
+      inOutBuilder.setBlendState(BlendParams(BlendFactor::sourceAlpha, BlendFactor::sourceInvAlpha, BlendOp::add,
+                                              BlendFactor::one, BlendFactor::zero, BlendOp::add));
+      inOutBuilder.setViewports(nullptr, 1, nullptr, 1, false);
+      break;
+    }
+  }
+}
+
+// --> shader input layouts: very specific to each API -> separate implementations
+// D3D11 note: using D3DReflect to guess layout is much better than hardcoding it.
+//             It wasn't used here for the sake of simplicity.
 # if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  static D3D11_INPUT_ELEMENT_DESC* __loadInputLayout(ShaderProgramId id, size_t& outLength, uint32_t& outStrideBytes) {
+  static const D3D11_INPUT_ELEMENT_DESC* __loadInputLayout(ShaderProgramId id, size_t& outLength, uint32_t& outStrideBytes) {
     switch (id) {
       case ShaderProgramId::tx2d: {
         static D3D11_INPUT_ELEMENT_DESC layout2D[] = {
@@ -85,25 +112,51 @@ static const wchar_t* __getWideResourceDir() noexcept {
 # endif
 
 // --> shader compilation
-void loadShader(Renderer& renderer, ShaderProgramId id, ResourceStorage& out) {
+void loadShaders(Renderer& renderer, ShaderProgramId programId, ResourceStorage& out) {
 # if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-    std::wstring vsPath = std::wstring(__getWideResourceDir()) + L"shaders/" + toWideString(id);
+    std::wstring vsPath = std::wstring(__getWideResourceDir()) + L"shaders/" + toWideString(programId);
     std::wstring fsPath = vsPath + L".ps.hlsl";
     vsPath += L".vs.hlsl";
 # else
-    //vulkan/openGL: not yet implemented
-    //...
+    std::wstring vsPath = std::wstring(__getResourceDir()) + L"shaders/" + toString(programId);
+    std::wstring fsPath = vsPath + L".frag";
+    vsPath += L".vert";
 # endif
-  
-  size_t length = 0;
-  uint32_t strideBytes = 0;
-  auto* layout = __loadInputLayout(id, length, strideBytes);
+
   auto vsBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, vsPath.c_str(), "main", true);
   auto fsBuilder = Shader::Builder::compileFromFile(ShaderType::fragment, fsPath.c_str(), "main", true);
-  out.shaders[id].layout = vsBuilder.createInputLayout(renderer.resourceManager(), layout, length);
-  out.shaders[id].vertex = vsBuilder.createShader(renderer.resourceManager());
-  out.shaders[id].fragment = fsBuilder.createShader(renderer.resourceManager());
-  out.shaders[id].strideBytes = strideBytes;
+
+  auto& outEntry = out.shaders[programId];
+  size_t layoutSize = 0;
+  auto layoutDesc = __loadInputLayout(programId, layoutSize, outEntry.strideBytes);
+  outEntry.layout = vsBuilder.createInputLayout(renderer.resourceManager(), layoutDesc, layoutSize);
+  outEntry.vertex = vsBuilder.createShader(renderer.resourceManager());
+  outEntry.fragment = fsBuilder.createShader(renderer.resourceManager());
+}
+
+// ---
+
+// --> graphics pipeline build
+void loadPipeline(std::shared_ptr<Renderer>& renderer, PipelineStateId stateId,
+                  ShaderProgramId programId, uint32_t aaSamples, ResourceStorage& out) {
+  GraphicsPipeline::Builder builder(renderer);
+  __loadPipelineStates(stateId, builder, aaSamples);
+
+  auto shaderProgram = out.shaders.find(programId);
+  if (shaderProgram == out.shaders.end()) {
+    loadShaders(*renderer, programId, out);
+    shaderProgram = out.shaders.find(programId);
+    assert(shaderProgram != out.shaders.end());
+  }
+
+  builder.setVertexTopology(VertexTopology::triangles);
+  builder.setInputLayout(shaderProgram->second.layout);
+  builder.attachShaderStage(shaderProgram->second.vertex);
+  builder.attachShaderStage(shaderProgram->second.fragment);
+
+  GraphicsPipelineId pipelineId = toGraphicsPipelineId(stateId, programId);
+  out.pipelines[pipelineId].pipeline = builder.build();
+  out.pipelines[pipelineId].strideBytes = shaderProgram->second.strideBytes;
 }
 
 // ---
@@ -175,7 +228,8 @@ void loadSprite(Renderer& renderer, SpriteId id, uint32_t width, uint32_t height
   ID3D11Resource* image = nullptr;
   ID3D11ShaderResourceView* imageView = nullptr;
   if (FAILED(DirectX::CreateWICTextureFromFileEx(renderer.device(), imagePath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
-                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0, DirectX::WIC_LOADER_FLAGS::WIC_LOADER_FORCE_RGBA32,
+                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0,
+                                                 DirectX::WIC_LOADER_FLAGS::WIC_LOADER_FORCE_RGBA32,
                                                  &image, &imageView)))
     throw std::runtime_error(std::string("Could not load sprite image for ID ") + toString(id));
 # else

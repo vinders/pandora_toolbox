@@ -14,7 +14,20 @@ Description : Example - rendering scene
 
 using namespace video_api;
 
-// directional vectors (to simply vertex normal/tangent/bitangent declaration)
+// resource identifiers
+#define __UI_STATE_ID     PipelineStateId::entities2D
+#define __UI_SHADERS_ID   ShaderProgramId::tx2d
+#define __UI_PIPELINE_ID  toGraphicsPipelineId(__UI_STATE_ID, __UI_SHADERS_ID)
+
+#define __CRATE_STATE_ID     PipelineStateId::entities3D
+#define __CRATE_SHADERS_ID   ShaderProgramId::textured
+#define __CRATE_PIPELINE_ID  toGraphicsPipelineId(__CRATE_STATE_ID, __CRATE_SHADERS_ID)
+
+#define __FLOOR_STATE_ID     PipelineStateId::entities3D
+#define __FLOOR_SHADERS_ID   ShaderProgramId::shaded
+#define __FLOOR_PIPELINE_ID  toGraphicsPipelineId(__FLOOR_STATE_ID, __FLOOR_SHADERS_ID)
+
+// directional vectors (to simplify vertex normal/tangent/bitangent declaration)
 #define LEFT   -1.f,0.f,0.f
 #define UP     0.f,1.f,0.f
 #define BACK   0.f,0.f,-1.f
@@ -25,38 +38,41 @@ using namespace video_api;
 
 // -- geometry generators -- ---------------------------------------------------
 
-static void __generateUi(Renderer& renderer, uint32_t clientWidth, uint32_t clientHeight, ResourceStorage& outStorage) {
-  if (outStorage.shaders.find(ShaderProgramId::tx2d) == outStorage.shaders.end())
-    loadShader(renderer, ShaderProgramId::tx2d, outStorage);
+static void __generateUi(std::shared_ptr<Renderer>& renderer, uint32_t clientWidth,
+                         uint32_t clientHeight, ResourceStorage& outStorage) {
+  if (outStorage.pipelines.find(__UI_PIPELINE_ID) == outStorage.pipelines.end())
+    loadPipeline(renderer, __UI_STATE_ID, __UI_SHADERS_ID, 1, outStorage);
   if (outStorage.sprites.find(SpriteId::title) == outStorage.sprites.end())
-    loadSprite(renderer, SpriteId::title, 160, 32, outStorage);
+    loadSprite(*renderer, SpriteId::title, 160, 32, outStorage);
   if (outStorage.sprites.find(SpriteId::commands) == outStorage.sprites.end())
-    loadSprite(renderer, SpriteId::commands, 128, 48, outStorage);
+    loadSprite(*renderer, SpriteId::commands, 128, 48, outStorage);
 
   float texelWidth  = 2.f/(float)clientWidth;
   float texelHeight = 2.f/(float)clientHeight;
 
   const float titleArea[] = { -0.9f, -0.9f + 32.f*texelHeight, -0.9f + 160.f*texelWidth, -0.9f };
-  const float titleVertices[] = { titleArea[0],titleArea[1],0.f,0.f, titleArea[2],titleArea[1],1.f,0.f, titleArea[0],titleArea[3],0.f,1.f,
-                                  titleArea[2],titleArea[1],1.f,0.f, titleArea[2],titleArea[3],1.f,1.f, titleArea[0],titleArea[3],0.f,1.f };
-  outStorage.spriteEntities.push_back(SpriteEntity{
-    std::make_shared<StaticBuffer>(renderer, BaseBufferType::vertex, sizeof(titleVertices), &titleVertices[0], true),
+  const float titleVertices[] = { titleArea[0],titleArea[1],0.f,0.f, titleArea[2],titleArea[1],1.f,0.f,
+                                  titleArea[0],titleArea[3],0.f,1.f, titleArea[2],titleArea[1],1.f,0.f,
+                                  titleArea[2],titleArea[3],1.f,1.f, titleArea[0],titleArea[3],0.f,1.f };
+  outStorage.entities2D.push_back(SpriteEntity{
+    std::make_shared<StaticBuffer>(*renderer, BaseBufferType::vertex, sizeof(titleVertices), &titleVertices[0], true),
     SpriteId::title
   });
   const float commandsArea[] = { 0.9f - 128.f*texelWidth, -0.9f + 48.f*texelHeight, 0.9f, -0.9f };
-  const float commandsVertices[] = { commandsArea[0],commandsArea[1],0.f,0.f, commandsArea[2],commandsArea[1],1.f,0.f, commandsArea[0],commandsArea[3],0.f,1.f,
-                                     commandsArea[2],commandsArea[1],1.f,0.f, commandsArea[2],commandsArea[3],1.f,1.f, commandsArea[0],commandsArea[3],0.f,1.f };
-  outStorage.spriteEntities.push_back(SpriteEntity{
-    std::make_shared<StaticBuffer>(renderer, BaseBufferType::vertex, sizeof(commandsVertices), &commandsVertices[0], true),
+  const float commandsVertices[] = { commandsArea[0],commandsArea[1],0.f,0.f, commandsArea[2],commandsArea[1],1.f,0.f,
+                                     commandsArea[0],commandsArea[3],0.f,1.f, commandsArea[2],commandsArea[1],1.f,0.f,
+                                     commandsArea[2],commandsArea[3],1.f,1.f, commandsArea[0],commandsArea[3],0.f,1.f };
+  outStorage.entities2D.push_back(SpriteEntity{
+    std::make_shared<StaticBuffer>(*renderer, BaseBufferType::vertex, sizeof(commandsVertices), &commandsVertices[0], true),
     SpriteId::commands
   });
 }
 
-static void __generateCrate(Renderer& renderer, ResourceStorage& outStorage) {
-  if (outStorage.shaders.find(ShaderProgramId::textured) == outStorage.shaders.end())
-    loadShader(renderer, ShaderProgramId::textured, outStorage);
+static void __generateCrate(std::shared_ptr<Renderer>& renderer, uint32_t aaSamples, ResourceStorage& outStorage) {
+  if (outStorage.pipelines.find(__CRATE_PIPELINE_ID) == outStorage.pipelines.end())
+    loadPipeline(renderer, __CRATE_STATE_ID, __CRATE_SHADERS_ID, aaSamples, outStorage);
   if (outStorage.textureMaps.find(TextureMapId::woodCrate) == outStorage.textureMaps.end())
-    loadTexture(renderer, TextureMapId::woodCrate, outStorage);
+    loadTexture(*renderer, TextureMapId::woodCrate, outStorage);
 
   const float vertices[] = {
     -0.25f,0.25f,0.25f,   LEFT,BACK,DOWN,  0.f,0.f,  -0.25f,0.25f,-0.25f,  LEFT,BACK,DOWN, 1.f,0.f, // left
@@ -72,23 +88,23 @@ static void __generateCrate(Renderer& renderer, ResourceStorage& outStorage) {
   };
   const uint32_t indices[] = { 0,1,2, 1,3,2,  4,5,6, 5,7,6,  8,9,10, 9,11,10,  12,13,14, 13,15,14,  16,17,18, 17,19,18 };
 
-  outStorage.entities.push_back(Entity{
+  outStorage.entities3D.push_back(Entity{
     {std::make_shared<Mesh>(
-      StaticBuffer(renderer, BaseBufferType::vertex, sizeof(vertices), vertices, true),
-      StaticBuffer(renderer, BaseBufferType::vertexIndex, sizeof(indices), indices, true),
+      StaticBuffer(*renderer, BaseBufferType::vertex, sizeof(vertices), vertices, true),
+      StaticBuffer(*renderer, BaseBufferType::vertexIndex, sizeof(indices), indices, true),
       static_cast<uint32_t>(sizeof(indices)/sizeof(*indices)),
-      MaterialId::none, TextureMapId::woodCrate, ShaderProgramId::textured
+      MaterialId::none, TextureMapId::woodCrate, __CRATE_PIPELINE_ID
     )},
     {0.f,0.25f,0.f}, // position
-    30.f              // rotation
+    30.f             // rotation
   });
 }
 
-static void __generateFloor(Renderer& renderer, ResourceStorage& outStorage) {
-  if (outStorage.shaders.find(ShaderProgramId::shaded) == outStorage.shaders.end())
-    loadShader(renderer, ShaderProgramId::shaded, outStorage);
+static void __generateFloor(std::shared_ptr<Renderer>& renderer, uint32_t aaSamples, ResourceStorage& outStorage) {
+  if (outStorage.pipelines.find(__FLOOR_PIPELINE_ID) == outStorage.pipelines.end())
+    loadPipeline(renderer, __FLOOR_STATE_ID, __FLOOR_SHADERS_ID, aaSamples, outStorage);
   if (outStorage.materials.find(MaterialId::floor) == outStorage.materials.end())
-    loadMaterial(renderer, MaterialId::floor, outStorage);
+    loadMaterial(*renderer, MaterialId::floor, outStorage);
 
   std::vector<float> vertices;
   vertices.reserve(45*6);
@@ -109,12 +125,12 @@ static void __generateFloor(Renderer& renderer, ResourceStorage& outStorage) {
     66,67,68, 68,69,70, 70,71,72, 72,73,74, 74,75,76, 76,77,78, 78,79,80, 80,81,82, 82,83,84, 84,85,86, 86,87,88, 88,89,0
   };
 
-  outStorage.entities.push_back(Entity{
+  outStorage.entities3D.push_back(Entity{
     {std::make_shared<Mesh>(
-      StaticBuffer(renderer, BaseBufferType::vertex, vertices.size() * sizeof(float), &vertices[0], true),
-      StaticBuffer(renderer, BaseBufferType::vertexIndex, sizeof(indices), indices, true),
+      StaticBuffer(*renderer, BaseBufferType::vertex, vertices.size() * sizeof(float), &vertices[0], true),
+      StaticBuffer(*renderer, BaseBufferType::vertexIndex, sizeof(indices), indices, true),
       static_cast<uint32_t>(sizeof(indices)/sizeof(*indices)),
-      MaterialId::floor, TextureMapId::none, ShaderProgramId::shaded
+      MaterialId::floor, TextureMapId::none, __FLOOR_PIPELINE_ID
     )},
     {0.f,0.f,0.f}, // position
     0.f            // rotation
@@ -124,17 +140,18 @@ static void __generateFloor(Renderer& renderer, ResourceStorage& outStorage) {
 
 // -- rendering scene components -- --------------------------------------------
 
-void Scene::init(DisplayPipeline& renderer, uint32_t width, uint32_t height) {
+void Scene::init(RendererContext& renderer, uint32_t width, uint32_t height, uint32_t aaSamples) {
   release();
+  auto sharedRenderer = renderer.renderer();
   _renderer = &renderer;
   _isUpdated = true;
 
-  __generateUi(renderer.renderer(), width, height, _resources);
-  __generateFloor(renderer.renderer(), _resources);
-  __generateCrate(renderer.renderer(), _resources);
+  __generateUi(sharedRenderer, width, height, _resources);
+  __generateFloor(sharedRenderer, aaSamples, _resources);
+  __generateCrate(sharedRenderer, aaSamples, _resources);
 
-  _setCameraViewProjection(true, renderer.renderer(), MatrixFloat4x4{});
-  _resources.activeMaterial = StaticBuffer(renderer.renderer(), BaseBufferType::uniform, sizeof(Material));
+  _setCameraViewProjection(true, *sharedRenderer, MatrixFloat4x4{});
+  _resources.activeMaterial = StaticBuffer(*sharedRenderer, BaseBufferType::uniform, sizeof(Material));
 
   struct {
     PointLight pointLight = {
@@ -150,7 +167,7 @@ void Scene::init(DisplayPipeline& renderer, uint32_t width, uint32_t height) {
       {0.2f, -0.6f, 0.6f, 1.0f}
     };
   } lights;
-  _resources.activeLights = StaticBuffer(renderer.renderer(), BaseBufferType::uniform, sizeof(lights), &lights, true);
+  _resources.activeLights = StaticBuffer(*sharedRenderer, BaseBufferType::uniform, sizeof(lights), &lights, true);
 }
 
 void Scene::release() noexcept {
@@ -160,10 +177,26 @@ void Scene::release() noexcept {
   }
 }
 
+// ---
+
 void Scene::resizeScreen(uint32_t width, uint32_t height) noexcept {
   if (_renderer != nullptr) {
-    _resources.spriteEntities.clear();
-    __generateUi(_renderer->renderer(), width, height, _resources);
+    auto sharedRenderer = _renderer->renderer();
+    _resources.entities2D.clear();
+    __generateUi(sharedRenderer, width, height, _resources);
+    _isUpdated = true;
+  }
+}
+
+void Scene::rebuildPipelines(uint32_t width, uint32_t height, uint32_t aaSamples) {
+  if (_renderer != nullptr) {
+    auto sharedRenderer = _renderer->renderer();
+    _resources.entities3D.clear();
+    _resources.entities2D.clear();
+    _resources.pipelines.clear();
+    __generateUi(sharedRenderer, width, height, _resources);
+    __generateFloor(sharedRenderer, aaSamples, _resources);
+    __generateCrate(sharedRenderer, aaSamples, _resources);
     _isUpdated = true;
   }
 }
@@ -183,49 +216,44 @@ void Scene::_setCameraViewProjection(bool isInit, Renderer& renderer, MatrixFloa
   cameraBuffer.projection = _camera.projectionMatrix();
   memcpy(cameraBuffer.position, _camera.position(), 4*sizeof(float));
   if (isInit)
-    _resources.cameraViewProjection = StaticBuffer(renderer, BaseBufferType::uniform, sizeof(cameraBuffer), &cameraBuffer, false);
+    _resources.cameraViewProjection = StaticBuffer(renderer, BaseBufferType::uniform,
+                                                   sizeof(cameraBuffer), &cameraBuffer, false);
   else
     _resources.cameraViewProjection.write(renderer, &cameraBuffer);
 }
 
-// --> draw scene
+// --> draw scene 3D entities
 // --> optimization: order meshes by shader, then by texture, then by material (to limit resource changes).
 // --> optimization: order polygons of a mesh from closest to farthest.
-void Scene::render() {
+void Scene::render3D() {
   if (_renderer != nullptr) {
     _isUpdated = false;
-    auto& renderer = _renderer->renderer();
+    auto renderer = _renderer->renderer();
 
-    ShaderProgramId curShader = (ShaderProgramId)-1;
     MaterialId curMaterial = (MaterialId)-1;
     TextureMapId curTexture = (TextureMapId)-1;
-    renderer.setVertexTopology(VertexTopology::triangles);
 
     // meshes
-    for (auto& model : _resources.entities) {
-      _setCameraViewProjection(false, renderer, CameraUtils::computeWorldMatrix(model.position, model.yaw));
+    for (auto& model : _resources.entities3D) {
+      _setCameraViewProjection(false, *renderer, CameraUtils::computeWorldMatrix(model.position, model.yaw));
 
       for (auto& mesh : model.meshes) {
-        auto& shaders = _resources.shaders[mesh->shaders];
+        auto& pipeline = _resources.pipelines[mesh->pipeline];
 
-        // bind mesh shader
-        if (mesh->shaders != curShader) {
-          curShader = mesh->shaders;
-          renderer.bindInputLayout(shaders.layout.handle());
-          renderer.bindVertexShader(shaders.vertex.handle());
-          renderer.bindFragmentShader(shaders.fragment.handle());
-        }
+        // bind mesh pipeline
+        renderer->bindGraphicsPipeline(pipeline.pipeline.handle()); // no need to check differences (done by renderer)
+
         // update mesh material
         if (mesh->material != curMaterial) {
           curMaterial = mesh->material;
           if (curMaterial != MaterialId::none) {
             auto& material = _resources.materials[mesh->material];
-            _resources.activeMaterial.write(renderer, &material);
-            renderer.bindFragmentUniforms(1, _resources.activeMaterial.handleArray(), 1);
+            _resources.activeMaterial.write(*renderer, &material);
+            renderer->bindFragmentUniforms(1, _resources.activeMaterial.handleArray(), 1);
           }
           else {
             BufferHandle empty = nullptr;
-            renderer.bindFragmentUniforms(1, &empty, 1);
+            renderer->bindFragmentUniforms(1, &empty, 1);
           }
         }
         // bind mesh textures
@@ -236,43 +264,48 @@ void Scene::render() {
             TextureView textureHandles[3] = { texture.diffuseMap.resourceView(),
                                               texture.normalMap.resourceView(),
                                               texture.specularMap.resourceView() };
-            renderer.bindFragmentTextures(0, textureHandles, 3);
+            renderer->bindFragmentTextures(0, textureHandles, 3);
           }
           else
-            renderer.clearFragmentTextures();
+            renderer->clearFragmentTextures();
         }
-        renderer.bindVertexUniforms(0, _resources.cameraViewProjection.handleArray(), 1);
-        renderer.bindFragmentUniforms(0, _resources.cameraViewProjection.handleArray(), 1);
-        renderer.bindFragmentUniforms(2, _resources.activeLights.handleArray(), 1);
+        renderer->bindVertexUniforms(0, _resources.cameraViewProjection.handleArray(), 1);
+        renderer->bindFragmentUniforms(0, _resources.cameraViewProjection.handleArray(), 1);
+        renderer->bindFragmentUniforms(2, _resources.activeLights.handleArray(), 1);
 
         // draw mesh
-        renderer.bindVertexArrayBuffer(0, mesh->vertices.handle(), shaders.strideBytes);
-        renderer.bindVertexIndexBuffer(mesh->indices.handle(), VertexIndexFormat::r32_ui);
-        renderer.drawIndexed(mesh->indexCount);
+        renderer->bindVertexArrayBuffer(0, mesh->vertices.handle(), pipeline.strideBytes);
+        renderer->bindVertexIndexBuffer(mesh->indices.handle(), VertexIndexFormat::r32_ui);
+        renderer->drawIndexed(mesh->indexCount);
       }
     }
+  }
+}
+
+// --> draw scene 2D & UI entities
+void Scene::render2D() {
+  if (_renderer != nullptr) {
+    auto renderer = _renderer->renderer();
 
     // UI/sprites
-    renderer.clearVertexUniforms();
-    renderer.clearFragmentUniforms();
-    renderer.clearFragmentTextures();
-    renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui);
+    renderer->clearVertexUniforms();
+    renderer->clearFragmentUniforms();
+    renderer->clearFragmentTextures();
+    renderer->bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui);
 
-    auto& uiShaders = _resources.shaders[ShaderProgramId::tx2d];
-    renderer.bindInputLayout(uiShaders.layout.handle());
-    renderer.bindVertexShader(uiShaders.vertex.handle());
-    renderer.bindFragmentShader(uiShaders.fragment.handle());
+    auto& uiPipeline = _resources.pipelines[__UI_PIPELINE_ID];
+    renderer->bindGraphicsPipeline(uiPipeline.pipeline.handle());
 
     SpriteId curSprite = (SpriteId)-1;
-    for (auto& sprite : _resources.spriteEntities) {
+    for (auto& sprite : _resources.entities2D) {
       if (sprite.image != curSprite) {
         curSprite = sprite.image;
         TextureView spriteView = _resources.sprites[curSprite].resourceView();
-        renderer.bindFragmentTextures(0, &spriteView, 1);
+        renderer->bindFragmentTextures(0, &spriteView, 1);
       }
 
-      renderer.bindVertexArrayBuffer(0, sprite.vertices->handle(), uiShaders.strideBytes);
-      renderer.draw(6);
+      renderer->bindVertexArrayBuffer(0, sprite.vertices->handle(), uiPipeline.strideBytes);
+      renderer->draw(6);
     }
   }
 }

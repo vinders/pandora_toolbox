@@ -6,7 +6,7 @@ Pandora Toolbox examples has waived all copyright and related or neighboring rig
 to Pandora Toolbox examples.
 CC0 legalcode: see <http://creativecommons.org/publicdomain/zero/1.0/>.
 --------------------------------------------------------------------------------
-Description : Example - renderer pipeline
+Description : Example - renderer context
 *******************************************************************************/
 #pragma once
 
@@ -31,54 +31,53 @@ Description : Example - renderer pipeline
 #endif
 
 
-// Rendering pipeline
-// --> device context, framebuffers, rendering states/samplers, viewport, drawing calls
-class DisplayPipeline final {
+// Rendering context
+// --> device context, framebuffers, rendering states/samplers, viewport
+class RendererContext final {
 public:
-  // Initialize pipeline (throws on failure)
-  DisplayPipeline(const pandora::hardware::DisplayMonitor& monitor, pandora::video::WindowHandle window,
-                  uint32_t clientWidth, uint32_t clientHeight, pandora::video::RefreshRate&& rate,
-                  bool useAnisotropy, bool useVsync);
-  DisplayPipeline() = default;
-  ~DisplayPipeline() noexcept { release(); }
+  // Initialize renderer (throws on failure)
+  RendererContext(const pandora::hardware::DisplayMonitor& monitor, pandora::video::WindowHandle window,
+                  uint32_t width, uint32_t height, pandora::video::RefreshRate&& rate,
+                  bool useAntialiasing, bool useAnisotropy, bool useVsync);
+  RendererContext() = default;
+  ~RendererContext() noexcept { release(); }
 
   // Close pipeline
   void release() noexcept;
 
-  DisplayPipeline(DisplayPipeline&&) noexcept = default;
-  DisplayPipeline& operator=(DisplayPipeline&&) noexcept = default;
+  RendererContext(RendererContext&&) noexcept = default;
+  RendererContext& operator=(RendererContext&&) noexcept = default;
 
 
   // -- settings --
 
-  // Resize pipeline (throws on device error -> recreate pipeline)
-  void resize(uint32_t clientWidth, uint32_t clientHeight);
+  // Resize pipeline (throws on device error -> recreate pipeline) -- warning: do NOT while a frame is still drawing!
+  void resize(uint32_t width, uint32_t height);
 
-  // Toggle vertical sync
-  void toggleVsync(pandora::video::WindowHandle window);
-  bool hasVsync() const noexcept { return _useVsync; }
+  // Toggle anti-aliasing (MSAA / none) -- warning: do NOT while a frame is still drawing!
+  void toggleAntiAliasing() noexcept;
+  bool isAntiAliasingEnabled() const noexcept { return _useAntialiasing; }
+  bool antiAliasingSamples() const noexcept { return _aaSamples; }
 
   // Toggle texture sampler (anisotropic / trilinear)
   void toggleSampler() noexcept {
     _useAnisotropy ^= true;
-    _renderer->setFragmentFilterStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+    _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
   }
-  bool hasAnisotropy() const noexcept { return _useAnisotropy; }
+  bool isAnisotropicSampler() const noexcept { return _useAnisotropy; }
 
-  // Set depth/stencil test (depth/stencil: true / depth only: false)
-  void setDepthStencilTest(bool enableStencilTest) noexcept {
-    _renderer->setDepthStencilState(_depthTests.at(enableStencilTest ? 1 : 0));
-  }
+  bool hasVsync() const noexcept { return _useVsync; }
 
 
   // -- operations --
 
-  // Get renderer context to bind resources (shaders, layout, textures, uniform/constant buffers...) or draw (draw, clear...)
-  video_api::Renderer& renderer() noexcept { return *_renderer; }
+  // Get renderer to bind resources (shaders, layout, textures, uniform/constant buffers...) or draw (draw, clear...)
+  std::shared_ptr<video_api::Renderer> renderer() noexcept { return _renderer; }
 
-  // Enable render target for drawing
-  // --> isCleaned is only useful if some areas have no polygons
-  void enableRenderTarget(bool isCleaned);
+  // Cleanup and enable render target for 3D drawing
+  void beginDrawing();
+  // Toggle draw mode to 2D / UI -- must be called after drawing all 3D entities
+  void setDrawMode2D();
   // Swap framebuffers to display on screen (throws if device lost -> recreate pipeline)
   void swapBuffers();
 
@@ -89,16 +88,21 @@ public:
 private:
   std::shared_ptr<video_api::Renderer> _renderer = nullptr;
   video_api::SwapChain _swapChain;
+  video_api::TextureTarget2D _msaaTarget;
   video_api::DepthStencilBuffer _depthBuffer;
-  video_api::DepthStencilStateArray<2> _depthTests;
-  video_api::FilterStateArray _samplers;
-  video_api::RasterizerState _rasterizer;
-  video_api::BlendState _blend;
+  video_api::DepthStencilBuffer _depthBufferMsaa;
+  video_api::SamplerStateArray _samplers;
+
   video_api::Viewport _viewport;
+  video_api::ScissorRectangle _scissor;
+
   pandora::time::Timer<pandora::time::HighResolutionClock,
                        pandora::time::HighResolutionAuxClock,
                        pandora::time::DelayHandling::none, true> _timer;
   pandora::video::RefreshRate _rate;
+  uint32_t _aaSamples = 1u;
+  bool _useAntialiasing = false;
   bool _useAnisotropy = false;
   bool _useVsync = false;
+  bool _isMsaaPending = false;
 };
