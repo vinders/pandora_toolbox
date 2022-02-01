@@ -467,9 +467,20 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
     HRESULT result = renderer.device()->CreateRenderTargetView(this->_texture, &targetDescriptor, &(this->_renderTargetView));
     if (FAILED(result) || this->_renderTargetView == nullptr)
       throwError(result, "TextureTarget: render-target not created");
+
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      this->_deviceContext11_1 = SharedResource<ID3D11DeviceContext1>::tryFromInterface(renderer.context()).extract();
+#   endif
   }
+
   // Destroy 2D render-target texture resource
   void TextureTarget2D::release() noexcept {
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      if (this->_deviceContext11_1) {
+        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->Release();
+        this->_deviceContext11_1 = nullptr;
+      }
+#   endif
     if (this->_renderTargetView) {
       try { this->_renderTargetView->Release(); } catch(...) {}
       this->_renderTargetView = nullptr;
@@ -482,6 +493,17 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
       try { this->_texture->Release(); } catch(...) {}
       this->_texture = nullptr;
     }
+  }
+
+  // Discard buffer content of render target + depth/stencil buffer
+  void TextureTarget2D::discard(DepthStencilView depthBuffer) noexcept {
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      if (this->_deviceContext11_1 != nullptr) {
+        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(this->_renderTargetView);
+        if (depthBuffer != nullptr)
+          ((ID3D11DeviceContext1*)this->_deviceContext11_1)->DiscardView(depthBuffer);
+      }
+#   endif
   }
 
 # ifdef _MSC_VER

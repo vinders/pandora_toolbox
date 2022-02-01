@@ -53,13 +53,8 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
                                                        TextureFilter::linear, texWrap)));
   _samplers.append(samplerBuilder.create(SamplerParams(SamplerParams::maxAnisotropy()/2, texWrap)));
 
-  // assign target + sampler + viewport
+  // enable sampler + viewports
   _renderer->flush();
-  if (_useAntialiasing)
-    _renderer->setCleanActiveRenderTarget(_msaaTarget.getRenderTargetView(), _depthBufferMsaa.getDepthStencilView());
-  else
-    _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
-
   _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
   _renderer->setViewport(_viewport);
   _renderer->setScissorRectangle(_scissor);
@@ -96,27 +91,7 @@ void RendererContext::resize(uint32_t width, uint32_t height) {
   _msaaTarget = TextureTarget2D(*_renderer, msaaParams);
   
   _renderer->flush();
-  if (_useAntialiasing)
-    _renderer->setCleanActiveRenderTarget(_msaaTarget.getRenderTargetView(), _depthBufferMsaa.getDepthStencilView());
-  else
-    _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
-
   _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
-}
-
-void RendererContext::toggleAntiAliasing() noexcept {
-  uint32_t width = _swapChain.width();
-  uint32_t height = _swapChain.height();
-  _renderer->bindGraphicsPipeline(nullptr);
-
-  _useAntialiasing ^= true;
-  if (_useAntialiasing)
-    _renderer->setCleanActiveRenderTarget(_msaaTarget.getRenderTargetView(), _depthBufferMsaa.getDepthStencilView());
-  else
-    _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
-
   _renderer->setViewport(_viewport);
   _renderer->setScissorRectangle(_scissor);
 }
@@ -135,18 +110,22 @@ void RendererContext::beginDrawing() {
 }
 
 void RendererContext::setDrawMode2D() {
-  if (_useAntialiasing)
+  if (_useAntialiasing) {
     _swapChain.resolve(_msaaTarget.handle(), 0);
-  _isMsaaPending = false;
+    _msaaTarget.discard(_depthBufferMsaa.getDepthStencilView());
+    _isMsaaPending = false;
+  }
 
-  _renderer->setActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
+  _renderer->setActiveRenderTarget(_swapChain.getRenderTargetView()); // UI drawing (always on top) -> no depth buffer
   _renderer->setViewport(_viewport);
   _renderer->setScissorRectangle(_scissor);
 }
 
 void RendererContext::swapBuffers() {
-  if (_isMsaaPending && _useAntialiasing)
+  if (_isMsaaPending && _useAntialiasing) {
     _swapChain.resolve(_msaaTarget.handle(), 0);
+    _msaaTarget.discard(_depthBufferMsaa.getDepthStencilView());
+  }
   _isMsaaPending = false;
 
   _swapChain.swapBuffers(_depthBuffer.getDepthStencilView());

@@ -757,18 +757,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           TextureTarget2D(const TextureTarget2D&) = delete;
           TextureTarget2D(TextureTarget2D&& rhs) noexcept
             : _texture(rhs._texture), _renderTargetView(rhs._renderTargetView), _resourceView(rhs._resourceView),
-              _writeMode(rhs._writeMode), _rowBytes(rhs._rowBytes), _width(rhs._width), _height(rhs._height),
-              _mipLevels(rhs._mipLevels) { rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr; }
+              _deviceContext11_1(rhs._deviceContext11_1), _writeMode(rhs._writeMode), _rowBytes(rhs._rowBytes),
+              _width(rhs._width), _height(rhs._height), _mipLevels(rhs._mipLevels) {
+            rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr; rhs._deviceContext11_1=nullptr;
+          }
           TextureTarget2D& operator=(const TextureTarget2D&) = delete;
           TextureTarget2D& operator=(TextureTarget2D&& rhs) noexcept {
             release();
             _texture=rhs._texture; _renderTargetView=rhs._renderTargetView; _resourceView=rhs._resourceView;
-            _writeMode=rhs._writeMode; _rowBytes=rhs._rowBytes; _width=rhs._width; _height=rhs._height; _mipLevels=rhs._mipLevels;
-            rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr;
+            _deviceContext11_1=rhs._deviceContext11_1; _writeMode=rhs._writeMode; _rowBytes=rhs._rowBytes;
+            _width=rhs._width; _height=rhs._height; _mipLevels=rhs._mipLevels;
+            rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr; rhs._deviceContext11_1=nullptr;
             return *this;
           }
           inline ~TextureTarget2D() noexcept { release(); }
           void release() noexcept; ///< Destroy resources
+
+          void discard(DepthStencilView depthBuffer) noexcept; ///< Discard buffer content of render target + depth/stencil buffer
           
           inline TextureHandle2D handle() const noexcept { return this->_texture; } ///< Get Direct3D texture handle
           inline TextureView resourceView() const noexcept { return this->_resourceView; } ///< Get texture resource view handle (or NULL if isShaderResource was false)
@@ -797,6 +802,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           TextureHandle2D _texture = nullptr;
           RenderTargetView _renderTargetView = nullptr;
           TextureView _resourceView = nullptr;
+          void* _deviceContext11_1 = nullptr; // ID3D11DeviceContext1* - only used if supported
           D3D11_MAP _writeMode = (D3D11_MAP)0;
           uint32_t _rowBytes = 0;
           uint32_t _width = 0;

@@ -1057,8 +1057,10 @@ Includes hpp implementations at the end of the file
           this->_renderTarget = nullptr;
         }
 #       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-          if (this->_deviceContext11_1)
+          if (this->_deviceContext11_1) {
             ((ID3D11DeviceContext1*)this->_deviceContext11_1)->Release();
+            this->_deviceContext11_1 = nullptr;
+          }
 #       endif
       } 
       catch (...) {}

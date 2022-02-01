@@ -55,7 +55,7 @@ public:
   void resize(uint32_t width, uint32_t height);
 
   // Toggle anti-aliasing (MSAA / none) -- warning: do NOT while a frame is still drawing!
-  void toggleAntiAliasing() noexcept;
+  void toggleAntiAliasing() noexcept { _useAntialiasing ^= true; }
   bool isAntiAliasingEnabled() const noexcept { return _useAntialiasing; }
   bool antiAliasingSamples() const noexcept { return _aaSamples; }
 
