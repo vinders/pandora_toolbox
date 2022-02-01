@@ -662,8 +662,10 @@ Includes hpp implementations at the end of the file
 
         // -> viewport(s) / scissor(s)
         if (pipeline->viewportScissorId != this->_currentViewportScissorId) {
-          this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
-          this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
+          if (pipeline->viewports.data())
+            this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
+          if (pipeline->scissorTests.data())
+            this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
           this->_currentViewportScissorId = pipeline->viewportScissorId;
         }
       }
@@ -689,8 +691,10 @@ Includes hpp implementations at the end of the file
         this->_context->OMSetBlendState(pipeline->blendState.get(), pipeline->blendConstant, 0xFFFFFFFFu);
         this->_currentBlendState = pipeline->blendState.get();
         // -> viewport(s) / scissor(s)
-        this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
-        this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
+        if (pipeline->viewports.data())
+          this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
+        if (pipeline->scissorTests.data())
+          this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
         this->_currentViewportScissorId = pipeline->viewportScissorId;
       }
     }

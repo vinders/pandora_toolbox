@@ -133,7 +133,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///          - The input layout may be bound with any other shader that has the same input signature.
             ///          - For engines with material shaders with different inputs, it's easier to verify shader params with D3DReflect, instead of hardcoding them.
             /// @throws runtime_error on failure (or if layout doesn't match shader input signature)
-            InputLayout createInputLayout(DeviceResourceManager device, D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
+            InputLayout createInputLayout(DeviceResourceManager device, const D3D11_INPUT_ELEMENT_DESC* layoutElements, size_t length) const;
             
           private:
             Builder(ShaderType type, ID3DBlob* shaderBuffer)
