@@ -756,12 +756,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           TextureTarget2D() noexcept = default;
           TextureTarget2D(const TextureTarget2D&) = delete;
           TextureTarget2D(TextureTarget2D&& rhs) noexcept
-            : _texture(rhs._texture), _resourceView(rhs._resourceView), _writeMode(rhs._writeMode), _rowBytes(rhs._rowBytes),
-              _width(rhs._width), _height(rhs._height), _mipLevels(rhs._mipLevels) { rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr; }
+            : _texture(rhs._texture), _renderTargetView(rhs._renderTargetView), _resourceView(rhs._resourceView),
+              _writeMode(rhs._writeMode), _rowBytes(rhs._rowBytes), _width(rhs._width), _height(rhs._height),
+              _mipLevels(rhs._mipLevels) { rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr; }
           TextureTarget2D& operator=(const TextureTarget2D&) = delete;
           TextureTarget2D& operator=(TextureTarget2D&& rhs) noexcept {
             release();
-            _texture=rhs._texture; _resourceView=rhs._resourceView;
+            _texture=rhs._texture; _renderTargetView=rhs._renderTargetView; _resourceView=rhs._resourceView;
             _writeMode=rhs._writeMode; _rowBytes=rhs._rowBytes; _width=rhs._width; _height=rhs._height; _mipLevels=rhs._mipLevels;
             rhs._texture=nullptr; rhs._renderTargetView=nullptr; rhs._resourceView=nullptr;
             return *this;
