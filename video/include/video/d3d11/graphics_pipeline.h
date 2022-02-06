@@ -327,6 +327,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline D3D11_BLEND_DESC& descriptor() noexcept { return this->_params; } ///< Get native Direct3D descriptor
           inline const D3D11_BLEND_DESC& descriptor() const noexcept { return this->_params; } ///< Get native Direct3D descriptor
           BlendStateId computeId() const noexcept; ///< Compute single-target resource ID based on params -- Reserved for internal use
+
+          static BlendFactorId computeFactorId(const ColorChannel constant[4]) noexcept;           ///< Reserved for internal use
+          static constexpr inline BlendFactorId defaultFactorId() noexcept { return 0x80808080u; } ///< Reserved for internal use
           
         private:
           D3D11_BLEND_DESC _params;
@@ -378,7 +381,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           inline D3D11_BLEND_DESC& descriptor() noexcept { return this->_params; } ///< Get native Direct3D descriptor
           inline const D3D11_BLEND_DESC& descriptor() const noexcept { return this->_params; } ///< Get native Direct3D descriptor
-          BlendStatePerTargetId computeId() const noexcept; ///< Compute multi-target resource ID based on params -- Reserved for internal use
+          BlendStateId computeId() const noexcept; ///< Compute multi-target resource ID based on params -- Reserved for internal use
           
         private:
           D3D11_BLEND_DESC _params;
@@ -418,7 +421,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void release() noexcept; ///< Destroy pipeline object
 
           /// @brief Get native pipeline handle -- reserved for internal use
-          inline Handle handle() const noexcept { return this->_pipeline; }
+          inline Handle handle() const noexcept { return this->_pipeline.get(); }
           /// @brief Verify if initialized (false) or empty/moved/released (true)
           inline bool isEmpty() const noexcept { return (this->_pipeline == nullptr); }
 
@@ -567,7 +570,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           GraphicsPipeline(GraphicsPipeline::Builder& builder);
         
         private:
-          std::shared_ptr<_DxPipelineStages> _pipeline = nullptr;
+          std::unique_ptr<_DxPipelineStages> _pipeline = nullptr;
           std::shared_ptr<Renderer> _renderer = nullptr;
         };
       }

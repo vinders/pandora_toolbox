@@ -221,6 +221,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(1.f, paramsBpt1.blendConstant()[1]);
     EXPECT_EQ(1.f, paramsBpt1.blendConstant()[2]);
     EXPECT_EQ(1.f, paramsBpt1.blendConstant()[3]);
+    EXPECT_EQ(BlendParams::defaultFactorId(), BlendParams::computeFactorId(paramsBpt1.blendConstant()));
     paramsBpt1.setTargetBlend(0, BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,
                                  BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add);
     paramsBpt1.setTargetBlend(1, BlendFactor::sourceInvColor, BlendFactor::destColor, BlendOp::subtract,
@@ -229,8 +230,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     auto idBpt1A = paramsBpt1.computeId();
     paramsBpt1.disableTargetBlend(2);
     auto idBpt1B = paramsBpt1.computeId();
+    auto idColor1 = BlendParams::computeFactorId(paramsBpt1.blendConstant());
     paramsBpt1.blendConstant(color);
-    auto idBpt1C = paramsBpt1.computeId();
+    auto idBpt1B_otherColor = paramsBpt1.computeId();
+    auto idColor2 = BlendParams::computeFactorId(paramsBpt1.blendConstant());
     EXPECT_EQ(color[0], paramsBpt1.blendConstant()[0]);
     EXPECT_EQ(color[1], paramsBpt1.blendConstant()[1]);
     EXPECT_EQ(color[2], paramsBpt1.blendConstant()[2]);
@@ -257,11 +260,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(idB1 != idB3);
     EXPECT_TRUE(idB2 != idB3);
     EXPECT_TRUE(idBpt1A != idBpt1B);
-    EXPECT_TRUE(idBpt1A != idBpt1C);
+    EXPECT_TRUE(idBpt1A != idBpt1B_otherColor);
     EXPECT_TRUE(idBpt1A != idBpt2);
-    EXPECT_TRUE(idBpt1B != idBpt1C);
+    EXPECT_TRUE(idBpt1B == idBpt1B_otherColor);
+    EXPECT_TRUE(idColor1 != idColor2);
     EXPECT_TRUE(idBpt1B != idBpt2);
-    EXPECT_TRUE(idBpt1C != idBpt2);
+    EXPECT_TRUE(idBpt1B_otherColor != idBpt2);
 
     auto valB2Get = valB2.get();
     valB1 = std::move(valB2);
@@ -525,7 +529,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     for (int i = 1; i < __P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX + 1; ++i) {
       EXPECT_FALSE(pipeline.handle()->shaderStages[i].hasValue());
     }
-    EXPECT_TRUE(pipeline.handle()->blendPerTargetCacheId == nullptr);
     for (int i = 1; i < 4; ++i) {
       EXPECT_EQ(1.f, pipeline.handle()->blendConstant[i]);
     }
@@ -560,7 +563,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ASSERT_TRUE(pipelineViewport.handle() != nullptr);
     EXPECT_FALSE(pipelineViewport.isEmpty());
     EXPECT_TRUE(pipelineViewport.handle()->shaderStages[0].hasValue());
-    EXPECT_TRUE(pipelineViewport.handle()->blendPerTargetCacheId == nullptr);
     EXPECT_TRUE(pipelineViewport.handle()->rasterizerCacheId == pipeline.handle()->rasterizerCacheId);
     EXPECT_TRUE(pipelineViewport.handle()->depthStencilCacheId == pipeline.handle()->depthStencilCacheId);
     EXPECT_TRUE(pipelineViewport.handle()->blendCacheId == pipeline.handle()->blendCacheId);
@@ -600,10 +602,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ASSERT_TRUE(pipelineViewportScissor.handle() != nullptr);
     EXPECT_FALSE(pipelineViewportScissor.isEmpty());
     EXPECT_TRUE(pipelineViewportScissor.handle()->shaderStages[0].hasValue());
-    EXPECT_TRUE(pipelineViewportScissor.handle()->blendPerTargetCacheId != nullptr);
     EXPECT_TRUE(pipelineViewportScissor.handle()->rasterizerCacheId != RasterizerStateId{});
     EXPECT_TRUE(pipelineViewportScissor.handle()->depthStencilCacheId != DepthStencilStateId{});
-    EXPECT_TRUE(pipelineViewportScissor.handle()->blendCacheId == BlendStateId{});
+    EXPECT_TRUE(pipelineViewportScissor.handle()->blendCacheId != BlendStateId{});
     EXPECT_TRUE(pipelineViewportScissor.handle()->rasterizerCacheId != pipeline.handle()->rasterizerCacheId);
     EXPECT_TRUE(pipelineViewportScissor.handle()->depthStencilCacheId != pipeline.handle()->depthStencilCacheId);
     EXPECT_TRUE(pipelineViewportScissor.handle()->blendCacheId != pipeline.handle()->blendCacheId);
@@ -651,7 +652,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     GraphicsPipeline moved(std::move(pipeline));
     EXPECT_TRUE(pipeline.handle() == nullptr);
     EXPECT_TRUE(moved.handle() != nullptr);
-    EXPECT_TRUE(moved.handle().get() == pipelineHandle.get());
+    EXPECT_TRUE(moved.handle() == pipelineHandle);
 
     // release
     moved.release();

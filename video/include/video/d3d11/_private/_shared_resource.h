@@ -395,13 +395,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         using RasterizerStateId   = SharedResourceId<4>; ///< Rasterizer state driver resource ID
         using DepthStencilStateId = SharedResourceId<2>; ///< Depth/stencil state driver resource ID
-        using BlendStateId        = SharedResourceId<2>; ///< Blend state driver resource ID (common)
-        using BlendStatePerTargetId = SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT+1>; ///< Blend state ID (split per target)
+        using BlendStateId = SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT>; ///< Blend state driver resource ID
+        using BlendFactorId = uint32_t; ///< Blend constant factor ID
 
         using RasterizerStateCache   = SharedResourceCache<RasterizerState,4>;   ///< Rasterizer state cached resource entry
         using DepthStencilStateCache = SharedResourceCache<DepthStencilState,2>; ///< Depth/stencil state cached resource entry
-        using BlendStateCache        = SharedResourceCache<BlendState,2>;        ///< Blend state driver cached resource entry (common)
-        using BlendStatePerTargetCache = SharedResourceCache<BlendState,D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT+1>; ///< Blend state cache (split)
+        using BlendStateCache = SharedResourceCache<BlendState,D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT>; ///< Blend state cached resource entry
 
         // ---
 
@@ -411,26 +410,37 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           SharedResource<ID3D11DeviceChild> shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX + 1]{};
 
           // pipeline state identifiers for cache
-          std::shared_ptr<BlendStatePerTargetId> blendPerTargetCacheId = nullptr;
           ColorChannel blendConstant[4]{ 1.f,1.f,1.f,1.f };
+          BlendStateId blendCacheId;
           RasterizerStateId rasterizerCacheId;
           DepthStencilStateId depthStencilCacheId;
-          BlendStateId blendCacheId;
           // pipeline state driver resources
           RasterizerState rasterizerState;
           DepthStencilState depthStencilState;
           BlendState blendState;
-
+          BlendFactorId blendFactorId = 0;
+          uint32_t stencilRef = 1u;
+          
           // input format
           InputLayout inputLayout;
           VertexTopology topology = VertexTopology::triangles;
-          uint32_t stencilRef = 1u;
           // output constraints
           pandora::memory::LightVector<D3D11_VIEWPORT> viewports;
           pandora::memory::LightVector<D3D11_RECT> scissorTests;
           uint64_t viewportScissorId = 0;
         };
-        using GraphicsPipelineHandle = std::shared_ptr<_DxPipelineStages>; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())
+        /// @brief Attached graphics pipeline cache -- reserved for internal use
+        struct _DxPipelineCache final {
+          ID3D11DeviceChild* shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX + 1]{};
+          uint64_t viewportScissorId = 0;
+          ID3D11RasterizerState* rasterizerState = nullptr;
+          ID3D11DepthStencilState* depthStencilState = nullptr;
+          ID3D11BlendState* blendState = nullptr;
+          BlendFactorId blendFactorId = 0;
+          uint32_t stencilRef = 0;
+          VertexTopology topology = (VertexTopology)-1;
+        };
+        using GraphicsPipelineHandle = _DxPipelineStages*; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())
       }
     }
   }

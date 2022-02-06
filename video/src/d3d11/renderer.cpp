@@ -265,7 +265,8 @@ Includes hpp implementations at the end of the file
   // ---
 
   // Create Direct3D rendering device and context
-  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelCount) { // throws
+  Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor,
+                     const D3D_FEATURE_LEVEL* featureLevels, size_t featureLevelCount) { // throws
     UINT runtimeLayers = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #   ifdef _DEBUG
       if (__isDebugSdkAvailable())
@@ -337,7 +338,6 @@ Includes hpp implementations at the end of the file
     try {
       // release device context
       if (this->_context) {
-        this->_attachedPipeline = nullptr;
         this->_context->Flush();
         this->_context->Release();
       }
@@ -356,11 +356,10 @@ Includes hpp implementations at the end of the file
       _deviceLevel(rhs._deviceLevel),
       _dxgiFactory(rhs._dxgiFactory),
       _dxgiLevel(rhs._dxgiLevel),
-      _attachedPipeline(std::move(rhs._attachedPipeline)),
       _rasterizerStateCache(std::move(rhs._rasterizerStateCache)),
       _depthStencilStateCache(std::move(rhs._depthStencilStateCache)),
       _blendStateCache(std::move(rhs._blendStateCache)),
-      _blendStatePerTargetCache(std::move(rhs._blendStatePerTargetCache)) {
+      _attachedPipeline(std::move(rhs._attachedPipeline)) {
     rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
     rhs._context = nullptr;
@@ -372,11 +371,10 @@ Includes hpp implementations at the end of the file
     this->_deviceLevel = rhs._deviceLevel;
     this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;
-    this->_attachedPipeline = std::move(rhs._attachedPipeline);
     this->_rasterizerStateCache = std::move(rhs._rasterizerStateCache);
     this->_depthStencilStateCache = std::move(rhs._depthStencilStateCache);
     this->_blendStateCache = std::move(rhs._blendStateCache);
-    this->_blendStatePerTargetCache = std::move(rhs._blendStatePerTargetCache);
+    this->_attachedPipeline = std::move(rhs._attachedPipeline);
     rhs._device = nullptr;
     rhs._context = nullptr;
     rhs._dxgiFactory = nullptr;
@@ -498,7 +496,7 @@ Includes hpp implementations at the end of the file
       }
       this->_context->RSSetViewports((UINT)numberViewports, &values[0]);
     }
-    this->_currentViewportScissorId = 0;
+    this->_attachedPipeline.viewportScissorId = 0;
   }
 
   // Set rasterizer scissor-test rectangle(s)
@@ -518,7 +516,7 @@ Includes hpp implementations at the end of the file
       }
       this->_context->RSSetScissorRects((UINT)numberRectangles, &values[0]);
     }
-    this->_currentViewportScissorId = 0;
+    this->_attachedPipeline.viewportScissorId = 0;
   }
   
   // ---
@@ -601,6 +599,14 @@ Includes hpp implementations at the end of the file
     }
 # endif
 
+  // Change output merger blend state with constant factors (color/alpha blending with render-target(s))
+  void Renderer::setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4]) noexcept {
+    this->_context->OMSetBlendState(state.get(), constantColorRgba, 0xFFFFFFFFu);
+    this->_attachedPipeline.blendState = state.get();
+    this->_attachedPipeline.blendFactorId = constantColorRgba ? BlendParams::computeFactorId(constantColorRgba)
+                                                              : BlendParams::defaultFactorId();
+  }
+
   // ---
 
   // Bind graphics pipeline to the rendering device
@@ -618,84 +624,67 @@ Includes hpp implementations at the end of the file
 #              endif
 #            endif
              ,"ShaderType enum values inconsistent with Renderer::bindGraphicsPipeline");
-    SharedResource<ID3D11DeviceChild>* newShaderStage = pipeline->shaderStages;
 
-    // Previous pipeline exists -> only apply different params
     if (pipeline != nullptr) {
-      if (this->_attachedPipeline != nullptr) {
-        SharedResource<ID3D11DeviceChild>* oldShaderStage = this->_attachedPipeline->shaderStages;
+      ID3D11DeviceChild** oldShaderStage = this->_attachedPipeline.shaderStages;
+      SharedResource<ID3D11DeviceChild>* newShaderStage = pipeline->shaderStages;
 
-        // -> shader stages + input format
-        if (pipeline->topology != this->_attachedPipeline->topology)
-          this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipeline->topology);
-        if (*newShaderStage != *oldShaderStage) {
-          this->_context->IASetInputLayout(pipeline->inputLayout.get());
-          this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
-        }
-        if (*(++newShaderStage) != *(++oldShaderStage))
-          this->_context->PSSetShader((ID3D11PixelShader*)newShaderStage->get(), nullptr, 0);
-#       if !defined(__P_DISABLE_GEOMETRY_STAGE)
-          if (*(++newShaderStage) != *(++oldShaderStage))
-            this->_context->GSSetShader((ID3D11GeometryShader*)newShaderStage->get(), nullptr, 0);
-#       endif
-#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
-          if (*(++newShaderStage) != *(++oldShaderStage))
-            this->_context->HSSetShader((ID3D11HullShader*)newShaderStage->get(), nullptr, 0);
-          if (*(++newShaderStage) != *(++oldShaderStage))
-            this->_context->DSSetShader((ID3D11DomainShader*)newShaderStage->get(), nullptr, 0);
-#       endif
-
-        // -> pipeline states
-        if (pipeline->rasterizerState.get() != this->_currentRasterizerState) {
-          this->_context->RSSetState(pipeline->rasterizerState.get());
-          this->_currentRasterizerState = pipeline->rasterizerState.get();
-        }
-        if (pipeline->depthStencilState.get() != this->_currentDepthStencilState
-          || pipeline->stencilRef != this->_attachedPipeline->stencilRef) {
-          this->_context->OMSetDepthStencilState(pipeline->depthStencilState.get(), (UINT)pipeline->stencilRef);
-          this->_currentDepthStencilState = pipeline->depthStencilState.get();
-        }
-        if (pipeline->blendState.get() != this->_currentBlendState) {
-          this->_context->OMSetBlendState(pipeline->blendState.get(), pipeline->blendConstant, 0xFFFFFFFFu);
-          this->_currentBlendState = pipeline->blendState.get();
-        }
-
-        // -> viewport(s) / scissor(s)
-        if (pipeline->viewportScissorId != this->_currentViewportScissorId) {
-          if (pipeline->viewports.data())
-            this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
-          if (pipeline->scissorTests.data())
-            this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
-          this->_currentViewportScissorId = pipeline->viewportScissorId;
-        }
-      }
-      // No previous pipeline -> assign all
-      else {
-        // -> shader stages + input format
+      // -> shader stages + input format
+      if (pipeline->topology != this->_attachedPipeline.topology) {
         this->_context->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)pipeline->topology);
+        this->_attachedPipeline.topology = pipeline->topology;
+      }
+      if (newShaderStage->get() != *oldShaderStage) {
         this->_context->IASetInputLayout(pipeline->inputLayout.get());
         this->_context->VSSetShader((ID3D11VertexShader*)newShaderStage->get(), nullptr, 0);
-        this->_context->PSSetShader((ID3D11PixelShader*)(++newShaderStage)->get(), nullptr, 0);
-#       if !defined(__P_DISABLE_GEOMETRY_STAGE)
-          this->_context->GSSetShader((ID3D11GeometryShader*)(++newShaderStage)->get(), nullptr, 0);
-#       endif
-#       if !defined(__P_DISABLE_TESSELLATION_STAGE)
-          this->_context->HSSetShader((ID3D11HullShader*)(++newShaderStage)->get(), nullptr, 0);
-          this->_context->DSSetShader((ID3D11DomainShader*)(++newShaderStage)->get(), nullptr, 0);
-#       endif
-        // -> pipeline states
+        *oldShaderStage = newShaderStage->get();
+      }
+      if ((++newShaderStage)->get() != *(++oldShaderStage)) {
+        this->_context->PSSetShader((ID3D11PixelShader*)newShaderStage->get(), nullptr, 0);
+        *oldShaderStage = newShaderStage->get();
+      }
+#     if !defined(__P_DISABLE_GEOMETRY_STAGE)
+        if ((++newShaderStage)->get() != *(++oldShaderStage)) {
+          this->_context->GSSetShader((ID3D11GeometryShader*)newShaderStage->get(), nullptr, 0);
+          *oldShaderStage = newShaderStage->get();
+        }
+#     endif
+#     if !defined(__P_DISABLE_TESSELLATION_STAGE)
+        if ((++newShaderStage)->get() != *(++oldShaderStage)) {
+          this->_context->HSSetShader((ID3D11HullShader*)newShaderStage->get(), nullptr, 0);
+          *oldShaderStage = newShaderStage->get();
+        }
+        if ((++newShaderStage)->get() != *(++oldShaderStage)) {
+          this->_context->DSSetShader((ID3D11DomainShader*)newShaderStage->get(), nullptr, 0);
+          *oldShaderStage = newShaderStage->get();
+        }
+#     endif
+
+      // -> pipeline states
+      if (pipeline->rasterizerState.get() != this->_attachedPipeline.rasterizerState) {
         this->_context->RSSetState(pipeline->rasterizerState.get());
-        this->_currentRasterizerState = pipeline->rasterizerState.get();
+        this->_attachedPipeline.rasterizerState = pipeline->rasterizerState.get();
+      }
+      if (pipeline->depthStencilState.get() != this->_attachedPipeline.depthStencilState
+      || pipeline->stencilRef != this->_attachedPipeline.stencilRef) {
         this->_context->OMSetDepthStencilState(pipeline->depthStencilState.get(), (UINT)pipeline->stencilRef);
-        this->_currentDepthStencilState = pipeline->depthStencilState.get();
+        this->_attachedPipeline.depthStencilState = pipeline->depthStencilState.get();
+        this->_attachedPipeline.stencilRef = pipeline->stencilRef;
+      }
+      if (pipeline->blendState.get() != this->_attachedPipeline.blendState
+      || pipeline->blendFactorId != this->_attachedPipeline.blendFactorId) {
         this->_context->OMSetBlendState(pipeline->blendState.get(), pipeline->blendConstant, 0xFFFFFFFFu);
-        this->_currentBlendState = pipeline->blendState.get();
-        // -> viewport(s) / scissor(s)
+        this->_attachedPipeline.blendState = pipeline->blendState.get();
+        this->_attachedPipeline.blendFactorId = pipeline->blendFactorId;
+      }
+
+      // -> viewport(s) / scissor(s)
+      if (pipeline->viewportScissorId != this->_attachedPipeline.viewportScissorId) {
         if (pipeline->viewports.data())
           this->_context->RSSetViewports((UINT)pipeline->viewports.size(), pipeline->viewports.data());
         if (pipeline->scissorTests.data())
           this->_context->RSSetScissorRects((UINT)pipeline->scissorTests.size(), pipeline->scissorTests.data());
-        this->_currentViewportScissorId = pipeline->viewportScissorId;
+        this->_attachedPipeline.viewportScissorId = pipeline->viewportScissorId;
       }
     }
     // Empty pipeline -> unbind current
@@ -713,9 +702,10 @@ Includes hpp implementations at the end of the file
       this->_context->RSSetState(nullptr);
       this->_context->OMSetDepthStencilState(nullptr, (UINT)1);
       this->_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    }
 
-    this->_attachedPipeline = std::move(pipeline); // move shared_ptr
+      memset(&(this->_attachedPipeline), 0, sizeof(_DxPipelineCache));
+      this->_attachedPipeline.topology = (VertexTopology)-1;
+    }
   }
 
 
@@ -778,10 +768,6 @@ Includes hpp implementations at the end of the file
     std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
     __insertInPlace(this->_blendStateCache, id, handle);
   }
-  void Renderer::_addBlendStatePerTarget(const BlendStatePerTargetId& id, const BlendState& handle) {
-    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
-    __insertInPlace(this->_blendStatePerTargetCache, id, handle);
-  }
 
   void Renderer::_removeRasterizerState(const RasterizerStateId& id) noexcept {
     std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
@@ -800,12 +786,6 @@ Includes hpp implementations at the end of the file
     uint32_t index = __binarySearch(this->_blendStateCache.data(), this->_blendStateCache.size(), id);
     if (index != __indexNotFound() && --(this->_blendStateCache[index].instances) < 1)
       this->_blendStateCache.erase(index);
-  }
-  void Renderer::_removeBlendStatePerTarget(const BlendStatePerTargetId& id) noexcept {
-    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
-    uint32_t index = __binarySearch(this->_blendStatePerTargetCache.data(), this->_blendStatePerTargetCache.size(), id);
-    if (index != __indexNotFound() && --(this->_blendStatePerTargetCache[index].instances) < 1)
-      this->_blendStatePerTargetCache.erase(index);
   }
 
   // ---
@@ -833,15 +813,6 @@ Includes hpp implementations at the end of the file
     uint32_t index = __binarySearch(this->_blendStateCache.data(), this->_blendStateCache.size(), id);
     if (index != __indexNotFound()) {
       out = this->_blendStateCache[index].handle;
-      return true;
-    }
-    return false;
-  }
-  bool Renderer::_findBlendStatePerTarget(const BlendStatePerTargetId& id, BlendState& out) const noexcept {
-    std::lock_guard<pandora::thread::SpinLock> guard(g_resourceCacheLock);
-    uint32_t index = __binarySearch(this->_blendStatePerTargetCache.data(), this->_blendStatePerTargetCache.size(), id);
-    if (index != __indexNotFound()) {
-      out = this->_blendStatePerTargetCache[index].handle;
       return true;
     }
     return false;

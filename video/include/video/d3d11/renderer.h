@@ -20,6 +20,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
+# include <memory>
 # include <memory/light_vector.h>
 # include <hardware/display_monitor.h>
 # include "./_private/_shared_resource.h" // includes D3D11
@@ -149,7 +150,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning Should only be used if the GraphicsPipeline was configured with dynamic viewports.
           inline void setViewport(const Viewport& viewport) noexcept {
             this->_context->RSSetViewports(1u, (const D3D11_VIEWPORT*)&viewport);
-            this->_currentViewportScissorId = 0;
+            this->_attachedPipeline.viewportScissorId = 0;
           }
 
           /// @brief Set rasterizer scissor-test rectangle(s)
@@ -159,7 +160,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @warning Should only be used if the GraphicsPipeline was configured with dynamic scissor-test.
           inline void setScissorRectangle(const ScissorRectangle& rectangle) noexcept {
             this->_context->RSSetScissorRects(1u, (const D3D11_RECT*)&rectangle);
-            this->_currentViewportScissorId = 0;
+            this->_attachedPipeline.viewportScissorId = 0;
           }
           
           // ---
@@ -442,23 +443,20 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - If the rasterizer state has to be toggled regularly, keep the same RasterizerState instances to be more efficient.
           inline void setRasterizerState(const RasterizerState& state) noexcept {
             this->_context->RSSetState(state.get());
-            this->_currentRasterizerState = state.get();
+            this->_attachedPipeline.rasterizerState = state.get();
           }
           /// @brief Change output merger depth/stencil state (depth and/or stencil testing)
           /// @remarks The depth/stencil state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
           inline void setDepthStencilState(const DepthStencilState& state, uint32_t stencilRef = 1u) noexcept {
             this->_context->OMSetDepthStencilState(state.get(), (UINT)stencilRef);
-            this->_currentDepthStencilState = (this->_attachedPipeline != nullptr
-                                            && stencilRef == this->_attachedPipeline->stencilRef) ? state.get() : nullptr;
+            this->_attachedPipeline.depthStencilState = state.get();
+            this->_attachedPipeline.stencilRef = stencilRef;
           }
           /// @brief Change output merger blend state with constant factors (color/alpha blending with render-target(s))
           /// @remarks - The blend state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
           ///          - The constant color is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///            (defaults to factor 1.0 if 'constantColorRgba' is NULL).
-          inline void setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4] = nullptr) noexcept {
-            this->_context->OMSetBlendState(state.get(), constantColorRgba, 0xFFFFFFFFu);
-            this->_currentBlendState = nullptr; // color may differ -> always report as different
-          }
+          void setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4] = nullptr) noexcept;
           
           // ---
           
@@ -539,17 +537,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           void _addRasterizerState(const RasterizerStateId& id, const RasterizerState& handle);
           void _addDepthStencilState(const DepthStencilStateId& id, const DepthStencilState& handle);
           void _addBlendState(const BlendStateId& id, const BlendState& handle);
-          void _addBlendStatePerTarget(const BlendStatePerTargetId& id, const BlendState& handle);
 
           void _removeRasterizerState(const RasterizerStateId& id) noexcept;
           void _removeDepthStencilState(const DepthStencilStateId& id) noexcept;
           void _removeBlendState(const BlendStateId& id) noexcept;
-          void _removeBlendStatePerTarget(const BlendStatePerTargetId& id) noexcept;
 
           bool _findRasterizerState(const RasterizerStateId& id, RasterizerState& out) const noexcept;
           bool _findDepthStencilState(const DepthStencilStateId& id, DepthStencilState& out) const noexcept;
           bool _findBlendState(const BlendStateId& id, BlendState& out) const noexcept;
-          bool _findBlendStatePerTarget(const BlendStatePerTargetId& id, BlendState& out) const noexcept;
 
           friend class pandora::video::d3d11::SwapChain;
           friend class pandora::video::d3d11::Texture2D;
@@ -567,14 +562,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           pandora::memory::LightVector<RasterizerStateCache> _rasterizerStateCache;
           pandora::memory::LightVector<DepthStencilStateCache> _depthStencilStateCache;
           pandora::memory::LightVector<BlendStateCache> _blendStateCache;
-          pandora::memory::LightVector<BlendStatePerTargetCache> _blendStatePerTargetCache;
-
-          std::shared_ptr<_DxPipelineStages> _attachedPipeline = nullptr;
-          // storage for dynamic state changes
-          ID3D11RasterizerState* _currentRasterizerState = nullptr;
-          ID3D11DepthStencilState* _currentDepthStencilState = nullptr;
-          ID3D11BlendState* _currentBlendState = nullptr;
-          uint64_t _currentViewportScissorId = 0;
+          _DxPipelineCache _attachedPipeline;
         };
       }
     }

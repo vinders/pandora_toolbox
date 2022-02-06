@@ -153,45 +153,44 @@ Implementation included in renderer.cpp
 
   // ---
 
+  uint32_t BlendParams::computeFactorId(const ColorChannel constant[4]) noexcept {
+    return (static_cast<uint32_t>(constant[0]*128.f)
+         ^ (static_cast<uint32_t>(constant[1]*128.f) << 8)
+         ^ (static_cast<uint32_t>(constant[2]*128.f) << 16)
+         ^ (static_cast<uint32_t>(constant[3]*128.f) << 24) );
+  }
+
   // Compute single-target resource ID based on params -- Reserved for internal use
   BlendStateId BlendParams::computeId() const noexcept {
-    SharedResourceId<2> id;
+    SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> id;
     if (_params.RenderTarget->BlendEnable) {
       id.id()[0] = (((uint32_t)_params.RenderTarget->SrcBlend & 0x1Fu)
                  | (((uint32_t)_params.RenderTarget->DestBlend & 0x1Fu) << 5)
                  | (((uint32_t)_params.RenderTarget->SrcBlendAlpha & 0x1Fu) << 10)
                  | (((uint32_t)_params.RenderTarget->DestBlendAlpha & 0x1Fu) << 15)
-                 | (((uint32_t)_params.RenderTarget->BlendOp & 0xFu) << 20)
+                 | (((uint32_t)_params.RenderTarget->BlendOp & 0x7u) << 20)
                  | (((uint32_t)_params.RenderTarget->BlendOpAlpha & 0x7u) << 24) 
                  | (((uint32_t)_params.RenderTarget->RenderTargetWriteMask & 0xFu) << 28)
-                 | ((uint32_t)_params.AlphaToCoverageEnable << 27) );
-      id.id()[1] = (static_cast<uint32_t>(_blendConstant[0]*128.f)
-                 ^ (static_cast<uint32_t>(_blendConstant[1]*128.f) << 8)
-                 ^ (static_cast<uint32_t>(_blendConstant[2]*128.f) << 16)
-                 ^ (static_cast<uint32_t>(_blendConstant[3]*128.f) << 24) );
+                 | ((uint32_t)_params.AlphaToCoverageEnable << 27)
+                 | ((uint32_t)0x1u << 23) );
     }
     return id;
   }
 
   // Compute multi-target resource ID based on params -- Reserved for internal use
-  BlendStatePerTargetId BlendPerTargetParams::computeId() const noexcept {
-    SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT+1> id;
-    constexpr const size_t lastTarget = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT - 1;
+  BlendStateId BlendPerTargetParams::computeId() const noexcept {
+    SharedResourceId<D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> id;
 
-    const D3D11_RENDER_TARGET_BLEND_DESC* srcIt = &_params.RenderTarget[lastTarget];
-    for (uint32_t* destIt = &(id.id()[lastTarget]); srcIt >= _params.RenderTarget; --srcIt, --destIt) {
+    const D3D11_RENDER_TARGET_BLEND_DESC* srcIt = &_params.RenderTarget[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT - 1];
+    for (uint32_t* destIt = &(id.id()[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT - 1]); srcIt >= _params.RenderTarget; --srcIt, --destIt) {
       if (srcIt->BlendEnable) {
         *destIt = (((uint32_t)srcIt->SrcBlend & 0x1Fu)             | (((uint32_t)srcIt->DestBlend & 0x1Fu) << 5)
                 | (((uint32_t)srcIt->SrcBlendAlpha & 0x1Fu) << 10) | (((uint32_t)srcIt->DestBlendAlpha & 0x1Fu) << 15)
-                | (((uint32_t)srcIt->BlendOp & 0xFu) << 20)        | (((uint32_t)srcIt->BlendOpAlpha & 0x7u) << 24) 
+                | (((uint32_t)srcIt->BlendOp & 0x7u) << 20)        | (((uint32_t)srcIt->BlendOpAlpha & 0x7u) << 24) 
                 | (((uint32_t)srcIt->RenderTargetWriteMask & 0xFu) << 28) );
       }
     }
     id.id()[0] |= (uint32_t)_params.AlphaToCoverageEnable << 27;
-    id.id()[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = (static_cast<uint32_t>(_blendConstant[0]*128.f)
-                                                    ^ (static_cast<uint32_t>(_blendConstant[1]*128.f) << 8)
-                                                    ^ (static_cast<uint32_t>(_blendConstant[2]*128.f) << 16)
-                                                    ^ (static_cast<uint32_t>(_blendConstant[3]*128.f) << 24) );
     return id;
   }
 
@@ -208,10 +207,10 @@ Implementation included in renderer.cpp
     assert(builder._renderer != nullptr);
     if (!builder._params.shaderStages[(size_t)ShaderType::vertex].hasValue())
       throw std::logic_error("GraphicsPipeline: vertex shader required");
-    if (!builder._params.rasterizerState.hasValue() || !builder._params.blendState.hasValue())
+    if (!builder._params.blendState.hasValue() || !builder._params.rasterizerState.hasValue())
       throw std::logic_error("GraphicsPipeline: missing required pipeline state");
 
-    this->_pipeline = std::make_shared<_DxPipelineStages>(builder._params); // copy pipeline states + shader stages
+    this->_pipeline = std::make_unique<_DxPipelineStages>(builder._params); // copy pipeline states + shader stages
 
     // copy viewport/scissor descriptors
     this->_pipeline->viewports = pandora::memory::LightVector<D3D11_VIEWPORT>(builder._viewportCount);
@@ -240,26 +239,20 @@ Implementation included in renderer.cpp
     }
 
     // register pipeline states to cache
+    this->_renderer->_addBlendState(builder._params.blendCacheId, builder._params.blendState);
     this->_renderer->_addRasterizerState(builder._params.rasterizerCacheId, builder._params.rasterizerState);
     if (builder._params.depthStencilState.hasValue())
       this->_renderer->_addDepthStencilState(builder._params.depthStencilCacheId, builder._params.depthStencilState);
-    if (builder._params.blendPerTargetCacheId == nullptr)
-      this->_renderer->_addBlendState(builder._params.blendCacheId, builder._params.blendState);
-    else
-      this->_renderer->_addBlendStatePerTarget(*builder._params.blendPerTargetCacheId, builder._params.blendState);
   }
 
   // Destroy pipeline object
   void GraphicsPipeline::release() noexcept {
     if (this->_pipeline != nullptr) {
       // unregister pipeline states from cache
+      this->_renderer->_removeBlendState(this->_pipeline->blendCacheId);
       this->_renderer->_removeRasterizerState(this->_pipeline->rasterizerCacheId);
       if (this->_pipeline->depthStencilState.hasValue())
         this->_renderer->_removeDepthStencilState(this->_pipeline->depthStencilCacheId);
-      if (this->_pipeline->blendPerTargetCacheId == nullptr)
-        this->_renderer->_removeBlendState(this->_pipeline->blendCacheId);
-      else
-        this->_renderer->_removeBlendStatePerTarget(*_pipeline->blendPerTargetCacheId);
 
       this->_pipeline = nullptr;
     }
@@ -337,7 +330,7 @@ Implementation included in renderer.cpp
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setBlendState(const BlendParams& state) { // throws
     this->_params.blendState.release();
     this->_params.blendCacheId = state.computeId();
-    this->_params.blendPerTargetCacheId = nullptr;
+    this->_params.blendFactorId = BlendParams::computeFactorId(state.blendConstant());
     memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorChannel)*4u);
 
     if (!this->_renderer->_findBlendState(this->_params.blendCacheId, this->_params.blendState))
@@ -347,11 +340,11 @@ Implementation included in renderer.cpp
   // Bind color/alpha blending state -- customized per render-target (one of the 2 methods required)
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setBlendState(const BlendPerTargetParams& state) { // throws
     this->_params.blendState.release();
-    this->_params.blendCacheId = BlendStateId{};
-    this->_params.blendPerTargetCacheId = std::make_shared<BlendStatePerTargetId>(state.computeId());
+    this->_params.blendCacheId = state.computeId();
+    this->_params.blendFactorId = BlendParams::computeFactorId(state.blendConstant());
     memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorChannel)*4u);
 
-    if (!this->_renderer->_findBlendStatePerTarget(*_params.blendPerTargetCacheId, this->_params.blendState))
+    if (!this->_renderer->_findBlendState(this->_params.blendCacheId, this->_params.blendState))
       this->_params.blendState = createBlendState(state);
     return *this;
   }
