@@ -15,6 +15,9 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
 OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+--------------------------------------------------------------------------------
+Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetParams
+       - GraphicsPipeline / GraphicsPipeline::Builder
 *******************************************************************************/
 #pragma once
 
@@ -520,11 +523,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             // -- rendering pipeline states --
 
             /// @brief Bind rasterization state (required)
-            /// @throws runtime_error if dynamic culling/order is requested but not supported by current Renderer.
+            /// @throws runtime_error if dynamic culling/order is requested but not supported by current Renderer
+            ///                       (verify with Renderer.isExtendedDynamicStateSupported).
             Builder& setRasterizerState(const RasterizerParams& state);
             /// @brief Bind depth/stencil test state (required if depth buffer used)
             /// @warning Required to use a depth/stencil buffer when rendering.
-            /// @throws runtime_error if dynamic septh/stencil test is requested but not supported by current Renderer.
+            /// @throws runtime_error if dynamic septh/stencil test is requested but not supported by current Renderer
+            ///                       (verify with Renderer.isExtendedDynamicStateSupported).
             Builder& setDepthStencilState(const DepthStencilParams& state);
             /// @brief Remove depth/stencil test state (if no depth buffer is used)
             inline Builder& clearDepthStencilState() noexcept {
@@ -550,7 +555,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             ///                        Even if 'scissorTests' is NULL, this value must be set if 'useDynamicCount' is false.
             ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
-            ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true.
+            ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true
+            ///                        and if Renderer.isExtendedDynamicStateSupported is true.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
             /// @throws runtime_error if dynamic count is requested but not supported by driver.
             /// @warning The current Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
@@ -582,6 +588,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             inline Builder& setRenderPass(uint32_t renderTargetCount, RenderPass renderPass) noexcept {
               _targetCount = renderTargetCount; _renderPassObj = std::move(renderPass); return *this;
             }
+#           if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+              Builder& setRenderPass(const VkPipelineRenderingCreateInfoKHR& dynamicRenderingInfo);
+#           endif
 
             /// @brief Build a graphics pipeline (based on current params)
             /// @param parentCache  Pipeline cache to use for creation -- specific to vulkan (do not fill param for cross-API projects)
@@ -611,10 +620,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           private:
             uint32_t _setDynamicState(VkDynamicState* dynamicState) noexcept;
-            inline bool _isExtendedDynamicStateSupported() const noexcept {
-              return (__P_VK_API_VERSION_NOVARIANT(this->_renderer->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
-                   || this->_renderer->isExtensionEnabled("VK_EXT_extended_dynamic_state"));
-            }
 
           private:
             VkPipelineShaderStageCreateInfo _shaderStagesDesc[__P_MAX_DISPLAY_SHADER_NUMBER]{};

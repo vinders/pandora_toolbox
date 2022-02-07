@@ -102,18 +102,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                  Warning: if some features are disabled, functionalities of the toolbox depending on them won't be usable anymore.
           /// @param areFeaturesRequired If some features are not supported by the GPU, throw error (true) or just disable them (false).
           ///                            If set to 'false', call 'enabledFeatures()' after creation to verify if something's missing.
-          /// @param deviceExtensions  Custom array of device extension to enable
-          ///                          (or NULL to enable all standard extensions used by the toolbox).
+          /// @param deviceExtensions  Structure with custom array of device extensions to enable
+          ///                          (or NULL array to enable all standard extensions used by the toolbox).
           ///                          Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
-          ///                          Warning: if the value is not NULL, no other extension than those specified here will be enabled
+          ///                          Warning: if the array is not NULL, no other extension than those specified will be enabled
           ///                          -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
-          /// @param extensionCount    Array size for 'deviceExtensions'.
           /// @param commandQueueCount Number of parallel command queues created (usually one per swap-chain/target).
           /// @throws - runtime_error: creation failure.
           ///         - bad_alloc: memory allocation failure.
           Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance = nullptr,
                    const VkPhysicalDeviceFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
-                   const char** deviceExtensions = nullptr, size_t extensionCount = 0, size_t commandQueueCount = 1);
+                   const DeviceExtensions& extensions = DeviceExtensions{}, size_t commandQueueCount = 1);
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { _destroy(); }
           
@@ -134,6 +133,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline bool isExtensionEnabled(const std::string& name) const noexcept {
             return (this->_deviceExtensions.find(name) != this->_deviceExtensions.end());
           }
+          /// @brief Verify if dynamic rendering (without render passes) is supported by logical device
+          inline bool isDynamicRenderingSupported() const noexcept { return this->_isDynamicRenderingSupported; }
+          /// @brief Verify if extended dynamic states are supported by logical device
+          inline bool isExtendedDynamicStateSupported() const noexcept { return this->_isExtendedDynamicStateSupported; }
           
           /// @brief Flush command buffers
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
@@ -252,6 +255,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
           DeviceHandle _physicalDevice = VK_NULL_HANDLE;
           DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
+          bool _isDynamicRenderingSupported = false;
+          bool _isExtendedDynamicStateSupported = false;
 
           VkPipeline _attachedPipeline = VK_NULL_HANDLE;
         };

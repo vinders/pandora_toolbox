@@ -57,6 +57,17 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           DynamicArray<VkVertexInputAttributeDescription> attributes;
         };
         using InputLayoutHandle = const InputLayoutDescription*; ///< Input layout representation, for shader input stage
+        
+        struct DeviceExtensions final { ///< Specify logical device extensions for Renderer
+          const char** deviceExtensions = nullptr; ///< Custom array of device extensions to enable
+                                                   ///  (or NULL to enable all standard extensions used by the toolbox).
+                                                   ///  Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+                                                   ///  Warning: if the value is not NULL, no other extension than those specified here will be enabled
+                                                   ///  -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
+          size_t extensionCount = 0;               ///< Array size for 'deviceExtensions'
+          bool allowDynamicRendering = false;      ///< Allow dynamic rendering (without render passes) if supported
+                                                   ///  (if Vulkan >= 1.3 or if extension "VK_KHR_dynamic_rendering" enabled (header >= v1.2.197 required))
+        };
 
         
         // -- rasterizer settings --

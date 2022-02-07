@@ -347,7 +347,7 @@ Implementation included in renderer.cpp
     if (state._isDynamicCullingEnabled()) {
       if (!VulkanLoader::instance().isDynamicCullingSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic culling/order not supported by driver");
-      if (!_isExtendedDynamicStateSupported())
+      if (!_renderer->isExtendedDynamicStateSupported())
         throw std::runtime_error("Vulkan: extension for dynamic states (culling/order) not enabled");
     }
 
@@ -389,7 +389,7 @@ Implementation included in renderer.cpp
         throw std::runtime_error("Vulkan: dynamic depth-test not supported by driver");
       if (state._isDynamicStencilTestEnabled() && !loader.isDynamicStencilTestSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic stencil-test not supported by driver");
-      if (!_isExtendedDynamicStateSupported())
+      if (!_renderer->isExtendedDynamicStateSupported())
         throw std::runtime_error("Vulkan: extension for dynamic states (depth/stencil-tests) not enabled");
     }
 
@@ -441,7 +441,7 @@ Implementation included in renderer.cpp
     if (useDynamicCount) {
       if (!VulkanLoader::instance().isDynamicViewportCountSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic viewport count not supported by driver");
-      if (!_isExtendedDynamicStateSupported())
+      if (!_renderer->isExtendedDynamicStateSupported())
         throw std::runtime_error("Vulkan: extension for dynamic states (viewport count) not enabled");
     }
     
@@ -458,6 +458,19 @@ Implementation included in renderer.cpp
     this->_useDynamicViewportCount = useDynamicCount;
     return *this;
   }
+
+  // ---
+
+# if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+    GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(const VkPipelineRenderingCreateInfoKHR& dynamicRenderingInfo) {
+      if (!_renderer->isDynamicRenderingSupported())
+        throw std::runtime_error("Vulkan: extension KHR dynamic rendering not enabled");
+      _renderPassObj = nullptr;
+      _targetCount = dynamicRenderingInfo.colorAttachmentCount;
+      _descriptor.pNext = &dynamicRenderingInfo;
+      return *this;
+    }
+# endif
 
 
 // -- GraphicsPipeline.Builder - Vulkan pipeline description factory -- --------
@@ -552,9 +565,12 @@ Implementation included in renderer.cpp
 
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
-    if (_renderPassObj == nullptr)
-      throw std::invalid_argument("GraphicsPipeline: renderpass required");
-    _descriptor.renderPass = _renderPassObj->value();
+    if (_renderPassObj != nullptr)
+      _descriptor.renderPass = _renderPassObj->value();
+    else if (_descriptor.pNext != nullptr && _renderer->isDynamicRenderingSupported())
+      _descriptor.renderPass = nullptr;
+    else
+      throw std::invalid_argument("GraphicsPipeline: RenderPass required");
 
     // create default pipeline layout (if none provided)
     if (_pipelineLayoutObj == nullptr) {

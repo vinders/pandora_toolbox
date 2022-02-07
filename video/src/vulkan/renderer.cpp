@@ -61,9 +61,7 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/swap_chain.h"
 # include "video/vulkan/shader.h"
 # include "video/vulkan/graphics_pipeline.h"
-// # include "video/vulkan/depth_stencil_buffer.h"
-// # include "video/vulkan/dynamic_buffer.h"
-// # include "video/vulkan/static_buffer.h"
+// # include "video/vulkan/buffer.h"
 // # include "video/vulkan/texture.h"
 // # include "video/vulkan/texture_reader.h"
 // # include "video/vulkan/texture_writer.h"
@@ -520,7 +518,7 @@ Includes hpp implementations at the end of the file
   // Create Vulkan instance and rendering device
   Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance,
                      const VkPhysicalDeviceFeatures& requestedFeatures, bool areFeaturesRequired,
-                     const char** deviceExtensions, size_t extensionCount, size_t commandQueueCount)
+                     const DeviceExtensions& extensions, size_t commandQueueCount)
     : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
       _physicalDevice(VK_NULL_HANDLE) {
     // find hardware adapter for monitor
@@ -561,7 +559,7 @@ Includes hpp implementations at the end of the file
       cmdQueueInfo.pQueuePriorities = queuePriorities.value;
     }
 
-    // create rendering device
+    // create rendering device - command queues
     VkDeviceCreateInfo deviceInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pQueueCreateInfos = cmdQueueInfos.value;
@@ -578,10 +576,11 @@ Includes hpp implementations at the end of the file
       catch (...) {}
 #   endif
 
+    // create rendering device - extensions
     DynamicArray<const char*> defaultExt;
-    if (deviceExtensions != nullptr && extensionCount != 0) {
-      deviceInfo.ppEnabledExtensionNames = deviceExtensions;
-      deviceInfo.enabledExtensionCount = (uint32_t)extensionCount;
+    if (extensions.deviceExtensions != nullptr && extensions.extensionCount != 0) {
+      deviceInfo.ppEnabledExtensionNames = extensions.deviceExtensions;
+      deviceInfo.enabledExtensionCount = (uint32_t)extensions.extensionCount;
     }
     else {
       defaultExt = __defaultDeviceExtensions(deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
@@ -589,7 +588,24 @@ Includes hpp implementations at the end of the file
     }
     for (uint32_t i = 0; i < deviceInfo.enabledExtensionCount; ++i)
       this->_deviceExtensions.emplace(deviceInfo.ppEnabledExtensionNames[i]);
+    
+    _isDynamicRenderingSupported = false;
+#   if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+      VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingInfo{};
+      if (extensions.allowDynamicRendering) {
+        if (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
+        || this->_deviceExtensions.find("VK_KHR_dynamic_rendering") != this->_deviceExtensions.end()) {
+          dynamicRenderingInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+          dynamicRenderingInfo.dynamicRendering = VK_TRUE;
+          deviceInfo.pNext = &dynamicRenderingInfo;
+          _isDynamicRenderingSupported = true;
+        }
+      }
+#   endif
+    _isExtendedDynamicStateSupported = (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
+                                     || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end());
 
+    // create rendering device
     VkDevice deviceContextHandle = VK_NULL_HANDLE;
     VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &deviceContextHandle);
     if (result != VK_SUCCESS || deviceContextHandle == VK_NULL_HANDLE)
@@ -1300,7 +1316,7 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 // Include hpp implementations
 // -----------------------------------------------------------------------------
-// # include "./buffers.hpp"
+// # include "./buffer.hpp"
 // # include "./texture.hpp"
 // # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"

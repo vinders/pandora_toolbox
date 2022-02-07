@@ -133,8 +133,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(customInstance->featureLevel() == VK_API_VERSION_1_1);
 
       pandora::hardware::DisplayMonitor monitor;
-      const char* extensions[] { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-      Renderer renderer(monitor, customInstance, Renderer::defaultFeatures(), false, extensions, sizeof(extensions)/sizeof(*extensions));
+      const char* extensionIds[] { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+      DeviceExtensions extensions{ extensionIds, sizeof(extensionIds) / sizeof(*extensionIds), true };
+      Renderer renderer(monitor, customInstance, Renderer::defaultFeatures(), false, extensions, size_t{ 1u });
       EXPECT_TRUE(renderer.device() != VK_NULL_HANDLE);
       EXPECT_TRUE(renderer.context() != VK_NULL_HANDLE);
       EXPECT_TRUE(renderer.vkInstance() != VK_NULL_HANDLE);
