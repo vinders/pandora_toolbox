@@ -78,9 +78,7 @@ Includes hpp implementations at the end of the file
 # include "video/d3d11/graphics_pipeline.h"
 
 # include "video/d3d11/shader.h"
-# include "video/d3d11/depth_stencil_buffer.h"
-# include "video/d3d11/dynamic_buffer.h"
-# include "video/d3d11/static_buffer.h"
+# include "video/d3d11/buffer.h"
 # include "video/d3d11/texture.h"
 # include "video/d3d11/texture_reader.h"
 # include "video/d3d11/texture_writer.h"
@@ -1301,7 +1299,7 @@ Includes hpp implementations at the end of the file
 // Include hpp implementations
 // -----------------------------------------------------------------------------
 # include "./graphics_pipeline.hpp"
-# include "./buffers.hpp"
+# include "./buffer.hpp"
 # include "./texture.hpp"
 # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"

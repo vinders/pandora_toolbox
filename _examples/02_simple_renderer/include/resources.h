@@ -18,17 +18,17 @@ Description : Example - rendering resources (materials, textures, meshes)
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/graphics_pipeline.h>
 # include <video/d3d11/texture.h>
-# include <video/d3d11/static_buffer.h>
+# include <video/d3d11/buffer.h>
   namespace video_api = pandora::video::d3d11;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
 # include <video/vulkan/graphics_pipeline.h>
 # include <video/vulkan/texture.h>
-# include <video/vulkan/static_buffer.h>
+# include <video/vulkan/buffer.h>
   namespace video_api = pandora::video::vulkan;
 #else
 # include <video/openGL4/graphics_pipeline.h>
 # include <video/openGL4/texture.h>
-# include <video/openGL4/static_buffer.h>
+# include <video/openGL4/buffer.h>
   namespace video_api = pandora::video::openGL4;
 #endif
 #include "camera.h"
@@ -120,14 +120,14 @@ struct DirectionalLight final {
 
 // group of joined vertices (with same material)
 struct Mesh final {
-  video_api::StaticBuffer vertices;
-  video_api::StaticBuffer indices;
+  video_api::ImmutableBuffer vertices; // if vertices are animated, use StaticBuffer instead
+  video_api::ImmutableBuffer indices;
   uint32_t indexCount = 0;
   MaterialId material = MaterialId::none;
   TextureMapId texture = TextureMapId::none;
   GraphicsPipelineId pipeline = toGraphicsPipelineId(PipelineStateId::entities3D, ShaderProgramId::textured);
 
-  Mesh(video_api::StaticBuffer&& vertices, video_api::StaticBuffer&& indices, uint32_t indexCount,
+  Mesh(video_api::ImmutableBuffer&& vertices, video_api::ImmutableBuffer&& indices, uint32_t indexCount,
        MaterialId materialId, TextureMapId textureId, GraphicsPipelineId pipelineId)
     : vertices(std::move(vertices)), indices(std::move(indices)), indexCount(indexCount),
       material(materialId), texture(textureId), pipeline(pipelineId) {}
@@ -148,7 +148,7 @@ struct Entity final {
 };
 // 2D/UI sprite entity
 struct SpriteEntity final {
-  std::shared_ptr<video_api::StaticBuffer> vertices;
+  std::shared_ptr<video_api::ImmutableBuffer> vertices;
   SpriteId image;
 };
 
@@ -157,7 +157,7 @@ struct SpriteEntity final {
 // Display resource storage
 // --> Graphics pipelines, materials, texture maps to bind to renderer + existing model entities
 struct ResourceStorage final {
-  std::map<MaterialId, Material> materials;
+  std::map<MaterialId, video_api::ImmutableBuffer> materials;
   std::map<TextureMapId, TextureMap> textureMaps;
   std::map<SpriteId, video_api::Texture2D> sprites;
   std::map<ShaderProgramId, ShaderProgram> shaders;
@@ -166,8 +166,7 @@ struct ResourceStorage final {
   std::vector<Entity> entities3D;       // 3D objects
   std::vector<SpriteEntity> entities2D; // UI & sprites
   video_api::StaticBuffer cameraViewProjection;
-  video_api::StaticBuffer activeMaterial;
-  video_api::StaticBuffer activeLights;
+  video_api::ImmutableBuffer activeLights; // fixed lights -> immutable
 
   void clear() {
     entities3D.clear();
@@ -176,7 +175,6 @@ struct ResourceStorage final {
     textureMaps.clear();
     pipelines.clear();
     cameraViewProjection.release();
-    activeMaterial.release();
     activeLights.release();
   }
 };

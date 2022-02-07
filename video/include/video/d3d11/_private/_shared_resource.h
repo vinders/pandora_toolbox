@@ -42,6 +42,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         template <typename T>
         class SharedResource final {
         public:
+          using Reference = T*;
           SharedResource() noexcept = default; ///< Empty resource
           inline SharedResource(T* value) noexcept : _value(value) {} ///< Initialized resource
           inline ~SharedResource() noexcept { release(); }  ///< Safe destruction (if scope exit or exception)
@@ -93,8 +94,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline T* operator->() const noexcept { return _value; }
           inline operator bool() const noexcept { return (_value != nullptr); } ///< Verify validity
           inline bool hasValue() const noexcept { return (_value != nullptr); } ///< Verify validity
-          inline T& value() const noexcept { return _value; } ///< Read value (no verification -> call hasValue() first!)
-          inline T* get() const noexcept { return _value; }   ///< Get value pointer
+          inline T& value() const noexcept { return *_value; } ///< Read value (no verification -> call hasValue() first!)
+          inline T* get() const noexcept { return _value; }    ///< Get value pointer
+          inline const Reference* ptr() const noexcept { return &_value; } ///< Get pointer to value pointer
           inline T** address() noexcept { release(); return &_value; } ///< Free previous value + get address for assignment
 
           inline bool operator==(const SharedResource<T>& rhs) const noexcept { return (_value == rhs._value); }

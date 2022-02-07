@@ -242,8 +242,8 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           return (format == DepthStencilFormat::d32_f_s8_ui || format == DepthStencilFormat::d24_unorm_s8_ui); 
         }
         
-        /// @brief Basic StaticBuffer / DynamicBuffer content type
-        enum class BaseBufferType : int/*D3D11_BIND_FLAG*/ {
+        /// @brief Data Buffer content type
+        enum class BufferType : int/*D3D11_BIND_FLAG*/ {
           uniform = D3D11_BIND_CONSTANT_BUFFER,  ///< Constant/uniform data buffer for shader stage(s): 
                                                  ///  * can be bound with any shader stage(s): Renderer.bind<...>ConstantBuffers.
                                                  ///  * should contain data useful as a whole for shaders:
@@ -295,6 +295,21 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           outDesc.BindFlags = (type != ResourceUsage::staging) ? D3D11_BIND_SHADER_RESOURCE : 0;
         }
 #       undef __P_D3D11_RES_USAGE
+
+        /// @brief Dynamic resource / texture memory mapping
+        enum class DynamicMapping : int/*D3D11_MAP*/ {
+          discard = D3D11_MAP_WRITE_DISCARD, ///< Discard previous data (as soon as GPU stops using it), then write dynamic buffer data.
+                                             ///  Recommended for each first write of the buffer for a frame.
+          subsequent = D3D11_MAP_WRITE_NO_OVERWRITE ///< Write dynamic buffer data, and keep previous data in zones not re-written.
+                                                    ///  Recommended for subsequent writes of a buffer within the same frame.
+                                                    ///  No overwrite of previous data currently used by GPU should occur!
+        };
+        /// @brief Staging resource / texture memory mapping
+        enum class StagedMapping : int/*D3D11_MAP*/ {
+          read = D3D11_MAP_READ,            ///< Read-only access
+          write = D3D11_MAP_WRITE,          ///< Write-only access
+          readWrite = D3D11_MAP_READ_WRITE  ///< Read-write access
+        };
         
         
         // -- color/alpha blending --

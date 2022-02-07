@@ -27,8 +27,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/camera_utils.h>
 # include <video/d3d11/texture.h>
-# include <video/d3d11/static_buffer.h>
-# include <video/d3d11/depth_stencil_buffer.h>
+# include <video/d3d11/buffer.h>
+
+//# define __PAUSE_AFTER_RENDERING 250
+# ifdef __PAUSE_AFTER_RENDERING && __PAUSE_AFTER_RENDERING != 0
+#   include <thread>
+#   define __END_DRAW_TEST() \
+           std::this_thread::sleep_for(std::chrono::milliseconds( __PAUSE_AFTER_RENDERING )); \
+           renderer->flush()
+# else
+#   define __END_DRAW_TEST()  renderer->flush()
+# endif
 
   using namespace pandora::video::d3d11;
   using namespace pandora::video;
@@ -221,7 +230,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       0.5f, -0.5f,  0.0f,  // point at bottom-right
       -0.5f, -0.5f,  0.0f, // point at bottom-left
     };
-    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
+    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
 
     // drawing
     float color[4] = { 0.f,0.5f,0.6f,1.f };
@@ -235,7 +244,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
     chain1.swapBuffers(nullptr);
-    renderer->flush();
+    __END_DRAW_TEST();
   }
 
   TEST_F(D3d11RendererDrawTest, vertexIndexedDrawingWithStatesTest) {
@@ -299,8 +308,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       {{0.0f,0.5f,0.f,1.f},{1.f,0.f,0.f,1.f}}, {{0.5f,-0.5f,0.f,1.f},{0.f,1.f,0.f,1.f}}, {{-0.5f,-0.5f,0.f,1.f},{0.f,0.f,1.f,1.f}}
     };
     uint32_t indices1[] = { 0,1,2 };
-    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
-    StaticBuffer vertexIndex1(*renderer, BaseBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
+    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+    Buffer<ResourceUsage::immutable> vertexIndex1(*renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
 
     // drawing
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
@@ -312,7 +321,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawIndexed(sizeof(indices1)/sizeof(*indices1));
     chain1.swapBuffers(depthBuffer.getDepthStencilView());
-    renderer->flush();
+    __END_DRAW_TEST();
   }
 
   TEST_F(D3d11RendererDrawTest, vertexInstanceIndexedDrawingWithStatesTest) {
@@ -378,11 +387,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       {{0.0f,0.25f,0.f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.25f,-0.25f,0.f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.25f,-0.25f,0.f,1.f},{0.f,0.f,0.5f,1.f}}
     };
     uint32_t indices1[] = { 0,1,2 };
-    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
-    StaticBuffer vertexIndex1(*renderer, BaseBufferType::vertexIndex, sizeof(indices1), (const void*)indices1, true);
+    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+    Buffer<ResourceUsage::immutable> vertexIndex1(*renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
     InstanceData instances1[] = { {{-0.5f,-0.5f,0.f},{0.5f,0.f,0.f}}, {{-0.5f,0.5f,0.f},{0.f,0.5f,0.f}}, 
                                   {{0.5f,-0.5f,0.f}, {0.f,0.f,0.5f}}, {{0.5f,0.5f,0.f}, {0.25f,0.25f,0.25f}} };
-    StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
+    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
     // drawing
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
@@ -397,7 +406,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
     renderer->drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
     chain1.swapBuffers(depthBuffer.getDepthStencilView());
-    renderer->flush();
+    __END_DRAW_TEST();
   }
 
   TEST_F(D3d11RendererDrawTest, vertexInstanceDrawingWithStatesCamTest) {
@@ -475,19 +484,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}},
       {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}}
     };
-    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
+    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
     InstanceData instances1[] = { 
       {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
       {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
       {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
       {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
     };
-    StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
+    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
     // camera
     CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
     CamBuffer camData{ proj.projectionMatrix() };
-    StaticBuffer camBuffer(*renderer, BaseBufferType::uniform, sizeof(CamBuffer), &camData, true);
+    Buffer<ResourceUsage::immutable> camBuffer(*renderer, BufferType::uniform, sizeof(CamBuffer), &camData);
 
     // drawing
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
@@ -498,11 +507,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexUniforms(0, camBuffer.handleArray(), size_t{ 1u });
+    renderer->bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
     chain1.swapBuffers(depthBuffer.getDepthStencilView());
-    renderer->flush();
+    __END_DRAW_TEST();
   }
 
 
@@ -748,14 +757,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}},
       {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}}
     };
-    StaticBuffer vertexArray1(*renderer, BaseBufferType::vertex, sizeof(vertices1), (const void*)vertices1, true);
+    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
     InstanceData instances1[] = { 
       {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
       {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
       {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
       {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
     };
-    StaticBuffer instanceArray1(*renderer, BaseBufferType::vertex, sizeof(instances1), (const void*)instances1, true);
+    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
     // texture
     auto image2D = std::unique_ptr<uint8_t[]>(new uint8_t[128 * 128 * 4]());
@@ -779,7 +788,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                DirectX::XMFLOAT4(0.1f, 0.25f, 0.25f, 0.0f),
                                DirectX::XMFLOAT4(0.25f, 0.2f, 0.1f, 32.0f),
                                DirectX::XMFLOAT4(-0.2f, -0.5f, 0.5f, 1.0f) };
-    StaticBuffer camBuffer(*renderer, BaseBufferType::uniform, sizeof(CamLightData), &camLightData, true);
+    Buffer<ResourceUsage::immutable> camBuffer(*renderer, BufferType::uniform, sizeof(CamLightData), &camLightData);
 
     // drawing
     renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
@@ -790,8 +799,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
     unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexTexLightData), (unsigned int)sizeof(InstanceData) };
     unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexUniforms(0, camBuffer.handleArray(), size_t{ 1u });
-    renderer->bindFragmentUniforms(0, camBuffer.handleArray(), size_t{ 1u });
+    renderer->bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
+    renderer->bindFragmentUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
     renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
     renderer->bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
     renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
@@ -799,7 +808,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     // resolve anti-aliasing
     chain1.resolve(msaaTarget.handle(), 0);
     chain1.swapBuffers(depthBuffer.getDepthStencilView());
-    renderer->flush();
+    __END_DRAW_TEST();
   }
 
 # ifndef __MINGW32__

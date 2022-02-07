@@ -163,22 +163,26 @@ void loadPipeline(std::shared_ptr<Renderer>& renderer, PipelineStateId stateId,
 
 // --> material generator
 // --> improvement: use a text file containing all material definitions for a scene/level, or read material from model files
-void loadMaterial(Renderer&, MaterialId id, ResourceStorage& out) {
+void loadMaterial(Renderer& renderer, MaterialId id, ResourceStorage& out) {
   switch (id) {
-    case MaterialId::floor:
-      out.materials[id] = Material{
+    case MaterialId::floor: {
+      Material materialData{
         {0.012f, 0.014f, 0.017f},// diffuse
         {0.f, 0.f, 0.f},         // ambient
         {0.4f, 0.4f, 0.4f}, 16.f // specular, shininess
       };
+      out.materials[id] = ImmutableBuffer(renderer, BufferType::uniform, sizeof(Material), &materialData);
       break;
-    default:
-      out.materials[id] = Material{
+    }
+    default: {
+      Material materialData{
         {1.f, 1.f, 1.f},     // diffuse
         {0.f, 0.f, 0.f},     // ambient
         {0.f, 0.f, 0.f}, 0.f // specular, shininess
       };
+      out.materials[id] = ImmutableBuffer(renderer, BufferType::uniform, sizeof(Material), &materialData);
       break;
+    }
   }
 }
 

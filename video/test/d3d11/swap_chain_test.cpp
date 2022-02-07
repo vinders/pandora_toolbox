@@ -21,7 +21,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <video/window.h>
 # include <video/d3d11/renderer.h>
 # include <video/d3d11/swap_chain.h>
-# include <video/d3d11/depth_stencil_buffer.h>
+# include <video/d3d11/buffer.h>
 
   using namespace pandora::video::d3d11;
 
