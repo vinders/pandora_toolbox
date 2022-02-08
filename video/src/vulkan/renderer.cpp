@@ -365,6 +365,14 @@ Includes hpp implementations at the end of the file
         deviceScore += 2048;
       if (deviceFeatures.multiViewport)
         deviceScore += 512;
+      
+      uint32_t highestSampleCount = 64u;
+      uint32_t sampleCountMask = ((uint32_t)deviceProperties.limits.framebufferColorSampleCounts
+                                & (uint32_t)deviceProperties.limits.framebufferDepthSampleCounts);
+      while ((sampleCountMask & highestSampleCount) == 0 && highestSampleCount > 1u)
+        highestSampleCount >>= 1;
+      deviceScore += (highestSampleCount << 4); // 16 (x1) to 1024 (x64)
+      
       return deviceScore;
     }
 
