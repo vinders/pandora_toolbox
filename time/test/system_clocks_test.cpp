@@ -40,7 +40,7 @@ protected:
 
 // -- clock timing --
 
-#ifndef _P_CI_DISABLE_SLOW_TESTS
+#if !defined(_P_CI_DISABLE_SLOW_TESTS) && !defined(__MINGW32__)
 template <typename _ClockType>
 void _validateClockTimes() {
   EXPECT_TRUE(_ClockType::init());
