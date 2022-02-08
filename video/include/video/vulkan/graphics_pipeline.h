@@ -427,8 +427,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           // -> throws: - logic_error if some required states/stages haven't been set.
           //            - runtime_error if pipeline creation fails.
           GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
-                           SharedResource<VkRenderPass> renderPass, SharedResource<VkPipelineLayout> pipelineLayout,
-                           VkPipelineCache cache);
+                           SharedRenderPass renderPass, SharedResource<VkPipelineLayout> pipelineLayout, VkPipelineCache cache);
 
           GraphicsPipeline(const GraphicsPipeline&) = delete;
           GraphicsPipeline(GraphicsPipeline&& rhs) noexcept
@@ -451,6 +450,8 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           inline Handle handle() const noexcept { return this->_pipelineHandle; }
           /// @brief Verify if initialized (false) or empty/moved/released (true)
           inline bool isEmpty() const noexcept { return (this->_pipelineHandle == VK_NULL_HANDLE); }
+          /// @brief Verify if pipeline is built for dynamic rendering (true) or render passes (false)
+          inline bool isDynamicRendering() const noexcept { return (this->_renderPass == nullptr); }
 
           // ---
 
@@ -533,7 +534,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             Builder& setDepthStencilState(const DepthStencilParams& state);
             /// @brief Remove depth/stencil test state (if no depth buffer is used)
             inline Builder& clearDepthStencilState() noexcept {
-              this->_descriptor.pDepthStencilState = nullptr; this->_useDynamicDepthTest = false;  return *this;
+              this->_descriptor.pDepthStencilState = nullptr; this->_useDynamicDepthTest = false; return *this;
             }
 
             /// @brief Bind color/alpha blending state -- common to all render-targets (one of the 2 methods required)
@@ -585,10 +586,21 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             /// @warning - The pipeline will need to be used with compatible render-targets only.
             ///          - For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
             ///            Higher-level APIs (D3D11, OpenGL) do not have any concept of render passes.
-            inline Builder& setRenderPass(uint32_t renderTargetCount, RenderPass renderPass) noexcept {
-              _targetCount = renderTargetCount; _renderPassObj = std::move(renderPass); return *this;
+            inline Builder& setRenderPass(SharedRenderPass renderPass) noexcept {
+              _maxColorAttachmentCount = (renderPass != nullptr) ? renderPass->maxColorAttachmentCount : 1;
+              _renderPassObj = std::move(renderPass);
+              _descriptor.pNext = nullptr;
+              return *this;
             }
 #           if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+              /// @brief Provide dynamic rendering definition (formats only)
+              ///        The Renderer must be built either for Vulkan 1.3+ or with extension "VK_KHR_dynamic_rendering",
+              ///        with argument extensions.allowDynamicRendering==true.
+              ///        Verify support for dynamic rendering with Renderer.isDynamicRenderingSupported.
+              /// @throws runtime_error if dynamic rendering is not supported by renderer.
+              /// @warning - The pipeline will need to be used with compatible render-targets only.
+              ///          - The current VkPipelineRenderingCreateInfoKHR must be kept alive as long as the Builder is used.
+              ///            To avoid unnecessary copies and processing, its lifetime is NOT guaranteed by the Builder instance!
               Builder& setRenderPass(const VkPipelineRenderingCreateInfoKHR& dynamicRenderingInfo);
 #           endif
 
@@ -610,7 +622,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             /// @remarks The render pass object can be used for multiple pipelines, as long as they share the same Renderer instance.
             /// @warning For cross-API projects, note that this is only compatible with other low-level APIs (D3D12...).
             /// @throws runtime_error on creation failure
-            RenderPass createRenderPass(const VkRenderPassCreateInfo& params);
+            SharedRenderPass createRenderPass(const VkRenderPassCreateInfo& params);
 
 
             // -- Vulkan pipeline settings --
@@ -643,12 +655,12 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             VkGraphicsPipelineCreateInfo _descriptor{}; // main descriptor
             std::shared_ptr<Renderer> _renderer = nullptr;
 
-            RenderPass _renderPassObj;
+            SharedRenderPass _renderPassObj;
             GlobalLayout _pipelineLayoutObj;
             DynamicArray<VkPipelineColorBlendAttachmentState> _blendAttachmentsPerTarget;
             const Viewport* _viewports = nullptr;
             const ScissorRectangle* _scissorTests = nullptr;
-            uint32_t _targetCount = 0;
+            uint32_t _maxColorAttachmentCount = 0;
             bool _useBlendPerTarget = false;
             bool _useDynamicCulling = false;
             bool _useDynamicDepthTest = false;
@@ -660,7 +672,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
         private:
           GraphicsPipeline::Handle _pipelineHandle = VK_NULL_HANDLE;
           std::shared_ptr<Renderer> _renderer = nullptr;
-          SharedResource<VkRenderPass> _renderPass = nullptr; // stored to guarantee lifetime & destruction
+          SharedRenderPass _renderPass = nullptr;                     // stored to guarantee lifetime & destruction
           SharedResource<VkPipelineLayout> _pipelineLayout = nullptr; // stored to guarantee lifetime & destruction
         };
       }

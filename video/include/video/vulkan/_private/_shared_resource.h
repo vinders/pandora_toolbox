@@ -117,9 +117,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         using SharedResource = std::shared_ptr<ScopedResource<T> >; ///< Shared RAII container for native vulkan resources
         
         // ---
+        
+        struct RenderPass final {
+          ScopedResource<VkRenderPass> handle;
+          uint32_t maxColorAttachmentCount = 0;
+        };
+        using SharedRenderPass = std::shared_ptr<RenderPass>;             ///< Render-pass description object
 
         using InputLayout = std::shared_ptr<InputLayoutDescription>; ///< Input layout representation, for shader input stage
-        using RenderPass = SharedResource<VkRenderPass>;             ///< Render-pass description object
         using GlobalLayout = SharedResource<VkPipelineLayout>;       ///< Description object for globals: uniform buffers, storage buffers, samplers
         
         using GraphicsPipelineHandle = VkPipeline; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())

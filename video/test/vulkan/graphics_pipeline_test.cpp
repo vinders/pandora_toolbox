@@ -418,7 +418,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // create simple pipeline (no viewport)
     EXPECT_ANY_THROW(builder.build());
-    builder.setRenderPass(1, nullptr);//TODO
+    builder.setRenderPass(nullptr);//TODO
     EXPECT_ANY_THROW(builder.build());
     builder.setInputLayout(inputBindings, size_t{ 1u }, layoutAttributes, size_t{ 2u });
     builder.setInputLayout(inputLayout);
@@ -437,7 +437,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_ANY_THROW(builder.build());
     builder.setBlendState(BlendParams(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::add,
                                       BlendFactor::sourceAlpha, BlendFactor::destInvAlpha, BlendOp::add));
-    builder.setRenderPass(1u, renderPass);
+    builder.setRenderPass(renderPass);
 
     GraphicsPipeline pipeline = builder.build();
     EXPECT_TRUE(pipeline.handle() != VK_NULL_HANDLE);

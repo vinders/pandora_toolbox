@@ -161,8 +161,7 @@ Implementation included in renderer.cpp
 
   // Create pipeline object -- reserved for internal use or advanced usage
   GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
-                                     SharedResource<VkRenderPass> renderPass, SharedResource<VkPipelineLayout> pipelineLayout,
-                                     VkPipelineCache cache)
+                                     SharedRenderPass renderPass, SharedResource<VkPipelineLayout> pipelineLayout, VkPipelineCache cache)
     : _renderer(std::move(renderer)),
       _renderPass(std::move(renderPass)),
       _pipelineLayout(std::move(pipelineLayout)) {
@@ -466,7 +465,7 @@ Implementation included in renderer.cpp
       if (!_renderer->isDynamicRenderingSupported())
         throw std::runtime_error("Vulkan: extension KHR dynamic rendering not enabled");
       _renderPassObj = nullptr;
-      _targetCount = dynamicRenderingInfo.colorAttachmentCount;
+      _maxColorAttachmentCount = dynamicRenderingInfo.colorAttachmentCount;
       _descriptor.pNext = &dynamicRenderingInfo;
       return *this;
     }
@@ -484,14 +483,24 @@ Implementation included in renderer.cpp
 
     return std::make_shared<ScopedResource<VkPipelineLayout> >(pipelineLayoutHandle, this->_renderer->resourceManager(), vkDestroyPipelineLayout);
   }
+  
   // Create render pass definition: targets, formats, inputs, dependencies
-  RenderPass GraphicsPipeline::Builder::createRenderPass(const VkRenderPassCreateInfo& params) { // throws
+  SharedRenderPass GraphicsPipeline::Builder::createRenderPass(const VkRenderPassCreateInfo& params) { // throws
     VkRenderPass renderPassHandle = VK_NULL_HANDLE;
     VkResult result = vkCreateRenderPass(this->_renderer->context(), &params, nullptr, &renderPassHandle);
     if (result != VK_SUCCESS || renderPassHandle == VK_NULL_HANDLE)
       throwError(result, "Vulkan: render pass not created");
-
-    return std::make_shared<ScopedResource<VkRenderPass> >(renderPassHandle, this->_renderer->resourceManager(), vkDestroyRenderPass);
+    
+    auto renderPass = std::make_shared<RenderPass>();
+    renderPass->handle = ScopedResource<VkRenderPass>(renderPassHandle, this->_renderer->resourceManager(), vkDestroyRenderPass);
+    renderPass->maxColorAttachmentCount = 0;
+    if (params.subpassCount > 0) {
+      for (const VkSubpassDescription* it = &(params.pSubpasses[params.subpassCount - 1u]); it >= params.pSubpasses; --it) {
+        if (renderPass->maxColorAttachmentCount < it->colorAttachmentCount)
+          renderPass->maxColorAttachmentCount = it->colorAttachmentCount;
+      }
+    }
+    return renderPass;
   }
 
 
@@ -566,7 +575,7 @@ Implementation included in renderer.cpp
   // Build a graphics pipeline (based on current params)
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
     if (_renderPassObj != nullptr)
-      _descriptor.renderPass = _renderPassObj->value();
+      _descriptor.renderPass = _renderPassObj->handle.value();
     else if (_descriptor.pNext != nullptr && _renderer->isDynamicRenderingSupported())
       _descriptor.renderPass = nullptr;
     else
@@ -581,10 +590,10 @@ Implementation included in renderer.cpp
     _descriptor.layout = _pipelineLayoutObj->value();
 
     // blend state - fix number of attachments
-    if (_targetCount != _blendDesc.attachmentCount && _blendDesc.attachmentCount != 0) {
-      if (_targetCount > _blendDesc.attachmentCount) {
-        if ((size_t)_targetCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
-          DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_targetCount);
+    if (_maxColorAttachmentCount != _blendDesc.attachmentCount && _blendDesc.attachmentCount != 0) {
+      if (_maxColorAttachmentCount > _blendDesc.attachmentCount) {
+        if ((size_t)_maxColorAttachmentCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
+          DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_maxColorAttachmentCount);
           if (_blendAttachmentsPerTarget.length() > 0)
             memcpy(resizedBlendPerTarget.value, _blendAttachmentsPerTarget.value,
                     _blendAttachmentsPerTarget.length()*sizeof(VkPipelineColorBlendAttachmentState));
@@ -593,11 +602,11 @@ Implementation included in renderer.cpp
         }
 
         if (!_useBlendPerTarget) { // grouped blend -> copy first value to every slot
-          for (uint32_t i = _blendDesc.attachmentCount; i < _targetCount; ++i)
+          for (uint32_t i = _blendDesc.attachmentCount; i < _maxColorAttachmentCount; ++i)
             memcpy(&(_blendAttachmentsPerTarget.value[i]), _blendAttachmentsPerTarget.value, sizeof(VkPipelineColorBlendAttachmentState));
         }
       }
-      _blendDesc.attachmentCount = _targetCount;
+      _blendDesc.attachmentCount = _maxColorAttachmentCount;
     }
 
     // configure dynamic states
