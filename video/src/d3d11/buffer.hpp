@@ -27,7 +27,8 @@ Implementation included in renderer.cpp
 
   // Create depth/stencil buffer for existing renderer/render-target
   DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, 
-                                         uint32_t width, uint32_t height, uint32_t sampleCount) { // throws
+                                         uint32_t width, uint32_t height, uint32_t sampleCount)
+    : _pixelSize(_toPixelSize(width, height)), _format(format) { // throws
     if (width == 0 || height == 0)
       throw std::invalid_argument("DepthStencil: width/height is 0");
     
@@ -65,13 +66,9 @@ Implementation included in renderer.cpp
       depthViewDescriptor.Texture2D.MipSlice = 0;
     }
     
-    
     result = renderer.device()->CreateDepthStencilView(this->_depthStencilBuffer, &depthViewDescriptor, &(this->_depthStencilView));
     if (FAILED(result) || this->_depthStencilView == nullptr)
       throwError(result, "DepthStencil: view not created");
-    
-    this->_pixelSize = _toPixelSize(width, height);
-    this->_format = format;
   }
 
   // Destroy depth/stencil buffer

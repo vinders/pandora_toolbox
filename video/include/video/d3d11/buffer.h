@@ -45,7 +45,8 @@ Direct3D11 - DepthStencilBuffer
           /// @warning Params 'width'/'height' should be the same as the associated render-target size (swap-chain/texture buffer).
           /// @throws - invalid_argument: if width/height is 0.
           ///         - runtime_error: creation failure.
-          DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, uint32_t width, uint32_t height, uint32_t sampleCount = 1u);
+          DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format,
+                             uint32_t width, uint32_t height, uint32_t sampleCount = 1u);
           ~DepthStencilBuffer() noexcept { release(); }
           /// @brief Destroy depth/stencil buffer
           void release() noexcept;
