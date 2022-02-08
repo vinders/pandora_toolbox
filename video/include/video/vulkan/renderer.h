@@ -162,8 +162,18 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Read device adapter VRAM size
           /// @returns Read success
           bool getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept;
+          
           /// @brief Convert color/depth/component data format to native format (usable in input layout description) -- see "video/vulkan/shader.h".
           static constexpr inline VkFormat toLayoutFormat(DataFormat format) noexcept { return _getDataFormatComponents(format); }
+          /// @brief Find first color format supported (from a list of candidates, ordered from best to worst)
+          /// @returns First supported format (or 'DataFormat::unknown' if no supported format was found).
+          DataFormat findSupportedDataFormat(const DataFormat* candidates, size_t count,
+                                             FormatAttachment attachmentType = FormatAttachment::colorBlend,
+                                             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const noexcept;
+          /// @brief Find first depth/stencil format supported (from a list of candidates, ordered from best to worst)
+          /// @returns First supported format (or '(DepthStencilFormat)0' if no supported format was found).
+          DepthStencilFormat findSupportedDepthStencilFormat(const DepthStencilFormat* candidates, size_t count,
+                                                             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const noexcept;
 
           /// @brief Convert standard sRGB(A) color to gamma-correct linear RGB(A)
           /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'

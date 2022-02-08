@@ -43,6 +43,7 @@ Includes hpp implementations at the end of the file
 # include <cmath>
 # include <stdexcept>
 # include <memory/light_string.h>
+# define GLM_FORCE_DEPTH_ZERO_TO_ONE // force Vulkan depth range (0.0 to 1.0) instead of OpenGL
 # include <glm/glm.hpp>
 # include <glm/gtc/color_space.hpp>
 
@@ -717,6 +718,42 @@ Includes hpp implementations at the end of the file
       outSharedRam = (size_t)localByteSize + (size_t)sharedByteSize;
     }
     return (memoryProperties.memoryHeapCount != 0);
+  }
+
+  // ---
+  
+  // Find first color format supported (from a list of candidates, ordered from best to worst)
+  DataFormat Renderer::findSupportedDataFormat(const DataFormat* candidates, size_t count,
+                                               FormatAttachment attachmentType, VkImageTiling tiling) const noexcept {
+    for (const DataFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
+      VkFormatProperties formatProps{};
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_physicalDevice,
+                                          _getDataFormatComponents(*candidates), &formatProps);
+      
+      if (tiling == VK_IMAGE_TILING_OPTIMAL) {
+        if (formatProps.optimalTilingFeatures & (VkFormatFeatureFlags)attachmentType)
+          return *candidates;
+      }
+      else if (formatProps.linearTilingFeatures & (VkFormatFeatureFlags)attachmentType)
+        return *candidates;
+    }
+    return DataFormat::unknown;
+  }
+  // Find first depth/stencil format supported (from a list of candidates, ordered from best to worst)
+  DepthStencilFormat Renderer::findSupportedDepthStencilFormat(const DepthStencilFormat* candidates,
+                                                               size_t count, VkImageTiling tiling) const noexcept {
+    for (const DepthStencilFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
+      VkFormatProperties formatProps{};
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_physicalDevice, (VkFormat)*candidates, &formatProps);
+      
+      if (tiling == VK_IMAGE_TILING_OPTIMAL) {
+        if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+          return *candidates;
+      }
+      else if (formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        return *candidates;
+    }
+    return (DepthStencilFormat)0;
   }
   
   // Convert standard sRGB(A) color to gamma-correct linear RGB(A)

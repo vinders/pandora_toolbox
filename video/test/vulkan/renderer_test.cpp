@@ -97,6 +97,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
              (uint32_t)renderer.maxRenderTargets(),
              renderer.isTearingAvailable() ? trueVal : falseVal);
 
+      DataFormat colorFormats[]{
+        DataFormat::rgba16_f_scRGB,
+        DataFormat::rgba8_sRGB,
+        DataFormat::bgra8_sRGB,
+        DataFormat::rgba8_unorm
+      };
+      EXPECT_TRUE(renderer.findSupportedDataFormat(colorFormats, sizeof(colorFormats)/sizeof(*colorFormats),
+                                                   FormatAttachment::color) != DataFormat::unknown);
+      EXPECT_TRUE(renderer.findSupportedDataFormat(colorFormats, sizeof(colorFormats)/sizeof(*colorFormats),
+                                                   FormatAttachment::colorBlend) != DataFormat::unknown);
+      DepthStencilFormat depthFormats[]{
+        DepthStencilFormat::d16_unorm,
+        DepthStencilFormat::d24_unorm_s8_ui,
+        DepthStencilFormat::d32_f
+      };
+      EXPECT_TRUE((uint32_t)renderer.findSupportedDepthStencilFormat(depthFormats, sizeof(depthFormats)/sizeof(*depthFormats)) != 0);
+
       ColorChannel gammaCorrectWhite[4];
       float white[] { 1.f, 1.f, 1.f, 0.5f };
       renderer.sRgbToGammaCorrectColor(white, gammaCorrectWhite);

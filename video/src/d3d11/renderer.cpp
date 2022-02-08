@@ -404,6 +404,28 @@ Includes hpp implementations at the end of the file
     return isSuccess;
   }
   
+  // ---
+  
+  // Find first color format supported (from a list of candidates, ordered from best to worst)
+  DataFormat Renderer::findSupportedDataFormat(const DataFormat* candidates, size_t count,
+                                               FormatAttachment attachmentType) const noexcept {
+    for (const DataFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
+      FormatAttachment flag = _getDataFormatBindFlag(*candidates);
+      if (flag == attachmentType || (flag == FormatAttachment::colorBlend && attachmentType == FormatAttachment::color))
+        return *candidates;
+    }
+    return DataFormat::unknown;
+  }
+  // Find first depth/stencil format supported (from a list of candidates, ordered from best to worst)
+  DepthStencilFormat Renderer::findSupportedDepthStencilFormat(const DepthStencilFormat* candidates, size_t count) const noexcept {
+    for (const DepthStencilFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
+      if (*candidates == DepthStencilFormat::d32_f || *candidates == DepthStencilFormat::d32_f_s8_ui
+       || *candidates == DepthStencilFormat::d24_unorm_s8_ui || *candidates == DepthStencilFormat::d16_unorm)
+        return *candidates;
+    }
+    return (DepthStencilFormat)0;
+  }
+  
   // Convert standard sRGB(A) color to gamma-correct linear RGB(A)
   void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
     DirectX::XMFLOAT3 colorArray(colorRgba);

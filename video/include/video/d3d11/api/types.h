@@ -106,100 +106,115 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           all   = D3D11_COLOR_WRITE_ENABLE_ALL
         };
         
-#       define __P_D3D11_FORMAT(dxgiFormat, bytesPerPixel)  ((uint32_t)dxgiFormat | (((uint32_t)bytesPerPixel) << 24))
+#       define __P_D3D11_BIND_NONE  0x00000000u // usually not supported
+#       define __P_D3D11_BIND_COLOR 0x40000000u // valid for color attachment
+#       define __P_D3D11_BIND_CLRBL 0xC0000000u // valid for color attachment with blending
+#       define __P_D3D11_BIND_DEPTH 0x80000000u // valid for depth attachment
+
+        /// @brief Data format attachment types
+        enum class FormatAttachment : uint32_t {
+          unknown = __P_D3D11_BIND_NONE,       ///< Unknown format support
+          color = __P_D3D11_BIND_COLOR,        ///< Format supported as color attachment
+          colorBlend = __P_D3D11_BIND_CLRBL,   ///< Format supported as color attachment with blending allowed
+          depthStencil = __P_D3D11_BIND_DEPTH, ///< Format supported as depth/stencil attachment
+        };
+        
+#       define __P_D3D11_FORMAT(dxgiFormat, bytesPerPixel, attachment)  ((uint32_t)dxgiFormat | (((uint32_t)bytesPerPixel) << 24) | (uint32_t)attachment)
         
         /// @brief Color/normal/depth/stencil data formats (vertex array buffers, depth/stencil buffers, textures...)
         /// @remarks - HDR rendering / color space: RG(BA) components between 10 and 32 bits ('rgba16_f_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
         ///          - SDR rendering / color space: other component types ('rgba8_sRGB' or 'rgba8_unorm' recommended).
         ///          - HDR rendering on SDR devices: shaders will need to convert color values (or they'll be clipped when displayed).
-        ///          - Additional data formats can be created using: createDataFormat(DXGI_FORMAT,bytesPerPixel).
+        ///          - Additional data formats can be created using: createDataFormat(DXGI_FORMAT,bytesPerPixel,FormatAttachment).
         enum class DataFormat : uint32_t/*DXGI_FORMAT + size*/ {
           unknown = DXGI_FORMAT_UNKNOWN, ///< Unknown/empty format
           
           // HDR / 32 bit
-          rgba32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_FLOAT, 16),///< R32G32B32A32 float
-          rgb32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_FLOAT, 12),    ///< R32G32B32 float
-          rg32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_FLOAT, 8),         ///< R32G32 float
-          r32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32_FLOAT, 4),             ///< R32 float
+          rgba32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_FLOAT, 16, __P_D3D11_BIND_CLRBL),///< R32G32B32A32 float
+          rgb32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_FLOAT, 12, __P_D3D11_BIND_NONE),     ///< R32G32B32 float
+          rg32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_FLOAT, 8, __P_D3D11_BIND_CLRBL),         ///< R32G32 float
+          r32_f = __P_D3D11_FORMAT(DXGI_FORMAT_R32_FLOAT, 4, __P_D3D11_BIND_CLRBL),             ///< R32 float
           
-          rgba32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_UINT, 16),///< R32G32B32A32 unsigned int
-          rgb32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_UINT, 12),    ///< R32G32B32 unsigned int
-          rg32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_UINT, 8),         ///< R32G32 unsigned int
-          r32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32_UINT, 4),             ///< R32 unsigned int
+          rgba32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_UINT, 16, __P_D3D11_BIND_COLOR),///< R32G32B32A32 unsigned int
+          rgb32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_UINT, 12, __P_D3D11_BIND_NONE),     ///< R32G32B32 unsigned int
+          rg32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_UINT, 8, __P_D3D11_BIND_COLOR),         ///< R32G32 unsigned int
+          r32_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R32_UINT, 4, __P_D3D11_BIND_COLOR),             ///< R32 unsigned int
 
-          rgba32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_SINT, 16),///< R32G32B32A32 int
-          rgb32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_SINT, 12),    ///< R32G32B32 int
-          rg32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_SINT, 8),         ///< R32G32 int
-          r32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32_SINT, 4),             ///< R32 int
+          rgba32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32A32_SINT, 16, __P_D3D11_BIND_COLOR),///< R32G32B32A32 int
+          rgb32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32B32_SINT, 12, __P_D3D11_BIND_NONE),     ///< R32G32B32 int
+          rg32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32G32_SINT, 8, __P_D3D11_BIND_COLOR),         ///< R32G32 int
+          r32_i = __P_D3D11_FORMAT(DXGI_FORMAT_R32_SINT, 4, __P_D3D11_BIND_COLOR),             ///< R32 int
           
           // HDR / 16 bit
-          rgba16_f_scRGB = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_FLOAT, 8), ///< R16G16B16A16 float
-          rg16_f = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_FLOAT, 4),               ///< R16G16 float
-          r16_f = __P_D3D11_FORMAT(DXGI_FORMAT_R16_FLOAT, 2),                   ///< R16 float
+          rgba16_f_scRGB = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_FLOAT, 8, __P_D3D11_BIND_CLRBL), ///< R16G16B16A16 float
+          rg16_f = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_FLOAT, 4, __P_D3D11_BIND_CLRBL),        ///< R16G16 float
+          r16_f = __P_D3D11_FORMAT(DXGI_FORMAT_R16_FLOAT, 2, __P_D3D11_BIND_CLRBL),            ///< R16 float
           
-          rgba16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_UINT, 8),///< R16G16B16A16 unsigned int
-          rg16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_UINT, 4),        ///< R16G16 unsigned int
-          r16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16_UINT, 2),            ///< R16 unsigned int
+          rgba16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_UINT, 8, __P_D3D11_BIND_COLOR),///< R16G16B16A16 unsigned int
+          rg16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_UINT, 4, __P_D3D11_BIND_COLOR),        ///< R16G16 unsigned int
+          r16_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R16_UINT, 2, __P_D3D11_BIND_COLOR),            ///< R16 unsigned int
           
-          rgba16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_SINT, 8),///< R16G16B16A16 int
-          rg16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_SINT, 4),        ///< R16G16 int
-          r16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16_SINT, 2),            ///< R16 int
+          rgba16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_SINT, 8, __P_D3D11_BIND_COLOR), ///< R16G16B16A16 int
+          rg16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_SINT, 4, __P_D3D11_BIND_COLOR),         ///< R16G16 int
+          r16_i = __P_D3D11_FORMAT(DXGI_FORMAT_R16_SINT, 2, __P_D3D11_BIND_COLOR),             ///< R16 int
           
-          rgba16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_UNORM, 8),///< R16G16B16A16 normalized unsigned int
-          rg16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_UNORM, 4),        ///< R16G16 normalized unsigned int
-          r16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16_UNORM, 2),            ///< R16 normalized unsigned int
+          rgba16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_UNORM, 8, __P_D3D11_BIND_CLRBL),///< R16G16B16A16 normalized unsigned int
+          rg16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_UNORM, 4, __P_D3D11_BIND_CLRBL),        ///< R16G16 normalized unsigned int
+          r16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16_UNORM, 2, __P_D3D11_BIND_CLRBL),            ///< R16 normalized unsigned int
           
-          rgba16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_SNORM, 8),///< R16G16B16A16 normalized int
-          rg16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_SNORM, 4),        ///< R16G16 normalized int
-          r16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16_SNORM, 2),            ///< R16 normalized int
+          rgba16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16B16A16_SNORM, 8, __P_D3D11_BIND_CLRBL),///< R16G16B16A16 normalized int
+          rg16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16G16_SNORM, 4, __P_D3D11_BIND_CLRBL),        ///< R16G16 normalized int
+          r16_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R16_SNORM, 2, __P_D3D11_BIND_CLRBL),            ///< R16 normalized int
           
           // HDR / 10-11 bit
-          rgb10a2_unorm_hdr10 = __P_D3D11_FORMAT(DXGI_FORMAT_R10G10B10A2_UNORM, 4), ///< HDR-10/BT.2100: R10G10B10A2 normalized unsigned int
-          rgb10a2_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R10G10B10A2_UINT, 4), ///< R10G10B10A2 unsigned int
-          rg11b10_f = __P_D3D11_FORMAT(DXGI_FORMAT_R11G11B10_FLOAT, 4),   ///< R11G11B10 float
+          rgb10a2_unorm_hdr10 = __P_D3D11_FORMAT(DXGI_FORMAT_R10G10B10A2_UNORM, 4, __P_D3D11_BIND_CLRBL), ///< HDR-10/BT.2100: R10G10B10A2 normalized unsigned int
+          rgb10a2_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R10G10B10A2_UINT, 4, __P_D3D11_BIND_NONE), ///< R10G10B10A2 unsigned int
+          rg11b10_f = __P_D3D11_FORMAT(DXGI_FORMAT_R11G11B10_FLOAT, 4, __P_D3D11_BIND_CLRBL),  ///< R11G11B10 float
           
           // 9 bit
-          rgb9e5_uf = __P_D3D11_FORMAT(DXGI_FORMAT_R9G9B9E5_SHAREDEXP, 4), ///< R9G9B9E5 float (shared exponent)
+          rgb9e5_uf = __P_D3D11_FORMAT(DXGI_FORMAT_R9G9B9E5_SHAREDEXP, 4, __P_D3D11_BIND_NONE),///< R9G9B9E5 float (shared exponent)
           
           // 8 bit
-          rgba8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UINT, 4),///< R8G8B8A8 unsigned int
-          rg8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_UINT, 2),      ///< R8G8 unsigned int
-          r8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8_UINT, 1),         ///< R8 unsigned int
+          rgba8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UINT, 4, __P_D3D11_BIND_COLOR),///< R8G8B8A8 unsigned int
+          rg8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_UINT, 2, __P_D3D11_BIND_COLOR),      ///< R8G8 unsigned int
+          r8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_R8_UINT, 1, __P_D3D11_BIND_COLOR),         ///< R8 unsigned int
           
-          rgba8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_SINT, 4),///< R8G8B8A8 int
-          rg8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_SINT, 2),      ///< R8G8 int
-          r8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8_SINT, 1),         ///< R8 int
+          rgba8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_SINT, 4, __P_D3D11_BIND_COLOR), ///< R8G8B8A8 int
+          rg8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_SINT, 2, __P_D3D11_BIND_COLOR),       ///< R8G8 int
+          r8_i = __P_D3D11_FORMAT(DXGI_FORMAT_R8_SINT, 1, __P_D3D11_BIND_COLOR),          ///< R8 int
           
-          rgba8_sRGB = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 4), ///< R8G8B8A8 normalized unsigned int (sRGB)
-          bgra8_sRGB = __P_D3D11_FORMAT(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, 4), ///< B8G8R8A8 normalized unsigned int (sRGB)
-          rgba8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UNORM, 4),///< R8G8B8A8 normalized unsigned int
-          bgra8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B8G8R8A8_UNORM, 4),///< B8G8R8A8 normalized unsigned int
-          rg8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_UNORM, 2),      ///< R8G8 normalized unsigned int
-          r8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8_UNORM, 1),         ///< R8 normalized unsigned int
-          a8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_A8_UNORM, 1),         ///< A8 normalized unsigned int
+          rgba8_sRGB = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 4, __P_D3D11_BIND_CLRBL), ///< R8G8B8A8 normalized unsigned int (sRGB)
+          bgra8_sRGB = __P_D3D11_FORMAT(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, 4, __P_D3D11_BIND_CLRBL), ///< B8G8R8A8 normalized unsigned int (sRGB)
+          rgba8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_UNORM, 4, __P_D3D11_BIND_CLRBL),///< R8G8B8A8 normalized unsigned int
+          bgra8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B8G8R8A8_UNORM, 4, __P_D3D11_BIND_CLRBL),///< B8G8R8A8 normalized unsigned int
+          rg8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_UNORM, 2, __P_D3D11_BIND_CLRBL),      ///< R8G8 normalized unsigned int
+          r8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8_UNORM, 1, __P_D3D11_BIND_CLRBL),         ///< R8 normalized unsigned int
+          a8_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_A8_UNORM, 1, __P_D3D11_BIND_NONE),          ///< A8 normalized unsigned int
           
-          rgba8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_SNORM, 4),///< R8G8B8A8 normalized int
-          rg8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_SNORM, 2),      ///< R8G8 normalized int
-          r8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8_SNORM, 1),         ///< R8 normalized int
+          rgba8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8B8A8_SNORM, 4, __P_D3D11_BIND_CLRBL),///< R8G8B8A8 normalized int
+          rg8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8G8_SNORM, 2, __P_D3D11_BIND_CLRBL),      ///< R8G8 normalized int
+          r8_snorm = __P_D3D11_FORMAT(DXGI_FORMAT_R8_SNORM, 1, __P_D3D11_BIND_CLRBL),         ///< R8 normalized int
           
           // 4-6 bit
-          rgb5a1_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G5R5A1_UNORM, 2), ///< B5G5R5A1 normalized unsigned int
-          r5g6b5_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G6R5_UNORM, 2),   ///< B5G6R5 normalized unsigned int
-          rgba4_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B4G4R4A4_UNORM, 2),  ///< B4G4R4A4 normalized unsigned int -- requires Win8.1+
+          rgb5a1_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G5R5A1_UNORM, 2, __P_D3D11_BIND_NONE),///< B5G5R5A1 normalized unsigned int
+          r5g6b5_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B5G6R5_UNORM, 2, __P_D3D11_BIND_NONE),  ///< B5G6R5 normalized unsigned int
+          rgba4_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_B4G4R4A4_UNORM, 2, __P_D3D11_BIND_NONE), ///< B4G4R4A4 normalized unsigned int -- requires Win8.1+
           
           // depth/stencil
-          d32_f = __P_D3D11_FORMAT(DXGI_FORMAT_D32_FLOAT, 4),                  ///< D32 float
-          d16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_D16_UNORM, 2),              ///< D16 normalized unsigned int
-          d32_f_s8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 8), ///< D32 float / S8 unsigned int
-          d24_unorm_s8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_D24_UNORM_S8_UINT, 4),///< D24 normalized unsigned int / S8 unsigned int
+          d32_f = __P_D3D11_FORMAT(DXGI_FORMAT_D32_FLOAT, 4, __P_D3D11_BIND_DEPTH),                  ///< D32 float
+          d16_unorm = __P_D3D11_FORMAT(DXGI_FORMAT_D16_UNORM, 2, __P_D3D11_BIND_DEPTH),              ///< D16 normalized unsigned int
+          d32_f_s8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 8, __P_D3D11_BIND_DEPTH), ///< D32 float / S8 unsigned int
+          d24_unorm_s8_ui = __P_D3D11_FORMAT(DXGI_FORMAT_D24_UNORM_S8_UINT, 4, __P_D3D11_BIND_DEPTH),///< D24 normalized unsigned int / S8 unsigned int
         };
 
-        /// @brief Create additional DataFormat from native DXGI_FORMAT (example: createDataFormat(DXGI_FORMAT_BC6H_SF16,6))
-        constexpr inline DataFormat createDataFormat(DXGI_FORMAT format, uint32_t bytesPerPixel) noexcept { 
-          return (DataFormat)__P_D3D11_FORMAT(format, bytesPerPixel); 
+        /// @brief Create additional DataFormat from native DXGI_FORMAT (example: createDataFormat(DXGI_FORMAT_BC6H_SF16,6,FormatAttachment::color))
+        constexpr inline DataFormat createDataFormat(DXGI_FORMAT format, uint32_t bytesPerPixel,
+                                                     FormatAttachment attachment = FormatAttachment::color) noexcept {
+          return (DataFormat)__P_D3D11_FORMAT(format, bytesPerPixel, attachment); 
         }
         constexpr inline DXGI_FORMAT _getDataFormatComponents(DataFormat format) noexcept { return static_cast<DXGI_FORMAT>((uint32_t)format & 0x00FFFFu); }
-        constexpr inline uint32_t _getDataFormatBytesPerPixel(DataFormat format) noexcept { return ((uint32_t)format >> 24); }
+        constexpr inline FormatAttachment _getDataFormatBindFlag(DataFormat format) noexcept { return static_cast<FormatAttachment>((uint32_t)format & 0xC0000000u); }
+        constexpr inline uint32_t _getDataFormatBytesPerPixel(DataFormat format) noexcept { return (((uint32_t)format >> 24) & 0x3Fu); }
         
         template <typename _TextureDesc>
         inline uint32_t _setTextureFormat(DataFormat format, _TextureDesc& outDesc, D3D11_SHADER_RESOURCE_VIEW_DESC& outView) {

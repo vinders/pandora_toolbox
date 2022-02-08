@@ -47,7 +47,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using TextureHandle2D = VkImage;        ///< 2D texture resource container
         using TextureHandle3D = VkImage;        ///< 3D texture resource container
         using BufferHandle = VkBuffer;          ///< Vertex/index/constant/resource buffer
-        using RenderTargetView = VkImageView; ///< Bindable render-target view for renderer (shader output buffer)
+        using RenderTargetView = VkImageView;   ///< Bindable render-target view for renderer (shader output buffer)
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
         using ColorChannel = float;             ///< R/G/B/A color value
@@ -122,7 +122,15 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           all   = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
         };
         
-#       define __P_VULKAN_FORMAT(vulkanFormat, bytesPerPixel)  ((uint64_t)vulkanFormat | (((uint64_t)bytesPerPixel) << 32))
+        /// @brief Data format attachment types
+        enum class FormatAttachment : int/*VkFormatFeatureFlags*/ {
+          unknown = 0,                                                   ///< Unknown format support
+          color = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,                ///< Format supported as color attachment
+          colorBlend = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,     ///< Format supported as color attachment with blending allowed
+          depthStencil = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, ///< Format supported as depth/stencil attachment
+        };
+        
+#       define __P_VULKAN_FORMAT(vulkanFormat, bytesPerPixel)  ((uint64_t)vulkanFormat | (((uint64_t)bytesPerPixel) << 48))
         
         /// @brief Color/normal/depth/stencil data formats (vertex array buffers, depth/stencil buffers, textures...)
         /// @remarks - HDR rendering / color space: RG(BA) components between 10 and 32 bits ('rgba16_f_scRGB' or 'rgb10a2_unorm_hdr10' recommended).
@@ -214,7 +222,8 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         constexpr inline DataFormat createDataFormat(VkFormat format, uint32_t bytesPerPixel) noexcept { 
           return (DataFormat)__P_VULKAN_FORMAT(format, bytesPerPixel); 
         }
-        constexpr inline VkFormat _getDataFormatComponents(DataFormat format) noexcept { return static_cast<VkFormat>((uint64_t)format & 0xFFFFFFFFuLL); }
+        constexpr inline VkFormat _getDataFormatComponents(DataFormat format) noexcept { return static_cast<VkFormat>((uint64_t)format & 0xFFFFFFFFFFFFuLL); }
+        constexpr inline uint32_t _getDataFormatBytesPerPixel(DataFormat format) noexcept { return (static_cast<uint32_t>((uint64_t)format >> 48) & 0xFFu); }
 #       undef __P_VULKAN_FORMAT
         
         /// @brief Primitive topology - vertex interpretation mode (tessellation patches excluded)
@@ -251,8 +260,8 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           return (format == DepthStencilFormat::d32_f_s8_ui || format == DepthStencilFormat::d24_unorm_s8_ui); 
         }
         
-        /// @brief Basic StaticBuffer / DynamicBuffer content type
-        enum class BaseBufferType : int/*VkBufferUsageFlagBits*/ {
+        /// @brief Data Buffer content type
+        enum class BufferType : int/*VkBufferUsageFlagBits*/ {
           uniform = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,  ///< Constant/uniform data buffer for shader stage(s): 
                                                          ///  * can be bound with any shader stage(s): Renderer.bind<...>ConstantBuffers.
                                                          ///  * should contain data useful as a whole for shaders:
