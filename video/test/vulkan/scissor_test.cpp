@@ -41,7 +41,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- scissor test rectangle container --
 
-  TEST_F(VulkanScissorTest, createCopyMoveTest) {
+  TEST_F(VulkanScissorTest, vkCreateCopyMoveTest) {
     ScissorRectangle sr0;
     EXPECT_EQ((int32_t)0, sr0.x());
     EXPECT_EQ((int32_t)0, sr0.y());
@@ -96,7 +96,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- scissor rectangle builder --
 
-  TEST_F(VulkanScissorTest, scissorRectangleBuildersTest) {
+  TEST_F(VulkanScissorTest, vkScissorRectangleBuildersTest) {
     ScissorRectangle srRef1(320,240, 640u,480u);
     EXPECT_TRUE(ScissorRectangle::fromTopLeft(800u, 320,240, 640u,480u) == srRef1);
 

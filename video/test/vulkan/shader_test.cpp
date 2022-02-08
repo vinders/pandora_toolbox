@@ -63,7 +63,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- create/bind shaders --
 
-  TEST_F(VulkanShaderTest, compileFromBinaryFile) {
+  TEST_F(VulkanShaderTest, vkCompileFromBinaryFile) {
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     ASSERT_TRUE(renderer.device() != nullptr);
@@ -98,7 +98,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // ---
   
 # ifdef _P_VIDEO_SHADER_COMPILERS
-    TEST_F(VulkanShaderTest, compileFromTextFiles) {
+    TEST_F(VulkanShaderTest, vkCompileFromTextFiles) {
       pandora::hardware::DisplayMonitor monitor;
       Renderer renderer(monitor);
       ASSERT_TRUE(renderer.device() != nullptr);

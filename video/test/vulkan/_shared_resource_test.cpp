@@ -41,7 +41,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- SharedResource --
 
-  TEST_F(_VulkanSharedResourceTest, emptyValueContainer) {
+  TEST_F(_VulkanSharedResourceTest, vkEmptyValueContainer) {
     DeviceResourceManager context = std::make_shared<ScopedDeviceContext>();
 
     ScopedResource<void*> empty;
@@ -75,7 +75,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_FALSE(empty2 != empty3);
   }
 
-  TEST_F(_VulkanSharedResourceTest, filledValueContainer) {
+  TEST_F(_VulkanSharedResourceTest, vkFilledValueContainer) {
     DeviceResourceManager context = std::make_shared<ScopedDeviceContext>();
 
     void* res1((void*)1);

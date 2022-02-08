@@ -41,7 +41,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- viewport container --
 
-  TEST_F(VulkanViewportTest, createCopyMoveTest) {
+  TEST_F(VulkanViewportTest, vkCreateCopyMoveTest) {
     Viewport vp0;
     EXPECT_EQ(0.f, vp0.coordX());
     EXPECT_EQ(0.f, vp0.coordY());
@@ -127,7 +127,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(vp5 != vp1);
   }
 
-  TEST_F(VulkanViewportTest, viewportSettersTest) {
+  TEST_F(VulkanViewportTest, vkViewportSettersTest) {
     Viewport vp1(640u,480u);
     EXPECT_EQ(0.f, vp1.coordX());
     EXPECT_EQ(0.f, vp1.coordY());
@@ -169,7 +169,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(1.6f, vp1.farClipping());
   }
 
-  TEST_F(VulkanViewportTest, viewportFPSettersTest) {
+  TEST_F(VulkanViewportTest, vkViewportFPSettersTest) {
     Viewport vp1(0.f,0.f,640.f,480.f);
     EXPECT_EQ(0.f, vp1.coordX());
     EXPECT_EQ(0.f, vp1.coordY());
@@ -214,7 +214,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- viewport builder --
 
-  TEST_F(VulkanViewportTest, viewportBuildersTest) {
+  TEST_F(VulkanViewportTest, vkViewportBuildersTest) {
     Viewport vpRef1(320,240, 640u,480u, 0.1f,1.2f);
     EXPECT_TRUE(Viewport::fromTopLeft(800u, 320,240, 640u,480u, 0.1f,1.2f) == vpRef1);
 
@@ -228,7 +228,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(0.1f, reverted1.nearClipping());
     EXPECT_EQ(1.2f, reverted1.farClipping());
   }
-  TEST_F(VulkanViewportTest, viewportFPBuildersTest) {
+  TEST_F(VulkanViewportTest, vkViewportFPBuildersTest) {
     Viewport vpRef1(320.f,240.f, 640.f,480.f, 0.1f,1.2f);
     EXPECT_TRUE(Viewport::fromTopLeft(800.f, 320.f,240.f, 640.f,480.f, 0.1f,1.2f) == vpRef1);
 

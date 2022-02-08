@@ -42,7 +42,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- Rasterizer/depth-stencil/blend state management --
 
-  TEST_F(VulkanGraphicsPipelineTest, createRasterStatesTest) {
+  TEST_F(VulkanGraphicsPipelineTest, vkCreateRasterStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
     GraphicsPipeline::Builder builder(renderer);
@@ -62,7 +62,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(builder.descriptor().pRasterizationState != nullptr);
   }
 
-  TEST_F(VulkanGraphicsPipelineTest, createDepthStatesTest) {
+  TEST_F(VulkanGraphicsPipelineTest, vkCreateDepthStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
     GraphicsPipeline::Builder builder(renderer);
@@ -103,7 +103,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(builder.descriptor().pDepthStencilState == nullptr);
   }
 
-  TEST_F(VulkanGraphicsPipelineTest, createBlendingStatesTest) {
+  TEST_F(VulkanGraphicsPipelineTest, vkCreateBlendingStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
     GraphicsPipeline::Builder builder(renderer);
@@ -154,7 +154,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(builder.descriptor().pColorBlendState != nullptr);
   }
 
-  TEST_F(VulkanGraphicsPipelineTest, pipelineStateParamsTest) {
+  TEST_F(VulkanGraphicsPipelineTest, vkPipelineStateParamsTest) {
     pandora::hardware::DisplayMonitor monitor;
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
 
@@ -361,7 +361,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return std::unique_ptr<char[]>(binaryShaderFileBuffer);
   }
 
-  TEST_F(VulkanGraphicsPipelineTest, createGraphicsPipelineTest) {
+  TEST_F(VulkanGraphicsPipelineTest, vkCreateGraphicsPipelineTest) {
     pandora::hardware::DisplayMonitor monitor;
     std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
     GraphicsPipeline::Builder builder(renderer);

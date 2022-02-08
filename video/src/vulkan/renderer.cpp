@@ -62,7 +62,8 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/swap_chain.h"
 # include "video/vulkan/shader.h"
 # include "video/vulkan/graphics_pipeline.h"
-// # include "video/vulkan/buffer.h"
+# include "video/vulkan/_private/_resource_io.h"
+# include "video/vulkan/buffer.h"
 // # include "video/vulkan/texture.h"
 // # include "video/vulkan/texture_reader.h"
 // # include "video/vulkan/texture_writer.h"
@@ -1134,24 +1135,11 @@ Includes hpp implementations at the end of the file
     this->_renderTargetViews = DynamicArray<VkImageView>(imageCount);
     memset(this->_renderTargetViews.value, 0, imageCount*sizeof(VkImageView));
     uint32_t layerCount = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? 2 : 1;
+    
     for (uint32_t i = 0; i < imageCount; ++i) {
-      VkImageViewCreateInfo viewInfo{};
-      viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-      viewInfo.image = this->_bufferImages.value[i];
-      viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      viewInfo.format = this->_backBufferFormat;
-      viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-      viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      viewInfo.subresourceRange.baseMipLevel = 0;
-      viewInfo.subresourceRange.levelCount = 1;
-      viewInfo.subresourceRange.baseArrayLayer = 0;
-      viewInfo.subresourceRange.layerCount = layerCount;
-      VkResult viewResult = vkCreateImageView(this->_renderer->context(), &viewInfo, nullptr, &(this->_renderTargetViews.value[i]));
-      if (viewResult != VK_SUCCESS)
-        throwError(viewResult, "SwapChain: failed to create buffer views");
+      this->_renderTargetViews.value[i] = __createBufferView(this->_renderer->context(),
+                                                            this->_bufferImages.value[i], this->_backBufferFormat,
+                                                            VK_IMAGE_ASPECT_COLOR_BIT, layerCount, 1u, 0);
     }
   }
 
@@ -1288,6 +1276,75 @@ Includes hpp implementations at the end of the file
         __processSwapError(result);
     }
   }
+  
+  
+// -----------------------------------------------------------------------------
+// _private/_resource_io.h
+// -----------------------------------------------------------------------------
+  
+  // Create buffer view (for render target buffer, depth buffer, texture buffer...)
+  VkImageView pandora::video::vulkan::__createBufferView(DeviceContext context, VkImage bufferImage, VkFormat bufferFormat,
+                                                        VkImageAspectFlags type, uint32_t layerCount,
+                                                        uint32_t mipLevels, uint32_t mostDetailedMip) { // throws
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = bufferImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = bufferFormat;
+    viewInfo.subresourceRange.aspectMask = type;
+    viewInfo.subresourceRange.baseMipLevel = mostDetailedMip;
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = layerCount;
+    
+    VkImageView imageView = VK_NULL_HANDLE;
+    VkResult result = vkCreateImageView(context, &viewInfo, nullptr, &imageView);
+    if (result != VK_SUCCESS || imageView == VK_NULL_HANDLE)
+      throwError(result, "Resource: view not created");
+    return imageView;
+  }
+  
+  // ---
+  
+  // Find memory type for a requested resource memory usage
+  static uint32_t __findMemoryTypeIndex(VkPhysicalDevice device, uint32_t memoryTypeBits,
+                                        VkMemoryPropertyFlags resourceUsage) {
+    VkPhysicalDeviceMemoryProperties memoryProps;
+    vkGetPhysicalDeviceMemoryProperties(device, &memoryProps);
+    
+    for (uint32_t i = 0; i < memoryProps.memoryTypeCount; ++i) {
+      if ((memoryTypeBits & (1u << i))
+      && (memoryProps.memoryTypes[i].propertyFlags & resourceUsage) == resourceUsage) {
+        return i;
+      }
+    }
+    throw std::runtime_error("Buffer: suitable memory type not found");
+  }
+  
+  // Allocate device memory for buffer image
+  VkDeviceMemory pandora::video::vulkan::__allocBufferImage(Renderer& renderer, VkImage bufferImage,
+                                                            VkMemoryPropertyFlags resourceUsage) { // throws
+    VkMemoryRequirements requirements;
+    vkGetImageMemoryRequirements(renderer.context(), bufferImage, &requirements);
+    
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = requirements.size;
+    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(renderer.device(), requirements.memoryTypeBits, resourceUsage);
+
+    VkDeviceMemory imageMemory = VK_NULL_HANDLE;
+    VkResult result = vkAllocateMemory(renderer.context(), &allocInfo, nullptr, &imageMemory);
+    if (result != VK_SUCCESS || imageMemory == VK_NULL_HANDLE)
+      throwError(result, "Buffer: memory allocation failure");
+
+    result = vkBindImageMemory(renderer.context(), bufferImage, imageMemory, 0);
+    if (result != VK_SUCCESS) {
+      vkFreeMemory(renderer.context(), imageMemory, nullptr);
+      throwError(result, "Buffer: memory binding failure");
+    }
+    return imageMemory;
+  }
+  
 
 
 // -----------------------------------------------------------------------------
@@ -1361,7 +1418,7 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 // Include hpp implementations
 // -----------------------------------------------------------------------------
-// # include "./buffer.hpp"
+# include "./buffer.hpp"
 // # include "./texture.hpp"
 // # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"

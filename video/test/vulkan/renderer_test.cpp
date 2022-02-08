@@ -60,7 +60,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     catch (const std::exception& exc) { ASSERT_STREQ("ok", exc.what()); }
   }
 
-  TEST_F(VulkanRendererTest, createDefaultRenderer) {
+  TEST_F(VulkanRendererTest, vkCreateDefaultRenderer) {
     try {
       pandora::hardware::DisplayMonitor monitor;
       Renderer renderer(monitor);
@@ -142,7 +142,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     catch (const std::exception& exc) { ASSERT_STREQ("ok", exc.what()); }
   }
 
-  TEST_F(VulkanRendererTest, createCustomRenderer) {
+  TEST_F(VulkanRendererTest, vkCreateCustomRenderer) {
     try {
       auto customInstance = VulkanInstance::create("TestRenderer", VK_MAKE_VERSION(2,3,4), VK_API_VERSION_1_1, nullptr, 0);
       ASSERT_TRUE(customInstance != nullptr);
