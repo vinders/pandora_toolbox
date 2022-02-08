@@ -30,7 +30,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <video/d3d11/buffer.h>
 
 //# define __PAUSE_AFTER_RENDERING 250
-# ifdef __PAUSE_AFTER_RENDERING && __PAUSE_AFTER_RENDERING != 0
+# if defined(__PAUSE_AFTER_RENDERING) && __PAUSE_AFTER_RENDERING != 0
 #   include <thread>
 #   define __END_DRAW_TEST() \
            std::this_thread::sleep_for(std::chrono::milliseconds( __PAUSE_AFTER_RENDERING )); \

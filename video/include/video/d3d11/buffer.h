@@ -135,8 +135,8 @@ Direct3D11 - DepthStencilBuffer
           /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
           /// @param initData       Buffer initial value -- structure or array of input values (must not be NULL if immutable).
           /// @warning Static/immutable buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
-          /// @throws - invalid_argument if 'bufferByteSize' is 0 / if immutable and 'initData' is NULL;
-          ///         - runtime_error on creation failure.
+          /// @throws - invalid_argument: if 'bufferByteSize' is 0, or if renderer is not initialized;
+          ///         - runtime_error: on creation failure.
           inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, const void* initData)
             : _bufferSize(bufferByteSize), _context(renderer.context()), _type(type) {
             D3D11_SUBRESOURCE_DATA resourceData{ initData, 0, 0 };
