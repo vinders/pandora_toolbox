@@ -421,6 +421,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
     }
   }
   _P_FLAGS_OPERATORS(pandora::video::d3d11::ColorComponentFlag, int);
+  _P_FLAGS_OPERATORS(pandora::video::d3d11::BufferType, int);
 
 # ifndef _P_NO_WIN32_FILTER
 #   undef NODRAWTEXT

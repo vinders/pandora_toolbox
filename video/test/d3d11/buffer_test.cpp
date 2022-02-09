@@ -464,6 +464,156 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
+  static constexpr inline size_t __alignMemorySize(size_t length) noexcept {
+    return (((length + 15u) >> 4) << 4);
+  }
+  static constexpr inline size_t __alignUniformSize(size_t length) noexcept {
+    return (((length + 255u) >> 8) << 8);
+  }
+
+  TEST_F(D3d11BufferTest, multiTypeBufferCreationTest) {
+    uint64_t data1a[4] = { 42, 0, 42, 0 };
+    _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
+    _TestColor data2b{ 0.5f,0.6f,0.7f,0.8f };
+
+    pandora::hardware::DisplayMonitor monitor;
+    Renderer renderer(monitor);
+    MappedBufferIO reader;
+    {
+      // vertex + index
+      constexpr const size_t vertexSize = __alignMemorySize(sizeof(data1a));
+      constexpr const size_t indexSize = __alignMemorySize(sizeof(data2a));
+      Buffer<ResourceUsage::staticGpu> buffer1(renderer, BufferType::vertex | BufferType::vertexIndex, vertexSize + indexSize);
+      EXPECT_EQ(vertexSize + indexSize, buffer1.size());
+      EXPECT_EQ((BufferType::vertex | BufferType::vertexIndex), buffer1.type());
+
+      uint8_t vertexIndexData1[vertexSize + indexSize]{};
+      memcpy(vertexIndexData1, data1a, sizeof(data1a));
+      memcpy(vertexIndexData1 + vertexSize, &data2a, sizeof(data2a));
+      EXPECT_TRUE(buffer1.write((const void*)vertexIndexData1));
+
+      Buffer<ResourceUsage::staging> staging1(renderer, BufferType::vertex | BufferType::vertexIndex, vertexSize + indexSize);
+      staging1.copy(buffer1);
+      reader.open(staging1, StagedMapping::readWrite);
+      ASSERT_TRUE(reader.isOpen());
+      const uint64_t* vertexStaging = (const uint64_t*)reader.data();
+      const _TestColor* indexStaging = (const _TestColor*)(((const uint8_t*)reader.data()) + vertexSize);
+      EXPECT_EQ(data1a[0], vertexStaging[0]);
+      EXPECT_EQ(data1a[1], vertexStaging[1]);
+      EXPECT_EQ(data2a.rgba[0], indexStaging->rgba[0]);
+      EXPECT_EQ(data2a.rgba[1], indexStaging->rgba[1]);
+      EXPECT_EQ(data2a.rgba[2], indexStaging->rgba[2]);
+      EXPECT_EQ(data2a.rgba[3], indexStaging->rgba[3]);
+      reader.close();
+
+      renderer.bindVertexArrayBuffer(0, buffer1.handle(), (unsigned int)sizeof(data1a), 0);
+      renderer.bindVertexIndexBuffer(buffer1.handle(), VertexIndexFormat::r32_ui, vertexSize);
+      renderer.bindVertexArrayBuffer(0, nullptr, 0);
+      renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui, 0);
+
+      // uniform + uniform
+      if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
+        constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
+        constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
+        Buffer<ResourceUsage::staticGpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+        EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
+        EXPECT_EQ((BufferType::uniform), buffer2.type());
+
+        uint8_t uniformData2[uniform1Size + uniform2Size]{};
+        memcpy(uniformData2, data1a, sizeof(data1a));
+        memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
+        EXPECT_TRUE(buffer2.write((const void*)uniformData2));
+
+        Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+        staging2.copy(buffer2);
+        reader.open(staging2, StagedMapping::read);
+        ASSERT_TRUE(reader.isOpen());
+        const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
+        const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
+        EXPECT_EQ(data1a[0], uniform1Staging[0]);
+        EXPECT_EQ(data1a[1], uniform1Staging[1]);
+        EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
+        EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
+        EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
+        EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
+        reader.close();
+
+        BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
+        unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
+        unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
+        renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
+        renderer.bindVertexUniforms(0, nullptr, 0);
+        renderer.bindVertexUniforms(1, nullptr, 0);
+      }
+    }{
+      // vertex + index
+      constexpr const size_t vertexSize = __alignMemorySize(sizeof(data1a));
+      constexpr const size_t indexSize = __alignMemorySize(sizeof(data2a));
+      Buffer<ResourceUsage::dynamicCpu> buffer1(renderer, BufferType::vertex | BufferType::vertexIndex, vertexSize + indexSize);
+      EXPECT_EQ(vertexSize + indexSize, buffer1.size());
+      EXPECT_EQ((BufferType::vertex | BufferType::vertexIndex), buffer1.type());
+
+      uint8_t vertexIndexData1[vertexSize + indexSize]{};
+      memcpy(vertexIndexData1, data1a, sizeof(data1a));
+      memcpy(vertexIndexData1 + vertexSize, &data2a, sizeof(data2a));
+      EXPECT_TRUE(buffer1.write((const void*)vertexIndexData1));
+
+      Buffer<ResourceUsage::staging> staging1(renderer, BufferType::vertex | BufferType::vertexIndex, vertexSize + indexSize);
+      staging1.copy(buffer1);
+      reader.open(staging1, StagedMapping::readWrite);
+      ASSERT_TRUE(reader.isOpen());
+      const uint64_t* vertexStaging = (const uint64_t*)reader.data();
+      const _TestColor* indexStaging = (const _TestColor*)(((const uint8_t*)reader.data()) + vertexSize);
+      EXPECT_EQ(data1a[0], vertexStaging[0]);
+      EXPECT_EQ(data1a[1], vertexStaging[1]);
+      EXPECT_EQ(data2a.rgba[0], indexStaging->rgba[0]);
+      EXPECT_EQ(data2a.rgba[1], indexStaging->rgba[1]);
+      EXPECT_EQ(data2a.rgba[2], indexStaging->rgba[2]);
+      EXPECT_EQ(data2a.rgba[3], indexStaging->rgba[3]);
+      reader.close();
+
+      renderer.bindVertexArrayBuffer(0, buffer1.handle(), (unsigned int)sizeof(data1a), 0);
+      renderer.bindVertexIndexBuffer(buffer1.handle(), VertexIndexFormat::r32_ui, vertexSize);
+      renderer.bindVertexArrayBuffer(0, nullptr, 0);
+      renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui, 0);
+
+      // uniform + uniform
+      if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
+        constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
+        constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
+        Buffer<ResourceUsage::dynamicCpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+        EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
+        EXPECT_EQ((BufferType::uniform), buffer2.type());
+
+        uint8_t uniformData2[uniform1Size + uniform2Size]{};
+        memcpy(uniformData2, data1a, sizeof(data1a));
+        memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
+        EXPECT_TRUE(buffer2.write((const void*)uniformData2));
+
+        Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+        staging2.copy(buffer2);
+        reader.open(staging2, StagedMapping::read);
+        ASSERT_TRUE(reader.isOpen());
+        const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
+        const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
+        EXPECT_EQ(data1a[0], uniform1Staging[0]);
+        EXPECT_EQ(data1a[1], uniform1Staging[1]);
+        EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
+        EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
+        EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
+        EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
+        reader.close();
+
+        BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
+        unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
+        unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
+        renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
+        renderer.bindVertexUniforms(0, nullptr, 0);
+        renderer.bindVertexUniforms(1, nullptr, 0);
+      }
+    }
+  }
+
   TEST_F(D3d11BufferTest, bufferCopyTest) {
     uint64_t data1a[2] = { 42, 8 };
     uint64_t data1b[2] = { 10, 22 };

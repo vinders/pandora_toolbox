@@ -317,6 +317,8 @@ Includes hpp implementations at the end of the file
         this->_deviceLevel = D3D_FEATURE_LEVEL_11_0;
         this->_dxgiLevel = 1u;
       }
+      else
+        this->_context11_1 = SharedResource<ID3D11DeviceContext1>::tryFromInterface(this->_context).extract();
 #   else
       this->_deviceLevel = D3D_FEATURE_LEVEL_11_0;
       this->_dxgiLevel = 1u;
@@ -336,6 +338,12 @@ Includes hpp implementations at the end of the file
     try {
       // release device context
       if (this->_context) {
+#       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+          if (this->_context11_1) {
+            ((ID3D11DeviceContext1*)this->_context11_1)->Release();
+            this->_context11_1 = nullptr;
+          }
+#       endif
         this->_context->Flush();
         this->_context->Release();
       }
@@ -351,9 +359,12 @@ Includes hpp implementations at the end of the file
   Renderer::Renderer(Renderer&& rhs) noexcept
     : _device(rhs._device),
       _context(rhs._context),
-      _deviceLevel(rhs._deviceLevel),
+#     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+        _context11_1(rhs._context11_1),
+#     endif
       _dxgiFactory(rhs._dxgiFactory),
       _dxgiLevel(rhs._dxgiLevel),
+      _deviceLevel(rhs._deviceLevel),
       _rasterizerStateCache(std::move(rhs._rasterizerStateCache)),
       _depthStencilStateCache(std::move(rhs._depthStencilStateCache)),
       _blendStateCache(std::move(rhs._blendStateCache)),
@@ -361,14 +372,20 @@ Includes hpp implementations at the end of the file
     rhs._dxgiFactory = nullptr;
     rhs._device = nullptr;
     rhs._context = nullptr;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      rhs._context11_1 = nullptr;
+#   endif
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
     this->_device = rhs._device;
     this->_context = rhs._context;
-    this->_deviceLevel = rhs._deviceLevel;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+    this->_context11_1 = rhs._context11_1;
+#   endif
     this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;
+    this->_deviceLevel = rhs._deviceLevel;
     this->_rasterizerStateCache = std::move(rhs._rasterizerStateCache);
     this->_depthStencilStateCache = std::move(rhs._depthStencilStateCache);
     this->_blendStateCache = std::move(rhs._blendStateCache);
@@ -376,6 +393,9 @@ Includes hpp implementations at the end of the file
     rhs._device = nullptr;
     rhs._context = nullptr;
     rhs._dxgiFactory = nullptr;
+#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+      rhs._context11_1 = nullptr;
+#   endif
     return *this;
   }
 
@@ -973,8 +993,10 @@ Includes hpp implementations at the end of the file
         if (FAILED(result) || this->_swapChain == nullptr)
           throwError(result, "Renderer: swap-chain not created");
 
-        this->_deviceContext11_1 = SharedResource<ID3D11DeviceContext1>::tryFromInterface(this->_renderer->context()).extract();
-        if (this->_deviceContext11_1 == nullptr)
+#       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+          this->_deviceContext11_1 = this->_renderer->_context11_1;
+#       endif
+        if (this->_renderer->_context11_1 == nullptr)
           this->_flags |= SwapChain::OutputFlag::swapNoDiscard;
       }
       else
@@ -1047,12 +1069,6 @@ Includes hpp implementations at the end of the file
           this->_renderTarget->Release();
           this->_renderTarget = nullptr;
         }
-#       if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-          if (this->_deviceContext11_1) {
-            ((ID3D11DeviceContext1*)this->_deviceContext11_1)->Release();
-            this->_deviceContext11_1 = nullptr;
-          }
-#       endif
       } 
       catch (...) {}
         
@@ -1090,9 +1106,6 @@ Includes hpp implementations at the end of the file
     rhs._renderer = nullptr;
     rhs._renderTarget = nullptr;
     rhs._renderTargetView = nullptr;
-#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      rhs._deviceContext11_1 = nullptr;
-#   endif
   }
   SwapChain& SwapChain::operator=(SwapChain&& rhs) noexcept {
     release();
@@ -1112,9 +1125,6 @@ Includes hpp implementations at the end of the file
     rhs._renderer = nullptr;
     rhs._renderTarget = nullptr;
     rhs._renderTargetView = nullptr;
-#   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      rhs._deviceContext11_1 = nullptr;
-#   endif
     return *this;
   }
 

@@ -343,6 +343,61 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             this->_context->CSSetConstantBuffers((UINT)firstSlotIndex, (UINT)length, handles);
           }
           
+#         if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+            /// @brief Bind sub-parts of constant/uniform buffer(s) to the vertex shader stage
+            ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+            /// @remarks Only supported with Direct3D 11.1+
+            inline void bindVertexUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                           unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+              if (_context11_1)
+                ((ID3D11DeviceContext1*)_context11_1)->VSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+            }
+#           ifndef __P_DISABLE_TESSELLATION_STAGE
+              /// @brief Bind sub-parts of constant/uniform buffer(s) to the tessellation-control/hull shader stage
+              ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+              /// @remarks Only supported with Direct3D 11.1+
+              inline void bindTessCtrlUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                               unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+                if (_context11_1)
+                  ((ID3D11DeviceContext1*)_context11_1)->HSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+              }
+              /// @brief Bind sub-parts of constant/uniform buffer(s) to the tessellation-evaluation/domain shader stage
+              ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+              /// @remarks Only supported with Direct3D 11.1+
+              inline void bindTessEvalUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                               unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+                if (_context11_1)
+                  ((ID3D11DeviceContext1*)_context11_1)->DSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+              }
+#           endif
+#           ifndef __P_DISABLE_GEOMETRY_STAGE
+              /// @brief Bind sub-parts of constant/uniform buffer(s) to the geometry shader stage
+              ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+              /// @remarks Only supported with Direct3D 11.1+
+              inline void bindGeometryUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                               unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+                if (_context11_1)
+                  ((ID3D11DeviceContext1*)_context11_1)->GSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+              }
+#           endif
+            /// @brief Bind sub-parts of constant/uniform buffer(s) to the fragment shader stage
+            ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+            /// @remarks Only supported with Direct3D 11.1+
+            inline void bindFragmentUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                             unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+              if (_context11_1)
+                ((ID3D11DeviceContext1*)_context11_1)->PSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+            }
+            /// @brief Bind sub-parts of constant/uniform buffer(s) to the compute shader stage
+            ///        (sized by 16-byte blocks, must be multiple of 16 (16*16-byte))
+            /// @remarks Only supported with Direct3D 11.1+
+            inline void bindComputeUniforms(uint32_t firstSlotIndex, const BufferHandle* handles, size_t length,
+                                            unsigned int* bytes16Offsets, unsigned int* bytes16Sizes) noexcept {
+              if (_context11_1)
+                ((ID3D11DeviceContext1*)_context11_1)->CSSetConstantBuffers1((UINT)firstSlotIndex, (UINT)length, handles, bytes16Offsets, bytes16Sizes);
+            }
+#         endif
+          
           inline void clearVertexUniforms() noexcept { ///< Reset all constant/uniform buffers in vertex shader stage
             ID3D11Buffer* empty[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] { nullptr };
             this->_context->VSSetConstantBuffers(0, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, &empty[0]);
@@ -563,9 +618,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         private:
           DeviceHandle _device = nullptr;
           DeviceContext _context = nullptr;
-          D3D_FEATURE_LEVEL _deviceLevel = D3D_FEATURE_LEVEL_11_0;
+          void* _context11_1 = nullptr; // ID3D11DeviceContext1* - only used if supported
           void* _dxgiFactory = nullptr; // IDXGIFactory1*
           uint32_t _dxgiLevel = 1u;
+          D3D_FEATURE_LEVEL _deviceLevel = D3D_FEATURE_LEVEL_11_0;
 
           pandora::memory::LightVector<RasterizerStateCache> _rasterizerStateCache;
           pandora::memory::LightVector<DepthStencilStateCache> _depthStencilStateCache;

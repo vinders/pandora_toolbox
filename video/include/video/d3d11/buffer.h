@@ -111,6 +111,15 @@ Direct3D11 - DepthStencilBuffer
         ///          - Common practice: * geometry centered around (0;0;0) -> vertex buffers;
         ///                             * world matrix to offset the entire model in the environment -> combined with camera view into constant/uniform buffer;
         ///                             * vertices repositioned in vertex shader by world/view matrix and projection matrix.
+        ///          - Suballocation: * many GPU drivers limit the total number of allocable buffers (usually 4096 or more allocations).
+        ///                           * to work around this limit, and to reduce time spent on allocations, large buffers containing multiple data sets can be used.
+        ///                           * a single buffer can use multiple binding types (example: BufferType::vertex | BufferType::vertexIndex).
+        ///                             Note that many drivers do not support mixing vertices/indices with uniform data.
+        ///                           * for example, the same large buffer could contain vertices + indices for the same mesh.
+        ///                           * a single buffer can contain data for multiple meshes, multiple lights...
+        ///                             (a sub-set of the buffer can be bound to the renderer, using 'byteOffset' and 'strideByteSize' params).
+        ///                           * when using suballocation for vertices/indices, align memory for every sub-component (aligned at 4*32bits blocks).
+        ///                           * when using suballocation for constants/uniforms, align memory for every sub-component (aligned at 16*4*32bits blocks).
         /// @warning Buffers do not guarantee the lifetime of the associated Renderer. They should never be used after destroying the Renderer!
         template <ResourceUsage _Usage>
         class Buffer final {
@@ -120,6 +129,9 @@ Direct3D11 - DepthStencilBuffer
           /// @brief Create buffer (to store data for shader stages) - undefined value
           /// @param renderer       The renderer for which the buffer is created: use the same renderer when binding it or writing in it.
           /// @param type           Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
+          ///                       Note: to use suballocation, the same buffer can use multiple binding types
+          ///                       (example: BufferType::vertex | BufferType::vertexIndex).
+          ///                       Warning: many drivers do not support mixing vertices/indices with constant/uniform data.
           /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
           /// @warning - Static buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
           ///          - Immutable buffers: not allowed (initial value required).
@@ -133,6 +145,9 @@ Direct3D11 - DepthStencilBuffer
           /// @brief Create buffer (to store data for shader stages) with initial value
           /// @param renderer       The renderer for which the buffer is created: use the same renderer when binding it or when calling write.
           /// @param type           Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
+          ///                       Note: to use suballocation, the same buffer can use multiple binding types
+          ///                       (example: BufferType::vertex | BufferType::vertexIndex | BufferType::uniform).
+          ///                       Warning: many drivers do not support mixing vertices/indices with constant/uniform data.
           /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
           /// @param initData       Buffer initial value -- structure or array of input values (must not be NULL if immutable).
           /// @warning Static/immutable buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).

@@ -469,7 +469,9 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
       throwError(result, "TextureTarget: render-target not created");
 
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-      this->_deviceContext11_1 = SharedResource<ID3D11DeviceContext1>::tryFromInterface(renderer.context()).extract();
+      this->_deviceContext11_1 = renderer._context11_1;
+      if (this->_deviceContext11_1)
+        ((ID3D11DeviceContext1*)this->_deviceContext11_1)->AddRef();
 #   endif
   }
 
