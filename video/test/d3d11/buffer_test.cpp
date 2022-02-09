@@ -512,39 +512,41 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui, 0);
 
       // uniform + uniform
-      if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
-        constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
-        constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
-        Buffer<ResourceUsage::staticGpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
-        EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
-        EXPECT_EQ((BufferType::uniform), buffer2.type());
+#     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+        if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
+          constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
+          constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
+          Buffer<ResourceUsage::staticGpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+          EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
+          EXPECT_EQ((BufferType::uniform), buffer2.type());
 
-        uint8_t uniformData2[uniform1Size + uniform2Size]{};
-        memcpy(uniformData2, data1a, sizeof(data1a));
-        memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
-        EXPECT_TRUE(buffer2.write((const void*)uniformData2));
+          uint8_t uniformData2[uniform1Size + uniform2Size]{};
+          memcpy(uniformData2, data1a, sizeof(data1a));
+          memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
+          EXPECT_TRUE(buffer2.write((const void*)uniformData2));
 
-        Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
-        staging2.copy(buffer2);
-        reader.open(staging2, StagedMapping::read);
-        ASSERT_TRUE(reader.isOpen());
-        const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
-        const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
-        EXPECT_EQ(data1a[0], uniform1Staging[0]);
-        EXPECT_EQ(data1a[1], uniform1Staging[1]);
-        EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
-        EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
-        EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
-        EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
-        reader.close();
+          Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+          staging2.copy(buffer2);
+          reader.open(staging2, StagedMapping::read);
+          ASSERT_TRUE(reader.isOpen());
+          const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
+          const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
+          EXPECT_EQ(data1a[0], uniform1Staging[0]);
+          EXPECT_EQ(data1a[1], uniform1Staging[1]);
+          EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
+          EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
+          EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
+          EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
+          reader.close();
 
-        BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
-        unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
-        unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
-        renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
-        renderer.bindVertexUniforms(0, nullptr, 0);
-        renderer.bindVertexUniforms(1, nullptr, 0);
-      }
+          BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
+          unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
+          unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
+          renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
+          renderer.bindVertexUniforms(0, nullptr, 0);
+          renderer.bindVertexUniforms(1, nullptr, 0);
+        }
+#     endif
     }{
       // vertex + index
       constexpr const size_t vertexSize = __alignMemorySize(sizeof(data1a));
@@ -578,39 +580,41 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       renderer.bindVertexIndexBuffer(nullptr, VertexIndexFormat::r32_ui, 0);
 
       // uniform + uniform
-      if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
-        constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
-        constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
-        Buffer<ResourceUsage::dynamicCpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
-        EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
-        EXPECT_EQ((BufferType::uniform), buffer2.type());
+#     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
+        if (renderer.featureLevel() >= D3D_FEATURE_LEVEL_11_1) {
+          constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
+          constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
+          Buffer<ResourceUsage::dynamicCpu> buffer2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+          EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
+          EXPECT_EQ((BufferType::uniform), buffer2.type());
 
-        uint8_t uniformData2[uniform1Size + uniform2Size]{};
-        memcpy(uniformData2, data1a, sizeof(data1a));
-        memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
-        EXPECT_TRUE(buffer2.write((const void*)uniformData2));
+          uint8_t uniformData2[uniform1Size + uniform2Size]{};
+          memcpy(uniformData2, data1a, sizeof(data1a));
+          memcpy(uniformData2 + uniform1Size, &data2b, sizeof(data2b));
+          EXPECT_TRUE(buffer2.write((const void*)uniformData2));
 
-        Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
-        staging2.copy(buffer2);
-        reader.open(staging2, StagedMapping::read);
-        ASSERT_TRUE(reader.isOpen());
-        const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
-        const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
-        EXPECT_EQ(data1a[0], uniform1Staging[0]);
-        EXPECT_EQ(data1a[1], uniform1Staging[1]);
-        EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
-        EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
-        EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
-        EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
-        reader.close();
+          Buffer<ResourceUsage::staging> staging2(renderer, BufferType::uniform, uniform1Size + uniform2Size);
+          staging2.copy(buffer2);
+          reader.open(staging2, StagedMapping::read);
+          ASSERT_TRUE(reader.isOpen());
+          const uint64_t* uniform1Staging = (const uint64_t*)reader.data();
+          const _TestColor* uniform2Staging = (const _TestColor*)(((const uint8_t*)reader.data()) + uniform1Size);
+          EXPECT_EQ(data1a[0], uniform1Staging[0]);
+          EXPECT_EQ(data1a[1], uniform1Staging[1]);
+          EXPECT_EQ(data2b.rgba[0], uniform2Staging->rgba[0]);
+          EXPECT_EQ(data2b.rgba[1], uniform2Staging->rgba[1]);
+          EXPECT_EQ(data2b.rgba[2], uniform2Staging->rgba[2]);
+          EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
+          reader.close();
 
-        BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
-        unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
-        unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
-        renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
-        renderer.bindVertexUniforms(0, nullptr, 0);
-        renderer.bindVertexUniforms(1, nullptr, 0);
-      }
+          BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
+          unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
+          unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
+          renderer.bindVertexUniforms(0, uniforms, 2, byte16Offsets, byte16Sizes);
+          renderer.bindVertexUniforms(0, nullptr, 0);
+          renderer.bindVertexUniforms(1, nullptr, 0);
+        }
+#     endif
     }
   }
 
