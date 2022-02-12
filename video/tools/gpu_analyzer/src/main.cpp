@@ -110,7 +110,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
   return val;
 }
 
-// -- renderer info helpers -- -------------------------------------------------
+// -- renderer info readers -- -------------------------------------------------
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
   void displaySpecs_d3d11() {
@@ -262,6 +262,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
   }
 #endif
 
+
 // ---
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
@@ -282,7 +283,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
 #define __MENU_ENTRY_COUNT (__ENTRY_D3D11+__ENTRY_VULKAN+__ENTRY_OPENGL4)
 
 #if defined(__ANDROID__)
-  // CPU analysis - entry point for Android
+  // GPU analysis - entry point for Android
   void android_main(struct android_app* state) {
     try {
       pandora::system::AndroidApp::instance().init(state);
@@ -292,7 +293,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
   }
   
 #else
-  // CPU analysis - entry point
+  // GPU analysis - entry point
   int main() {
 #   ifdef _WINDOWS
       pandora::system::WindowsApp::instance().init((pandora::system::AppInstanceHandle)GetModuleHandle(nullptr));
