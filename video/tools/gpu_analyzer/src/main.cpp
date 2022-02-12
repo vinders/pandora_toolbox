@@ -22,11 +22,11 @@ Local hardware specifications analyzer (CPU, monitors, display adapters)
 #include <cstdio>
 #include <hardware/cpu_specs.h>
 #include <hardware/display_monitor.h>
+#include <video/window.h>
 #if defined(_WINDOWS)
 # include <system/api/windows_app.h>
 # include <system/api/windows_api.h>
 # if defined(_VIDEO_D3D11_SUPPORT)
-#   include <video/window.h>
 #   include <video/d3d11/renderer.h>
 #   include <video/d3d11/texture.h>
 # endif
