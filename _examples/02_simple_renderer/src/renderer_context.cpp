@@ -83,7 +83,7 @@ void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width
   try {
     _swapChain.resize(width, height);
   }
-  catch (const std::runtime_error& exc) { // resize failure -> re-create SwapChain (don't catch domain_error -> let Renderer be re-created)
+  catch (const std::runtime_error&) { // resize failure -> re-create SwapChain (don't catch domain_error -> let Renderer be re-created)
     const auto presentMode = _useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate;
     _swapChain.release();
     _swapChain = SwapChain(DisplaySurface(_renderer, window),
