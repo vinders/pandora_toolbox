@@ -52,7 +52,7 @@ public:
   // -- settings --
 
   // Resize pipeline (throws on device error -> recreate pipeline) -- warning: do NOT while a frame is still drawing!
-  void resize(uint32_t width, uint32_t height);
+  void resize(pandora::video::WindowHandle window, uint32_t width, uint32_t height);
 
   // Toggle anti-aliasing (MSAA / none) -- warning: do NOT while a frame is still drawing!
   void toggleAntiAliasing() noexcept { _useAntialiasing ^= true; }

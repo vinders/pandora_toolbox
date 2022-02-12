@@ -78,9 +78,17 @@ void RendererContext::release() noexcept {
 
 // -- settings --
 
-void RendererContext::resize(uint32_t width, uint32_t height) {
+void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width, uint32_t height) {
   _renderer->bindGraphicsPipeline(nullptr);
-  _swapChain.resize(width, height);
+  try {
+    _swapChain.resize(width, height);
+  }
+  catch (const std::runtime_error& exc) { // resize failure -> re-create SwapChain (don't catch domain_error -> let Renderer be re-created)
+    const auto presentMode = _useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate;
+    _swapChain.release();
+    _swapChain = SwapChain(DisplaySurface(_renderer, window),
+                           SwapChain::Descriptor(width, height, 2u, presentMode, _rate), __COLOR_FORMAT);
+  }
   _viewport.resize(0, 0, (float)width, (float)height);
   _scissor = ScissorRectangle(0, 0, width, height);
 

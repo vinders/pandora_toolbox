@@ -105,7 +105,7 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t, int32_t, uint
       if (g_renderer && (g_lastWidth != sizeX || g_lastHeight != sizeY)) {
         // adapt framebuffer size
         try {
-          g_renderer->resize(sizeX, sizeY);
+          g_renderer->resize(sender->handle(), sizeX, sizeY);
           if (g_currentScene)
             g_currentScene->resizeScreen(sizeX, sizeY);
         }
