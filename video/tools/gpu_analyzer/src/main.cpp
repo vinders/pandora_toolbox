@@ -1,6 +1,6 @@
 /*******************************************************************************
 MIT License
-Copyright (c) 2021 Romain Vinders
+Copyright (c) 2022 Romain Vinders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -16,7 +16,7 @@ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------------
-Local hardware specifications analyzer (CPU, monitors, display adapters)
+Local GPU API specifications analyzer (Direct3D, Vulkan, OpenGL)
 *******************************************************************************/
 #define _CRT_SECURE_NO_WARNINGS 1
 #include <cstdio>
