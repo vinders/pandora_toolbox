@@ -1336,12 +1336,8 @@ Includes hpp implementations at the end of the file
   // Destroy/release static buffer instance
   void pandora::video::vulkan::__destroyBufferContainer(DeviceContext context, BufferHandle handle, VkDeviceMemory allocation) noexcept {
     vkDestroyBuffer(context, handle, nullptr);
-    handle = VK_NULL_HANDLE;
-      
-    if (allocation != VK_NULL_HANDLE) {
+    if (allocation != VK_NULL_HANDLE)
       vkFreeMemory(context, allocation, nullptr);
-      allocation = VK_NULL_HANDLE;
-    }
   }
   
   // Create buffer view (for render target buffer, depth buffer, texture buffer...)

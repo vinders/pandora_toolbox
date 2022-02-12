@@ -118,7 +118,7 @@ Implementation included in renderer.cpp
       vkGetBufferMemoryRequirements(renderer.context(), *it, &requirements);
       memoryTypeBits &= requirements.memoryTypeBits;
     }
-    if (memoryTypeBits == 0 || bufferCount == 0)
+    if (memoryTypeBits == 0)
       throw std::out_of_range("BufferMemory: no common memory type");
     
     VkMemoryPropertyFlags memoryMode;

@@ -227,8 +227,8 @@ Vulkan - DepthStencilBuffer
           static inline Buffer createUnallocatedBuffer(Renderer& renderer, BufferType type,
                                                        size_t bufferByteSize, bool isBidirectional = false,
                                                        uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0) {
-            return Buffer(__createBufferContainer(renderer.context(), bufferByteSize, _getTypeUsageFlags(type, isBidirectional),
-                                                  concurrentQueueFamilies, queueCount), bufferByteSize, type, VK_NULL_HANDLE);
+            return Buffer(renderer, __createBufferContainer(renderer.context(), bufferByteSize, _getTypeUsageFlags(type, isBidirectional),
+                                                            concurrentQueueFamilies, queueCount), bufferByteSize, type, VK_NULL_HANDLE);
           }
           
           /// @brief Create from native buffer handle -- reserved for advanced usage
@@ -264,6 +264,8 @@ Vulkan - DepthStencilBuffer
             if (_handle != VK_NULL_HANDLE) {
               __destroyBufferContainer(_device->context(), _handle,
                                        (_allocationOffset == _individualAlloc()) ? _allocation : VK_NULL_HANDLE);
+              _handle = VK_NULL_HANDLE;
+              _allocation = VK_NULL_HANDLE;
             }
           }
           

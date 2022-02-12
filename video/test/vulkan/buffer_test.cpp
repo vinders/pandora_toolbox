@@ -122,7 +122,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // -- constant and vertex buffer creation/binding --
 
-  TEST_F(VulkanBufferTest, constantBufferCreationTest) {
+  TEST_F(VulkanBufferTest, vkConstantBufferCreationTest) {
     uint64_t data1a[2] = { 42, 0 };
     uint64_t data1b[2] = { 0, 22 };
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
@@ -272,7 +272,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
-  TEST_F(VulkanBufferTest, vertexBufferCreationTest) {
+  TEST_F(VulkanBufferTest, vkVertexBufferCreationTest) {
     uint64_t data1a[4] = { 42, 0, 42, 0 };
     uint64_t data1b[2] = { 0, 22 };
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
@@ -429,8 +429,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   static constexpr inline size_t __alignUniformSize(size_t length) noexcept {
     return (((length + 255u) >> 8) << 8);
   }
+  static constexpr inline size_t __alignSuballocSize(size_t length) noexcept {
+    return (((length + 255u) >> 8) << 8);
+  }
 
-  TEST_F(VulkanBufferTest, multiTypeBufferCreationTest) {
+  TEST_F(VulkanBufferTest, vkMultiTypeBufferCreationTest) {
     uint64_t data1a[4] = { 42, 0, 42, 0 };
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
     _TestColor data2b{ 0.5f,0.6f,0.7f,0.8f };
@@ -563,7 +566,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
-  TEST_F(VulkanBufferTest, bufferCopyTest) {
+  TEST_F(VulkanBufferTest, vkBufferCopyTest) {
     uint64_t data1a[2] = { 42, 8 };
     uint64_t data1b[2] = { 10, 22 };
 
@@ -612,7 +615,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
-  TEST_F(VulkanBufferTest, mappedBufferReadWriteTest) {
+  TEST_F(VulkanBufferTest, vkMappedBufferReadWriteTest) {
     _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
     _TestColor data2b{ 1.0f,0.8f,0.6f,0.4f };
 
@@ -693,6 +696,178 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(data2a.rgba[3], ((const _TestColor*)reader.data())->rgba[3]);
       reader.close();
       EXPECT_FALSE(reader.isOpen());
+    }
+  }
+
+  TEST_F(VulkanBufferTest, vkSuballocatedBufferCreationTest) {
+    uint64_t data1a[4] = { 42, 0, 42, 0 };
+    uint64_t data1b[4] = { 1, 2, 3, 4 };
+    _TestColor data2a{ 0.1f,0.2f,0.3f,0.4f };
+    _TestColor data2b{ 0.5f,0.6f,0.7f,0.8f };
+
+    pandora::hardware::DisplayMonitor monitor;
+    Renderer renderer(monitor);
+    MappedBufferIO reader;
+    {
+      // vertex + index + uniform + uniform
+      constexpr const size_t vertexSize = __alignSuballocSize(sizeof(data1a));
+      constexpr const size_t indexSize = __alignSuballocSize(sizeof(data2a));
+      constexpr const size_t uniform1Size = __alignSuballocSize(sizeof(data1b));
+      constexpr const size_t uniform2Size = __alignSuballocSize(sizeof(data2b));
+
+      auto buffer1 = Buffer<ResourceUsage::staticGpu>::createUnallocatedBuffer(renderer, BufferType::vertex, sizeof(data1a), true);
+      EXPECT_EQ(sizeof(data1a), buffer1.size());
+      EXPECT_EQ(BufferType::vertex, buffer1.type());
+      EXPECT_TRUE(buffer1.allocation() == VK_NULL_HANDLE);
+      auto buffer2 = Buffer<ResourceUsage::staticGpu>::createUnallocatedBuffer(renderer, BufferType::vertexIndex, sizeof(data2a), true);
+      EXPECT_EQ(sizeof(data2a), buffer2.size());
+      EXPECT_EQ(BufferType::vertexIndex, buffer2.type());
+      EXPECT_TRUE(buffer2.allocation() == VK_NULL_HANDLE);
+      auto buffer3 = Buffer<ResourceUsage::staticGpu>::createUnallocatedBuffer(renderer, BufferType::uniform, sizeof(data1b), true);
+      EXPECT_EQ(sizeof(data1b), buffer3.size());
+      EXPECT_EQ(BufferType::uniform, buffer3.type());
+      EXPECT_TRUE(buffer3.allocation() == VK_NULL_HANDLE);
+      auto buffer4 = Buffer<ResourceUsage::staticGpu>::createUnallocatedBuffer(renderer, BufferType::uniform, sizeof(data2b), false);
+      EXPECT_EQ(sizeof(data2b), buffer4.size());
+      EXPECT_EQ(BufferType::uniform, buffer4.type());
+      EXPECT_TRUE(buffer4.allocation() == VK_NULL_HANDLE);
+
+      BufferHandle bufferTypes[] = { buffer1.handle(), buffer2.handle(), buffer3.handle(), buffer4.handle() };
+      BufferMemory bufferMemory = BufferMemory::create(renderer, ResourceUsage::staticGpu, vertexSize + indexSize + uniform1Size + uniform2Size,
+                                                       bufferTypes, sizeof(bufferTypes)/sizeof(*bufferTypes));
+      ASSERT_TRUE(bufferMemory.handle() != VK_NULL_HANDLE);
+
+      bufferMemory.bind(buffer1, 0);
+      bufferMemory.bind(buffer2, vertexSize);
+      bufferMemory.bind(buffer3, vertexSize + indexSize);
+      bufferMemory.bind(buffer4, vertexSize + indexSize + uniform1Size);
+      EXPECT_TRUE(buffer1.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer2.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer3.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer4.allocation() != VK_NULL_HANDLE);
+
+      EXPECT_TRUE(buffer1.write(data1a));
+      EXPECT_TRUE(buffer2.write(&data2a));
+      EXPECT_TRUE(buffer3.write(data1b));
+      EXPECT_TRUE(buffer4.write(&data2b));
+
+      Buffer<ResourceUsage::staging> staging1(renderer, BufferType::vertex, sizeof(data1a), true);
+      Buffer<ResourceUsage::staging> staging2(renderer, BufferType::vertexIndex, sizeof(data2a), true);
+      Buffer<ResourceUsage::staging> staging3(renderer, BufferType::uniform, sizeof(data1b), true);
+      // no staging4: buffer4 not bidirectional -> can't be copied
+      EXPECT_TRUE(staging1.copy(buffer1));
+      EXPECT_TRUE(staging2.copy(buffer2));
+      EXPECT_TRUE(staging3.copy(buffer3));
+
+      reader.open(staging1, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data1a[0], ((const uint64_t*)reader.data())[0]);
+      EXPECT_EQ(data1a[1], ((const uint64_t*)reader.data())[1]);
+      EXPECT_EQ(data1a[2], ((const uint64_t*)reader.data())[2]);
+      EXPECT_EQ(data1a[3], ((const uint64_t*)reader.data())[3]);
+      reader.close();
+
+      reader.open(staging2, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data2a.rgba[0], ((const _TestColor*)reader.data())->rgba[0]);
+      EXPECT_EQ(data2a.rgba[1], ((const _TestColor*)reader.data())->rgba[1]);
+      EXPECT_EQ(data2a.rgba[2], ((const _TestColor*)reader.data())->rgba[2]);
+      EXPECT_EQ(data2a.rgba[3], ((const _TestColor*)reader.data())->rgba[3]);
+      reader.close();
+
+      reader.open(staging3, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data1b[0], ((const uint64_t*)reader.data())[0]);
+      EXPECT_EQ(data1b[1], ((const uint64_t*)reader.data())[1]);
+      EXPECT_EQ(data1b[2], ((const uint64_t*)reader.data())[2]);
+      EXPECT_EQ(data1b[3], ((const uint64_t*)reader.data())[3]);
+      reader.close();
+
+      buffer1.release(); // release buffers before memory
+      buffer2.release();
+      buffer3.release();
+      buffer4.release();
+      bufferMemory.release();
+    }{
+      // vertex + index + uniform + uniform
+      constexpr const size_t vertexSize = __alignSuballocSize(sizeof(data1a));
+      constexpr const size_t indexSize = __alignSuballocSize(sizeof(data2a));
+      constexpr const size_t uniform1Size = __alignSuballocSize(sizeof(data1b));
+      constexpr const size_t uniform2Size = __alignSuballocSize(sizeof(data2b));
+
+      auto buffer1 = Buffer<ResourceUsage::dynamicCpu>::createUnallocatedBuffer(renderer, BufferType::vertex, sizeof(data1a), true);
+      EXPECT_EQ(sizeof(data1a), buffer1.size());
+      EXPECT_EQ(BufferType::vertex, buffer1.type());
+      EXPECT_TRUE(buffer1.allocation() == VK_NULL_HANDLE);
+      auto buffer2 = Buffer<ResourceUsage::dynamicCpu>::createUnallocatedBuffer(renderer, BufferType::vertexIndex, sizeof(data2a), true);
+      EXPECT_EQ(sizeof(data2a), buffer2.size());
+      EXPECT_EQ(BufferType::vertexIndex, buffer2.type());
+      EXPECT_TRUE(buffer2.allocation() == VK_NULL_HANDLE);
+      auto buffer3 = Buffer<ResourceUsage::dynamicCpu>::createUnallocatedBuffer(renderer, BufferType::uniform, sizeof(data1b), true);
+      EXPECT_EQ(sizeof(data1b), buffer3.size());
+      EXPECT_EQ(BufferType::uniform, buffer3.type());
+      EXPECT_TRUE(buffer3.allocation() == VK_NULL_HANDLE);
+      auto buffer4 = Buffer<ResourceUsage::dynamicCpu>::createUnallocatedBuffer(renderer, BufferType::uniform, sizeof(data2b), false);
+      EXPECT_EQ(sizeof(data2b), buffer4.size());
+      EXPECT_EQ(BufferType::uniform, buffer4.type());
+      EXPECT_TRUE(buffer4.allocation() == VK_NULL_HANDLE);
+
+      BufferHandle bufferTypes[] = { buffer1.handle(), buffer2.handle(), buffer3.handle(), buffer4.handle() };
+      BufferMemory bufferMemory = BufferMemory::create(renderer, ResourceUsage::dynamicCpu, vertexSize + indexSize + uniform1Size + uniform2Size,
+        bufferTypes, sizeof(bufferTypes)/sizeof(*bufferTypes));
+      ASSERT_TRUE(bufferMemory.handle() != VK_NULL_HANDLE);
+
+      bufferMemory.bind(buffer1, 0);
+      bufferMemory.bind(buffer2, vertexSize);
+      bufferMemory.bind(buffer3, vertexSize + indexSize);
+      bufferMemory.bind(buffer4, vertexSize + indexSize + uniform1Size);
+      EXPECT_TRUE(buffer1.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer2.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer3.allocation() != VK_NULL_HANDLE);
+      EXPECT_TRUE(buffer4.allocation() != VK_NULL_HANDLE);
+
+      EXPECT_TRUE(buffer1.write(data1a));
+      EXPECT_TRUE(buffer2.write(&data2a));
+      EXPECT_TRUE(buffer3.write(data1b));
+      EXPECT_TRUE(buffer4.write(&data2b));
+
+      Buffer<ResourceUsage::staging> staging1(renderer, BufferType::vertex, sizeof(data1a), true);
+      Buffer<ResourceUsage::staging> staging2(renderer, BufferType::vertexIndex, sizeof(data2a), true);
+      Buffer<ResourceUsage::staging> staging3(renderer, BufferType::uniform, sizeof(data1b), true);
+      // no staging4: buffer4 not bidirectional -> can't be copied
+      EXPECT_TRUE(staging1.copy(buffer1));
+      EXPECT_TRUE(staging2.copy(buffer2));
+      EXPECT_TRUE(staging3.copy(buffer3));
+
+      reader.open(staging1, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data1a[0], ((const uint64_t*)reader.data())[0]);
+      EXPECT_EQ(data1a[1], ((const uint64_t*)reader.data())[1]);
+      EXPECT_EQ(data1a[2], ((const uint64_t*)reader.data())[2]);
+      EXPECT_EQ(data1a[3], ((const uint64_t*)reader.data())[3]);
+      reader.close();
+
+      reader.open(staging2, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data2a.rgba[0], ((const _TestColor*)reader.data())->rgba[0]);
+      EXPECT_EQ(data2a.rgba[1], ((const _TestColor*)reader.data())->rgba[1]);
+      EXPECT_EQ(data2a.rgba[2], ((const _TestColor*)reader.data())->rgba[2]);
+      EXPECT_EQ(data2a.rgba[3], ((const _TestColor*)reader.data())->rgba[3]);
+      reader.close();
+
+      reader.open(staging3, StagedMapping::read);
+      ASSERT_TRUE(reader.isOpen());
+      EXPECT_EQ(data1b[0], ((const uint64_t*)reader.data())[0]);
+      EXPECT_EQ(data1b[1], ((const uint64_t*)reader.data())[1]);
+      EXPECT_EQ(data1b[2], ((const uint64_t*)reader.data())[2]);
+      EXPECT_EQ(data1b[3], ((const uint64_t*)reader.data())[3]);
+      reader.close();
+
+      buffer1.release(); // release buffers before memory
+      buffer2.release();
+      buffer3.release();
+      buffer4.release();
+      bufferMemory.release();
     }
   }
 
