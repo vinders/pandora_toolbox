@@ -381,7 +381,7 @@ Includes hpp implementations at the end of the file
     this->_device = rhs._device;
     this->_context = rhs._context;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
-    this->_context11_1 = rhs._context11_1;
+      this->_context11_1 = rhs._context11_1;
 #   endif
     this->_dxgiFactory = rhs._dxgiFactory;
     this->_dxgiLevel = rhs._dxgiLevel;

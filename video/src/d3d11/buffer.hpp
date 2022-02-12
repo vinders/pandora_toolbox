@@ -110,8 +110,8 @@ Implementation included in renderer.cpp
   BufferHandle pandora::video::d3d11::__createDataBuffer(DeviceHandle device, UINT type, size_t bufferSize,
                                                          D3D11_USAGE resourceUsage, UINT cpuAccess,
                                                          D3D11_SUBRESOURCE_DATA* resourceData) { // throws
-    if (device == nullptr || bufferSize == 0)
-      throw std::invalid_argument("Buffer: size 0 or NULL renderer");
+    if (bufferSize == 0)
+      throw std::invalid_argument("Buffer: size 0");
     assert(resourceUsage != D3D11_USAGE_IMMUTABLE || resourceData != nullptr);
     
     D3D11_BUFFER_DESC bufferDescriptor;
@@ -151,7 +151,7 @@ Implementation included in renderer.cpp
       throwError(result, "MappedBufferIO: open error");
     }
   }
-  bool MappedBufferIO::_reopen(DeviceContext context, BufferHandle buffer, D3D11_MAP mode) noexcept { // throws
+  bool MappedBufferIO::_reopen(DeviceContext context, BufferHandle buffer, D3D11_MAP mode) noexcept {
     close();
     this->_context = context;
     this->_buffer = buffer;

@@ -27,6 +27,11 @@ Direct3D11 - DepthStencilBuffer
 # include <cstdint>
 # include "./_private/_resource_io.h" // includes D3D11
 # include "./renderer.h" // includes D3D11
+# if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+#   define __if_constexpr if constexpr
+# else
+#   define __if_constexpr if
+# endif
 
   namespace pandora {
     namespace video {
@@ -111,33 +116,44 @@ Direct3D11 - DepthStencilBuffer
         ///          - Common practice: * geometry centered around (0;0;0) -> vertex buffers;
         ///                             * world matrix to offset the entire model in the environment -> combined with camera view into constant/uniform buffer;
         ///                             * vertices repositioned in vertex shader by world/view matrix and projection matrix.
-        ///          - Suballocation: * many GPU drivers limit the total number of allocable buffers (usually 4096 or more allocations).
-        ///                           * to work around this limit, and to reduce time spent on allocations, large buffers containing multiple data sets can be used.
-        ///                           * a single buffer can use multiple binding types (example: BufferType::vertex | BufferType::vertexIndex).
-        ///                             Note that many drivers do not support mixing vertices/indices with uniform data.
-        ///                           * for example, the same large buffer could contain vertices + indices for the same mesh.
-        ///                           * a single buffer can contain data for multiple meshes, multiple lights...
-        ///                             (a sub-set of the buffer can be bound to the renderer, using 'byteOffset' and 'strideByteSize' params).
-        ///                           * when using suballocation for vertices/indices, align memory for every sub-component (aligned at 4*32bits blocks).
-        ///                           * when using suballocation for constants/uniforms, align memory for every sub-component (aligned at 16*4*32bits blocks).
-        /// @warning Buffers do not guarantee the lifetime of the associated Renderer. They should never be used after destroying the Renderer!
+        ///          - The following topics are only for big projects using hundreds of buffers:
+        ///            - Suballocation in same memory block: not supported with Direct3D11.
+        ///                * many GPU drivers limit the total number of allocations (usually 4096 or more allocations).
+        ///                * managed automatically by Direct3D11 (but useful with lower-level APIs, such as Vulkan).
+        ///            - Suballocation within buffer (cross-API):
+        ///                * total number of buffers may also be limited, and using too many buffers can cause overhead and memory fragmentation.
+        ///                * to reduce time spent on allocations and side effects, large buffers containing multiple data sets can be used.
+        ///                * this can be done instead of creating many buffers for an allocation (both techniques can also be combined with lower-level APIs).
+        ///                * a single buffer can use multiple binding types (example: BufferType::vertex | BufferType::vertexIndex).
+        ///                  Note that most drivers do not support mixing vertices/indices with uniform data.
+        ///                * for example, the same large buffer could contain vertices + indices for the same mesh.
+        ///                * a single buffer can contain data for multiple meshes or multiple lights...
+        ///                  (a sub-set of the buffer can be bound to the renderer, using 'byteOffset' and 'strideByteSize' params).
+        ///                * when using suballocation for vertices/indices, align memory for every sub-component (aligned at 4*32bits blocks).
+        ///                * when using suballocation for constants/uniforms, align memory for every sub-component (aligned at 16*4*32bits blocks).
+        /// @warning Buffers do not guarantee the lifetime of the associated Renderer. They must be destroyed BEFORE destroying the Renderer!
         template <ResourceUsage _Usage>
         class Buffer final {
         public:
           using Type = Buffer<_Usage>;
         
           /// @brief Create buffer (to store data for shader stages) - undefined value
-          /// @param renderer       The renderer for which the buffer is created: use the same renderer when binding it or writing in it.
-          /// @param type           Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
-          ///                       Note: to use suballocation, the same buffer can use multiple binding types
-          ///                       (example: BufferType::vertex | BufferType::vertexIndex).
-          ///                       Warning: many drivers do not support mixing vertices/indices with constant/uniform data.
-          /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
+          /// @param renderer        The renderer for which the buffer is created: use the same renderer when binding it or writing in it.
+          /// @param type            Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
+          ///                        Note: to use suballocation, the same buffer can use multiple binding types
+          ///                        (example: BufferType::vertex | BufferType::vertexIndex).
+          ///                        Warning: most drivers do not support mixing vertices/indices with constant/uniform data.
+          /// @param bufferByteSize  The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
+          /// @param isBidirectional Copy operations can occur using this buffer both as a source and a destination.
+          ///                        If 'isBidirectional'==false: * staticGpu buffers can only be destinations;
+          ///                                                     * staging buffers can only be sources;
+          ///                                                     * dynamicCpu buffers can't be any.
+          ///                        Note: this flag is ignored with Direct3D11 (always bidirectional), but exists for cross-API projects.
           /// @warning - Static buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
           ///          - Immutable buffers: not allowed (initial value required).
-          /// @throws - invalid_argument: if 'bufferByteSize' is 0, or if renderer is not initialized;
+          /// @throws - invalid_argument: if 'bufferByteSize' is 0;
           ///         - runtime_error: on creation failure.
-          inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize)
+          inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, bool /*isBidirectional*/ = true)
             : _bufferSize(bufferByteSize), _context(renderer.context()), _type(type) {
             this->_handle = __createDataBuffer(renderer.device(), _getBindFlag(type), bufferByteSize,
                                                _getResourceUsageType(_Usage), _getResourceUsageCpuAccess(_Usage), nullptr);
@@ -147,13 +163,18 @@ Direct3D11 - DepthStencilBuffer
           /// @param type           Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
           ///                       Note: to use suballocation, the same buffer can use multiple binding types
           ///                       (example: BufferType::vertex | BufferType::vertexIndex | BufferType::uniform).
-          ///                       Warning: many drivers do not support mixing vertices/indices with constant/uniform data.
+          ///                       Warning: most drivers do not support mixing vertices/indices with constant/uniform data.
           /// @param bufferByteSize The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
           /// @param initData       Buffer initial value -- structure or array of input values (must not be NULL if immutable).
+          /// @param isBidirectional Copy operations can occur using this buffer both as a source and a destination.
+          ///                        If 'isBidirectional'==false: * staticGpu buffers can only be destinations;
+          ///                                                     * staging buffers can only be sources;
+          ///                                                     * dynamicCpu buffers can't be any.
+          ///                        Note: this flag is ignored with Direct3D11 (always bidirectional), but exists for cross-API projects.
           /// @warning Static/immutable buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
-          /// @throws - invalid_argument: if 'bufferByteSize' is 0, or if renderer is not initialized;
+          /// @throws - invalid_argument: if 'bufferByteSize' is 0;
           ///         - runtime_error: on creation failure.
-          inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, const void* initData)
+          inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, const void* initData, bool /*isBidirectional*/ = true)
             : _bufferSize(bufferByteSize), _context(renderer.context()), _type(type) {
             D3D11_SUBRESOURCE_DATA resourceData{ initData, 0, 0 };
             this->_handle = __createDataBuffer(renderer.device(), _getBindFlag(type), bufferByteSize,
@@ -165,17 +186,17 @@ Direct3D11 - DepthStencilBuffer
           /// @warning Native usage must be the same as template type! (or write operations won't work)
           ///          immutable: D3D11_USAGE_IMMUTABLE; staticGpu: D3D11_USAGE_DEFAULT;
           ///          dynamicCpu: D3D11_USAGE_DYNAMIC; staging: D3D11_USAGE_STAGING;
-          inline Buffer(BufferHandle handle, size_t bufferSize, BufferType type) noexcept 
-            : _handle(handle), _bufferSize(bufferSize), _type(type) {}
+          inline Buffer(Renderer& renderer, BufferHandle handle, size_t bufferSize, BufferType type) noexcept 
+            : _handle(handle), _bufferSize(bufferSize), _context(renderer.context()), _type(type) {}
           
           Buffer() noexcept = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
-          Buffer(const Type&) = default;
+          Buffer(const Type&) = delete;
           Buffer(Type&& rhs) noexcept = default;
-          Type& operator=(const Type&) = default;
+          Type& operator=(const Type&) = delete;
           Type& operator=(Type&& rhs) noexcept = default;
-          inline ~Buffer() noexcept = default;
+          ~Buffer() noexcept = default;
 
-          inline void release() noexcept { _handle.release(); } ///< Destroy/release static buffer instance
+          inline void release() noexcept { _handle.release(); } ///< Destroy/release buffer instance
           
           // -- accessors --
           
@@ -199,12 +220,19 @@ Direct3D11 - DepthStencilBuffer
           ///                           -> allows using data as a shader resource after preparing it in a staging buffer.
           /// @warning - Both buffers must be the same size (bufferByteSize) and the same type (BufferType).
           ///          - Both buffers must use compatible internal formats.
-          ///          - Buffers can't be currently mapped (with a BufferIO instance or using D3D11_MAPPED_SUBRESOURCE, for example).
+          ///          - Buffers can't be currently mapped (with a MappedBufferIO instance or using D3D11_MAPPED_SUBRESOURCE, for example).
           ///          - This command is not supported on immutable buffers.
           ///          - The renderer used with buffer constructor must still exist, or this may crash.
           template <ResourceUsage _RhsUsage>
-          inline void copy(Buffer<_RhsUsage>& source) {
-            this->_context->CopyResource((ID3D11Resource*)_handle.get(), (ID3D11Resource*)source.handle());
+          inline bool copy(Buffer<_RhsUsage>& source) noexcept {
+            __if_constexpr (_Usage != ResourceUsage::immutable) {
+              try {
+                this->_context->CopyResource((ID3D11Resource*)_handle.get(), (ID3D11Resource*)source.handle());
+                return true;
+              }
+              catch (...) {}
+            }
+            return false;
           }
           
           /// @brief Discard previous data and write buffer data. Can only be used to write the entire buffer.
@@ -212,7 +240,7 @@ Direct3D11 - DepthStencilBuffer
           /// @param sourceData  Structure/array of the same byte size as 'bufferByteSize' in constructor. Can't be NULL.
           /// @returns Memory access/update success
           /// @warning - 'sourceData' must be the same size as the buffer ('bufferByteSize').
-          ///          - The buffer can't be currently mapped (with a BufferIO instance or using D3D11_MAPPED_SUBRESOURCE, for example).
+          ///          - The buffer can't be currently mapped (with a MappedBufferIO instance or using D3D11_MAPPED_SUBRESOURCE, for example).
           ///          - The renderer used with buffer constructor must still exist, or this may crash.
           ///          - This command is not supported on immutable buffers.
           ///          - Make sure the 'sourceData' memory is properly aligned.
@@ -249,6 +277,7 @@ Direct3D11 - DepthStencilBuffer
           ///                            Recommended for each first write of a buffer for a new frame.
           ///                 * subsequent: Keep previous data (warning: data currently used by GPU must not be overwritten!).
           ///                               Recommended for subsequent writes of a buffer within the same frame.
+          ///                 Not available in lower-level APIs (Vulkan...). Use ifdefs or ignore for cross-API projects.
           /// @throws runtime_error on failure
           inline MappedBufferIO(Buffer<ResourceUsage::dynamicCpu>& buffer, DynamicMapping mode = DynamicMapping::discard)
             : _context(buffer.context()), _buffer(buffer.handle()) {
@@ -299,6 +328,7 @@ Direct3D11 - DepthStencilBuffer
           ///                            Recommended for each first write of a buffer for a new frame.
           ///                 * subsequent: Keep previous data (warning: data currently used by GPU must not be overwritten!).
           ///                               Recommended for subsequent writes of a buffer within the same frame.
+          ///                 Not available in lower-level APIs (Vulkan...). Use ifdefs or ignore for cross-API projects.
           /// @returns Success
           inline bool open(Buffer<ResourceUsage::dynamicCpu>& buffer, DynamicMapping mode = DynamicMapping::discard) noexcept {
             return _reopen(buffer.context(), buffer.handle(), (D3D11_MAP)mode);
@@ -354,4 +384,5 @@ Direct3D11 - DepthStencilBuffer
     return __writeMappedDataBuffer(_context, _handle.get(), _bufferSize, D3D11_MAP_WRITE, sourceData);
   }
 
+# undef __if_constexpr
 #endif

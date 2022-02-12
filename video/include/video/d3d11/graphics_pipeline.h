@@ -74,7 +74,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           }
           /// @brief Identify polygons to hide: back-facing, front-facing, none.
           /// @remarks Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          inline RasterizerParams& cullMode(CullMode cull, bool = true) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
+          inline RasterizerParams& cullMode(CullMode cull, bool /*isDynamic*/ = true) noexcept { _params.CullMode = (D3D11_CULL_MODE)cull; return *this; }
           /// @brief Set filled/wireframe polygon rendering
           inline RasterizerParams& fillMode(FillMode fill) noexcept {
             if (fill == FillMode::linesAA) { _params.FillMode = D3D11_FILL_WIREFRAME;  _params.AntialiasedLineEnable = TRUE; }
@@ -85,7 +85,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           /// @param count  Sample count for multisampling. Use 1 to disable multisampling.
           ///               Call Renderer.is{Color/Depth/Stencil}SampleCountAvailable to make sure the value is supported.
           /// @remarks Float param (minShading) is ignored: it only exists for compatibility with other APIs (Vulkan).
-          inline RasterizerParams& sampleCount(uint32_t count, float = 0.f) noexcept {
+          inline RasterizerParams& sampleCount(uint32_t count, float /*minShading*/ = 0.f) noexcept {
             _params.MultisampleEnable = (count > 1) ? TRUE : FALSE; return *this;
           }
           
@@ -189,12 +189,12 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
 
           /// @brief Enable/disable depth-test
           /// @remarks The 2nd bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          inline DepthStencilParams& enableDepthTest(bool isEnabled, bool = true) noexcept {
+          inline DepthStencilParams& enableDepthTest(bool isEnabled, bool /*isDynamic*/ = true) noexcept {
             _params.DepthEnable = isEnabled ? TRUE : FALSE; return *this;
           }
           /// @brief Enable/disable stencil-test
           /// @remarks The 2nd bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          inline DepthStencilParams& enableStencilTest(bool isEnabled, bool = true) noexcept {
+          inline DepthStencilParams& enableStencilTest(bool isEnabled, bool /*isDynamic*/ = true) noexcept {
             _params.StencilEnable = isEnabled ? TRUE : FALSE; return *this;
           }
 
@@ -316,7 +316,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool = true) noexcept;
+          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
           
@@ -378,7 +378,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool = true) noexcept;
+          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
           inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
 
