@@ -242,14 +242,14 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            " Available features:\n\n"
            " > sRGB format support: %s\n > HDR-scRGB support:   %s\n > HDR-10 support:      %s\n > HDR-capable monitor: %s\n\n"
            " > Screen tearing support:  %s\n > Multi-viewport support:  %s (max %u)\n"
-           " > MSAA support:            %s (max %u\x78)\n > Max render-target count: %u"
+           " > MSAA support:            %s (max %u\x78)\n > Max anisotropy level:    %u\n > Max render-target count: %u"
            ""
            "",
            featureLevel, (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            toString(renderer->isDynamicRenderingSupported()), toString(renderer->isExtendedDynamicStateSupported()),
            sRgbSupport, toString(iHdrScRGB), toString(isHdr10), "unknown",
            toString(isTearingSupported), toString(renderer->maxViewports() > 1u), (uint32_t)renderer->maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, (uint32_t)renderer->maxRenderTargets());
+           toString(maxMSAA > 1u), maxMSAA, (uint32_t)renderer->deviceLimits().maxSamplerAnisotropy, (uint32_t)renderer->maxRenderTargets());
   }
 #endif
 
@@ -304,7 +304,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
       clearScreen();
       printTitle("");
 
-      printf("\nWindow type :\n");
+      printf("\nGraphics API :\n");
       printMenu<__MENU_ENTRY_COUNT + 1>({
         "Exit..."
 #       if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
