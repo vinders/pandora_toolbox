@@ -51,6 +51,12 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
         using ColorChannel = float;             ///< R/G/B/A color value
+
+        /// @brief Command queues from one family (with graphics support)
+        struct CommandQueues final {
+          DynamicArray<VkQueue> commandQueues = VK_NULL_HANDLE;
+          uint32_t familyIndex = 0;
+        };
         
         struct InputLayoutDescription final {
           DynamicArray<VkVertexInputBindingDescription> bindings;
@@ -282,21 +288,28 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
                                                          ///  * contains indices to allow removal of redundant/common vertices from associated vertex array buffer(s).
         };
         /// @brief Resource / texture memory usage - ResourceBuffer / Texture<...>
-        enum class ResourceUsage : int/*VkMemoryPropertyFlagBits*/ {
-          immutable = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ///< Immutable: GPU memory initialized at creation, not visible from CPU:
-                                                           ///          - fastest GPU access: ideal for static resources that don't change (textures, geometry...);
-          staticGpu = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,///< Static: GPU memory, not directly visible from CPU:
-                                                           ///          - fast GPU access: ideal for static resources rarely updated or for small resources;
-                                                           ///          - indirect CPU write access: should be used when NOT updated frequently (or if data is small);
-                                                           ///          - mapped if supported by GPU / defaults to 'VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT' if not supported (indirect CPU access).
-          dynamicCpu = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,///< Dynamic: CPU mappable memory, visible from GPU (through PCIe):
-                                                           ///           - slow GPU read access: should be used when data isn't kept for multiple frames;
-                                                           ///           - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
-          staging   = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT  ///< Staging: CPU-only mappable memory:
-                                                           ///           - no GPU access: should not be used for display or render-targets;
-                                                           ///           - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
-                                                           ///           - staged content is usually used to populate/read/update static resources (textures, geometry...)
-                                                           ///             -> copied with data transfers from/to staticGpu resources (which can be accessed by the GPU).
+        enum class ResourceUsage : int {
+          immutable = 0,  ///< Immutable: GPU memory initialized at creation, not visible from CPU:
+                          ///          - fastest GPU access: ideal for static resources that don't change (textures, geometry...);
+          staticGpu = 1,  ///< Static: GPU memory, not directly visible from CPU:
+                          ///          - fast GPU access: ideal for static resources rarely updated or for small resources;
+                          ///          - indirect CPU write access: should be used when NOT updated frequently (or if data is small);
+                          ///          - mapped if supported by GPU / defaults to 'VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT' if not supported (indirect CPU access).
+          dynamicCpu = 2, ///< Dynamic: CPU mappable memory, visible from GPU (through PCIe):
+                          ///           - slow GPU read access: should be used when data isn't kept for multiple frames;
+                          ///           - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
+          staging   = 3   ///< Staging: CPU-only mappable memory:
+                          ///           - no GPU access: should not be used for display or render-targets;
+                          ///           - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
+                          ///           - staged content is usually used to populate/read/update static resources (textures, geometry...)
+                          ///             -> copied with data transfers from/to staticGpu resources (which can be accessed by the GPU).
+        };
+        
+        /// @brief Staging resource / texture memory mapping
+        enum class StagedMapping : int {
+          read = 0x1,      ///< Read-only access
+          write = 0x2,     ///< Write-only access
+          readWrite = 0x3  ///< Read-write access
         };
         
         
@@ -393,6 +406,8 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
     }
   }
   _P_FLAGS_OPERATORS(pandora::video::vulkan::ColorComponentFlag, int);
+  _P_FLAGS_OPERATORS(pandora::video::vulkan::BufferType, int);
+  
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(pop)
 # endif

@@ -529,15 +529,14 @@ Includes hpp implementations at the end of the file
   Renderer::Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance,
                      const VkPhysicalDeviceFeatures& requestedFeatures, bool areFeaturesRequired,
                      const DeviceExtensions& extensions, size_t commandQueueCount)
-    : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()), // throws
-      _physicalDevice(VK_NULL_HANDLE) {
+    : _instance((instance != nullptr) ? std::move(instance) : VulkanInstance::create()) { // throws
     // find hardware adapter for monitor
     if (commandQueueCount < 1u)
       commandQueueCount = 1u;
     DynamicArray<uint32_t> cmdQueueFamilyIndices;
-    this->_physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), requestedFeatures, monitor,
-                                                 this->_instance->featureLevel(), commandQueueCount, cmdQueueFamilyIndices); // throws
-    if (this->_physicalDevice == VK_NULL_HANDLE)
+    auto physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), requestedFeatures, monitor,
+                                               this->_instance->featureLevel(), commandQueueCount, cmdQueueFamilyIndices); // throws
+    if (physicalDevice == VK_NULL_HANDLE)
       throw std::runtime_error("Vulkan: failed to find compatible GPU");
 
     // feature support detection
@@ -546,13 +545,13 @@ Includes hpp implementations at the end of the file
       memcpy(this->_features.get(), &requestedFeatures, sizeof(VkPhysicalDeviceFeatures));
     else {
       memset(this->_features.get(), 0, sizeof(VkPhysicalDeviceFeatures));
-      vkGetPhysicalDeviceFeatures(this->_physicalDevice, this->_features.get());
+      vkGetPhysicalDeviceFeatures(physicalDevice, this->_features.get());
       __getSupportedFeatures(requestedFeatures, this->_features.get());
     }
 
     this->_physicalDeviceInfo = std::make_unique<VkPhysicalDeviceProperties>();
     memset(this->_physicalDeviceInfo.get(), 0, sizeof(VkPhysicalDeviceProperties));
-    vkGetPhysicalDeviceProperties(this->_physicalDevice, this->_physicalDeviceInfo.get());
+    vkGetPhysicalDeviceProperties(physicalDevice, this->_physicalDeviceInfo.get());
 
     // command queue params
     DynamicArray<VkDeviceQueueCreateInfo> cmdQueueInfos(cmdQueueFamilyIndices.length());
@@ -615,17 +614,19 @@ Includes hpp implementations at the end of the file
     _isExtendedDynamicStateSupported = (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
                                      || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end());
 
-    // create rendering device
+    // create logical rendering device (context)
     VkDevice deviceContextHandle = VK_NULL_HANDLE;
-    VkResult result = vkCreateDevice(this->_physicalDevice, &deviceInfo, nullptr, &deviceContextHandle);
+    VkResult result = vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &deviceContextHandle);
     if (result != VK_SUCCESS || deviceContextHandle == VK_NULL_HANDLE)
       throwError(result, "Vulkan: failed to create logical device");
-    this->_deviceContext = std::make_shared<ScopedDeviceContext>(deviceContextHandle);
+    this->_deviceContext = std::make_shared<ScopedDeviceContext>(deviceContextHandle, physicalDevice);
+    this->_logicalDeviceContextCopy = deviceContextHandle;
+    this->_physicalDeviceCopy = physicalDevice;
 
     // get command queue handles
-    this->_graphicsQueuesPerFamily = DynamicArray<Renderer::CommandQueues>(cmdQueueFamilyIndices.length());
+    DynamicArray<CommandQueues> graphicsQueuesPerFamily(cmdQueueFamilyIndices.length());
     for (size_t i = 0; i < cmdQueueFamilyIndices.length(); ++i) {
-      Renderer::CommandQueues& family = this->_graphicsQueuesPerFamily.value[i];
+      CommandQueues& family = graphicsQueuesPerFamily.value[i];
       family.familyIndex = cmdQueueFamilyIndices.value[i];
       family.commandQueues = DynamicArray<VkQueue>(commandQueueCount);
       for (size_t queue = 0; queue < commandQueueCount; ++queue) {
@@ -635,6 +636,19 @@ Includes hpp implementations at the end of the file
           throw std::runtime_error("Vulkan: failed to obtain command queue access");
       }
     }
+    this->_deviceContext->_setGraphicsQueues(std::move(graphicsQueuesPerFamily));
+    
+    // create command pool for short-lived operations (copies...)
+    VkCommandPool transientCommandPool = VK_NULL_HANDLE;
+    uint32_t transientCommandQueueFamily = cmdQueueFamilyIndices.value[0];//TODO: choose queue with transfer capability (if possible, also graphics caps)
+    VkCommandPoolCreateInfo transientPoolInfo{};
+    transientPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    transientPoolInfo.queueFamilyIndex = transientCommandQueueFamily;
+    transientPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    result = vkCreateCommandPool(deviceContextHandle, &transientPoolInfo, nullptr, &transientCommandPool);
+    if (result != VK_SUCCESS || transientCommandPool == VK_NULL_HANDLE)
+      throwError(result, "Vulkan: transient command pool not created");
+    this->_deviceContext->_setTransientCommandPool(transientCommandPool, transientCommandQueueFamily);
   }
 
 
@@ -642,52 +656,62 @@ Includes hpp implementations at the end of the file
 
   // Destroy rendering context handle
   void ScopedDeviceContext::release() noexcept {
-    if (this->_handle != VK_NULL_HANDLE) {
-      vkDeviceWaitIdle(this->_handle);
-      try { vkDestroyDevice(this->_handle, nullptr); } catch (...) {}
-      this->_handle = VK_NULL_HANDLE;
+    if (this->_deviceContext != VK_NULL_HANDLE) {
+      if (this->_transientCommandPool != VK_NULL_HANDLE)
+        vkDestroyCommandPool(this->_deviceContext, this->_transientCommandPool, nullptr);
+      this->_graphicsQueuesPerFamily.clear();
+      
+      vkDeviceWaitIdle(this->_deviceContext);
+      try { vkDestroyDevice(this->_deviceContext, nullptr); } catch (...) {}
+      this->_deviceContext = VK_NULL_HANDLE;
+      this->_physicalDevice = VK_NULL_HANDLE;
     }
   }
   // Destroy device and context resources
   void Renderer::_destroy() noexcept {
     if (this->_deviceContext != nullptr) {
-      this->_attachedPipeline = nullptr; // unbind
-      flush();
+      if (this->_deviceContext->context() != VK_NULL_HANDLE) {
+        this->_attachedPipeline = nullptr; // unbind
+        flush();
+      }
       this->_deviceContext = nullptr; // release
-
-      this->_graphicsQueuesPerFamily.clear();
       this->_features = nullptr;
       this->_physicalDeviceInfo = nullptr;
-      this->_physicalDevice = VK_NULL_HANDLE;
     }
     this->_instance.reset();
   }
 
   Renderer::Renderer(Renderer&& rhs) noexcept
-    : _instance(std::move(rhs._instance)),
+    : _logicalDeviceContextCopy(rhs._logicalDeviceContextCopy),
+      _physicalDeviceCopy(rhs._physicalDeviceCopy),
+      _instance(std::move(rhs._instance)),
+      _deviceContext(std::move(rhs._deviceContext)),
+      _deviceExtensions(std::move(rhs._deviceExtensions)),
       _features(std::move(rhs._features)),
       _physicalDeviceInfo(std::move(rhs._physicalDeviceInfo)),
-      _physicalDevice(rhs._physicalDevice),
-      _deviceContext(std::move(rhs._deviceContext)),
-      _graphicsQueuesPerFamily(std::move(rhs._graphicsQueuesPerFamily)) {
+      _isDynamicRenderingSupported(rhs._isDynamicRenderingSupported),
+      _isExtendedDynamicStateSupported(rhs._isExtendedDynamicStateSupported),
+      _attachedPipeline(rhs._attachedPipeline) {
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
-    rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = nullptr;
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
     _destroy();
+    this->_logicalDeviceContextCopy = rhs._logicalDeviceContextCopy;
+    this->_physicalDeviceCopy = rhs._physicalDeviceCopy;
     this->_instance = std::move(rhs._instance);
+    this->_deviceContext = std::move(rhs._deviceContext);
+    this->_deviceExtensions = std::move(rhs._deviceExtensions);
     this->_features = std::move(rhs._features);
     this->_physicalDeviceInfo = std::move(rhs._physicalDeviceInfo);
-    this->_physicalDevice = rhs._physicalDevice;
-    this->_deviceContext = std::move(rhs._deviceContext);
-    this->_graphicsQueuesPerFamily = std::move(rhs._graphicsQueuesPerFamily);
+    this->_isDynamicRenderingSupported = rhs._isDynamicRenderingSupported;
+    this->_isExtendedDynamicStateSupported = rhs._isExtendedDynamicStateSupported;
+    this->_attachedPipeline = rhs._attachedPipeline;
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
-    rhs._physicalDevice = VK_NULL_HANDLE;
     rhs._deviceContext = nullptr;
     return *this;
   }
@@ -699,7 +723,7 @@ Includes hpp implementations at the end of the file
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     memoryProperties.memoryHeapCount = 0;
-    vkGetPhysicalDeviceMemoryProperties(this->_physicalDevice, &memoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(this->_physicalDeviceCopy, &memoryProperties);
     
     VkDeviceSize localByteSize = 0, sharedByteSize = 0;
     uint32_t remainingHeaps = memoryProperties.memoryHeapCount;
@@ -728,7 +752,7 @@ Includes hpp implementations at the end of the file
                                                FormatAttachment attachmentType, VkImageTiling tiling) const noexcept {
     for (const DataFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
       VkFormatProperties formatProps{};
-      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_physicalDevice,
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_deviceContext->device(),
                                           _getDataFormatComponents(*candidates), &formatProps);
       
       if (tiling == VK_IMAGE_TILING_OPTIMAL) {
@@ -745,7 +769,7 @@ Includes hpp implementations at the end of the file
                                                                size_t count, VkImageTiling tiling) const noexcept {
     for (const DepthStencilFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
       VkFormatProperties formatProps{};
-      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_physicalDevice, (VkFormat)*candidates, &formatProps);
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)this->_physicalDeviceCopy, (VkFormat)*candidates, &formatProps);
       
       if (tiling == VK_IMAGE_TILING_OPTIMAL) {
         if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -782,7 +806,7 @@ Includes hpp implementations at the end of the file
     fenceInfo.flags = 0;
 
     VkFence fence;
-    if (vkCreateFence(this->_deviceContext->handle(), &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+    if (vkCreateFence(this->_logicalDeviceContextCopy, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
       return;
 
     VkSubmitInfo submitInfo{};
@@ -790,13 +814,13 @@ Includes hpp implementations at the end of the file
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
     if (vkQueueSubmit(this->_graphicsCommandQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
-      vkDestroyFence(this->_deviceContext->handle(), fence, nullptr);
+      vkDestroyFence(this->_logicalDeviceContextCopy, fence, nullptr);
       return;
     }
 
-    vkWaitForFences(this->_deviceContext->handle(), 1, &fence, true, 10000000000);
-    vkResetFences(this->_deviceContext->handle(), 1, &fence);
-    vkDestroyFence(this->_deviceContext->handle(), fence, nullptr);*/
+    vkWaitForFences(this->_logicalDeviceContextCopy, 1, &fence, true, 10000000000);
+    vkResetFences(this->_logicalDeviceContextCopy, 1, &fence);
+    vkDestroyFence(this->_logicalDeviceContextCopy, fence, nullptr);*/
   }
 
 
@@ -863,11 +887,12 @@ Includes hpp implementations at the end of the file
       auto format = _getDataFormatComponents(bufferFormat);
 
       uint32_t formatCount = 0;
-      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, nullptr) == VK_SUCCESS && formatCount) {
+      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext->device(), this->_windowSurface,
+                                               &formatCount, nullptr) == VK_SUCCESS && formatCount) {
         auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
-        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_physicalDevice, this->_windowSurface, &formatCount, formats.value);
+        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext->device(),
+                                                               this->_windowSurface, &formatCount, formats.value);
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-
           for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
             if (it->format == format)
               return true;
@@ -1281,7 +1306,7 @@ Includes hpp implementations at the end of the file
 // -----------------------------------------------------------------------------
 // _private/_resource_io.h
 // -----------------------------------------------------------------------------
-  
+
   // Create buffer view (for render target buffer, depth buffer, texture buffer...)
   VkImageView pandora::video::vulkan::__createBufferView(DeviceContext context, VkImage bufferImage, VkFormat bufferFormat,
                                                         VkImageAspectFlags type, uint32_t layerCount,
@@ -1307,8 +1332,8 @@ Includes hpp implementations at the end of the file
   // ---
   
   // Find memory type for a requested resource memory usage
-  static uint32_t __findMemoryTypeIndex(VkPhysicalDevice device, uint32_t memoryTypeBits,
-                                        VkMemoryPropertyFlags resourceUsage) {
+  uint32_t pandora::video::vulkan::__findMemoryTypeIndex(VkPhysicalDevice device, uint32_t memoryTypeBits,
+                                                         VkMemoryPropertyFlags resourceUsage) {
     VkPhysicalDeviceMemoryProperties memoryProps;
     vkGetPhysicalDeviceMemoryProperties(device, &memoryProps);
     
@@ -1318,33 +1343,32 @@ Includes hpp implementations at the end of the file
         return i;
       }
     }
-    throw std::runtime_error("Buffer: suitable memory type not found");
+    throw std::out_of_range("Buffer: no suitable memory type");
   }
   
   // Allocate device memory for buffer image
-  VkDeviceMemory pandora::video::vulkan::__allocBufferImage(Renderer& renderer, VkImage bufferImage,
-                                                            VkMemoryPropertyFlags resourceUsage) { // throws
+  VkDeviceMemory pandora::video::vulkan::__allocBufferImage(DeviceContext context, DeviceHandle physDevice,
+                                                            VkImage bufferImage, VkMemoryPropertyFlags resourceUsage) { // throws
     VkMemoryRequirements requirements;
-    vkGetImageMemoryRequirements(renderer.context(), bufferImage, &requirements);
+    vkGetImageMemoryRequirements(context, bufferImage, &requirements);
     
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = requirements.size;
-    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(renderer.device(), requirements.memoryTypeBits, resourceUsage);
+    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(physDevice, requirements.memoryTypeBits, resourceUsage);
 
     VkDeviceMemory imageMemory = VK_NULL_HANDLE;
-    VkResult result = vkAllocateMemory(renderer.context(), &allocInfo, nullptr, &imageMemory);
+    VkResult result = vkAllocateMemory(context, &allocInfo, nullptr, &imageMemory);
     if (result != VK_SUCCESS || imageMemory == VK_NULL_HANDLE)
-      throwError(result, "Buffer: memory allocation failure");
+      throwError(result, "BufferImage: memory allocation failure");
 
-    result = vkBindImageMemory(renderer.context(), bufferImage, imageMemory, 0);
+    result = vkBindImageMemory(context, bufferImage, imageMemory, 0);
     if (result != VK_SUCCESS) {
-      vkFreeMemory(renderer.context(), imageMemory, nullptr);
-      throwError(result, "Buffer: memory binding failure");
+      vkFreeMemory(context, imageMemory, nullptr);
+      throwError(result, "BufferImage: memory binding failure");
     }
     return imageMemory;
   }
-  
 
 
 // -----------------------------------------------------------------------------

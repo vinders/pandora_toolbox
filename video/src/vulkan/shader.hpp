@@ -153,7 +153,7 @@ Implementation included in renderer.cpp
     shaderInfo.pCode = reinterpret_cast<const uint32_t*>(this->_data);
 
     VkShaderModule shaderModule;
-    auto result = vkCreateShaderModule(device->handle(), &shaderInfo, nullptr, &shaderModule);
+    auto result = vkCreateShaderModule(device->context(), &shaderInfo, nullptr, &shaderModule);
     if (result != VK_SUCCESS || shaderModule == VK_NULL_HANDLE)
       throwError(result, "Shader: creation error");
     return Shader(std::make_shared<ScopedResource<VkShaderModule> >(shaderModule, std::move(device), vkDestroyShaderModule),

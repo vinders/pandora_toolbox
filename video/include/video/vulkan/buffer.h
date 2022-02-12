@@ -25,7 +25,13 @@ Vulkan - DepthStencilBuffer
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cassert>
 # include <cstdint>
+# include "./_private/_resource_io.h" // includes vulkan
 # include "./renderer.h" // includes vulkan
+# if !defined(_CPP_REVISION) || _CPP_REVISION != 14
+#   define __if_constexpr if constexpr
+# else
+#   define __if_constexpr if
+# endif
 
   namespace pandora {
     namespace video {
@@ -87,7 +93,6 @@ Vulkan - DepthStencilBuffer
           uint32_t _pixelSize = 0; // width / height
           DepthStencilFormat _format = DepthStencilFormat::d32_f;
         };
-        
       }
     }
   }

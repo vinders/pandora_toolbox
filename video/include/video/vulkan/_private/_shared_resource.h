@@ -27,6 +27,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace vulkan {
+        class Renderer;
+        
         // Throw native error message (or default if no message available)
         void throwError(VkResult result, const char* messagePrefix);
         
@@ -36,20 +38,54 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ScopedDeviceContext() noexcept = default; ///< Empty container
           ScopedDeviceContext(const ScopedDeviceContext&) = delete;
           ScopedDeviceContext& operator=(const ScopedDeviceContext&) = delete;
-          inline ScopedDeviceContext(ScopedDeviceContext&& rhs) noexcept : _handle(rhs._handle) { rhs._handle = VK_NULL_HANDLE; }
+          inline ScopedDeviceContext(ScopedDeviceContext&& rhs) noexcept
+            : _deviceContext(rhs._deviceContext), _physicalDevice(rhs._physicalDevice),
+              _graphicsQueuesPerFamily(std::move(rhs._graphicsQueuesPerFamily)),
+              _transientCommandPool(rhs._transientCommandPool) {
+            rhs._deviceContext = VK_NULL_HANDLE;
+            rhs._physicalDevice = VK_NULL_HANDLE;
+            rhs._transientCommandPool = VK_NULL_HANDLE;
+          }
           inline ScopedDeviceContext& operator=(ScopedDeviceContext&& rhs) noexcept {
-            release(); _handle=rhs._handle; rhs._handle=VK_NULL_HANDLE;
+            release();
+            _deviceContext=rhs._deviceContext; _physicalDevice=rhs._physicalDevice;
+            _graphicsQueuesPerFamily=std::move(rhs._graphicsQueuesPerFamily);
+            _transientCommandPool=rhs._transientCommandPool;
+            rhs._deviceContext = VK_NULL_HANDLE;
+            rhs._physicalDevice = VK_NULL_HANDLE;
+            rhs._transientCommandPool = VK_NULL_HANDLE;
             return *this;
           }
           inline ~ScopedDeviceContext() noexcept { release(); }
           
-          ScopedDeviceContext(VkDevice handle) noexcept : _handle(handle) {} ///< Initialize device rendering context
+          ScopedDeviceContext(VkDevice deviceContext, VkPhysicalDevice physicalDevice) noexcept ///< Initialize device rendering context
+            : _deviceContext(deviceContext), _physicalDevice(physicalDevice) {}
           void release() noexcept; ///< Destroy device rendering context
           
-          VkDevice handle() const noexcept { return _handle; } ///< Get device rendering context handle
+          inline VkPhysicalDevice device() const noexcept { return this->_physicalDevice; } ///< Get physical rendering device (VkPhysicalDevice)
+          inline VkDevice context() const noexcept { return this->_deviceContext; }         ///< Get logical device context (VkDevice)
+          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_graphicsQueuesPerFamily; } ///< Vulkan command queues (per family)
+          inline VkCommandPool transientCommandPool() const noexcept { return this->_transientCommandPool; } ///< Get command pool for short-lived operations
+          inline const CommandQueues& transientCommandQueues() const noexcept { ///< Get queue family for transient command pool
+            return _graphicsQueuesPerFamily.value[_transientQueuesArrayIndex];
+          }
           
         private:
-          VkDevice _handle = VK_NULL_HANDLE;
+          inline void _setGraphicsQueues(DynamicArray<CommandQueues>&& commandQueues) noexcept {
+            this->_graphicsQueuesPerFamily = std::move(commandQueues);
+          }
+          inline void _setTransientCommandPool(VkCommandPool commandPool, uint32_t queuesArrayIndex) noexcept {
+            this->_transientCommandPool = commandPool;
+            this->_transientQueuesArrayIndex = queuesArrayIndex;
+          }
+          friend class Renderer;
+          
+        private:
+          VkDevice _deviceContext = VK_NULL_HANDLE;
+          VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+          DynamicArray<CommandQueues> _graphicsQueuesPerFamily; // command queues
+          VkCommandPool _transientCommandPool = VK_NULL_HANDLE; // for short-lived operations
+          uint32_t _transientQueuesArrayIndex = 0;
         };
         using DeviceResourceManager = std::shared_ptr<ScopedDeviceContext>; ///< Device resource manager
         
@@ -91,7 +127,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           void release() noexcept { ///< Destroy resource instance
             if (this->_handle != VK_NULL_HANDLE) {
-              try { _destroy(this->_context->handle(), this->_handle, nullptr); } catch (...) {}
+              try { _destroy(this->_context->context(), this->_handle, nullptr); } catch (...) {}
               this->_handle = VK_NULL_HANDLE;
             }
           }
@@ -106,6 +142,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           inline bool operator==(const ScopedResource<T>& rhs) const noexcept { return (_handle == rhs._handle); }
           inline bool operator!=(const ScopedResource<T>& rhs) const noexcept { return (_handle != rhs._handle); }
+          inline VkDevice context() const noexcept { return _context->context(); } ///< Get associated context (call hasValue() first!)
           
         private:
           T _handle = VK_NULL_HANDLE;

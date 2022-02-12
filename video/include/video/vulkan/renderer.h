@@ -146,18 +146,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- accessors --
 
-          /// @brief Command queues from one family (with graphics support)
-          struct CommandQueues final {
-            DynamicArray<VkQueue> commandQueues = VK_NULL_HANDLE;
-            uint32_t familyIndex = 0;
-          };
-          
-          inline DeviceHandle device() const noexcept { return this->_physicalDevice; }  ///< Get physical rendering device (VkPhysicalDevice)
-          inline DeviceContext context() const noexcept { return this->_deviceContext->handle(); } ///< Get logical device context (VkDevice)
-          inline DeviceResourceManager resourceManager() const noexcept { return this->_deviceContext; } ///< Get resource manager (to build resources such as shaders)
+          inline DeviceHandle device() const noexcept { return this->_physicalDeviceCopy; }         ///< Get physical rendering device (VkPhysicalDevice)
+          inline DeviceContext context() const noexcept { return this->_logicalDeviceContextCopy; } ///< Get logical device context (VkDevice)
+          inline const DeviceResourceManager& resourceManager() const noexcept { return this->_deviceContext; } ///< Get resource manager (to build resources such as shaders)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
           inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
-          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_graphicsQueuesPerFamily; } ///< Get Vulkan command queues (per family)
+          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_deviceContext->commandQueues(); } ///< Get Vulkan command queues (per family)
+          inline VkCommandPool transientCommandPool() const noexcept { return this->_deviceContext->transientCommandPool(); } ///< Get command pool for short-lived operations
           
           /// @brief Read device adapter VRAM size
           /// @returns Read success
@@ -258,13 +253,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           friend class pandora::video::vulkan::GraphicsPipeline;
           
         private:
+          VkDevice _logicalDeviceContextCopy = VK_NULL_HANDLE;   // unmanaged copy of _deviceContext._deviceContext (reduces cache misses)
+          VkPhysicalDevice _physicalDeviceCopy = VK_NULL_HANDLE; // unmanaged copy of _deviceContext._physicalDevice (reduces cache misses)
           std::shared_ptr<VulkanInstance> _instance = nullptr;
           std::shared_ptr<ScopedDeviceContext> _deviceContext = nullptr;
           std::unordered_set<std::string> _deviceExtensions;
           std::unique_ptr<VkPhysicalDeviceFeatures> _features = nullptr;
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
-          DeviceHandle _physicalDevice = VK_NULL_HANDLE;
-          DynamicArray<CommandQueues> _graphicsQueuesPerFamily;
           bool _isDynamicRenderingSupported = false;
           bool _isExtendedDynamicStateSupported = false;
 

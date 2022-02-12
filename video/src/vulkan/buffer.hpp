@@ -51,9 +51,9 @@ Implementation included in renderer.cpp
     if (result != VK_SUCCESS || this->_depthStencilBuffer == VK_NULL_HANDLE)
       throwError(result, "DepthStencil: buffer creation error");
 
-    this->_depthStencilMemory = __allocBufferImage(renderer, this->_depthStencilBuffer,
-                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    this->_depthStencilView = __createBufferView(renderer.context(), this->_depthStencilBuffer, (VkFormat)format,
+    this->_depthStencilMemory = __allocBufferImage(this->_context->context(), this->_context->device(),
+                                                   this->_depthStencilBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    this->_depthStencilView = __createBufferView(this->_context->context(), this->_depthStencilBuffer, (VkFormat)format,
                                                  VK_IMAGE_ASPECT_DEPTH_BIT, 1u, 1u, 0);
   }
 
@@ -61,14 +61,14 @@ Implementation included in renderer.cpp
   void DepthStencilBuffer::release() noexcept {
     if (this->_depthStencilBuffer) {
       if (this->_depthStencilView) {
-        vkDestroyImageView(this->_context->handle(), this->_depthStencilView, nullptr);
+        vkDestroyImageView(this->_context->context(), this->_depthStencilView, nullptr);
         this->_depthStencilView = VK_NULL_HANDLE;
       }
-      vkDestroyImage(this->_context->handle(), this->_depthStencilBuffer, nullptr);
+      vkDestroyImage(this->_context->context(), this->_depthStencilBuffer, nullptr);
       this->_depthStencilBuffer = VK_NULL_HANDLE;
       
       if (this->_depthStencilMemory) {
-        vkFreeMemory(this->_context->handle(), this->_depthStencilMemory, nullptr);
+        vkFreeMemory(this->_context->context(), this->_depthStencilMemory, nullptr);
         this->_depthStencilMemory = VK_NULL_HANDLE;
       }
     }
@@ -102,5 +102,5 @@ Implementation included in renderer.cpp
     rhs._context = nullptr;
     return *this;
   }
-  
+
 #endif

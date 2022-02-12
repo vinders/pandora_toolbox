@@ -30,12 +30,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         VkImageView __createBufferView(DeviceContext context, VkImage bufferImage, VkFormat bufferFormat,
                                        VkImageAspectFlags type, uint32_t layerCount = 1u,
                                        uint32_t mipLevels = 1u, uint32_t mostDetailedMip = 0);
+        
+        // ---
       
-        // Allocate device memory for buffer image
+        // Find device memory index for requested type bits
+        // -> throws out_of_range if not found
+        uint32_t __findMemoryTypeIndex(VkPhysicalDevice device, uint32_t memoryTypeBits,
+                                       VkMemoryPropertyFlags resourceUsage);
+        // Allocate device memory for buffer image (depth/texture)
         // -> throws runtime_error on failure
-        VkDeviceMemory __allocBufferImage(Renderer& renderer, VkImage bufferImage,
-                                          VkMemoryPropertyFlags resourceUsage);
-
+        VkDeviceMemory __allocBufferImage(DeviceContext context, DeviceHandle physDevice,
+                                          VkImage bufferImage, VkMemoryPropertyFlags resourceUsage);
       }
     }
   }
