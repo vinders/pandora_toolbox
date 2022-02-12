@@ -102,5 +102,72 @@ Implementation included in renderer.cpp
     rhs._context = nullptr;
     return *this;
   }
+  
+  
+// -- buffer memory allocation -- ----------------------------------------------
+
+  BufferMemory::BufferMemory(VkDeviceMemory deviceMemory, const DeviceResourceManager& context) noexcept
+    : _handle(deviceMemory, context, vkFreeMemory) {}
+
+  // Create memory allocation (for multiple buffer suballocations)
+  BufferMemory BufferMemory::create(Renderer& renderer, ResourceUsage mode, size_t byteSize,
+                                    const BufferHandle* eachBufferType, size_t bufferCount) {
+    uint32_t memoryTypeBits = 0xFFFFFFFFu;
+    VkMemoryRequirements requirements;
+    for (const BufferHandle* it = eachBufferType; bufferCount; --bufferCount, ++it) {
+      vkGetBufferMemoryRequirements(renderer.context(), *it, &requirements);
+      memoryTypeBits &= requirements.memoryTypeBits;
+    }
+    if (memoryTypeBits == 0 || bufferCount == 0)
+      throw std::out_of_range("BufferMemory: no common memory type");
+    
+    VkMemoryPropertyFlags memoryMode;
+    switch (mode) {
+      case ResourceUsage::immutable: memoryMode = Buffer<ResourceUsage::immutable>::_getMemoryUsageFlags(); break;
+      case ResourceUsage::dynamicCpu: memoryMode = Buffer<ResourceUsage::dynamicCpu>::_getMemoryUsageFlags(); break;
+      case ResourceUsage::staging: memoryMode = Buffer<ResourceUsage::staging>::_getMemoryUsageFlags(); break;
+      case ResourceUsage::staticGpu:
+      default: memoryMode = Buffer<ResourceUsage::staticGpu>::_getMemoryUsageFlags(); break;
+    }
+    
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = byteSize;
+    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(renderer.device(), memoryTypeBits, memoryMode);
+    
+    VkDeviceMemory allocation = VK_NULL_HANDLE;
+    VkResult result = vkAllocateMemory(renderer.context(), &allocInfo, nullptr, &allocation);
+    if (result != VK_SUCCESS || allocation == VK_NULL_HANDLE)
+      throwError(result, "BufferMemory: allocation failure");
+    return BufferMemory(allocation, renderer.resourceManager());
+  }
+  
+  // Bind buffer to suballocation in existing memory allocation
+  void BufferMemory::_bind(BufferHandle buffer, size_t byteOffset, VkDeviceMemory& outAllocation) {
+    if (outAllocation != VK_NULL_HANDLE)
+      throw std::logic_error("BufferMemory: buffer already bound");
+    
+    VkResult result = vkBindBufferMemory(_handle.context(), (VkBuffer)buffer, _handle.value(), byteOffset);
+    if (result != VK_SUCCESS)
+      throwError(result, "BufferMemory: binding failure");
+    outAllocation = _handle.value();
+  }
+
+  // ---
+  
+  MappedBufferIO::MappedBufferIO(Buffer<ResourceUsage::dynamicCpu>& buffer)
+    : _context(buffer.context()), _buffer(buffer.allocation()) { // throws
+    this->_mapped = __mapDataBuffer(buffer.context(), buffer.size(),
+                                    buffer.allocation(), buffer.allocationOffset());
+    if (this->_mapped == nullptr)
+      throw std::runtime_error("MappedBufferIO: open error");
+  }
+  MappedBufferIO::MappedBufferIO(Buffer<ResourceUsage::staging>& buffer, StagedMapping)
+    : _context(buffer.context()), _buffer(buffer.allocation()) { // throws
+    this->_mapped = __mapDataBuffer(buffer.context(), buffer.size(),
+                                    buffer.allocation(), buffer.allocationOffset());
+    if (this->_mapped == nullptr)
+      throw std::runtime_error("MappedBufferIO: open error");
+  }
 
 #endif

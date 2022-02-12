@@ -25,6 +25,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   namespace pandora {
     namespace video {
       namespace vulkan {
+        // Create buffer container (vertex/index/uniform)
+        // -> throws runtime_error on failure
+        VkBuffer __createBufferContainer(DeviceContext context, size_t byteSize, VkBufferUsageFlags type,
+                                         uint32_t* concurrentQueueFamilies, uint32_t queueCount);
+        // Destroy/release buffer instance
+        void __destroyBufferContainer(DeviceContext context, BufferHandle handle, VkDeviceMemory allocation) noexcept;
+          
         // Create buffer view (for render target buffer, depth buffer, texture buffer...)
         // -> throws runtime_error on failure
         VkImageView __createBufferView(DeviceContext context, VkImage bufferImage, VkFormat bufferFormat,
@@ -41,6 +48,35 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // -> throws runtime_error on failure
         VkDeviceMemory __allocBufferImage(DeviceContext context, DeviceHandle physDevice,
                                           VkImage bufferImage, VkMemoryPropertyFlags resourceUsage);
+        // Allocate device memory for buffer container (vertex/index/uniform)
+        // -> throws runtime_error on failure
+        VkDeviceMemory __allocBufferContainer(DeviceContext context, DeviceHandle physDevice,
+                                              VkBuffer buffer, VkMemoryPropertyFlags resourceUsage);
+        
+        // ---
+        
+        // Write dynamic/staging buffer via memory mapping
+        bool __writeMappedDataBuffer(DeviceContext context, size_t bufferSize, VkDeviceMemory allocation,
+                                     size_t allocOffset, const void* sourceData) noexcept;
+        // Write static/immutable buffer by filling and copying a staging buffer
+        bool __writeWithStagingBuffer(DeviceContext context, DeviceHandle physDevice, VkCommandPool commandPool,
+                                      VkQueue copyCommandQueue, BufferHandle buffer, size_t bufferSize,
+                                      const void* sourceData) noexcept;
+        
+        // Copy mappable buffer into other mappable buffer
+        bool __copyMappedDataBuffer(DeviceContext context, size_t bufferSize, VkDeviceMemory source,
+                                    size_t sourceOffset, VkDeviceMemory dest, size_t destOffset) noexcept;
+        // Copy buffer into other buffer (command list)
+        bool __copyDataBuffer(DeviceContext context, VkCommandPool commandPool, VkQueue copyCommandQueue,
+                              BufferHandle source, BufferHandle dest, size_t bufferSize) noexcept;
+        
+        // ---
+        
+        // Map dynamic/staging data buffer for read/write operations
+        void* __mapDataBuffer(DeviceContext context, size_t bufferSize,
+                              VkDeviceMemory allocation, size_t allocOffset) noexcept;
+        // Unmap dynamic/staging data buffer
+        void __unmapDataBuffer(DeviceContext context, VkDeviceMemory allocation) noexcept;
       }
     }
   }
