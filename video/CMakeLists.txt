@@ -211,7 +211,7 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
 endif()
 cwork_set_test_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_common")
 
-set(_VIDEO_TOOLS "tools/window_viewer")
+set(_VIDEO_TOOLS "tools/window_viewer" "tools/gpu_analyzer")
 if(NOT IOS AND NOT ANDROID)
     set(_VIDEO_TOOLS ${_VIDEO_TOOLS} "tools/3D_scene")
 endif()
