@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.120.1.877
-2022-02-09 - 6bd5932f6dccd9f4bf5096930a49127fd8877443
+## 0.121.2.883
+2022-02-12 - 17e56a484b6c4f9657c8c0f19af137621fda2e34
 ### features
-vinders (19):
+vinders (20):
 * hardware: X11 libraries: add XCB for Vulkan support
 * video: window resource builder: add system string to UTF-8 converter
 * video: Vulkan library/extension loader
@@ -24,6 +24,7 @@ vinders (19):
 * video: Direct3D11/Vulkan renderer: add methods to find supported color/depth formats
 * video: Vulkan graphics pipeline stages/states: builder + params
 * video: Vulkan depth/stencil buffer and view
+* video: Vulkan vertex/index/uniform buffers (static/dynamic/immut./staging) + resource mapping + suballocations (memory / buffer)
 ### fixes
 vinders (9):
 * video: Direct3D11 renderer: remove flush after changing/clearing render target (improve performance) + add public flush method
