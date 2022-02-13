@@ -146,7 +146,7 @@ Good entry point to understand the window and event system.
 
 > [Project files](./02_simple_renderer)
 
-Simple 3D renderer, with third-person camera view rotating around a wooden box.
+Simple 3D renderer, with third-person camera view rotating around a wooden crate.
 The window features mouse capture, simple geometry, sprites (title/commands), fixed lights, anti-aliasing, and a simple material management system.
 
 Note: shaders are included as raw text files. Unfortunately, most IDEs fail at properly detecting shader models and types.
@@ -159,7 +159,7 @@ However, the shader type and model will need to be configured in the IDE propert
 They'll also need to be reconfigured everytime the project is regenerated (when the Cmake file changes).
 
 To test shader files after modifying them, you can call the target *'build_shaders'* / *'deploy_shaders'*.
-If a C++ file is recompiled, this will automatically trigger a call to the available targets.
+If a C++ file is recompiled, this will automatically trigger a call to the available target.
 The available target depends on the option **CWORK_SHADER_COMPILERS** (set at the top of the Cmake file):
 * **ON**: enable shader compilation at runtime. Shader sources are only deployed (target *'deploy_shaders'*) and will be compiled during execution.
         This is the default value, because it doesn't require Python and makes things easier during development.
