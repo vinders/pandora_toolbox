@@ -25,11 +25,6 @@ Description : Example - rendering resources (materials, textures, meshes)
 # include <video/vulkan/texture.h>
 # include <video/vulkan/buffer.h>
   namespace video_api = pandora::video::vulkan;
-#else
-# include <video/openGL4/graphics_pipeline.h>
-# include <video/openGL4/texture.h>
-# include <video/openGL4/buffer.h>
-  namespace video_api = pandora::video::openGL4;
 #endif
 #include "camera.h"
 
@@ -183,7 +178,6 @@ struct ResourceStorage final {
 
 // -- resource loaders --
 
-void loadShaders(video_api::Renderer& renderer, ShaderProgramId programId, ResourceStorage& out);
 void loadPipeline(std::shared_ptr<video_api::Renderer>& renderer,
                   PipelineStateId stateId, ShaderProgramId programId,
                   uint32_t aaSamples, ResourceStorage& out);

@@ -10,31 +10,10 @@ Description : Example - rendering resources (materials, textures, meshes)
 *******************************************************************************/
 #include <cassert>
 #include <string>
-#include <stdexcept>
-#include <io/file_system_io.h>
-#if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-# include <DDSTextureLoader.h>
-# include <WICTextureLoader.h>
-#else
-# include <gli/gli.hpp>
-#endif
+#include "file_io.h"
 #include "resources.h"
 
 using namespace video_api;
-
-static const char* __getResourceDir() noexcept {
-  static const char* dir = (!pandora::io::verifyFileSystemAccessMode("logo_big.png", pandora::io::FileSystemAccessMode::read)
-                          && pandora::io::verifyFileSystemAccessMode("../logo_big.png", pandora::io::FileSystemAccessMode::read))
-                         ? "../" : "";
-  return dir;
-}
-static const wchar_t* __getWideResourceDir() noexcept {
-  static const wchar_t* dir = (!pandora::io::verifyFileSystemAccessMode("logo_big.png", pandora::io::FileSystemAccessMode::read)
-                             && pandora::io::verifyFileSystemAccessMode("../logo_big.png", pandora::io::FileSystemAccessMode::read))
-                            ? L"../" : L"";
-  return dir;
-}
-
 
 // -- resource file loaders --
 
@@ -63,29 +42,28 @@ static void __loadPipelineStates(PipelineStateId id, GraphicsPipeline::Builder& 
   }
 }
 
-// --> shader input layouts: very specific to each API -> separate implementations
+// --> shader input layouts: specific to each API
 // D3D11 note: using D3DReflect to guess layout is much better than hardcoding it.
 //             It wasn't used here for the sake of simplicity.
+static InputLayout __loadInputLayout(ShaderProgramId id, DeviceResourceManager context,
+                                     Shader::Builder& vsBuilder, uint32_t& outStrideBytes) {
 # if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  static const D3D11_INPUT_ELEMENT_DESC* __loadInputLayout(ShaderProgramId id, size_t& outLength, uint32_t& outStrideBytes) {
     switch (id) {
       case ShaderProgramId::tx2d: {
         static D3D11_INPUT_ELEMENT_DESC layout2D[] = {
           { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
           { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
         };
-        outLength = sizeof(layout2D) / sizeof(*layout2D);
         outStrideBytes = 8 + 8;
-        return layout2D;
+        return vsBuilder.createInputLayout(context, layout2D, sizeof(layout2D)/sizeof(*layout2D));
       }
       case ShaderProgramId::shaded: {
         static D3D11_INPUT_ELEMENT_DESC layoutShaded[] = {
           { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
           { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
         };
-        outLength = sizeof(layoutShaded) / sizeof(*layoutShaded);
         outStrideBytes = 12 + 12;
-        return layoutShaded;
+        return vsBuilder.createInputLayout(context, layoutShaded, sizeof(layoutShaded)/sizeof(*layoutShaded));
       }
       case ShaderProgramId::textured: {
         static D3D11_INPUT_ELEMENT_DESC layoutTextured[] = {
@@ -95,43 +73,43 @@ static void __loadPipelineStates(PipelineStateId id, GraphicsPipeline::Builder& 
           { "BITANGENT",0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
           { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
         };
-        outLength = sizeof(layoutTextured) / sizeof(*layoutTextured);
         outStrideBytes = 12 + 12 + 12 + 12 + 8;
-        return layoutTextured;
+        return vsBuilder.createInputLayout(context, layoutTextured, sizeof(layoutTextured)/sizeof(*layoutTextured));
       }
       default: return nullptr;
     }
-  }
 # else
-  static void* __loadInputLayout(ShaderProgramId id, size_t& outLength) {
-    //vulkan/openGL: not yet implemented
-    //...
-    outLength = 0;
+    // vulkan: not yet implemented...
     return nullptr;
-  }
 # endif
+}
 
 // --> shader compilation
-void loadShaders(Renderer& renderer, ShaderProgramId programId, ResourceStorage& out) {
-# if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-    std::wstring vsPath = std::wstring(__getWideResourceDir()) + L"shaders/" + toWideString(programId);
-    std::wstring fsPath = vsPath + L".ps.hlsl";
-    vsPath += L".vs.hlsl";
-# else
-    std::wstring vsPath = std::wstring(__getResourceDir()) + L"shaders/" + toString(programId);
-    std::wstring fsPath = vsPath + L".frag";
-    vsPath += L".vert";
-# endif
-
-  auto vsBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, vsPath.c_str(), "main", true);
-  auto fsBuilder = Shader::Builder::compileFromFile(ShaderType::fragment, fsPath.c_str(), "main", true);
+static void __loadShaders(Renderer& renderer, ShaderProgramId programId, ResourceStorage& out) {
+  auto vsPath = getShaderDirectory() + _RESOURCE_STRING(programId);
+  auto fsPath = vsPath + __FRAG_SHADER_SUFFIX;
+  vsPath += __VERT_SHADER_SUFFIX;
 
   auto& outEntry = out.shaders[programId];
-  size_t layoutSize = 0;
-  auto layoutDesc = __loadInputLayout(programId, layoutSize, outEntry.strideBytes);
-  outEntry.layout = vsBuilder.createInputLayout(renderer.resourceManager(), layoutDesc, layoutSize);
-  outEntry.vertex = vsBuilder.createShader(renderer.resourceManager());
-  outEntry.fragment = fsBuilder.createShader(renderer.resourceManager());
+# ifdef _P_SHADER_PRECOMPILED
+    std::unique_ptr<uint8_t[]> fileBuffer = nullptr;
+    size_t fileLength = 0;
+
+    readBinaryShaderFile(vsPath.c_str(), fileBuffer, fileLength);
+    auto vsBuilder = Shader::Builder(ShaderType::vertex, fileBuffer.get(), fileLength);
+    outEntry.layout = __loadInputLayout(programId, renderer.resourceManager(), vsBuilder, outEntry.strideBytes);
+    outEntry.vertex = vsBuilder.createShader(renderer.resourceManager());
+
+    readBinaryShaderFile(fsPath.c_str(), fileBuffer, fileLength); // overwrite buffer -> vsBuilder can no longer be used
+    auto fsBuilder = Shader::Builder(ShaderType::fragment, fileBuffer.get(), fileLength);
+    outEntry.fragment = fsBuilder.createShader(renderer.resourceManager());
+# else
+    auto vsBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, vsPath.c_str(), "main");
+    auto fsBuilder = Shader::Builder::compileFromFile(ShaderType::fragment, fsPath.c_str(), "main");
+    outEntry.layout = __loadInputLayout(programId, renderer.resourceManager(), vsBuilder, outEntry.strideBytes);
+    outEntry.vertex = vsBuilder.createShader(renderer.resourceManager());
+    outEntry.fragment = fsBuilder.createShader(renderer.resourceManager());
+# endif
 }
 
 // ---
@@ -144,7 +122,7 @@ void loadPipeline(std::shared_ptr<Renderer>& renderer, PipelineStateId stateId,
 
   auto shaderProgram = out.shaders.find(programId);
   if (shaderProgram == out.shaders.end()) {
-    loadShaders(*renderer, programId, out);
+    __loadShaders(*renderer, programId, out);
     shaderProgram = out.shaders.find(programId);
     assert(shaderProgram != out.shaders.end());
   }
@@ -190,55 +168,27 @@ void loadMaterial(Renderer& renderer, MaterialId id, ResourceStorage& out) {
 
 // --> texture file loaders differ between APIs
 void loadTexture(Renderer& renderer, TextureMapId id, ResourceStorage& out) {
-# if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  std::wstring texturePath = std::wstring(__getWideResourceDir()) + L"textures/" + toWideString(id);
-  std::wstring normalMapPath = texturePath + L"_normal.dds";
-  std::wstring specularMapPath = texturePath + L"_specular.dds";
-  texturePath += L"_diffuse.dds";
-  auto alphaMode = DirectX::DDS_ALPHA_MODE::DDS_ALPHA_MODE_STRAIGHT;
+  TextureHandle diffuse = nullptr,   normal = nullptr,     specular = nullptr;
+  TextureView diffuseView = nullptr, normalView = nullptr, specularView = nullptr;
 
-  ID3D11Resource* diffuse = nullptr;
-  ID3D11ShaderResourceView* diffuseView = nullptr;
-  if (FAILED(DirectX::CreateDDSTextureFromFileEx(renderer.device(), texturePath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
-                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0, true, &diffuse, &diffuseView, &alphaMode)))
-    throw std::runtime_error(std::string("Could not load diffuse texture for ID ") + toString(id));
-
-  ID3D11Resource* normal = nullptr;
-  ID3D11ShaderResourceView* normalView = nullptr;
-  if (FAILED(DirectX::CreateDDSTextureFromFileEx(renderer.device(), normalMapPath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
-                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0, true, &normal, &normalView, &alphaMode)))
-    throw std::runtime_error(std::string("Could not load diffuse texture for ID ") + toString(id));
-
-  ID3D11Resource* specular = nullptr;
-  ID3D11ShaderResourceView* specularView = nullptr;
-  if (FAILED(DirectX::CreateDDSTextureFromFileEx(renderer.device(), specularMapPath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
-                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0, true, &specular, &specularView, &alphaMode)))
-    throw std::runtime_error(std::string("Could not load diffuse texture for ID ") + toString(id));
-
-# else
-    //vulkan/openGL: not yet implemented
-    //...
-# endif
-
-  out.textureMaps[id] = { Texture2D(diffuse, diffuseView, 128*4, 128, 1),
-                          Texture2D(normal, normalView, 128*4, 128, 1),
-                          Texture2D(specular, specularView, 128*4, 128, 1) };
+  try {
+    auto textureBasePath = getResourceDirectory() + _RESOURCE_PATH("textures/") + _RESOURCE_STRING(id);
+    readTextureFile(textureBasePath, _RESOURCE_PATH("_diffuse.dds"), id, renderer.device(), &diffuse, &diffuseView);
+    out.textureMaps[id].diffuseMap = Texture2D(diffuse, diffuseView, 128 * 4, 128, 1);
+    readTextureFile(textureBasePath, _RESOURCE_PATH("_normal.dds"), id, renderer.device(), &normal, &normalView);
+    out.textureMaps[id].normalMap = Texture2D(normal, normalView, 128 * 4, 128, 1);
+    readTextureFile(textureBasePath, _RESOURCE_PATH("_specular.dds"), id, renderer.device(), &specular, &specularView);
+    out.textureMaps[id].specularMap = Texture2D(specular, specularView, 128 * 4, 128, 1);
+  }
+  catch (...) { out.textureMaps.erase(id); throw; }
 }
 
 // --> sprite image file loaders differ between APIs
 void loadSprite(Renderer& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out) {
-# if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  std::wstring imagePath = std::wstring(__getWideResourceDir()) + L"sprites/" + toWideString(id) + L".png";
-  ID3D11Resource* image = nullptr;
-  ID3D11ShaderResourceView* imageView = nullptr;
-  if (FAILED(DirectX::CreateWICTextureFromFileEx(renderer.device(), imagePath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
-                                                 D3D11_BIND_SHADER_RESOURCE, 0, 0,
-                                                 DirectX::WIC_LOADER_FLAGS::WIC_LOADER_FORCE_RGBA32,
-                                                 &image, &imageView)))
-    throw std::runtime_error(std::string("Could not load sprite image for ID ") + toString(id));
-# else
-  //vulkan/openGL: not yet implemented
-  //...
-# endif
+  TextureHandle image = nullptr;
+  TextureView imageView = nullptr;
+
+  auto imagePath = getResourceDirectory() + _RESOURCE_PATH("sprites/") + _RESOURCE_STRING(id) + _RESOURCE_PATH(".png");
+  readSpriteFile(imagePath.c_str(), id, renderer.device(), &image, &imageView);
   out.sprites[id] = Texture2D(image, imageView, width*4, height, 1);
 }
