@@ -75,13 +75,14 @@ Each Pandora library and example is structured the same way :
 | src         | source code implementation (*.cpp): private implementation of classes/modules exposed in *'include'*.|
 | test        | unit tests for each testable class/module exposed in *'include'*.                                    |
 | tools       | debugging tools, advanced test utilities or other related apps.                                      |
-| resources   | resource files: textures, sprites, shaders, icons... (in examples)                                   |
+| shaders     | source code of shaders (*.hlsl/.vert/.frag): API-specific shaders for rendering (in examples).       |
+| resources   | resource files: textures, sprites, icons, cursors... (in examples)                                   |
 
 For each feature exposed in *'include'*, [check development status and compatibility here](../FEATURES.md).
 
 Note: resource files are copied into the build directory at generation, and refreshed after each compilation.
 If no compilation occurs (no C++ source changed), resources won't be refreshed!
-To test shader files after changing them, you may need to change a C++ file (adding then removing a space does the trick).
+To test resource files after changing them, you may need to change a C++ file (adding then removing a space does the trick).
 
 Some common resources are shared by all libraries. They're located in the Pandora toolbox root directory :
 |  directory  |            content            |
@@ -119,7 +120,8 @@ A few examples are provided, to learn how to create simple windows and renderers
 They can also be used as boilerplate projects. They use the same structure as the Pandora libs:
 * *'include'* (source code headers);
 * *'src'* (source code implementation);
-* *'resources'* (textures, sprites, icons, shaders...).
+* *'shaders'* (source code of shaders, sorted per API).
+* *'resources'* (textures, sprites, icons, cursors...).
 * *'../_img'* (shared resources: app icon, cursors...).
 
 After [generating the project with Cmake](#generating-project-with-cmake) (by copying *'_scripts'* or using GUI/IDE), the project can be open.
@@ -145,7 +147,7 @@ Good entry point to understand the window and event system.
 > [Project files](./02_simple_renderer)
 
 Simple 3D renderer, with third-person camera view rotating around a wooden box.
-The window features mouse capture, simple models, sprites (title/commands), fixed lights, and a simple material management system.
+The window features mouse capture, simple geometry, sprites (title/commands), fixed lights, anti-aliasing, and a simple material management system.
 
 Note: shaders are included as raw text files. Unfortunately, most IDEs fail at properly detecting shader models and types.
 To avoid errors, shader management is disabled in the *'CmakeLists.txt'* file, with the line:
@@ -156,9 +158,13 @@ This line can be commented (*'#'*) to allow shader debugging/compilation.
 However, the shader type and model will need to be configured in the IDE properties of EACH shader file.
 They'll also need to be reconfigured everytime the project is regenerated (when the Cmake file changes).
 
-Note: resource files are copied into the build directory at generation, and refreshed after each compilation.
-If no compilation occurs (no C++ source changed), resources won't be refreshed!
-To test shader files after changing them, you may need to change a C++ file (adding then removing a space does the trick).
+To test shader files after modifying them, you can call the target *'build_shaders'* / *'deploy_shaders'*.
+If a C++ file is recompiled, this will automatically trigger a call to the available targets.
+The available target depends on the option **CWORK_SHADER_COMPILERS** (set at the top of the Cmake file):
+* **ON**: enable shader compilation at runtime. Shader sources are only deployed (target *'deploy_shaders'*) and will be compiled during execution.
+        This is the default value, because it doesn't require Python and makes things easier during development.
+* **OFF**: disable compilation at runtime. Shader sources are pre-compiled (target *'build_shaders'*) and will just be read during execution.
+         This is the best choice for production builds, but it requires Python 3.4+ and will fail if any of the shaders is invalid.
 
 ---
 
