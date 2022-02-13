@@ -23,11 +23,6 @@ Description : Example - renderer context
 # include <video/vulkan/buffer.h>
 # include <video/vulkan/texture.h>
   namespace video_api = pandora::video::vulkan;
-#else
-# include <video/openGL4/renderer.h>
-# include <video/openGL4/buffer.h>
-# include <video/openGL4/texture.h>
-  namespace video_api = pandora::video::openGL4;
 #endif
 
 

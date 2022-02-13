@@ -23,11 +23,6 @@ Note : this example is fine for third-person views and fixed/rotating cameras,
   using pandora::video::vulkan::MatrixFloat4x4;
   using pandora::video::vulkan::CameraProjection;
   using pandora::video::vulkan::CameraUtils;
-#else
-# include <video/openGL4/camera_utils.h>
-  using pandora::video::openGL4::MatrixFloat4x4;
-  using pandora::video::openGL4::CameraProjection;
-  using pandora::video::openGL4::CameraUtils;
 #endif
 
 
