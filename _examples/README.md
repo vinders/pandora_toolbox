@@ -129,14 +129,16 @@ Before building anything, select the example project as active startup target:
 
 ![Select startup project](./_img/project_start.png)
 
-The project can the be built, executed and debugged. Note that additional [Cmake options](../README.md#cmake-options) can be set.
+The project can then be built, executed and debugged. Note that additional [Cmake options](../README.md#cmake-options) can be set.
 
 
 ### Example 1 - Basic window
 
+![Example01](./_img/01_base_window.png)
+
 > [Project files](./01_base_window)
 
-A simple window, with homothety (when resized), and a background color that changes on click.
+A simple window, with homothety (when resized), a custom icon and cursor, and a background color that changes on click.
 Good entry point to understand the window and event system.
 
 
@@ -159,12 +161,12 @@ However, the shader type and model will need to be configured in the IDE propert
 They'll also need to be reconfigured everytime the project is regenerated (when the Cmake file changes).
 
 To test shader files after modifying them, you can call the target *'build_shaders'* / *'deploy_shaders'*.
-If a C++ file is recompiled, this will automatically trigger a call to the available target.
+Note that recompiling the C++ project after a modification will automatically trigger a call to the available target.
 The available target depends on the option **CWORK_SHADER_COMPILERS** (set at the top of the Cmake file):
 * **ON**: enable shader compilation at runtime. Shader sources are only deployed (target *'deploy_shaders'*) and will be compiled during execution.
-        This is the default value, because it doesn't require Python and makes things easier during development.
+    This is the default value, because it doesn't require Python and makes things easier during development.
 * **OFF**: disable compilation at runtime. Shader sources are pre-compiled (target *'build_shaders'*) and will just be read during execution.
-         This is the best choice for production builds, but it requires Python 3.4+ and will fail if any of the shaders is invalid.
+    This is the best choice for production builds, but it requires Python 3.4+ and will fail if any of the shaders is invalid.
 
 ---
 
