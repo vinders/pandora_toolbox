@@ -148,7 +148,7 @@ Good entry point to understand the window and event system.
 
 > [Project files](./02_simple_renderer)
 
-Simple 3D renderer, with third-person camera view rotating around a wooden crate.
+Simple 3D renderer, with a third-person camera view rotating around a wooden crate on mouse click.
 The window features mouse capture, simple geometry, sprites (title/commands), fixed lights, anti-aliasing, and a simple material management system.
 
 Note: shaders are included as raw text files. Unfortunately, most IDEs fail at properly detecting shader models and types.

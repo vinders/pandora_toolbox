@@ -36,14 +36,17 @@ Scene* g_currentScene = nullptr;
 uint32_t g_lastWidth = 0;
 uint32_t g_lastHeight = 0;
 bool g_isVisible = true;
+bool g_isMouseButtonDown = false;
 
 
 // create main window
 std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
     auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
+    auto cursor = WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR));
 # else
     auto mainIcon = WindowResource::buildIconFromPackage("logo_big.png");
+    auto cursor = WindowResource::buildCursorFromPackage("base_cur.png");
 # endif
   
   Window::Builder builder;
@@ -51,6 +54,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
          .setSize(800, 600) // --> to use entire screen (in fullscreen mode), do not call setSize
          .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition()) // --> useless in fullscreen mode
          .setIcon(mainIcon)
+         .setCursor(cursor)
          .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
          .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Simple Renderer"));
 }
@@ -163,8 +167,22 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 }
 
 // mouse event handler --> should never throw!
-bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t, uint8_t) {
+bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t) {
   switch (event) {
+    case MouseEvent::buttonDown: {
+      if ((MouseButton)index == MouseButton::left && !g_isMouseButtonDown) {
+        g_isMouseButtonDown = true;
+        sender->setCursorMode(Window::CursorMode::hiddenRaw);
+      }
+      break;
+    }
+    case MouseEvent::buttonUp: {
+      if ((MouseButton)index == MouseButton::left && g_isMouseButtonDown) {
+        sender->setCursorMode(Window::CursorMode::visible);
+        g_isMouseButtonDown = false;
+      }
+      break;
+    }
     case MouseEvent::rawMotion: { // captured mouse move -> update camera view
       if (g_currentScene)
         g_currentScene->moveCamera(x, y);
@@ -201,7 +219,8 @@ inline void mainAppLoop() {
     // create rendering scene
     Scene defaultScene(renderer, g_lastWidth, g_lastHeight, renderer.antiAliasingSamples(), _CAM_SENSITIVITY);
     g_currentScene = &defaultScene;
-    window->setCursorMode(Window::CursorMode::hiddenRaw);
+    g_isMouseButtonDown = false;
+    window->setCursorMode(Window::CursorMode::visible);
 
     while (Window::pollEvents()) {
       if (g_isVisible && defaultScene.isUpdated()) {
