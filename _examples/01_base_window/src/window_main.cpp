@@ -41,8 +41,10 @@ bool g_isBlackBackground = true; // --> only for example
 std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
     auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
+    auto cursor = WindowResource::buildCursorFromPackage(MAKEINTRESOURCE(IDC_BASE_CUR));
 # else
     auto mainIcon = WindowResource::buildIconFromPackage("logo_big.png");
+    auto cursor = WindowResource::buildCursorFromPackage("base_cur.png");
 # endif
   
   Window::Builder builder;
@@ -50,6 +52,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
          .setSize(800, 600)
          .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
          .setIcon(mainIcon)
+         .setCursor(cursor)
          .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
          .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
 }

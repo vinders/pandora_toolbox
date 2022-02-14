@@ -16,6 +16,12 @@ cmake_minimum_required(VERSION 3.14)
 # --> replace with your path to toolbox (usually in subdirectory or same parent directory)
 set(PANDORA_TOOLBOX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
+# --> this project doesn't use any rendering API -> disable them
+set(CWORK_VIDEO_D3D11 OFF CACHE INTERNAL "" FORCE)
+set(CWORK_VIDEO_VULKAN OFF CACHE INTERNAL "" FORCE)
+set(CWORK_VIDEO_OPENGL4 OFF CACHE INTERNAL "" FORCE)
+set(CWORK_SHADER_COMPILERS OFF CACHE INTERNAL "" FORCE)
+
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
 cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON)
 
