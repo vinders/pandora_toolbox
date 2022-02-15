@@ -1,4 +1,4 @@
-> [Features](../FEATURES.md) - | - [Cmake options](../README.md#cmake-options) - | - Project examples - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
+> [Features](../FEATURES.md) - | - [Cmake options](../README.md#cmake-options) - | - Examples &amp; tutorials - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
 
 # Examples
 
@@ -7,9 +7,9 @@
     * [Cmake project hierarchy](#cmake-project-hierarchy)
     * [Library structure](#library-structure)
     * [Library docs](#library-docs)
-* [Project examples](#project-examples)
-    * Example 1 - Basic window
-    * Example 2 - Simple renderer
+* [Project examples/tutorials](#project-examplestutorials)
+    * [Example 1 - Basic window](#example-1---basic-window)
+    * [Example 2 - Simple renderer](#example-2---simple-renderer)
 
 ---
 
@@ -114,7 +114,7 @@ To generate docs:
 
 ---
 
-## Project examples
+## Project examples/tutorials
 
 A few examples are provided, to learn how to create simple windows and renderers with the Pandora libs.
 They can also be used as boilerplate projects. They use the same structure as the Pandora libs:
@@ -136,7 +136,7 @@ The project can then be built, executed and debugged. Note that additional [Cmak
 
 ![Example01](./_img/01_base_window.png)
 
-> [Project files](./01_base_window)
+> [Project files](./01_base_window) - [Tutorial](./01_base_window/README.md)
 
 A simple window, with homothety (when resized), a custom icon and cursor, and a background color that changes on click.
 Good entry point to understand the window and event system.
