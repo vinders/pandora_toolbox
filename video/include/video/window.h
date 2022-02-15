@@ -79,9 +79,10 @@ namespace pandora {
     
     /// @class Window
     /// @brief Operating-system window management
-    /// @remarks - new windows are hidden -> call show(true) to display them
-    ///          - mouse pointer is visible by default -> call showCursor(false) to hide it
-    ///          - pollEvents or pollCurrentWindowEvents must be called regularly
+    /// @remarks - Window instances are built using Window::Builder.
+    ///          - new windows are hidden -> call show(true) to display them.
+    ///          - mouse pointer is visible by default -> call showCursor(false) to hide it.
+    ///          - pollEvents or pollCurrentWindowEvents must be called regularly.
     /// @warning - It is recommended to enable DPI awareness (manifest or via DisplayMonitor) before creating window or monitor instance.
     ///          - Window instances are not thread-safe:
     ///              * either accessors/setters should be called only by the UI thread (thread that calls pollEvents/pollCurrentWindowEvents and event handlers);

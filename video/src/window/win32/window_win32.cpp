@@ -329,7 +329,7 @@ Includes hpp implementations at the end of the file
   // Replace window menu (or remove if null)
   bool Window::setMenu(std::shared_ptr<WindowResource> menu) noexcept {
     if (this->_impl->setMenu((menu != nullptr) ? (HMENU)menu->handle() : nullptr)) {
-      this->_menu = menu;
+      this->_menu = std::move(menu);
       return true;
     }
     return false;
@@ -340,7 +340,7 @@ Includes hpp implementations at the end of the file
     if (cursor != nullptr && cursor->handle()) {
       SetLastError(0);
       if (SetClassLongPtr(this->_impl->handle(), GCLP_HCURSOR, (LONG_PTR)cursor->handle()) != 0 || GetLastError() == 0) {
-        this->_cursor = cursor;
+        this->_cursor = std::move(cursor);
         return true;
       }
     }
@@ -351,7 +351,7 @@ Includes hpp implementations at the end of the file
     if (colorBrush != nullptr && colorBrush->handle()) {
       SetLastError(0);
       if (SetClassLongPtr(this->_impl->handle(), GCLP_HBRBACKGROUND, (LONG_PTR)colorBrush->handle()) != 0 || GetLastError() == 0) {
-        this->_backgroundColor = colorBrush;
+        this->_backgroundColor = std::move(colorBrush);
         return true;
       }
     }
