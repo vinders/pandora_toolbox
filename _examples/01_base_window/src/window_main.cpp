@@ -48,13 +48,14 @@ std::unique_ptr<Window> createWindow() { // throws on failure
 # endif
   
   Window::Builder builder;
-  return builder.setDisplayMode(WindowType::window, WindowBehavior::globalContext, ResizeMode::resizable|ResizeMode::homothety)
-         .setSize(800, 600)
-         .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
-         .setIcon(mainIcon)
-         .setCursor(cursor)
-         .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
-         .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
+  return builder.setDisplayMode(WindowType::window, WindowBehavior::globalContext,
+                                ResizeMode::resizable|ResizeMode::homothety)
+        .setSize(800, 600)
+        .setPosition(Window::Builder::centeredPosition(), Window::Builder::centeredPosition())
+        .setIcon(mainIcon)
+        .setCursor(cursor)
+        .setBackgroundColor(WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0)))
+        .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
 }
 
 // ---
@@ -63,22 +64,24 @@ std::unique_ptr<Window> createWindow() { // throws on failure
 // --> only for example
 void toggleBackgroundColor(Window& window) {
   g_isBlackBackground ^= true;
-  window.setBackgroundColorBrush((g_isBlackBackground)
-                                ? WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0))
-                                : WindowResource::buildColorBrush(WindowResource::rgbColor(255,255,255)) );
+  auto brush = (g_isBlackBackground)
+            ? WindowResource::buildColorBrush(WindowResource::rgbColor(0,0,0))
+            : WindowResource::buildColorBrush(WindowResource::rgbColor(255,255,255));
+  window.setBackgroundColorBrush(brush);
 }
 
 
 // -- handlers -- --------------------------------------------------------------
 
 // window/hardware event handler --> should never throw!
-bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t posX, int32_t posY, void* data) {
+bool onWindowEvent(Window* sender, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
   switch (event) {
-    case WindowEvent::windowClosed: { // close -> confirmation
+    case WindowEvent::windowClosed: { // close event received -> confirmation
       auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
-                                    MessageBox::ActionType::yesNo, MessageBox::IconType::question, true);
-      if (reply == MessageBox::Result::action2) // "no" button
-        return true; // cancel close event
+                                    MessageBox::ActionType::yesNo, // "Yes/No"
+                                    MessageBox::IconType::question, true);
+      if (reply == MessageBox::Result::action2) // 2nd button for "Yes/No" -> "No"
+        return true; // cancel default close event
       break;
     }
     default: break;
@@ -87,7 +90,8 @@ bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t p
 }
 
 // size/position event handler --> should never throw!
-bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t posY, uint32_t sizeX, uint32_t sizeY) {
+bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t posY,
+                     uint32_t sizeX, uint32_t sizeY) {
   switch (event) {
     case PositionEvent::sizePositionChanged: {
       // --> adapt your renderer to sizeX/sizeY...
@@ -99,12 +103,13 @@ bool onPositionEvent(Window* sender, PositionEvent event, int32_t posX, int32_t 
 }
 
 // keyboard event handler --> should never throw!
-bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t change) {
+bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint32_t) {
   switch (event) {
     case KeyboardEvent::keyDown: {
-      if (keyCode == _P_VK_ESC) { // ESC pressed -> close
+      if (keyCode == _P_VK_ESC) { // ESC pressed -> send close event to Window
+        // never show message-box in fullscreen mode
         if (sender->displayMode() == WindowType::fullscreen)
-          sender->show(Window::VisibilityCommand::minimize); // do not show message-box in fullscreen
+          sender->show(Window::VisibilityCommand::minimize);
         Window::sendCloseEvent(sender->handle());
       }
       break;
@@ -115,7 +120,7 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 }
 
 // mouse event handler --> should never throw!
-bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t activeKeys) {
+bool onMouseEvent(Window*, MouseEvent event, int32_t x, int32_t y, int32_t index, uint8_t) {
   switch (event) {
     case MouseEvent::buttonDown: { // click -> report user action
       if ((MouseButton)index == MouseButton::left)
@@ -154,12 +159,13 @@ inline void mainAppLoop() {
       // display
       if (isRefreshed)
         window->clearClientArea(); // repaint background --> only for example
-      std::this_thread::sleep_for(std::chrono::microseconds(16666LL)); // 60Hz
+      std::this_thread::sleep_for(std::chrono::microseconds(16600LL)); // 60Hz
     }
   }
   catch (const std::exception& exc) {
     MessageBox::flushEvents();
-    MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok, MessageBox::IconType::error, true);
+    MessageBox::show("Fatal error", exc.what(), MessageBox::ActionType::ok,
+                     MessageBox::IconType::error, true);
     exit(-1);
   }
 }
@@ -168,7 +174,8 @@ inline void mainAppLoop() {
 // -- entry point -- -----------------------------------------------------------
 
 #if defined(_WINDOWS)
-  int APIENTRY WinMain(_In_ HINSTANCE appInstance, _In_opt_ HINSTANCE, _In_ LPSTR cmdLine, _In_ int cmdShow) {
+  int APIENTRY WinMain(_In_ HINSTANCE appInstance, _In_opt_ HINSTANCE,
+                       _In_ LPSTR cmdLine, _In_ int cmdShow) {
     pandora::system::WindowsApp::instance().init((pandora::system::AppInstanceHandle)appInstance);
     mainAppLoop();
     return 0;
