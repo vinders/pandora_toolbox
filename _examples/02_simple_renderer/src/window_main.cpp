@@ -220,7 +220,6 @@ inline void mainAppLoop() {
     Scene defaultScene(renderer, g_lastWidth, g_lastHeight, renderer.antiAliasingSamples(), _CAM_SENSITIVITY);
     g_currentScene = &defaultScene;
     g_isMouseButtonDown = false;
-    window->setCursorMode(Window::CursorMode::visible);
 
     while (Window::pollEvents()) {
       if (g_isVisible && defaultScene.isUpdated()) {
