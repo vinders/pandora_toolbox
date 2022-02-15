@@ -35,7 +35,8 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     # │  Solutions                                                       │
     # └──────────────────────────────────────────────────────────────────┘
     
-    #brief: Create a solution for common IDEs, containing multiple projects
+    #brief: Create a solution for common IDEs, containing one or multiple projects
+    #warning: CMake 'project' tag for the solution should be created before calling this.
     #params: - root_path: root path of the solution directory containing subdirectories
     #        - cwork_path: path of the directory containing cwork utilities 
     #        - ARGN: list of project subdirectories (by order of dependencies, from independant lib to most dependant or app)
@@ -420,7 +421,8 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     endmacro()
     
     #brief:   Create a solution for common IDEs, containing multiple projects
-    #warning: Dependencies/libraries must be set BEFORE calling this, with cwork_set_external_libs and cwork_set_internal_libs
+    #warning: - Dependencies/libraries must be set BEFORE calling this, with cwork_set_external_libs and cwork_set_internal_libs
+    #         - CMake 'project' tag for the project should be created before calling this.
     #params: - build_type: type of project:
     #                      "static" = static link library (embedded in executable / MT)
     #                      "dynamic" or "library" = dynamic link library (shared library / MD)
@@ -429,7 +431,7 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
     #        - cwork_path: path of the directory containing cwork utilities 
     #        - module_path: path of the directory containing Cmake modules and library finders 
     #                       (if empty, CMAKE_MODULE_PATH must be set as a Cmake param)
-    #        - include_dir: directory containing source headers (.h/.hpp/.hxx) - required
+    #        - include_dir: directory containing source headers (.h/.hpp/.hxx) - required for libs, can be empty for source-only apps.
     #        - source_dir: directory containing source code - can be empty or non-existing for header-only libraries
     #        - test_dir: directory containing unit tests - can be empty or non-existing if no tests are available
     #        - ARGN: optional list of subdirectories for sub-projects, tools, ...
