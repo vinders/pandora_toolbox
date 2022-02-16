@@ -39,15 +39,15 @@ Here's a typical project organization tree:
 |  file/directory  |                                          content                                              |
 |------------------|-----------------------------------------------------------------------------------------------|
 | CMakeLists.txt   | project infrastructure description. Used to generate the IDE project.                         |
-| include          | source code headers (*.h): no header file in this tutorial. This directory isn't necessary.   |
-| src              | source code implementation (*.cpp): contains the only source code file (*'window_main.cpp'*). |
+| include          | source code headers (.h): no header file in this tutorial. This directory isn't necessary.    |
+| src              | source code implementation (.cpp): contains the only source code file (*'window_main.cpp'*).  |
 | resources        | image files: window icon + custom mouse cursor.                                               |
 
-Let's start the creation of the project files:
+Let's create the project files:
 * For the sake of simplicity, the tutorial project directory will be placed inside the pandora_toolbox sources.
   Create a new directory called *'basic_window'* in *'pandora_toolbox/_examples/'*.
   Note: this tutorial will also briefly explain how to do it the other way around
-  (pandora_toolbox in a subdirectory of a parent project, for example in a *'_libs' directory).
+  (pandora_toolbox in a subdirectory of a parent project, for example in a *'_libs'* directory).
 * Inside the new directory, create an empty *'CMakeLists.txt'* file and 2 subdirectories: *'src'* and *'resources'*.
 * Inside the *'src'* subdirectory, create an empty *'window_main.cpp'* file.
 * Copy the entire directories *'pandora_toolbox/_img/test_win32'* and *'pandora_toolbox/_img/test_common'*
@@ -67,6 +67,9 @@ A typical CMake tree uses an organization similar to Visual Studio solutions and
 A main CMake file describes a solution, which is a group of several related projects with common properties.
 Then, each project of the solution has its own CMake file, describing source files, dependencies and build options.
 
+In this tutorial, the solution will only contain a single project. To simplify things,
+the solution and the project will both be described in the same unique CMake file.
+
 ### Creating CMake files with CWork
 
 The pandora_toolbox libraries are organized as a solution containing several libraries.
@@ -83,7 +86,7 @@ Our CWork description will declare:
 #### CMake version and CWork framework
 
 Open *'CMakeLists.txt'* with your favorite text editor (Notepad++, Sublime, VSCode...).
-Before describing anything, CMake has to know which **utility version** it should use.
+Before describing anything, CMake has to know which **version** it should use.
 The CWork framework requires at least version 3.14, so let's use this version or higher.
 Add the CMake setting `cmake_minimum_required` to the top of the file:
 ```cmake
@@ -92,7 +95,7 @@ cmake_minimum_required(VERSION 3.14)
 
 The next step is to load the CWork framework, to avoid having to write tons of complex rules ourselves.
 CWork is located in *'pandora_toolbox/_cmake/cwork.cmake'*.
-This is the file to include in *'CMakeLists.txt'*, just below the CMake version setting.
+This file is the one to include in *'CMakeLists.txt'*, just below the CMake version setting.
 
 Since our project is located in *'pandora_toolbox/_examples/basic_window'*, 
 the **relative path to CWork** is *'../../_cmake/cwork.cmake'*.
@@ -120,9 +123,6 @@ The file *'cwork.cmake'* contains lots of documentation for each feature availab
 Do not hesitate to open it with a text editor to find the appropriate docs.
 
 #### Solution and project in the same file
-
-In this tutorial, the solution will only contain a single project. To simplify things,
-the solution and the project will both be described in the same unique CMake file.
 
 The CWork macro to easily declare a solution is `cwork_create_solution`.
 The macro can be found in *'cwork.cmake'* to get more information:
@@ -180,7 +180,7 @@ cwork_create_project("executable" "${PANDORA_TOOLBOX_DIR}/_cmake"
 
 Note that the *'include_dir'* and *'test_dir'* don't need to actually exist in the project directory.
 The way it's now configured, CWork will auto-detect source files and add them to the project.
-The sources can also be manually specified, by simply adding these between *'project'* and *'cwork_create_project'*: 
+The sources can also be manually specified, by simply adding these calls between *'project("basic_window"'* and *'cwork_create_project'*: 
 `cwork_set_include_files`, `cwork_set_source_files` and/or `cwork_set_test_files`.
 
 Using auto-detection (and incrementing the project version everytime a source file is added/removed) 
@@ -193,7 +193,7 @@ This section is not part of the tutorial. It explains how to use a different CMa
 for the solution and the project (useful to add more projects in the same solution).
 To continue the tutorial, you can skip it and directly read about [dependencies and options](#dependencies-and-options).
 
-To use a solution CMake file, you have to create another *'CMakeLists'* in the parent directory (*pandora_toolbox/_examples* in this case).
+To use a solution CMake file, you have to create another *'CMakeLists.txt'* in the parent directory (*pandora_toolbox/_examples* in this case).
 This solution description will contain the CMake version setting, 
 the PANDORA_TOOLBOX_DIR variable (don't forget to adjust the path) and the CWork include previously mentioned.
 The call to `cwork_create_solution` will now also contain the **list of project directories** to add to the solution:
@@ -209,7 +209,7 @@ cwork_create_solution(
 ```
 
 The child project CMake file will contain the version setting, the (different) path variable and the CWork include too.
-Apart from the lack of the solution info, nothing changes compared to the other method:
+Apart from the lack of solution description, nothing changes compared to the other method:
 ```cmake
 # -- Child project description, located in another CMake file in a subdirectory --
 cmake_minimum_required(VERSION 3.14)
@@ -230,7 +230,7 @@ Yet, it's still unable to use any pandora_toolbox library. The libraries need to
 
 Pandora_toolbox can be included as some sort of sub-solution, using a special form of dependency called "custom libs".
 The CWork macro to include pandora_toolbox libs is `cwork_set_custom_libs`.
-It should be added to the project CMake file, between *'project'* (the last) and *'cwork_create_project'*:
+It should be added to the project CMake file, between *'project("basic_window"'* and *'cwork_create_project'*:
 ```cmake
 # link pandora_toolbox libraries
 # (if project is in subdirectory, such as ./_examples/my_project)
@@ -242,7 +242,7 @@ cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF
 ```
 
 The tutorial will require these libraries:
-* **system**: interface library with system defs and detections, and helpful macros (should be included in most projects).
+* **system**: interface library with system defs and detections, and helpful macros (should be included in all projects).
 * **hardware**: hardware detection library. Detects the display monitor used to show the window.
   It will only be used implicitly in the tutorial, but could be set explicitly to manage multi-monitor setups.
 * **video**: the library that contains window utilities, as well as rendering objects.
@@ -265,36 +265,33 @@ cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON ON
 
 The tutorial will use window utils, but no 3D rendering objects.
 Some options can be used to disable those features, to avoid downloading useless dependencies and compiling unused stuff.
-Those options should be set BEFORE including the CWork framework:
+Those options should be set BEFORE the include() of the CWork framework:
 ```cmake
-set(PANDORA_TOOLBOX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
-
 # --> this solution doesn't use any rendering API -> disable them
 set(CWORK_VIDEO_D3D11 OFF CACHE INTERNAL "" FORCE)
 set(CWORK_VIDEO_VULKAN OFF CACHE INTERNAL "" FORCE)
 set(CWORK_VIDEO_OPENGL4 OFF CACHE INTERNAL "" FORCE)
 set(CWORK_SHADER_COMPILERS OFF CACHE INTERNAL "" FORCE)
 
-include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-[...]
+#include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake") # this line is already in your file
+#[...]
 ```
 
 ### Project generation
 
-The CMake description is now complete and ready.
 Before starting to write source code, the last step is to generate the project for your favorite IDE.
 
-#### Cmake GUI
+#### CMake GUI
 
-If Cmake is installed on your system (version >= 3.14), you can use *cmake-gui* to generate any Cmake project.
-Open the *'CMakeLists.txt'* solution file with it, then choose a build directory (such as *'basic_window/_build/msvc'*).
+If CMake is installed on your system (version >= 3.14), you can use *cmake-gui* to generate any CMake project.
+Open the *'CMakeLists.txt'* solution file with it, then choose a build directory (such as *'pandora_toolbox/_examples/basic_window/_build/msvc'*).
 
 Use the *Configure* button to create the project cache for a specific IDE (don't forget to set the "Optional platform" with the target architecture: 32/64-bit/ARM).
 The *Generate* button then creates the project files for the selected IDE. Finally, click the *Open project* button.
 
-#### Cmake-compatible IDE
+#### CMake-compatible IDE
 
-Some IDEs/editors (VSCode, CLion...) can directly open *'CMakeLists.txt'* files as projects.
+Some IDEs/editors (VSCode, CLion...) can directly open *'CMakeLists.txt'* as project files.
 
 ---
 
@@ -320,9 +317,9 @@ That means that console-mode apps and window-mode apps share the same entry poin
 int main() {}
 ```
 
-We do want our application to support both entry points, but we don't want to write the main function content twice.
-So the solution is to add a custom system-independant main function that will be called by both entry points, 
-and to move the entry points into *ifdef* blocks:
+The application should support both entry points, but we don't want to write the main function content twice.
+So the solution is to add a system-independant main function that will be called by both entry points, 
+and to move the actual entry points into *ifdef* blocks:
 ```cpp
 #ifdef _WINDOWS
 # include <system/api/windows_api.h> // dependency for types such as HINSTANCE
@@ -360,12 +357,12 @@ to allow the various window utils to work properly:
 #### Fatal error management
 
 Now that the entry point is ready, we want it to be exception-safe.
-Unhandled C++ exceptions should be catched and displayed, to be informed about the actual problem (and possibly catch it at a higher level).
+Unhandled C++ exceptions should be catched and reported, to be informed about the actual problem (and possibly catch it at a higher level).
 A logging system could be a way to handle those exceptions.
 A modal message-box is another way, sometimes better (because non-tech people can see it too).
 
-Before catching exceptions, let's toy around with the MessageBox object first, to understand how it works.
-The object is available in *'pandora_toolbox/video/include/message_box.h'*.
+Before catching exceptions, let's play with the MessageBox object first, to understand how it works.
+The object is available in *'pandora_toolbox/video/include/video/message_box.h'*.
 Most header files of pandora_toolbox are well documented, and taking a look at them is a great way to learn how to use them.
 The documentation can also be generated with Doxygen in the form of web pages.
 In terms of readability and text alignment, looking at the header file may be a better option.
@@ -380,7 +377,7 @@ public:
   /// @param caption    Title of the message box
   /// @param message    Text content of the message box
   /// @param actions    Available user actions (buttons)
-  /// @param icon       Optional symbol to display in message box (not used on linux systems)
+  /// @param icon       Symbol to display in message box (not used on linux systems)
   /// @param isTopMost  Make modal dialog appear on top of all windows
   /// @param parent     Parent window blocked by dialog (optional)
   /// @returns Action chosen by user (or Result::failure if the dialog could not be created)
@@ -399,11 +396,12 @@ void mainAppLoop() {
                    MessageBox::IconType::info, true);
 }
 ```
-Running the application shows this result:
+Running the application shows this result:<br>
 ![MessageBox](../_img/01_base_window_msgbox.png)
 
 Let's go back to those unhandled exceptions, and show a message-box with their message.
-Since we're going to trigger many display events in the application, the message-box event might end up being queued and never displayed.
+Since we're going to trigger many display events in the application, and since the exception is likely to occur 
+before all pending events are processed, the message-box event might end up being queued and never displayed.
 To avoid this, call `MessageBox::flushEvents()`; before requesting the message-box:
 ```cpp
 #include <video/message_box.h>
@@ -425,7 +423,7 @@ void mainAppLoop() {
 ### Window creation
 
 The entry point is ready and exception safe. It's time to display a window.
-The Window object is available in *'pandora_toolbox/video/include/window.h'*.
+The Window object is available in *'pandora_toolbox/video/include/video/window.h'*.
 The *'window.h'* header file explains that Window instances are built with `Window::Builder` and that they're hidden until `show()` is called:
 ```
   /// @class Window
@@ -439,7 +437,7 @@ The *'window.h'* header file explains that Window instances are built with `Wind
 ```
 
 Here comes the first problem: unicode strings (for captions and identifiers) don't use the same encoding on Windows (UTF-16/wchar_t) and Linux/Unix/Mac (UTF-8/char).
-Declaring this macro (just below the *.h includes) is helpful to avoid *ifdefs* and repetitions everywhere:
+Declaring this macro (just below the .h includes) is helpful to avoid *ifdefs* and repetitions everywhere:
 ```cpp
 #ifdef _WINDOWS
 # define _SYSTEM_STR(str) L"" str // encode as wide-string (UTF-16)
@@ -509,22 +507,22 @@ but *sleep_for* will do the trick for this short tutorial.
 
 ### Window params
 
-A window is displayed: great! Except that it hasn't be properly configured yet.
+A window is displayed: great! Except that it hasn't been properly configured yet.
 The current params are only these:
-* window mode (as opposed to fullscreen and borderless).
-* resizable (but without any constraint: the window can be too tiny and doesn't keep its ratio).
-* caption message "Example Window".
+* window mode (as opposed to fullscreen or borderless).
+* resizable (but without any constraint: the window can be very tiny and doesn't keep the same width/height ratio).
+* caption message: "Example Window".
 
-Many more params can be set to configure the behavior of the window.
+Many more params can be set to configure the behavior of the window.<br>
 Note: some flags (such as ResizeMode) can be combined using a bitwise 'OR' operator (*'|'*).
 
 The code below will set these new parameters:
 * setDisplayMode:
-    * WindowBehavior::globalContext: use unique hardware context to speedup display.
-    * ResizeMode::resizable|ResizeMode::homothety: the window is resizable with homothetic constraints, to keep the same ratio.
-* setSize: specify the initial size of the window, in pixels.
+    * *WindowBehavior::globalContext*: use unique hardware context to speedup display (we only use one window).
+    * *ResizeMode::resizable|ResizeMode::homothety*: the window is resizable with homothetic constraints, to keep the same ratio.
+* setSize: specify the initial width and height of the window (in pixels).
 * setPosition:
-    * Specify the initial position of the window, in pixels.
+    * Specify the initial position of the window (in pixels).
     * The special value *'Window::Builder::centeredPosition()'* forces the window to be centered.
 * setBackgroundColor: choose the initial background color of the window (black in this case).
 * window->setMinClientAreaSize: choose the minimum size allowed for the window.
@@ -558,7 +556,7 @@ have been copied into the *'resources'* subdirectory of the project, it's quite 
 First, the resource files have to be included in the project with the CMake project description:
 * on Windows, resources can be directly embedded into the compiled executable.
 * on Linux/Mac, resources must be copied to the same location as the executable.
-These lines must be added between the *'project'* (the last) and *'cwork_create_project'* calls:
+These lines must be added between the *'project("basic_window"'* and *'cwork_create_project'* calls:
 ```cmake
 # -- project resources (icon + cursor)
 if(WIN32 OR WIN64)
@@ -580,11 +578,11 @@ The C++ code to use these resources is quite similar:
 Once the resources are loaded, they can be directly assigned to the Window::Builder instance with `setIcon`/`setCursor`.
 ```cpp
 #ifdef _WINDOWS
-//[...]
 # include "../resources/test_win32/resources.h"
 #endif
 //[...]
 
+// create main window
 std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
     auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
@@ -609,38 +607,38 @@ The application can now display a perfectly configured window, with a custom ico
 But the user still can't do anything with it.
 To be able to react to the user input, some event handlers must be registered.
 
-Once again, the *'pandora_toolbox/video/include/window.h'* header file can help.
-These are the handler registration methods:
+Once again, the *'pandora_toolbox/video/include/video/window.h'* header file can help.
+These are the registration methods:
 ```
-  /// @brief Set/replace window/hardware event handler (NULL to unregister)
+  // Set/replace window/hardware event handler (NULL to unregister)
   void setWindowHandler(WindowEventHandler handler) noexcept;
-  /// @brief Set/replace size/position event handler (NULL to unregister)
+  // Set/replace size/position event handler (NULL to unregister)
   void setPositionHandler(PositionEventHandler handler) noexcept;
-  /// @brief Set/replace keyboard event handler (NULL to unregister)
+  // Set/replace keyboard event handler (NULL to unregister)
   void setKeyboardHandler(KeyboardEventHandler handler) noexcept;
-  /// @brief Set/replace mouse event handler (NULL to unregister)
+  // Set/replace mouse event handler (NULL to unregister)
   void setMouseHandler(MouseEventHandler handler, CursorMode cursorMode) noexcept;
 ```
 
 To identify the function signature needed by these methods, and to find detailed
 explanations about the various event types and their arguments, 
-let's take a look at *'pandora_toolbox/video/include/window_events.h'*:
+let's take a look at *'pandora_toolbox/video/include/video/window_events.h'*:
 ```
   /// @brief Keyboard event handling function pointer (press/release):
   /// [...very long comments...]
   /// @warning Handler should NOT throw exceptions -> use try/catch in it
   using KeyboardEventHandler = bool (*)(Window* sender, KeyboardEvent event,
                                         uint32_t keyCode, uint32_t change);
-  /// @brief Mouse or touch-screen event handling function pointer (click/move/wheel/...):
-  /// [...]
+  // Mouse or touch-screen event handling function pointer (click/move/wheel/...):
+  // [...]
   using MouseEventHandler = bool (*)(Window* sender, MouseEvent event, int32_t x,
                                      int32_t y, int32_t index, uint8_t activeKeys);
-  /// @brief Window/hardware event handling function pointer (close/activate/suspend/drop/...):
-  /// [...]
+  // Window/hardware event handling function pointer (close/activate/suspend/drop/...):
+  // [...]
   using WindowEventHandler = bool (*)(Window* sender, WindowEvent event, uint32_t status,
                                       int32_t posX, int32_t posY, void* data);
-  /// @brief Window size/position event handling function pointer (move/resize/maximize/...):
-  /// [...]
+  // Window size/position event handling function pointer (move/resize/maximize/...):
+  // [...]
   using PositionEventHandler = bool (*)(Window* sender, PositionEvent event, int32_t posX,
                                         int32_t posY, uint32_t sizeX, uint32_t sizeY);
 ```
@@ -686,9 +684,9 @@ bool onMouseEvent(Window* sender, MouseEvent event, int32_t x, int32_t y,
 ```
 
 A boolean value is returned by each of this function:
-* true: prevent default system action for this event.
-* false: allow default system action for this event.
-It may not ring any bell right now, but it will come in handy in the next section.
+* *true*: prevent default system action for this event.
+* *false*: allow default system action for this event.
+It may not ring any bell right now, but it will come in handy in a later section.
 
 The various event handlers can be registered before displaying the window:
 ```cpp
@@ -760,9 +758,9 @@ bool onWindowEvent(Window*, WindowEvent event, uint32_t,int32_t,int32_t,void*) {
 
 **Warning**: if the window was in fullscreen mode when the close event occurred, 
 it's important to exit fullscreen BEFORE displaying a modal message-box.
-Many operating systems don't cope well with message-boxes in fullscreen mode 
+Most operating systems don't cope well with message-boxes in fullscreen mode 
 (e.g.: message-box not visible but still blocking the app).
-A simple workaround is to minimize the window before showing the message-box:
+A simple workaround is to minimize the window before sending the close event:
 ```cpp
       if (sender->displayMode() == WindowType::fullscreen)
         sender->show(Window::VisibilityCommand::minimize);
@@ -779,7 +777,7 @@ Instead of directly writing the drawing logic inside the handler, it's better to
 This is closer to the way video games manage the game logic according to user inputs.
 
 For the sake of simplicity, the flag will just be a global variable.
-In real projects, organizing user inputs in structures or classes is of course recommended.
+In real-world projects, organizing user inputs in structures or classes is of course recommended.
 ```cpp
 bool g_hasClicked = false; // event detected
 
@@ -798,6 +796,7 @@ bool onMouseEvent(Window*, MouseEvent event, int32_t,int32_t, int32_t index, uin
 
 To be able to toggle the color, the current color state must be stored too.
 Once again, a simple global variable will do the trick for this tutorial.
+A simple way to toggle a boolean value is with the XOR operator (*'^'*):
 ```cpp
 bool g_isBlackBackground = true; // current color state
 
@@ -812,7 +811,7 @@ void toggleBackgroundColor(Window& window) {
 }
 ```
 
-Setting a flag is not going to change a window color if the flag is never read.
+Setting a flag (*'g_hasClicked'*) is not going to change a window color if the flag is never read.
 The main loop will now verify the flag in every iteration.
 If a left click has occurred:
 * the background color of the window must be changed and redrawn.
@@ -858,7 +857,6 @@ These last changes are the end of this tutorial. I hope you enjoyed it!
 
 ---
 
-Application preview:
 ![Example01](../_img/01_base_window.png)
 
 > [Source code files](../01_base_window)
