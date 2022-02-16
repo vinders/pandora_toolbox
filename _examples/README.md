@@ -116,15 +116,10 @@ To generate docs:
 
 ## Project examples/tutorials
 
-A few examples are provided, to learn how to create simple windows and renderers with the Pandora libs.
-They can also be used as boilerplate projects. They use the same structure as the Pandora libs:
-* *'include'* (source code headers);
-* *'src'* (source code implementation);
-* *'shaders'* (source code of shaders, sorted per API).
-* *'resources'* (textures, sprites, icons, cursors...).
-* *'../_img'* (shared resources: app icon, cursors...).
+A few examples and tutorials are available, to learn how to create simple windows and renderers with the Pandora libs.
+Some of them can also be used as boilerplate projects.
 
-After [generating the project with CMake](#generating-project-with-cmake) (by copying *'_scripts'* or using GUI/IDE), the project can be open.
+After [generating a project with CMake](#generating-project-with-cmake) (by copying *'_scripts'* or using GUI/IDE), the project can be open.
 Before building anything, select the example project as active startup target:
 
 ![Select startup project](./_img/project_start.png)
