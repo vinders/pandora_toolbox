@@ -36,8 +36,8 @@ cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${PANDORA_TOOLBOX_DIR}/_cma
 #include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
 #cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" OFF)
 
-# --> project params (replace "window_renderer" with your project name)
-project("${CWORK_SOLUTION_NAME}.simple_renderer" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
+# --> project params (replace with your project name)
+project("${CWORK_SOLUTION_NAME}.simple_renderer_3D_cube" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 # --> internal toolbox dependencies
 # --> try to keep order of (sub)dependencies when linking libs, to improve build time (and avoid Cmake failures)

@@ -1,0 +1,8 @@
+Textures:    woodCrate_diffuse/normal/spec (original name: 3crates)
+Author:      Luke.RUSTLTD
+Description: 3 crate textures with bumpmaps and normal maps
+Art Type:    2D Art
+Source URI:  opengameart.org/content/3-crate-textures-w-bump-normal
+
+License: CC0 (public domain)
+https://creativecommons.org/publicdomain/zero/1.0/legalcode

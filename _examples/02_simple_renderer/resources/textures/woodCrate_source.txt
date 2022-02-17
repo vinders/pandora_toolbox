@@ -1,4 +1,0 @@
-Author: Luke.RUSTLTD
-Title: "3 CRATE TEXTURES (W/ BUMP & NORMAL)"
-License: CC0 public domain
-URI: opengameart.org/content/3-crate-textures-w-bump-normal
