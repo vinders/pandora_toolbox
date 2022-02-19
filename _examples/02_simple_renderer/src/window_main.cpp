@@ -223,11 +223,16 @@ inline void mainAppLoop() {
 
     while (Window::pollEvents()) {
       if (g_isVisible && defaultScene.isUpdated()) {
-        renderer.beginDrawing();
-        defaultScene.render3D(); // draw 3D entities in framebuffer
-        renderer.setDrawMode2D();
-        defaultScene.render2D(); // draw 2D entities in framebuffer
-        renderer.swapBuffers(); // display frame
+        try {
+          renderer.beginDrawing();
+          defaultScene.render3D(); // draw 3D entities in framebuffer
+          renderer.setDrawMode2D();
+          defaultScene.render2D(); // draw 2D entities in framebuffer
+          renderer.swapBuffers(); // display frame
+        }
+        catch (...) { // device lost -> recreate renderer
+          reCreateRendererContext(window.get(), g_lastWidth, g_lastHeight);
+        }
       }
       else { // window is hidden -> no rendering
         renderer.skipFrame();
