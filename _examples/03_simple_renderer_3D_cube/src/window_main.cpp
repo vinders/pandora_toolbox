@@ -65,6 +65,7 @@ std::unique_ptr<Window> createWindow() { // throws on failure
 void reCreateRendererContext(Window* parentWindow, uint32_t width, uint32_t height) {
   if (g_currentScene)
     g_currentScene->release();
+  g_renderer->release();
   *g_renderer = RendererContext(pandora::hardware::DisplayMonitor{}, parentWindow->handle(), width, height,
                                 pandora::video::RefreshRate{}, g_renderer->isAntiAliasingEnabled(),
                                 g_renderer->isAnisotropicSampler(), g_renderer->hasVsync());
