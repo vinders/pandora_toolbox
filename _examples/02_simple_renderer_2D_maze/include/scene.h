@@ -16,8 +16,8 @@ Description : Example - rendering scene
 #include "resources.h"
 #include "maze.h"
 
-#define __BASE_WINDOW_WIDTH  928  // odd multiple of 32px
-#define __BASE_WINDOW_HEIGHT 640  // even multiple of 32px
+#define __BASE_WINDOW_WIDTH  928
+#define __BASE_WINDOW_HEIGHT 640
 #define __KEY_DELTA 3 // keyboard action delta (pixels per clock cycle)
 
 // Rendering scene: scenery and entities

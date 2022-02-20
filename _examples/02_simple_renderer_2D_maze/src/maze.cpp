@@ -250,14 +250,13 @@ void Maze::computeRendering(std::vector<float>& outVertices, std::vector<uint32_
   uint32_t tilesX = (_rows << 1) + 1;  // 2 tiles per cell + right tile
   uint32_t tilesY = (_lines << 1) + 2; // 2 tiles per cell + bottom tiles
 
+  // offset for centered hedge position
   float hedgeOffset[]{ (float)(_baseDisplayWidth - tilesX*__MAZE_TILE_PIXELS) / (float)_baseDisplayWidth, // percentage of unused space
                        (float)(_baseDisplayHeight - tilesY*__MAZE_TILE_PIXELS) / (float)_baseDisplayHeight };
-  float worldTileSize[]{ (2.f - hedgeOffset[0]) / (float)tilesX, // actual tile-size (on window)
-	                     (2.f - hedgeOffset[1]) / (float)tilesY };
+  float worldTileSize[]{ (2.f*__MAZE_TILE_PIXELS) / (float)_baseDisplayWidth, // actual tile-size (on window)
+	                     (2.f*__MAZE_TILE_PIXELS) / (float)_baseDisplayHeight };
+  hedgeOffset[1] = -hedgeOffset[1] + worldTileSize[1]*0.25f; // add slight offset for hedge bottom side
 
-  // offset for centered hedge position
-  hedgeOffset[0] /= 2.f; // center horizontally
-  hedgeOffset[1] = hedgeOffset[1]/-2.f + worldTileSize[1]*0.25f; // center vertically (+ add slight offset for hedge bottom side)
   // game area offset (!= hedge offset: player isn't at same level as top of hedges)
   outGameAreaOffset[0] = hedgeOffset[0];
   outGameAreaOffset[1] = hedgeOffset[1] - worldTileSize[1]*0.375f;
