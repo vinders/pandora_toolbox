@@ -140,7 +140,7 @@ Good entry point to understand the window and event system.
 
 ### Example 2 - Simple renderer - 2D maze
 
-![Example02](./_img/02_simple_renderer_2D_maze.jpg)
+![Example02](./_img/02_simple_renderer_2D_maze.png)
 
 > [Project files](./02_simple_renderer_2D_maze)
 

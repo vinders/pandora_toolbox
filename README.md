@@ -13,7 +13,7 @@ Libraries (video/io/hardware...) can be included separately.
 
 > [Features](./FEATURES.md) - | - [Cmake options](#cmake-options) - | - [Examples &amp; tutorials](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
 
-![Preview](_examples/_img/02_simple_renderer_2D_maze.jpg)![Preview2](_examples/_img/03_simple_renderer_3D_cube.jpg)
+![Preview](_examples/_img/02_simple_renderer_2D_maze.png)![Preview2](_examples/_img/03_simple_renderer_3D_cube.jpg)
 
 **Feature overview:**
 * Window, renderer, message box, input, filters...
