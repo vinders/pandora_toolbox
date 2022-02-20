@@ -1,0 +1,14 @@
+Tileset:     player.png (original name: RPGCharacterSprites32x32.png)
+Description: 32x32 RPG Character Sprites
+Author:      Eldiran
+Art Type:    2D Art
+Source URI:  https://opengameart.org/content/32x32-rpg-character-sprites
+
+Modifications made:
+- only the character with an armor was kept.
+- shoes reduced of 1 pixel to allow adding black outline above character too.
+- background color replaced with alpha.
+- tiles moved to fit 128*128 pixels.
+
+License: CC0 (public domain)
+https://creativecommons.org/publicdomain/zero/1.0/legalcode

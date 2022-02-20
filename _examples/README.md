@@ -9,7 +9,8 @@
     * [Library docs](#library-docs)
 * [Project examples/tutorials](#project-examplestutorials)
     * [Example 1 - Basic window](#example-1---basic-window)
-    * [Example 2 - Simple renderer](#example-2---simple-renderer)
+    * [Example 2 - Simple renderer - 2D maze](#example-2---simple-renderer---2d-maze)
+    * [Example 3 - Simple renderer - 3D cube](#example-3---simple-renderer---3d-cube)
 
 ---
 
@@ -137,14 +138,30 @@ A simple window, with homothety (when resized), a custom icon and cursor, and a 
 Good entry point to understand the window and event system.
 
 
-### Example 2 - Simple renderer
+### Example 2 - Simple renderer - 2D maze
 
-![Example02](./_img/02_simple_renderer.jpg)
+![Example02](./_img/02_simple_renderer_2D_maze.jpg)
 
-> [Project files](./02_simple_renderer)
+> [Project files](./02_simple_renderer_2D_maze)
+
+Basic 2D renderer, using a tileset to display a generated maze.
+The window features 2D rectangles and sprites, and simple keyboard management (to allow the user to play).
+
+Shader management in this example is as simple as it gets: a single group of 2D shaders that never change.
+To simplify the project, no shader pre-compilation is configured (see example 3 for that).
+
+The target *'deploy_shaders'* must be "built" at least once to be able to launch the game.
+To test shaders after modifying them, you can also call the target *'deploy_shaders'*.
+
+
+### Example 3 - Simple renderer - 3D cube
+
+![Example03](./_img/03_simple_renderer_3D_cube.jpg)
+
+> [Project files](./03_simple_renderer_3D_cube)
 
 Simple 3D renderer, with a third-person camera view rotating around a wooden crate on mouse click.
-The window features mouse capture, simple geometry, sprites (title/commands), fixed lights, anti-aliasing, and a simple material management system.
+The window features mouse capture, simple geometry, sprites (title/commands), depth testing, fixed lights, anti-aliasing, and a simple material management system.
 
 Note: shaders are included as raw text files. Unfortunately, most IDEs fail at properly detecting shader models and types.
 To avoid errors, shader management is disabled in the *'CMakeLists.txt'* file, with the line:
@@ -155,7 +172,7 @@ This line can be commented (*'#'*) to allow shader debugging/compilation.
 However, the shader type and model will need to be configured in the IDE properties of EACH shader file.
 They'll also need to be reconfigured everytime the project is regenerated (when the CMake file changes).
 
-To test shader files after modifying them, you can call the target *'build_shaders'* / *'deploy_shaders'*.
+To test shaders after modifying them, you can call the target *'build_shaders'* / *'deploy_shaders'*.
 Note that recompiling the C++ project after a modification will automatically trigger a call to the available target.
 The available target depends on the option **CWORK_SHADER_COMPILERS** (set at the top of the CMake file):
 * **ON**: enable shader compilation at runtime. Shader sources are only deployed (target *'deploy_shaders'*) and will be compiled during execution.
