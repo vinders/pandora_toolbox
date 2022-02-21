@@ -11,7 +11,7 @@
 The code is meant to be highly efficient and easy to use, while remaining lightweight and highly customizable.
 Libraries (video/io/hardware...) can be included separately.
 
-> [Features](./FEATURES.md) - | - [Cmake options](#cmake-options) - | - [Examples &amp; tutorials](./_examples) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
+> [Features](./FEATURES.md) - | - [Cmake options](#cmake-options) - | - [Examples &amp; tutorials](./_examples/README.md) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
 
 ![Preview](_examples/_img/02_simple_renderer_2D_maze.png)![Preview2](_examples/_img/03_simple_renderer_3D_cube.jpg)
 
