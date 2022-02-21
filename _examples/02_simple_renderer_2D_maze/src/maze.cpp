@@ -59,7 +59,7 @@ static inline bool __isDirectionAvailable(MazeDirection dir, CellPosition& curre
   int nextPosY = currentPos.y + g_offsetY[(int)dir];
 
   if (dir == MazeDirection::invalid || nextPosX < 0 || nextPosY < 0 || nextPosX >= (int)rows || nextPosY >= (int)lines)
-	return false;
+    return false;
   return (cells[__cellIndex(rows, nextPosX, nextPosY)] == (MazeDirection)0);
 }
 
@@ -67,23 +67,23 @@ static MazeDirection __computeDirection(CellPosition& currentPos, MazeDirection*
                                         uint32_t lines, uint32_t rows) noexcept {
   MazeDirection dir = __randDirection();
   do {
-	for (int i = 0; i < 4; ++i) { // loop through all possible directions (with random first direction)
-	  if (__isDirectionAvailable(dir, currentPos, cells, lines, rows))
-		return dir;
+    for (int i = 0; i < 4; ++i) { // loop through all possible directions (with random first direction)
+      if (__isDirectionAvailable(dir, currentPos, cells, lines, rows))
+        return dir;
 
-	  dir = static_cast<MazeDirection>((uint8_t)dir << 1);
-	  if (dir > __MAZE_DIRECTION_LAST)
-		dir = __MAZE_DIRECTION_FIRST;
-	}
+      dir = static_cast<MazeDirection>((uint8_t)dir << 1);
+      if (dir > __MAZE_DIRECTION_LAST)
+        dir = __MAZE_DIRECTION_FIRST;
+    }
 
-	dir = static_cast<MazeDirection>( ((int)cells[__cellIndex(rows, currentPos.x, currentPos.y)]
-	                                  & (int)0xF0) >> 4);
+    dir = static_cast<MazeDirection>( ((int)cells[__cellIndex(rows, currentPos.x, currentPos.y)]
+                                      & (int)0xF0) >> 4);
 
-	if (dir != MazeDirection::invalid) {
-	  currentPos.x += g_offsetX[(int)dir];
-	  currentPos.y += g_offsetY[(int)dir];
-	  dir = __randDirection();
-	}
+    if (dir != MazeDirection::invalid) {
+      currentPos.x += g_offsetX[(int)dir];
+      currentPos.y += g_offsetY[(int)dir];
+      dir = __randDirection();
+    }
   } while (dir != MazeDirection::invalid);
   return MazeDirection::invalid; // no place left to go
 }
@@ -91,32 +91,32 @@ static MazeDirection __computeDirection(CellPosition& currentPos, MazeDirection*
 static void __computeStartEndPositions(MazeDirection* cells, uint32_t lines, uint32_t rows,
                                        CellPosition& outStartPos, CellPosition& outEndPos) noexcept {
   if ((int)directionDist(randGenerator) & 0x1) { // top/bottom
-	outStartPos.y = 0;
-	outEndPos.y = (int)lines;
-	if ((int)directionDist(randGenerator) >= 2) {
-	  outStartPos.x = (int)(rows >> 1);
-	  outEndPos.x = outStartPos.x - 1;
-	}
-	else {
-	  outEndPos.x = (int)(rows >> 1);
-	  outStartPos.x = outEndPos.x - 1;
-	}
-	cells[__cellIndex(rows, outStartPos.x, outStartPos.y)] |= MazeDirection::up;
-	cells[__cellIndex(rows, outEndPos.x, outEndPos.y - 1)] |= MazeDirection::down;
+    outStartPos.y = 0;
+    outEndPos.y = (int)lines;
+    if ((int)directionDist(randGenerator) >= 2) {
+      outStartPos.x = (int)(rows >> 1);
+      outEndPos.x = outStartPos.x - 1;
+    }
+    else {
+      outEndPos.x = (int)(rows >> 1);
+      outStartPos.x = outEndPos.x - 1;
+    }
+    cells[__cellIndex(rows, outStartPos.x, outStartPos.y)] |= MazeDirection::up;
+    cells[__cellIndex(rows, outEndPos.x, outEndPos.y - 1)] |= MazeDirection::down;
   }
   else { // left/right
-	outStartPos.x = 0;
-	outEndPos.x = (int)rows;
-	if ((int)directionDist(randGenerator) >= 2) {
-	  outStartPos.y = (int)(lines >> 1);
-	  outEndPos.y = outStartPos.y - 1;
-	}
-	else {
-	  outEndPos.y = (int)(lines >> 1);
-	  outStartPos.y = outEndPos.y - 1;
-	}
-	cells[__cellIndex(rows, outStartPos.x, outStartPos.y)] |= MazeDirection::left;
-	cells[__cellIndex(rows, outEndPos.x - 1, outEndPos.y)] |= MazeDirection::right;
+    outStartPos.x = 0;
+    outEndPos.x = (int)rows;
+    if ((int)directionDist(randGenerator) >= 2) {
+      outStartPos.y = (int)(lines >> 1);
+      outEndPos.y = outStartPos.y - 1;
+    }
+    else {
+      outEndPos.y = (int)(lines >> 1);
+      outStartPos.y = outEndPos.y - 1;
+    }
+    cells[__cellIndex(rows, outStartPos.x, outStartPos.y)] |= MazeDirection::left;
+    cells[__cellIndex(rows, outEndPos.x - 1, outEndPos.y)] |= MazeDirection::right;
   }
 }
 
@@ -129,25 +129,25 @@ static void __generateMaze(MazeDirection* cells, uint32_t lines, uint32_t rows,
   
   CellPosition currentPos; // set beginning position for processing
   if (lines >= rows) {
-	std::uniform_int_distribution<> cellDist(0, lines - 1);
-	currentPos.x = static_cast<uint32_t>(cellDist(randGenerator)) % rows;
-	currentPos.y = static_cast<uint32_t>(cellDist(randGenerator));
+    std::uniform_int_distribution<> cellDist(0, lines - 1);
+    currentPos.x = static_cast<uint32_t>(cellDist(randGenerator)) % rows;
+    currentPos.y = static_cast<uint32_t>(cellDist(randGenerator));
   }
   else {
-	std::uniform_int_distribution<> cellDist(0, rows - 1);
-	currentPos.x = static_cast<uint32_t>(cellDist(randGenerator));
-	currentPos.y = static_cast<uint32_t>(cellDist(randGenerator)) % lines;
+    std::uniform_int_distribution<> cellDist(0, rows - 1);
+    currentPos.x = static_cast<uint32_t>(cellDist(randGenerator));
+    currentPos.y = static_cast<uint32_t>(cellDist(randGenerator)) % lines;
   }
 
   for (MazeDirection dir = __computeDirection(currentPos, cells, lines, rows);
-	   dir != MazeDirection::invalid;
-	   dir = __computeDirection(currentPos, cells, lines, rows)) {
-	cells[__cellIndex(rows, currentPos.x, currentPos.y)] |= dir; // open new direction
+       dir != MazeDirection::invalid;
+       dir = __computeDirection(currentPos, cells, lines, rows)) {
+    cells[__cellIndex(rows, currentPos.x, currentPos.y)] |= dir; // open new direction
 
-	dir &= MazeDirection::all; // avoid out of bounds array access
-	currentPos.x += g_offsetX[(int)dir];
-	currentPos.y += g_offsetY[(int)dir];
-	cells[__cellIndex(rows, currentPos.x, currentPos.y)] = g_oppositeMask[(int)dir]; // next cell: open dir to previous
+    dir &= MazeDirection::all; // avoid out of bounds array access
+    currentPos.x += g_offsetX[(int)dir];
+    currentPos.y += g_offsetY[(int)dir];
+    cells[__cellIndex(rows, currentPos.x, currentPos.y)] = g_oppositeMask[(int)dir]; // next cell: open dir to previous
   }
   __computeStartEndPositions(cells, lines, rows, outStartPos, outEndPos);
 }
@@ -161,11 +161,11 @@ Maze::Maze(uint32_t baseDisplayWidth, uint32_t baseDisplayHeight)
   // max integer odd number of lines that fit (minus 1 line for visible hedge side)
   uint32_t tilesY = ((baseDisplayHeight - __MAZE_TILE_PIXELS) / __MAZE_TILE_PIXELS);
   if ((tilesY & 0x1) == 0)
-	--tilesY;
+    --tilesY;
   // max integer odd number of rows that fit
   uint32_t tilesX = (baseDisplayWidth / __MAZE_TILE_PIXELS);
   if ((tilesX & 0x1) == 0)
-	--tilesX;
+    --tilesX;
 
   _lines = tilesY >> 1; // half the tiles are walls -> divide by 2 for cell count
   _rows = tilesX >> 1;   // half the tiles are walls -> divide by 2 for cell count
@@ -221,7 +221,7 @@ static inline float __getWorldTileHeight(HedgeTiles type, float worldTileSize) n
 // ---
 
 static void __computeVertices(HedgeTiles type, float worldPosX, float worldPosY, float worldTileSize[2],
-							  std::vector<float>& outVertices, std::vector<uint32_t>& outIndices) {
+                              std::vector<float>& outVertices, std::vector<uint32_t>& outIndices) {
   float texCoordX = __getTextureCoordX(type);
   float texCoordY = __getTextureCoordY(type);
   float texWidth = __getTextureTileWidth(type);
@@ -240,7 +240,7 @@ static void __computeVertices(HedgeTiles type, float worldPosX, float worldPosY,
                                           texCoordX + texWidth,       texCoordY + texHeight });
 
   outIndices.insert(outIndices.end(), { vertexIndex,vertexIndex+1,vertexIndex+2,     // indices: 0,1,2
-	                                    vertexIndex+1,vertexIndex+3,vertexIndex+2 });//          1,3,2
+                                        vertexIndex+1,vertexIndex+3,vertexIndex+2 });//          1,3,2
 }
 
 // ---
@@ -254,7 +254,7 @@ void Maze::computeRendering(std::vector<float>& outVertices, std::vector<uint32_
   float hedgeOffset[]{ (float)(_baseDisplayWidth - tilesX*__MAZE_TILE_PIXELS) / (float)_baseDisplayWidth, // percentage of unused space
                        (float)(_baseDisplayHeight - tilesY*__MAZE_TILE_PIXELS) / (float)_baseDisplayHeight };
   float worldTileSize[]{ (2.f*__MAZE_TILE_PIXELS) / (float)_baseDisplayWidth, // actual tile-size (on window)
-	                     (2.f*__MAZE_TILE_PIXELS) / (float)_baseDisplayHeight };
+                         (2.f*__MAZE_TILE_PIXELS) / (float)_baseDisplayHeight };
   hedgeOffset[1] = -hedgeOffset[1] + worldTileSize[1]*0.25f; // add slight offset for hedge bottom side
 
   // game area offset (!= hedge offset: player isn't at same level as top of hedges)
@@ -263,89 +263,89 @@ void Maze::computeRendering(std::vector<float>& outVertices, std::vector<uint32_
 
   MazeDirection* mazeIt = _cells.get();
   for (uint32_t line = 0; line < _lines; ++line) {
-	for (uint32_t row = 0; row < _rows; ++row, ++mazeIt) {
-	  float worldPosX = hedgeOffset[0] + (float)(row<<1)*worldTileSize[0] - 1.f;
-	  float worldPosY = hedgeOffset[1] + 1.f - (float)(line<<1)*worldTileSize[1];
+    for (uint32_t row = 0; row < _rows; ++row, ++mazeIt) {
+      float worldPosX = hedgeOffset[0] + (float)(row<<1)*worldTileSize[0] - 1.f;
+      float worldPosY = hedgeOffset[1] + 1.f - (float)(line<<1)*worldTileSize[1];
 
-	  // convolution
-	  MazeDirection leftCell = (row > 0) ? *(mazeIt - 1) : (MazeDirection::up|MazeDirection::down|MazeDirection::left);
-	  MazeDirection aboveCell = (line > 0) ? *(mazeIt - _rows) : (MazeDirection::up|MazeDirection::left|MazeDirection::right);
-	  MazeDirection rightCell = (row + 1u != _rows)
-		                      ? *(mazeIt + 1)
-		                      : (((*mazeIt & MazeDirection::right) == true) ? MazeDirection::all : (MazeDirection::up|MazeDirection::down));
-	  MazeDirection bottomCell = (line + 1u != _lines)
-		                       ? *(mazeIt + _rows)
-		                       : (((*mazeIt & MazeDirection::down) == true) ? MazeDirection::all : (MazeDirection::left|MazeDirection::right));
+      // convolution
+      MazeDirection leftCell = (row > 0) ? *(mazeIt - 1) : (MazeDirection::up|MazeDirection::down|MazeDirection::left);
+      MazeDirection aboveCell = (line > 0) ? *(mazeIt - _rows) : (MazeDirection::up|MazeDirection::left|MazeDirection::right);
+      MazeDirection rightCell = (row + 1u != _rows)
+                              ? *(mazeIt + 1)
+                              : (((*mazeIt & MazeDirection::right) == true) ? MazeDirection::all : (MazeDirection::up|MazeDirection::down));
+      MazeDirection bottomCell = (line + 1u != _lines)
+                               ? *(mazeIt + _rows)
+                               : (((*mazeIt & MazeDirection::down) == true) ? MazeDirection::all : (MazeDirection::left|MazeDirection::right));
 
-	  // tile association
-	  if ((*mazeIt & MazeDirection::up) == false) {
-		if ((leftCell & MazeDirection::up) == false) {
-		  __computeVertices(HedgeTiles::horizontal, worldPosX, worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		  __computeVertices(HedgeTiles::horizontal, worldPosX + worldTileSize[0], worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		else {
-		  __computeVertices(HedgeTiles::horizontalLeftEnd, worldPosX, worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		if ((rightCell & MazeDirection::up) == true) {
-		  __computeVertices(HedgeTiles::horizontalRightEnd, worldPosX + 2.f*worldTileSize[0], worldPosY,
-							worldTileSize, outVertices, outIndices);
-		}
-	  }
-	  if ((*mazeIt & MazeDirection::left) == false) {
-		if ((aboveCell & MazeDirection::left) == false) {
-		  __computeVertices(HedgeTiles::verticalDouble, worldPosX, worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		else {
-		  __computeVertices(HedgeTiles::verticalTopEnd, worldPosX, worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		if ((bottomCell & MazeDirection::left) == true) {
-		  __computeVertices(HedgeTiles::vertical, worldPosX, worldPosY - 2.f*worldTileSize[1],
-							  worldTileSize, outVertices, outIndices);
-		  if ((*mazeIt & MazeDirection::down) == true && (leftCell & MazeDirection::down) == true) {
-			__computeVertices(HedgeTiles::verticalBottomEnd, worldPosX, worldPosY - 3.f*worldTileSize[1],
-							  worldTileSize, outVertices, outIndices);
-		  }
-		}
-	  }
-	  if (row + 1u == _rows && (*mazeIt & MazeDirection::right) == false) { // ignore right hedges, except for last row
-		if ((aboveCell & MazeDirection::right) == false) {
-		  __computeVertices(HedgeTiles::verticalDouble, worldPosX + 2.f*worldTileSize[0], worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		else {
-		  __computeVertices(HedgeTiles::verticalTopEnd, worldPosX + 2.f*worldTileSize[0], worldPosY,
-			                worldTileSize, outVertices, outIndices);
-		}
-		if ((bottomCell & MazeDirection::right) == true) {
-		  __computeVertices(HedgeTiles::vertical, worldPosX + 2.f*worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
-							  worldTileSize, outVertices, outIndices);
-		  if ((*mazeIt & MazeDirection::down) == true) {
-			__computeVertices(HedgeTiles::verticalBottomEnd, worldPosX + 2.f*worldTileSize[0], worldPosY - 3.f*worldTileSize[1],
-							  worldTileSize, outVertices, outIndices);
-		  }
-		}
-	  }
-	  if (line + 1u == _lines && (*mazeIt & MazeDirection::down) == false) {// ignore bottom hedges, except for last line
-		if ((leftCell & MazeDirection::down) == false) {
-		  __computeVertices(HedgeTiles::horizontal, worldPosX, worldPosY - 2.f*worldTileSize[1],
-			                worldTileSize, outVertices, outIndices);
-		  __computeVertices(HedgeTiles::horizontal, worldPosX + worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
-			                worldTileSize, outVertices, outIndices);
-		}
-		else {
-		  __computeVertices(HedgeTiles::horizontalLeftEnd, worldPosX, worldPosY - 2.f*worldTileSize[1],
-			                worldTileSize, outVertices, outIndices);
-		}
-		if ((rightCell & MazeDirection::down) == true) {
-		  __computeVertices(HedgeTiles::horizontalRightEnd, worldPosX + 2.f*worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
-							worldTileSize, outVertices, outIndices);
-		}
-	  }
-	}
+      // tile association
+      if ((*mazeIt & MazeDirection::up) == false) {
+        if ((leftCell & MazeDirection::up) == false) {
+          __computeVertices(HedgeTiles::horizontal, worldPosX, worldPosY,
+                            worldTileSize, outVertices, outIndices);
+          __computeVertices(HedgeTiles::horizontal, worldPosX + worldTileSize[0], worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        else {
+          __computeVertices(HedgeTiles::horizontalLeftEnd, worldPosX, worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        if ((rightCell & MazeDirection::up) == true) {
+          __computeVertices(HedgeTiles::horizontalRightEnd, worldPosX + 2.f*worldTileSize[0], worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+      }
+      if ((*mazeIt & MazeDirection::left) == false) {
+        if ((aboveCell & MazeDirection::left) == false) {
+          __computeVertices(HedgeTiles::verticalDouble, worldPosX, worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        else {
+          __computeVertices(HedgeTiles::verticalTopEnd, worldPosX, worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        if ((bottomCell & MazeDirection::left) == true) {
+          __computeVertices(HedgeTiles::vertical, worldPosX, worldPosY - 2.f*worldTileSize[1],
+                              worldTileSize, outVertices, outIndices);
+          if ((*mazeIt & MazeDirection::down) == true && (leftCell & MazeDirection::down) == true) {
+            __computeVertices(HedgeTiles::verticalBottomEnd, worldPosX, worldPosY - 3.f*worldTileSize[1],
+                              worldTileSize, outVertices, outIndices);
+          }
+        }
+      }
+      if (row + 1u == _rows && (*mazeIt & MazeDirection::right) == false) { // ignore right hedges, except for last row
+        if ((aboveCell & MazeDirection::right) == false) {
+          __computeVertices(HedgeTiles::verticalDouble, worldPosX + 2.f*worldTileSize[0], worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        else {
+          __computeVertices(HedgeTiles::verticalTopEnd, worldPosX + 2.f*worldTileSize[0], worldPosY,
+                            worldTileSize, outVertices, outIndices);
+        }
+        if ((bottomCell & MazeDirection::right) == true) {
+          __computeVertices(HedgeTiles::vertical, worldPosX + 2.f*worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
+                              worldTileSize, outVertices, outIndices);
+          if ((*mazeIt & MazeDirection::down) == true) {
+            __computeVertices(HedgeTiles::verticalBottomEnd, worldPosX + 2.f*worldTileSize[0], worldPosY - 3.f*worldTileSize[1],
+                              worldTileSize, outVertices, outIndices);
+          }
+        }
+      }
+      if (line + 1u == _lines && (*mazeIt & MazeDirection::down) == false) {// ignore bottom hedges, except for last line
+        if ((leftCell & MazeDirection::down) == false) {
+          __computeVertices(HedgeTiles::horizontal, worldPosX, worldPosY - 2.f*worldTileSize[1],
+                            worldTileSize, outVertices, outIndices);
+          __computeVertices(HedgeTiles::horizontal, worldPosX + worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
+                            worldTileSize, outVertices, outIndices);
+        }
+        else {
+          __computeVertices(HedgeTiles::horizontalLeftEnd, worldPosX, worldPosY - 2.f*worldTileSize[1],
+                            worldTileSize, outVertices, outIndices);
+        }
+        if ((rightCell & MazeDirection::down) == true) {
+          __computeVertices(HedgeTiles::horizontalRightEnd, worldPosX + 2.f*worldTileSize[0], worldPosY - 2.f*worldTileSize[1],
+                            worldTileSize, outVertices, outIndices);
+        }
+      }
+    }
   }
 }
