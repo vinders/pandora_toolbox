@@ -58,7 +58,7 @@ Let's create the project files:
 CMake is a cross-platform utility to create platform and compiler independant project descriptions.
 These descriptions can be used to generate solutions/projects for pretty much any IDE (and even makefiles).
 That means that most IDEs can be used for these tutorials.
-On Windows, I'd recommend using Visual Studio with MSVC (MinGW has known compatibility issues with Win32 API, and doesn't support Direct3D).
+On Windows, I'd recommend using Visual Studio with MSVC or clang-CL (MinGW has known compatibility issues with Win32 API, and doesn't support Direct3D).
 
 Unfortunately, CMake description files can be quite complex to write, and some features are poorly documented.
 That's why pandora_toolbox contains its own custom CMake framework (called *CWork*) to make things easier.
