@@ -281,7 +281,6 @@ void Scene::restartScene(RendererContext& renderer, uint32_t width, uint32_t hei
   _isPlayerMoving = false;
 
   // create rendering components
-  release();
   initResources(renderer, width, height);
 }
 
