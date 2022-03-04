@@ -271,7 +271,7 @@ void Scene::processGameLogic() {
 
 // -- rendering scene components -- --------------------------------------------
 
-void Scene::restartScene(RendererContext& renderer, uint32_t width, uint32_t height) {
+void Scene::restartScene(RendererContext& renderer) {
   // create maze + game status
   _maze = Maze(__BASE_WINDOW_WIDTH, __BASE_WINDOW_HEIGHT);
 
@@ -281,10 +281,10 @@ void Scene::restartScene(RendererContext& renderer, uint32_t width, uint32_t hei
   _isPlayerMoving = false;
 
   // create rendering components
-  initResources(renderer, width, height);
+  initResources(renderer);
 }
 
-void Scene::initResources(RendererContext& renderer, uint32_t width, uint32_t height) {
+void Scene::initResources(RendererContext& renderer) {
   release();
   Renderer& sharedRenderer = renderer.renderer();
   _renderer = &renderer;

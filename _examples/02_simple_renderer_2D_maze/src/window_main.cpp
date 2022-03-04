@@ -63,7 +63,7 @@ void reCreateRendererContext(Window* parentWindow, uint32_t width, uint32_t heig
   *g_renderer = RendererContext(pandora::hardware::DisplayMonitor{}, parentWindow->handle(), width, height,
                                 pandora::video::RefreshRate{}, g_renderer->hasVsync());
   if (g_currentScene)
-    g_currentScene->initResources(*g_renderer, width, height);
+    g_currentScene->initResources(*g_renderer);
   // --> note: on failure, a message-box could be used to ask the user what to do (in fullscreen, don't forget to minimize first)
 }
 
@@ -131,10 +131,7 @@ bool onKeyboardEvent(Window* sender, KeyboardEvent event, uint32_t keyCode, uint
 }
 
 // mouse event handler --> should never throw!
-bool onMouseEvent(Window*, MouseEvent event, int32_t, int32_t, int32_t, uint8_t) {
-  switch (event) {
-    default: break;
-  }
+bool onMouseEvent(Window*, MouseEvent, int32_t, int32_t, int32_t, uint8_t) {
   return false;
 }
 
@@ -163,7 +160,7 @@ inline void mainAppLoop() {
 
     // create rendering scene
     { // --> scope
-      Scene defaultScene(renderer, clientWidth, clientHeight);
+      Scene defaultScene(renderer);
       g_currentScene = &defaultScene;
 
       while (Window::pollEvents()) {
@@ -184,7 +181,7 @@ inline void mainAppLoop() {
             if (defaultScene.isFinished()) {
               MessageBox::show("Congratulations!", "Press OK to start a new level.",
                                MessageBox::ActionType::ok, MessageBox::IconType::info, true);
-              defaultScene.restartScene(renderer, clientWidth, clientHeight);
+              defaultScene.restartScene(renderer);
             }
           }
         }

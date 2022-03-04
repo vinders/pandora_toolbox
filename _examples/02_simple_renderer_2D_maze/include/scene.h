@@ -34,12 +34,12 @@ public:
   // ---
 
   // Create rendering scene components
-  Scene(RendererContext& renderer, uint32_t width, uint32_t height) {
-    restartScene(renderer, width, height);
+  Scene(RendererContext& renderer) {
+    restartScene(renderer);
   }
   // Create new maze + re-initialize game data and rendering scene components
   // --> throws on scene creation failure
-  void restartScene(RendererContext& renderer, uint32_t width, uint32_t height);
+  void restartScene(RendererContext& renderer);
 
   Scene() = default;
   Scene(const Scene&) = delete;
@@ -48,7 +48,7 @@ public:
 
   // Re-initialize scene rendering components (only called if the RendererContext instance is re-created during game)
   // --> throws on scene creation failure
-  void initResources(RendererContext& renderer, uint32_t width, uint32_t height);
+  void initResources(RendererContext& renderer);
   // Destroy scene components (should be called before destroying associated RendererContext)
   void release() noexcept;
 
