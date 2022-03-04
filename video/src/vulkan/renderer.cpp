@@ -619,9 +619,7 @@ Includes hpp implementations at the end of the file
     VkResult result = vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &deviceContextHandle);
     if (result != VK_SUCCESS || deviceContextHandle == VK_NULL_HANDLE)
       throwError(result, "Vulkan: failed to create logical device");
-    this->_deviceContext = std::make_shared<ScopedDeviceContext>(deviceContextHandle, physicalDevice);
-    this->_logicalDeviceContextCopy = deviceContextHandle;
-    this->_physicalDeviceCopy = physicalDevice;
+    this->_deviceContext = ScopedDeviceContext(deviceContextHandle, physicalDevice);
 
     // get command queue handles
     DynamicArray<CommandQueues> graphicsQueuesPerFamily(cmdQueueFamilyIndices.length());
@@ -636,7 +634,7 @@ Includes hpp implementations at the end of the file
           throw std::runtime_error("Vulkan: failed to obtain command queue access");
       }
     }
-    this->_deviceContext->_setGraphicsQueues(std::move(graphicsQueuesPerFamily));
+    this->_deviceContext._setGraphicsQueues(std::move(graphicsQueuesPerFamily));
     
     // create command pool for short-lived operations (copies...)
     VkCommandPool transientCommandPool = VK_NULL_HANDLE;
@@ -648,7 +646,7 @@ Includes hpp implementations at the end of the file
     result = vkCreateCommandPool(deviceContextHandle, &transientPoolInfo, nullptr, &transientCommandPool);
     if (result != VK_SUCCESS || transientCommandPool == VK_NULL_HANDLE)
       throwError(result, "Vulkan: transient command pool not created");
-    this->_deviceContext->_setTransientCommandPool(transientCommandPool, transientCommandQueueFamily);
+    this->_deviceContext._setTransientCommandPool(transientCommandPool, transientCommandQueueFamily);
   }
 
 
@@ -668,13 +666,12 @@ Includes hpp implementations at the end of the file
     }
   }
   // Destroy device and context resources
-  void Renderer::_destroy() noexcept {
-    if (this->_deviceContext != nullptr) {
-      if (this->_deviceContext->context() != VK_NULL_HANDLE) {
-        this->_attachedPipeline = nullptr; // unbind
-        flush();
-      }
-      this->_deviceContext = nullptr; // release
+  void Renderer::release() noexcept {
+    if (this->_deviceContext.context() != VK_NULL_HANDLE) {
+      this->_attachedPipeline = nullptr; // unbind
+      flush();
+
+      this->_deviceContext.release();
       this->_features = nullptr;
       this->_physicalDeviceInfo = nullptr;
     }
@@ -682,10 +679,8 @@ Includes hpp implementations at the end of the file
   }
 
   Renderer::Renderer(Renderer&& rhs) noexcept
-    : _logicalDeviceContextCopy(rhs._logicalDeviceContextCopy),
-      _physicalDeviceCopy(rhs._physicalDeviceCopy),
+    : _deviceContext(std::move(rhs._deviceContext)),
       _instance(std::move(rhs._instance)),
-      _deviceContext(std::move(rhs._deviceContext)),
       _deviceExtensions(std::move(rhs._deviceExtensions)),
       _features(std::move(rhs._features)),
       _physicalDeviceInfo(std::move(rhs._physicalDeviceInfo)),
@@ -695,14 +690,11 @@ Includes hpp implementations at the end of the file
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
-    rhs._deviceContext = nullptr;
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
-    _destroy();
-    this->_logicalDeviceContextCopy = rhs._logicalDeviceContextCopy;
-    this->_physicalDeviceCopy = rhs._physicalDeviceCopy;
-    this->_instance = std::move(rhs._instance);
+    release();
     this->_deviceContext = std::move(rhs._deviceContext);
+    this->_instance = std::move(rhs._instance);
     this->_deviceExtensions = std::move(rhs._deviceExtensions);
     this->_features = std::move(rhs._features);
     this->_physicalDeviceInfo = std::move(rhs._physicalDeviceInfo);
@@ -712,7 +704,6 @@ Includes hpp implementations at the end of the file
     rhs._instance = nullptr;
     rhs._features = nullptr;
     rhs._physicalDeviceInfo = nullptr;
-    rhs._deviceContext = nullptr;
     return *this;
   }
 
@@ -723,7 +714,7 @@ Includes hpp implementations at the end of the file
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     memoryProperties.memoryHeapCount = 0;
-    vkGetPhysicalDeviceMemoryProperties(this->_physicalDeviceCopy, &memoryProperties);
+    vkGetPhysicalDeviceMemoryProperties((VkPhysicalDevice)_deviceContext.device(), &memoryProperties);
     
     VkDeviceSize localByteSize = 0, sharedByteSize = 0;
     uint32_t remainingHeaps = memoryProperties.memoryHeapCount;
@@ -752,7 +743,7 @@ Includes hpp implementations at the end of the file
                                                FormatAttachment attachmentType, VkImageTiling tiling) const noexcept {
     for (const DataFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
       VkFormatProperties formatProps{};
-      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_deviceContext->device(),
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_deviceContext.device(),
                                           _getDataFormatComponents(*candidates), &formatProps);
       
       if (tiling == VK_IMAGE_TILING_OPTIMAL) {
@@ -769,7 +760,7 @@ Includes hpp implementations at the end of the file
                                                                size_t count, VkImageTiling tiling) const noexcept {
     for (const DepthStencilFormat* endIt = candidates + (intptr_t)count; candidates < endIt; ++candidates) {
       VkFormatProperties formatProps{};
-      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)this->_physicalDeviceCopy, (VkFormat)*candidates, &formatProps);
+      vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)_deviceContext.device(), (VkFormat)*candidates, &formatProps);
       
       if (tiling == VK_IMAGE_TILING_OPTIMAL) {
         if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -887,10 +878,10 @@ Includes hpp implementations at the end of the file
       auto format = _getDataFormatComponents(bufferFormat);
 
       uint32_t formatCount = 0;
-      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext->device(), this->_windowSurface,
+      if (vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext.device(), this->_windowSurface,
                                                &formatCount, nullptr) == VK_SUCCESS && formatCount) {
         auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
-        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext->device(),
+        VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext.device(),
                                                                this->_windowSurface, &formatCount, formats.value);
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
           for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {

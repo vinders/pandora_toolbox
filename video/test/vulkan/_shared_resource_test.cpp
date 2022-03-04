@@ -42,14 +42,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // -- SharedResource --
 
   TEST_F(_VulkanSharedResourceTest, vkEmptyValueContainer) {
-    DeviceResourceManager context = std::make_shared<ScopedDeviceContext>();
+    ScopedDeviceContext context;
 
     ScopedResource<void*> empty;
     EXPECT_FALSE(empty);
     EXPECT_FALSE(empty.hasValue());
     EXPECT_TRUE(empty.value() == nullptr);
     EXPECT_TRUE(empty.extract() == nullptr);
-    ScopedResource<void*> empty2(nullptr, context, _fakeDestroyFunc);
+    ScopedResource<void*> empty2(nullptr, &context, _fakeDestroyFunc);
     EXPECT_FALSE(empty2);
     EXPECT_FALSE(empty2.hasValue());
     EXPECT_TRUE(empty2.value() == nullptr);
@@ -76,10 +76,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
   TEST_F(_VulkanSharedResourceTest, vkFilledValueContainer) {
-    DeviceResourceManager context = std::make_shared<ScopedDeviceContext>();
+    ScopedDeviceContext context;
 
     void* res1((void*)1);
-    ScopedResource<void**> val1(&res1, context, _fakeDestroyFunc2);
+    ScopedResource<void**> val1(&res1, &context, _fakeDestroyFunc2);
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.value() == &res1);
@@ -87,12 +87,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_FALSE(val1);
     EXPECT_FALSE(val1.hasValue());
     EXPECT_TRUE(val1.value() == nullptr);
-    val1 = ScopedResource<void**>(&res1, context, _fakeDestroyFunc2);
+    val1 = ScopedResource<void**>(&res1, &context, _fakeDestroyFunc2);
     EXPECT_EQ(&res1, val1.extract());
     EXPECT_FALSE(val1);
     EXPECT_FALSE(val1.hasValue());
     EXPECT_TRUE(val1.value() == nullptr);
-    val1 = std::move(ScopedResource<void**>(&res1, context, _fakeDestroyFunc2));
+    val1 = std::move(ScopedResource<void**>(&res1, &context, _fakeDestroyFunc2));
     EXPECT_TRUE(val1);
     EXPECT_TRUE(val1.hasValue());
     EXPECT_TRUE(val1.value() == &res1);

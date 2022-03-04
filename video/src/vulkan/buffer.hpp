@@ -106,7 +106,7 @@ Implementation included in renderer.cpp
   
 // -- buffer memory allocation -- ----------------------------------------------
 
-  BufferMemory::BufferMemory(VkDeviceMemory deviceMemory, const DeviceResourceManager& context) noexcept
+  BufferMemory::BufferMemory(VkDeviceMemory deviceMemory, DeviceResourceManager context) noexcept
     : _handle(deviceMemory, context, vkFreeMemory) {}
 
   // Create memory allocation (for multiple buffer suballocations)

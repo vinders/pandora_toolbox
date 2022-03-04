@@ -42,6 +42,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Create usable shader stage object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
+          /// @warning Shader objects must be destroyed BEFORE the associated Renderer instance!
           Shader(Handle handle, ShaderType type, const char* entryPoint = "main")
             : _handle(std::move(handle)), _entryPoint(entryPoint), _type(type) {}
           

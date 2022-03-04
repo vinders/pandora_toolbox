@@ -114,14 +114,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                    const VkPhysicalDeviceFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
                    const DeviceExtensions& extensions = DeviceExtensions{}, size_t commandQueueCount = 1);
           /// @brief Destroy device and context resources
-          ~Renderer() noexcept { _destroy(); }
+          ~Renderer() noexcept { release(); }
           
           Renderer() noexcept = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
-          inline void release() noexcept { _destroy(); _deviceContext=nullptr; _instance=nullptr; } ///< Destroy renderer
+          void release() noexcept; ///< Destroy renderer
 
           /// @brief Create default list of vulkan features (all basic standard features enabled)
           /// @remarks Used to create a Renderer object.
@@ -148,13 +148,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- accessors --
 
-          inline DeviceHandle device() const noexcept { return this->_physicalDeviceCopy; }         ///< Get physical rendering device (VkPhysicalDevice)
-          inline DeviceContext context() const noexcept { return this->_logicalDeviceContextCopy; } ///< Get logical device context (VkDevice)
-          inline const DeviceResourceManager& resourceManager() const noexcept { return this->_deviceContext; } ///< Get resource manager (to build resources such as shaders)
+          inline DeviceHandle device() const noexcept { return this->_deviceContext.device(); }         ///< Get physical rendering device (VkPhysicalDevice)
+          inline DeviceContext context() const noexcept { return this->_deviceContext.context(); } ///< Get logical device context (VkDevice)
+          inline DeviceResourceManager resourceManager() noexcept { return &_deviceContext; } ///< Get resource manager (to build resources such as shaders)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
           inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
-          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_deviceContext->commandQueues(); } ///< Get Vulkan command queues (per family)
-          inline VkCommandPool transientCommandPool() const noexcept { return this->_deviceContext->transientCommandPool(); } ///< Get command pool for short-lived operations
+          inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_deviceContext.commandQueues(); } ///< Get Vulkan command queues (per family)
+          inline VkCommandPool transientCommandPool() const noexcept { return this->_deviceContext.transientCommandPool(); } ///< Get command pool for short-lived operations
           
           /// @brief Read device adapter VRAM size
           /// @returns Read success
@@ -248,17 +248,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           
         private:
-          void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }
           friend class pandora::video::vulkan::SwapChain;
           friend class pandora::video::vulkan::DisplaySurface;
           friend class pandora::video::vulkan::GraphicsPipeline;
           
         private:
-          VkDevice _logicalDeviceContextCopy = VK_NULL_HANDLE;   // unmanaged copy of _deviceContext._deviceContext (reduces cache misses)
-          VkPhysicalDevice _physicalDeviceCopy = VK_NULL_HANDLE; // unmanaged copy of _deviceContext._physicalDevice (reduces cache misses)
+          ScopedDeviceContext _deviceContext;
           std::shared_ptr<VulkanInstance> _instance = nullptr;
-          std::shared_ptr<ScopedDeviceContext> _deviceContext = nullptr;
           std::unordered_set<std::string> _deviceExtensions;
           std::unique_ptr<VkPhysicalDeviceFeatures> _features = nullptr;
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;

@@ -87,7 +87,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           VkCommandPool _transientCommandPool = VK_NULL_HANDLE; // for short-lived operations
           uint32_t _transientQueuesArrayIndex = 0;
         };
-        using DeviceResourceManager = std::shared_ptr<ScopedDeviceContext>; ///< Device resource manager
+        using DeviceResourceManager = ScopedDeviceContext*; ///< Device resource manager
         
         // ---
         
@@ -97,7 +97,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         public:
           inline ScopedResource(T handle, DeviceResourceManager context,
                                 void (*destroyFunc)(VkDevice,T,const VkAllocationCallbacks*)) noexcept
-            : _handle(handle), _context(std::move(context)), _destroy(destroyFunc) {
+            : _handle(handle), _context(context), _destroy(destroyFunc) {
             assert(this->_context != nullptr && this->_destroy != nullptr);
           }
                                 
@@ -108,14 +108,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           ScopedResource(const ScopedResource<T>&) = delete;
           inline ScopedResource(ScopedResource<T>&& rhs) noexcept
-            : _handle(rhs._handle), _context(std::move(rhs._context)), _destroy(rhs._destroy) {
+            : _handle(rhs._handle), _context(rhs._context), _destroy(rhs._destroy) {
             rhs._handle = VK_NULL_HANDLE; rhs._context = nullptr;
           }
           
           ScopedResource<T>& operator=(const ScopedResource<T>&) = delete;
           ScopedResource<T>& operator=(ScopedResource<T>&& rhs) noexcept {
             release();
-            _handle = rhs._handle; _context = std::move(rhs._context); _destroy = rhs._destroy;
+            _handle = rhs._handle; _context = rhs._context; _destroy = rhs._destroy;
             rhs._handle = VK_NULL_HANDLE; rhs._context = nullptr;
             return *this;
           }

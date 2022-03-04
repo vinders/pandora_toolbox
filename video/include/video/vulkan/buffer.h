@@ -176,7 +176,7 @@ Vulkan - DepthStencilBuffer
           ///         - runtime_error: on creation failure.
           inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, bool isBidirectional = false,
                  uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0)
-            : _bufferSize(bufferByteSize), _device(renderer.resourceManager().get()), _type(type) {
+            : _bufferSize(bufferByteSize), _device(renderer.resourceManager()), _type(type) {
             this->_handle = __createBufferContainer(renderer.context(), bufferByteSize,
                                                     _getTypeUsageFlags(type, isBidirectional),
                                                     concurrentQueueFamilies, queueCount);
@@ -206,7 +206,7 @@ Vulkan - DepthStencilBuffer
           ///         - runtime_error: on creation failure.
           Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, const void* initData,
                  bool isBidirectional = false, uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0)
-            : _bufferSize(bufferByteSize), _device(renderer.resourceManager().get()), _type(type) {
+            : _bufferSize(bufferByteSize), _device(renderer.resourceManager()), _type(type) {
             this->_handle = __createBufferContainer(renderer.context(), bufferByteSize, _getTypeUsageFlags(type, isBidirectional),
                                                     concurrentQueueFamilies, queueCount);
             this->_allocation = __allocBufferContainer(renderer.context(), renderer.device(), this->_handle, _getMemoryUsageFlags());
@@ -239,7 +239,7 @@ Vulkan - DepthStencilBuffer
           ///          dynamicCpu/staging: VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT.
           inline Buffer(Renderer& renderer, BufferHandle handle, size_t bufferSize, BufferType type,
                         VkDeviceMemory individualMemory = VK_NULL_HANDLE) noexcept
-            : _handle(handle), _bufferSize(bufferSize), _device(renderer.resourceManager().get()), _allocation(individualMemory),
+            : _handle(handle), _bufferSize(bufferSize), _device(renderer.resourceManager()), _allocation(individualMemory),
               _allocationOffset((individualMemory != VK_NULL_HANDLE) ? _individualAlloc() : 0), _type(type) {}
           
           Buffer() noexcept = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
@@ -353,7 +353,7 @@ Vulkan - DepthStencilBuffer
         class BufferMemory final {
         public:
           /// @brief Initialize memory -- reserved for internal or advanced use -- call BufferMemory::create instead.
-          BufferMemory(VkDeviceMemory deviceMemory, const DeviceResourceManager& context) noexcept;
+          BufferMemory(VkDeviceMemory deviceMemory, DeviceResourceManager context) noexcept;
           BufferMemory() noexcept = default; ///< Empty -- not usable (only useful to store variable not immediately initialized)
           BufferMemory(const BufferMemory&) = delete;
           BufferMemory(BufferMemory&&) noexcept = default;

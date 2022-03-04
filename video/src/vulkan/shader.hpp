@@ -156,7 +156,7 @@ Implementation included in renderer.cpp
     auto result = vkCreateShaderModule(device->context(), &shaderInfo, nullptr, &shaderModule);
     if (result != VK_SUCCESS || shaderModule == VK_NULL_HANDLE)
       throwError(result, "Shader: creation error");
-    return Shader(std::make_shared<ScopedResource<VkShaderModule> >(shaderModule, std::move(device), vkDestroyShaderModule),
+    return Shader(std::make_shared<ScopedResource<VkShaderModule> >(shaderModule, device, vkDestroyShaderModule),
                   this->_type, this->_entryPoint.c_str());
   }
 
