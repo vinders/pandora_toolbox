@@ -334,7 +334,7 @@ Includes hpp implementations at the end of the file
 // -- device/context destruction/move -- ---------------------------------------
 
   // Destroy device and context resources
-  void Renderer::_destroy() noexcept {
+  void Renderer::release() noexcept {
     try {
       // release device context
       if (this->_context) {
@@ -346,12 +346,17 @@ Includes hpp implementations at the end of the file
 #       endif
         this->_context->Flush();
         this->_context->Release();
+        this->_context = nullptr;
       }
       // release device
-      if (this->_device)
+      if (this->_device) {
         this->_device->Release();
-      if (this->_dxgiFactory)
+        this->_device = nullptr;
+      }
+      if (this->_dxgiFactory) {
         ((IDXGIFactory1*)this->_dxgiFactory)->Release();
+        this->_dxgiFactory = nullptr;
+      }
     }
     catch (...) {}
   }
@@ -377,7 +382,7 @@ Includes hpp implementations at the end of the file
 #   endif
   }
   Renderer& Renderer::operator=(Renderer&& rhs) noexcept {
-    _destroy();
+    release();
     this->_device = rhs._device;
     this->_context = rhs._context;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110

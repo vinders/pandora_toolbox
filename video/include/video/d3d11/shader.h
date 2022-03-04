@@ -35,6 +35,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Create usable shader object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
+          /// @warning Shader objects must be destroyed BEFORE the associated Renderer instance!
           Shader(Handle handle, ShaderType type) : _handle(handle), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)

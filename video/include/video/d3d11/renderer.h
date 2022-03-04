@@ -65,14 +65,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///         - runtime_error: creation failure.
           Renderer(const pandora::hardware::DisplayMonitor& monitor, const D3D_FEATURE_LEVEL* featureLevels = nullptr, size_t featureLevelCount = 0);
           /// @brief Destroy device and context resources
-          ~Renderer() noexcept { _destroy(); }
+          ~Renderer() noexcept { release(); }
           
           Renderer() noexcept = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
-          inline void release() noexcept { _destroy(); _context=nullptr; _device=nullptr; _dxgiFactory=nullptr; } ///< Destroy renderer
+          void release() noexcept; ///< Destroy renderer
           
           /// @brief Flush command buffer
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
@@ -84,7 +84,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline DeviceHandle device() const noexcept { return this->_device; }    ///< Get Direct3D rendering device
           inline DeviceContext context() const noexcept { return this->_context; } ///< Get Direct3D device context
-          inline DeviceResourceManager resourceManager() const noexcept { return this->_device; } ///< Get resource manager (to build resources such as shaders)
+          inline DeviceResourceManager resourceManager() noexcept { return this->_device; } ///< Get resource manager (to build resources such as shaders)
           inline uint32_t dxgiLevel() const noexcept { return this->_dxgiLevel; }  ///< Get available DXGI level on current system (1-6)
           inline D3D_FEATURE_LEVEL featureLevel() const noexcept { return this->_deviceLevel; } ///< Get available feature level on current device (11.0/11.1+)
           
@@ -594,7 +594,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           
         private:
-          void _destroy() noexcept;
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           inline bool _isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           bool _isSampleCountSupported(DXGI_FORMAT format, UINT sampleCount, UINT& outMaxQualityLevel) const noexcept;
