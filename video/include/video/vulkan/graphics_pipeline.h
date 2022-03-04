@@ -411,6 +411,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
         /// @warning - Can only be used for display shaders (vertex, fragment, geometry, tessellation).
         ///            For compute shaders, a computation pipeline must be created instead!
         ///          - Must be built using GraphicsPipeline::Builder.
+        ///          - Must be destroyed BEFORE destroying associated Renderer instance!
         /// @remarks - To use the pipeline shaders/states, bind it to the associated Renderer instance.
         ///          - On Vulkan, pipelines are immutable by default (unlike other renderers):
         ///            to allow direct state changes (viewport, scissor test, depth-stencil test, blending),
@@ -426,18 +427,18 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           /// @brief Create pipeline object -- reserved for internal use or advanced usage (prefer GraphicsPipeline::Builder)
           // -> throws: - logic_error if some required states/stages haven't been set.
           //            - runtime_error if pipeline creation fails.
-          GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
+          GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, Renderer* renderer,
                            SharedRenderPass renderPass, SharedResource<VkPipelineLayout> pipelineLayout, VkPipelineCache cache);
 
           GraphicsPipeline(const GraphicsPipeline&) = delete;
           GraphicsPipeline(GraphicsPipeline&& rhs) noexcept
-            : _pipelineHandle(rhs._pipelineHandle), _renderer(std::move(rhs._renderer)),
+            : _pipelineHandle(rhs._pipelineHandle), _renderer(rhs._renderer),
               _renderPass(std::move(rhs._renderPass)), _pipelineLayout(std::move(rhs._pipelineLayout)) {
             rhs._pipelineHandle = VK_NULL_HANDLE;
           }
           GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
           GraphicsPipeline& operator=(GraphicsPipeline&& rhs) noexcept {
-            this->_pipelineHandle=rhs._pipelineHandle; this->_renderer=std::move(rhs._renderer);
+            this->_pipelineHandle=rhs._pipelineHandle; this->_renderer=rhs._renderer;
             this->_renderPass = std::move(rhs._renderPass); this->_pipelineLayout = std::move(rhs._pipelineLayout);
             rhs._pipelineHandle = VK_NULL_HANDLE;
             return *this;
@@ -462,8 +463,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           class Builder final {
           public:
             /// @brief Create pipeline builder
-            /// @throws logic_error if renderer is NULL.
-            Builder(std::shared_ptr<Renderer> renderer);
+            Builder(Renderer& renderer) noexcept;
             Builder(const Builder&) = delete;
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;
@@ -653,7 +653,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             InputLayout _inputLayoutObj = nullptr;
 
             VkGraphicsPipelineCreateInfo _descriptor{}; // main descriptor
-            std::shared_ptr<Renderer> _renderer = nullptr;
+            Renderer* _renderer = nullptr;
 
             SharedRenderPass _renderPassObj;
             GlobalLayout _pipelineLayoutObj;
@@ -671,7 +671,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           
         private:
           GraphicsPipeline::Handle _pipelineHandle = VK_NULL_HANDLE;
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
           SharedRenderPass _renderPass = nullptr;                     // stored to guarantee lifetime & destruction
           SharedResource<VkPipelineLayout> _pipelineLayout = nullptr; // stored to guarantee lifetime & destruction
         };

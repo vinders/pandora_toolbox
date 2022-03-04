@@ -21,7 +21,7 @@ using namespace video_api;
 RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monitor, pandora::video::WindowHandle window,
                                  uint32_t width, uint32_t height, pandora::video::RefreshRate&& rate,
                                  bool useAntialiasing, bool useAnisotropy, bool useVsync)
-  : _renderer(std::make_shared<Renderer>(monitor)),
+  : _renderer(monitor),
     _viewport(width, height),
     _scissor(0, 0, width, height),
     _timer(pandora::time::Rate(rate.numerator(), rate.denominator())),
@@ -32,36 +32,35 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
   // render target params
   const auto presentMode = useVsync ? pandora::video::PresentMode::fifo : pandora::video::PresentMode::immediate;
   _aaSamples = 16;
-  while ((!_renderer->isColorSampleCountAvailable(__COLOR_FORMAT, _aaSamples) // find highest available sample count
-       || !_renderer->isDepthSampleCountAvailable(__DEPTH_FORMAT, _aaSamples)) && _aaSamples > 1) {
+  while ((!_renderer.isColorSampleCountAvailable(__COLOR_FORMAT, _aaSamples) // find highest available sample count
+       || !_renderer.isDepthSampleCountAvailable(__DEPTH_FORMAT, _aaSamples)) && _aaSamples > 1) {
     _aaSamples >>= 1; // divide by 2
   }
 
   // create framebuffer + targets
   _swapChain = SwapChain(DisplaySurface(_renderer, window),
                          SwapChain::Descriptor(width, height, 2u, presentMode, rate), __COLOR_FORMAT);
-  _depthBuffer = DepthStencilBuffer(*_renderer, __DEPTH_FORMAT, width, height, 1);
-  _depthBufferMsaa = DepthStencilBuffer(*_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
+  _depthBuffer = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, 1);
+  _depthBufferMsaa = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
 
   Texture2DParams msaaParams(width, height, __COLOR_FORMAT, 1, 1, 0, ResourceUsage::staticGpu, _aaSamples);
-  _msaaTarget = TextureTarget2D(*_renderer, msaaParams);
+  _msaaTarget = TextureTarget2D(_renderer, msaaParams);
 
   // create samplers
-  SamplerBuilder samplerBuilder(*_renderer);
+  SamplerBuilder samplerBuilder(_renderer);
   TextureWrap texWrap[3] = { TextureWrap::repeatMirror, TextureWrap::repeatMirror, TextureWrap::repeatMirror };
   _samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear,
                                                        TextureFilter::linear, texWrap)));
   _samplers.append(samplerBuilder.create(SamplerParams(SamplerParams::maxAnisotropy()/2, texWrap)));
 
   // enable sampler + viewports
-  _renderer->flush();
-  _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.flush();
+  _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
 }
 
 void RendererContext::release() noexcept {
-  if (_renderer) {
     if (!_samplers.empty())
       _samplers.clear();
     if (!_msaaTarget.isEmpty())
@@ -72,14 +71,13 @@ void RendererContext::release() noexcept {
       _depthBuffer.release();
     if (!_swapChain.isEmpty())
       _swapChain.release();
-    _renderer.reset();
-  }
+    _renderer.release();
 }
 
 // -- settings --
 
 void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width, uint32_t height) {
-  _renderer->bindGraphicsPipeline(nullptr);
+  _renderer.bindGraphicsPipeline(nullptr);
   try {
     _swapChain.resize(width, height);
   }
@@ -92,28 +90,28 @@ void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width
   _viewport.resize(0, 0, (float)width, (float)height);
   _scissor = ScissorRectangle(0, 0, width, height);
 
-  _depthBuffer = DepthStencilBuffer(*_renderer, __DEPTH_FORMAT, width, height, 1);
-  _depthBufferMsaa = DepthStencilBuffer(*_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
+  _depthBuffer = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, 1);
+  _depthBufferMsaa = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
   Texture2DParams msaaParams(width, height, __COLOR_FORMAT, 1, 1, 0, ResourceUsage::staticGpu, _aaSamples);
   _msaaTarget.release();
-  _msaaTarget = TextureTarget2D(*_renderer, msaaParams);
+  _msaaTarget = TextureTarget2D(_renderer, msaaParams);
   
-  _renderer->flush();
-  _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.flush();
+  _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
 }
 
 // -- operations--
 
 void RendererContext::beginDrawing() {
   if (_useAntialiasing)
-    _renderer->setCleanActiveRenderTarget(_msaaTarget.getRenderTargetView(), _depthBufferMsaa.getDepthStencilView());
+    _renderer.setCleanActiveRenderTarget(_msaaTarget.getRenderTargetView(), _depthBufferMsaa.getDepthStencilView());
   else
-    _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
+    _renderer.setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), _depthBuffer.getDepthStencilView());
 
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
   _isMsaaPending = _useAntialiasing;
 }
 
@@ -124,9 +122,9 @@ void RendererContext::setDrawMode2D() {
     _isMsaaPending = false;
   }
 
-  _renderer->setActiveRenderTarget(_swapChain.getRenderTargetView()); // UI drawing (always on top) -> no depth buffer
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.setActiveRenderTarget(_swapChain.getRenderTargetView()); // UI drawing (always on top) -> no depth buffer
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
 }
 
 void RendererContext::swapBuffers() {
@@ -138,7 +136,7 @@ void RendererContext::swapBuffers() {
 
   _swapChain.swapBuffers(_depthBuffer.getDepthStencilView());
   if (!_useVsync) {
-    _renderer->flush();
+    _renderer.flush();
     _timer.waitPeriod();
   }
 }

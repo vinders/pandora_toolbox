@@ -20,7 +20,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <cstdint>
-# include <memory>
 # include <stdexcept>
 # include "../window_handle.h"
 # include "../common_types.h"
@@ -38,11 +37,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         class DisplaySurface final {
         public:
           /// @brief Create output surface for a swap-chain
-          /// @throws invalid_argument: if 'renderer' or 'window' is NULL.
-          DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window)
-            : _renderer(std::move(renderer)), _window(window) {
-            if (this->_renderer == nullptr || this->_window == nullptr)
-              throw std::invalid_argument("DisplaySurface: NULL renderer/window");
+          /// @throws invalid_argument: if 'window' is NULL.
+          DisplaySurface(Renderer& renderer, pandora::video::WindowHandle window)
+            : _renderer(&renderer), _window(window) {
+            if (this->_window == nullptr)
+              throw std::invalid_argument("DisplaySurface: NULL window");
           }
           ~DisplaySurface() noexcept = default;
 
@@ -57,7 +56,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         private:
           friend class SwapChain;
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
           pandora::video::WindowHandle _window = (pandora::video::WindowHandle)0;
         };
 
@@ -67,6 +66,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @brief Direct3D rendering swap-chain (framebuffers) - tied to a Window instance
         /// @warning - SwapChain is the Direct3D display output tool, and should be kept alive while the window exists.
         ///          - All SwapChains MUST be created before attaching any SwapChain or render target to the Renderer.
+        ///          - The SwapChain object must be destroyed BEFORE destroying the associated Renderer instance!
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleExt() should be reserved for internal usage or for advanced features.
@@ -89,7 +89,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               _pixelSize(_toPixelSize(params.width, params.height)),
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
-              _renderer(std::move(surface._renderer)) {
+              _renderer(surface._renderer) {
             _createSwapChain(surface._window, params.refreshRate); // throws
             _createOrRefreshTargetView(); // throws
           }
@@ -177,7 +177,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           uint32_t _framebufferCount = 0;       // framebuffer count
           DXGI_FORMAT _backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
           
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
           TextureHandle2D _renderTarget = nullptr;
           RenderTargetView _renderTargetView = nullptr;
           void* _deviceContext11_1 = nullptr; // ID3D11DeviceContext1* - only used if supported

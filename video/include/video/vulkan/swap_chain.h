@@ -20,7 +20,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdint>
-# include <memory>
 # include "../window_handle.h"
 # include "../common_types.h"
 # include "./api/_private/_dynamic_array.h"
@@ -38,14 +37,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         class DisplaySurface final {
         public:
           /// @brief Create output surface for a swap-chain
-          /// @throws - invalid_argument: if 'renderer' or 'window' is NULL.
+          /// @throws - invalid_argument: if 'window' is NULL.
           ///         - runtime_error: surface creation failure.
-          DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window);
+          DisplaySurface(Renderer& renderer, pandora::video::WindowHandle window);
           ~DisplaySurface() noexcept;
 
           DisplaySurface(const DisplaySurface&) = delete;
           DisplaySurface(DisplaySurface&& rhs) noexcept
-            : _renderer(std::move(rhs._renderer)), _windowSurface(rhs._windowSurface) { rhs._windowSurface = VK_NULL_HANDLE; }
+            : _renderer(rhs._renderer), _windowSurface(rhs._windowSurface) { rhs._windowSurface = VK_NULL_HANDLE; }
           DisplaySurface& operator=(const DisplaySurface&) = delete;
           DisplaySurface& operator=(DisplaySurface&& rhs) noexcept;
 
@@ -54,14 +53,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           bool isFormatSupported(DataFormat bufferFormat) const noexcept;
 
         private:
-          inline VkSurfaceKHR extract() noexcept {
+          inline VkSurfaceKHR _extract() noexcept {
             VkSurfaceKHR surface = this->_windowSurface;
             this->_windowSurface = VK_NULL_HANDLE;
             return surface;
           }
           friend class SwapChain;
 
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
           VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
         };
 
@@ -71,6 +70,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @brief Vulkan rendering swap-chain (framebuffers) - tied to a Window instance
         /// @warning - SwapChain is the Vulkan display output, and should be kept alive while the window exists.
         ///          - All SwapChains MUST be created before attaching any SwapChain or render target to the Renderer.
+        ///          - The SwapChain object must be destroyed BEFORE destroying the associated Renderer instance!
         ///          - If the window is re-created, a new SwapChain must be created.
         ///          - If the adapter changes (GPU switching, different monitor on multi-GPU system...), a new Renderer with a new SwapChain must be created.
         ///          - handle() and handleSurface() should be reserved for internal usage or for advanced features.
@@ -93,8 +93,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               _framebufferCount(params.framebufferCount ? params.framebufferCount : 2u),
               _backBufferFormat(_getDataFormatComponents(backBufferFormat)),
               _presentMode(params.presentMode),
-              _renderer(std::move(surface._renderer)),
-              _windowSurface(surface.extract()) {
+              _renderer(surface._renderer),
+              _windowSurface(surface._extract()) {
             _createSwapChain(params.width, params.height, VK_NULL_HANDLE); // throws
             _createOrRefreshTargetViews(); // throws
           }
@@ -163,7 +163,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           VkFormat _backBufferFormat = VK_FORMAT_R8G8B8A8_SRGB;
           pandora::video::PresentMode _presentMode = pandora::video::PresentMode::fifo;
           
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
           VkSurfaceKHR _windowSurface = VK_NULL_HANDLE;
           DynamicArray<VkImage> _bufferImages;
           DynamicArray<VkImageView> _renderTargetViews;

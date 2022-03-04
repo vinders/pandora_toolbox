@@ -11,7 +11,6 @@ Description : Example - rendering resources (materials, textures, meshes)
 #pragma once
 
 #include <map>
-#include <memory>
 #include <vector>
 #include <system/align.h>
 #include <system/preprocessor_tools.h>
@@ -90,6 +89,6 @@ struct ResourceStorage final {
 
 // -- resource loaders --
 
-void loadPipeline(std::shared_ptr<video_api::Renderer>& renderer, ResourceStorage& out);
+void loadPipeline(video_api::Renderer& renderer, ResourceStorage& out);
 void loadImage(video_api::Renderer& renderer, ImageId id,
                uint32_t width, uint32_t height, ResourceStorage& out);

@@ -22,12 +22,12 @@ using pandora::time::SteadyClock;
 
 // -- geometry generators -- ---------------------------------------------------
 
-static void __generateUi(std::shared_ptr<Renderer>& renderer, ResourceStorage& outStorage) {
+static void __generateUi(Renderer& renderer, ResourceStorage& outStorage) {
   // load required resources
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::title) == outStorage.images.end())
-    loadImage(*renderer, ImageId::title, 160, 32, outStorage);
+    loadImage(renderer, ImageId::title, 160, 32, outStorage);
 
   constexpr const float worldSizeX  = 2.f*160.f/(float)__BASE_WINDOW_WIDTH;
   constexpr const float worldSizeY = 2.f*32.f/(float)__BASE_WINDOW_HEIGHT;
@@ -39,19 +39,19 @@ static void __generateUi(std::shared_ptr<Renderer>& renderer, ResourceStorage& o
   uint32_t indices[]{ 0,1,2, 1,3,2 };
 
   outStorage.entities.push_back(Entity2D{
-    ImmutableBuffer(*renderer, BufferType::vertex, sizeof(vertices), vertices),
-    ImmutableBuffer(*renderer, BufferType::vertexIndex, sizeof(indices), indices),
+    ImmutableBuffer(renderer, BufferType::vertex, sizeof(vertices), vertices),
+    ImmutableBuffer(renderer, BufferType::vertexIndex, sizeof(indices), indices),
     static_cast<uint32_t>(sizeof(indices)/sizeof(*indices)),
     ImageId::title
   });
 }
 
-static void __generateGrass(std::shared_ptr<Renderer>& renderer, ResourceStorage& outStorage) {
+static void __generateGrass(Renderer& renderer, ResourceStorage& outStorage) {
   // load required resources
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::grass) == outStorage.images.end())
-    loadImage(*renderer, ImageId::grass, 32, 32, outStorage);
+    loadImage(renderer, ImageId::grass, 32, 32, outStorage);
 
   constexpr const float textureSize = 32.f;
   constexpr const float repeatCountX = (float)__BASE_WINDOW_WIDTH/textureSize;
@@ -63,19 +63,19 @@ static void __generateGrass(std::shared_ptr<Renderer>& renderer, ResourceStorage
   uint32_t indices[]{ 0,1,2, 1,3,2 };
 
   outStorage.entities.push_back(Entity2D{
-    ImmutableBuffer(*renderer, BufferType::vertex, sizeof(vertices), vertices),
-    ImmutableBuffer(*renderer, BufferType::vertexIndex, sizeof(indices), indices),
+    ImmutableBuffer(renderer, BufferType::vertex, sizeof(vertices), vertices),
+    ImmutableBuffer(renderer, BufferType::vertexIndex, sizeof(indices), indices),
     static_cast<uint32_t>(sizeof(indices)/sizeof(*indices)),
     ImageId::grass
   });
 }
 
-static void __generateHedge(std::shared_ptr<Renderer>& renderer, Maze& maze, float outGameAreaOffset[2], ResourceStorage& outStorage) {
+static void __generateHedge(Renderer& renderer, Maze& maze, float outGameAreaOffset[2], ResourceStorage& outStorage) {
   // load required resources
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::hedge) == outStorage.images.end())
-    loadImage(*renderer, ImageId::hedge, __MAZE_TILESET_SIZE, __MAZE_TILESET_SIZE, outStorage);
+    loadImage(renderer, ImageId::hedge, __MAZE_TILESET_SIZE, __MAZE_TILESET_SIZE, outStorage);
 
   // create geometry
   std::vector<float> vertices;
@@ -83,19 +83,19 @@ static void __generateHedge(std::shared_ptr<Renderer>& renderer, Maze& maze, flo
   maze.computeRendering(vertices, indices, outGameAreaOffset);
 
   outStorage.entities.push_back(Entity2D{
-    ImmutableBuffer(*renderer, BufferType::vertex, vertices.size()*sizeof(vertices[0]), &vertices[0]),
-    ImmutableBuffer(*renderer, BufferType::vertexIndex, indices.size()*sizeof(indices[0]), &indices[0]),
+    ImmutableBuffer(renderer, BufferType::vertex, vertices.size()*sizeof(vertices[0]), &vertices[0]),
+    ImmutableBuffer(renderer, BufferType::vertexIndex, indices.size()*sizeof(indices[0]), &indices[0]),
     static_cast<uint32_t>(indices.size()),
     ImageId::hedge
   });
 }
 
-static void __generatePlayer(std::shared_ptr<Renderer>& renderer, float gameAreaOffset[2], ResourceStorage& outStorage) {
+static void __generatePlayer(Renderer& renderer, float gameAreaOffset[2], ResourceStorage& outStorage) {
   // load required resources
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::player) == outStorage.images.end())
-    loadImage(*renderer, ImageId::player, 128, 128, outStorage);
+    loadImage(renderer, ImageId::player, 128, 128, outStorage);
 
   constexpr const float spriteSize = 32.f; // size of one orientation / animation state
   constexpr const float worldSizeX = 2.f*spriteSize/(float)__BASE_WINDOW_WIDTH;
@@ -111,8 +111,8 @@ static void __generatePlayer(std::shared_ptr<Renderer>& renderer, float gameArea
   uint32_t indices[]{ 0,1,2, 1,3,2 };
 
   outStorage.entities.push_back(Entity2D{
-    ImmutableBuffer(*renderer, BufferType::vertex, sizeof(vertices), vertices),
-    ImmutableBuffer(*renderer, BufferType::vertexIndex, sizeof(indices), indices),
+    ImmutableBuffer(renderer, BufferType::vertex, sizeof(vertices), vertices),
+    ImmutableBuffer(renderer, BufferType::vertexIndex, sizeof(indices), indices),
     static_cast<uint32_t>(sizeof(indices)/sizeof(*indices)),
     ImageId::player
   });
@@ -286,7 +286,7 @@ void Scene::restartScene(RendererContext& renderer, uint32_t width, uint32_t hei
 
 void Scene::initResources(RendererContext& renderer, uint32_t width, uint32_t height) {
   release();
-  auto sharedRenderer = renderer.renderer();
+  Renderer& sharedRenderer = renderer.renderer();
   _renderer = &renderer;
   if (_status != Status::finished)
     _status = Status::updated;
@@ -300,9 +300,9 @@ void Scene::initResources(RendererContext& renderer, uint32_t width, uint32_t he
 
   // offset uniform buffers (to move entity locations)
   float worldOffset[4]{ 0.f,0.f,0.f,0.f };
-  _resources.worldOffset = ImmutableBuffer(*sharedRenderer, BufferType::uniform, sizeof(float) * 4, worldOffset);
-  _resources.playerOffset = StaticBuffer(*sharedRenderer, BufferType::uniform, sizeof(float)*4);
-  _resources.playerOffsetStaging = StagingBuffer(*sharedRenderer, BufferType::uniform, sizeof(float)*4);
+  _resources.worldOffset = ImmutableBuffer(sharedRenderer, BufferType::uniform, sizeof(float) * 4, worldOffset);
+  _resources.playerOffset = StaticBuffer(sharedRenderer, BufferType::uniform, sizeof(float)*4);
+  _resources.playerOffsetStaging = StagingBuffer(sharedRenderer, BufferType::uniform, sizeof(float)*4);
   _updatePlayerSprite(0.f);
 }
 
@@ -331,8 +331,8 @@ void Scene::render() {
   if (_renderer != nullptr) {
     if (_status != Status::finished)
       _status = Status::none;
-    auto renderer = _renderer->renderer();
-    renderer->bindGraphicsPipeline(_resources.pipeline.handle());
+    Renderer& renderer = _renderer->renderer();
+    renderer.bindGraphicsPipeline(_resources.pipeline.handle());
 
     // 2D/UI entities
     ImageId curImage = (ImageId)-1;
@@ -341,17 +341,17 @@ void Scene::render() {
       if (entity.image != curImage) {
         curImage = entity.image;
         auto imageView = _resources.images[curImage].resourceView();
-        renderer->bindFragmentTextures(0, &imageView, 1);
+        renderer.bindFragmentTextures(0, &imageView, 1);
 
         if (entity.image == ImageId::player)
-          renderer->bindVertexUniforms(0, _resources.playerOffset.handlePtr(), 1u);
+          renderer.bindVertexUniforms(0, _resources.playerOffset.handlePtr(), 1u);
         else
-          renderer->bindVertexUniforms(0, _resources.worldOffset.handlePtr(), 1u);
+          renderer.bindVertexUniforms(0, _resources.worldOffset.handlePtr(), 1u);
       }
       // draw entity
-      renderer->bindVertexArrayBuffer(0, entity.vertices.handle(), _resources.shaders.strideBytes);
-      renderer->bindVertexIndexBuffer(entity.indices.handle(), VertexIndexFormat::r32_ui);
-      renderer->drawIndexed(entity.indexCount);
+      renderer.bindVertexArrayBuffer(0, entity.vertices.handle(), _resources.shaders.strideBytes);
+      renderer.bindVertexIndexBuffer(entity.indices.handle(), VertexIndexFormat::r32_ui);
+      renderer.drawIndexed(entity.indexCount);
     }
   }
 }

@@ -218,29 +218,31 @@ inline void mainAppLoop() {
     //     In fullscreen, it's better to use the refresh rate associated with the desired DisplayMode.
 
     // create rendering scene
-    Scene defaultScene(renderer, g_lastWidth, g_lastHeight, renderer.antiAliasingSamples(), _CAM_SENSITIVITY);
-    g_currentScene = &defaultScene;
-    g_isMouseButtonDown = false;
+    { // --> scope
+      Scene defaultScene(renderer, g_lastWidth, g_lastHeight, renderer.antiAliasingSamples(), _CAM_SENSITIVITY);
+      g_currentScene = &defaultScene;
+      g_isMouseButtonDown = false;
 
-    while (Window::pollEvents()) {
-      if (g_isVisible && defaultScene.isUpdated()) {
-        try {
-          renderer.beginDrawing();
-          defaultScene.render3D(); // draw 3D entities in framebuffer
-          renderer.setDrawMode2D();
-          defaultScene.render2D(); // draw 2D entities in framebuffer
-          renderer.swapBuffers(); // display frame
+      while (Window::pollEvents()) {
+        if (g_isVisible && defaultScene.isUpdated()) {
+          try {
+            renderer.beginDrawing();
+            defaultScene.render3D(); // draw 3D entities in framebuffer
+            renderer.setDrawMode2D();
+            defaultScene.render2D(); // draw 2D entities in framebuffer
+            renderer.swapBuffers(); // display frame
+          }
+          catch (...) { // device lost -> recreate renderer
+            reCreateRendererContext(window.get(), g_lastWidth, g_lastHeight);
+          }
         }
-        catch (...) { // device lost -> recreate renderer
-          reCreateRendererContext(window.get(), g_lastWidth, g_lastHeight);
+        else { // window is hidden -> no rendering
+          renderer.skipFrame();
+          std::this_thread::sleep_for(std::chrono::milliseconds(15));
         }
       }
-      else { // window is hidden -> no rendering
-        renderer.skipFrame();
-        std::this_thread::sleep_for(std::chrono::milliseconds(15));
-      }
-    }
-    defaultScene.release(); // --> make sure resources are freed before the renderer
+      defaultScene.release();
+    }// end of scope --> make sure resources are freed before the renderer
   }
   catch (const std::exception& exc) {
     MessageBox::flushEvents();

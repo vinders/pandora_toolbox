@@ -441,6 +441,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           BlendFactorId blendFactorId = 0;
           uint32_t stencilRef = 0;
           VertexTopology topology = (VertexTopology)-1;
+
+          _DxPipelineStages* lastPipeline = nullptr; // only used to unbind active GraphicsPipeline when destroying it
+                                                     // (can't be used to know if values are the same because of dynamic changes)
         };
         using GraphicsPipelineHandle = _DxPipelineStages*; ///< Native handle of GraphicsPipeline object (GraphicsPipeline.handle())
       }

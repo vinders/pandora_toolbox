@@ -116,10 +116,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { _destroy(); }
           
+          Renderer() noexcept = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
+          inline void release() noexcept { _destroy(); _deviceContext=nullptr; _instance=nullptr; } ///< Destroy renderer
 
           /// @brief Create default list of vulkan features (all basic standard features enabled)
           /// @remarks Used to create a Renderer object.

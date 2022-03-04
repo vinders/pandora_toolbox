@@ -29,14 +29,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <video/d3d11/texture.h>
 # include <video/d3d11/buffer.h>
 
-//# define __PAUSE_AFTER_RENDERING 250
+//# define __PAUSE_AFTER_RENDERING 500
 # if defined(__PAUSE_AFTER_RENDERING) && __PAUSE_AFTER_RENDERING != 0
 #   include <thread>
 #   define __END_DRAW_TEST() \
            std::this_thread::sleep_for(std::chrono::milliseconds( __PAUSE_AFTER_RENDERING )); \
-           renderer->flush()
+           renderer.flush()
 # else
-#   define __END_DRAW_TEST()  renderer->flush()
+#   define __END_DRAW_TEST()  renderer.flush()
 # endif
 
   using namespace pandora::video::d3d11;
@@ -189,61 +189,62 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
+    {
+      SwapChain::Descriptor params;
+      params.width = __WIDTH;
+      params.height = __HEIGHT;
+      params.framebufferCount = 2u;
+      params.refreshRate = RefreshRate(60u, 1u);
+      SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
+      ASSERT_FALSE(chain1.isEmpty());
 
-    SwapChain::Descriptor params;
-    params.width = __WIDTH;
-    params.height = __HEIGHT;
-    params.framebufferCount = 2u;
-    params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
-    ASSERT_FALSE(chain1.isEmpty());
+      // graphics pipeline
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+      };
+      auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexBaseShaderText(), strlen(__vertexBaseShaderText()), "VSMain");
+      auto inputLayout = vertexShaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, (size_t)1u);
+      auto vertexShader = vertexShaderBuilder.createShader(renderer.resourceManager());
+      auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentBaseShaderText(), strlen(__fragmentBaseShaderText()), "PSMain")
+                                            .createShader(renderer.resourceManager());
+      ASSERT_TRUE(inputLayout.hasValue());
+      ASSERT_FALSE(vertexShader.isEmpty());
+      ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // graphics pipeline
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexBaseShaderText(), strlen(__vertexBaseShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, (size_t)1u);
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
-    auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentBaseShaderText(), strlen(__fragmentBaseShaderText()), "PSMain")
-                                          .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.hasValue());
-    ASSERT_FALSE(vertexShader.isEmpty());
-    ASSERT_FALSE(fragmentShader.isEmpty());
+      GraphicsPipeline::Builder builder(renderer);
+      Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+      builder.setInputLayout(inputLayout);
+      builder.setVertexTopology(VertexTopology::triangles);
+      builder.attachShaderStage(vertexShader);
+      builder.attachShaderStage(fragmentShader);
+      builder.setRasterizerState(RasterizerParams(CullMode::none)); // off
+      builder.setBlendState(BlendParams(false));                    // off
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      auto pipeline = builder.build();
+      ASSERT_FALSE(pipeline.isEmpty());
 
-    GraphicsPipeline::Builder builder(renderer);
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setInputLayout(inputLayout);
-    builder.setVertexTopology(VertexTopology::triangles);
-    builder.attachShaderStage(vertexShader);
-    builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams(CullMode::none)); // off
-    builder.setBlendState(BlendParams(false));                    // off
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
-    auto pipeline = builder.build();
-    ASSERT_FALSE(pipeline.isEmpty());
+      // vertices
+      float vertices1[] = { 
+        0.0f,  0.5f,  0.0f,  // point at top-center
+        0.5f, -0.5f,  0.0f,  // point at bottom-right
+        -0.5f, -0.5f,  0.0f, // point at bottom-left
+      };
+      Buffer<ResourceUsage::immutable> vertexArray1(renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
 
-    // vertices
-    float vertices1[] = { 
-      0.0f,  0.5f,  0.0f,  // point at top-center
-      0.5f, -0.5f,  0.0f,  // point at bottom-right
-      -0.5f, -0.5f,  0.0f, // point at bottom-left
-    };
-    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+      // drawing
+      float color[4] = { 0.f,0.5f,0.6f,1.f };
+      FLOAT gammaCorrectColor[4]{ 0 };
+      renderer.sRgbToGammaCorrectColor(color, gammaCorrectColor);
 
-    // drawing
-    float color[4] = { 0.f,0.5f,0.6f,1.f };
-    FLOAT gammaCorrectColor[4]{ 0 };
-    renderer->sRgbToGammaCorrectColor(color, gammaCorrectColor);
+      renderer.setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+      renderer.clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
+      renderer.bindGraphicsPipeline(pipeline.handle());
+      renderer.bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
 
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
-    renderer->clearView(chain1.getRenderTargetView(), nullptr, gammaCorrectColor);
-    renderer->bindGraphicsPipeline(pipeline.handle());
-    renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(float)*3u);
-
-    renderer->draw(sizeof(vertices1) / (3*sizeof(float)));
-    chain1.swapBuffers(nullptr);
+      renderer.draw(sizeof(vertices1) / (3*sizeof(float)));
+      chain1.swapBuffers(nullptr);
+    }
     __END_DRAW_TEST();
   }
 
@@ -256,71 +257,72 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
-
-    SwapChain::Descriptor params;
-    params.width = __WIDTH;
-    params.height = __HEIGHT;
-    params.framebufferCount = 2u;
-    params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
-    ASSERT_FALSE(chain1.isEmpty());
+    Renderer renderer(monitor);
+    {
+      SwapChain::Descriptor params;
+      params.width = __WIDTH;
+      params.height = __HEIGHT;
+      params.framebufferCount = 2u;
+      params.refreshRate = RefreshRate(60u, 1u);
+      SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
+      ASSERT_FALSE(chain1.isEmpty());
     
-    // graphics pipeline
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexPosColorShaderText(), strlen(__vertexPosColorShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
-    auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentPosColorShaderText(), strlen(__fragmentPosColorShaderText()), "PSMain")
-                                          .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.hasValue());
-    ASSERT_FALSE(vertexShader.isEmpty());
-    ASSERT_FALSE(fragmentShader.isEmpty());
+      // graphics pipeline
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+      };
+      auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexPosColorShaderText(), strlen(__vertexPosColorShaderText()), "VSMain");
+      auto inputLayout = vertexShaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+      auto vertexShader = vertexShaderBuilder.createShader(renderer.resourceManager());
+      auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentPosColorShaderText(), strlen(__fragmentPosColorShaderText()), "PSMain")
+                                            .createShader(renderer.resourceManager());
+      ASSERT_TRUE(inputLayout.hasValue());
+      ASSERT_FALSE(vertexShader.isEmpty());
+      ASSERT_FALSE(fragmentShader.isEmpty());
 
-    GraphicsPipeline::Builder builder(renderer);
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setInputLayout(inputLayout);
-    builder.setVertexTopology(VertexTopology::triangles);
-    builder.attachShaderStage(vertexShader);
-    builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
-    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
-    builder.setBlendState(BlendParams(false));          // off
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
-    auto pipeline = builder.build();
-    ASSERT_FALSE(pipeline.isEmpty());
+      GraphicsPipeline::Builder builder(renderer);
+      Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+      builder.setInputLayout(inputLayout);
+      builder.setVertexTopology(VertexTopology::triangles);
+      builder.attachShaderStage(vertexShader);
+      builder.attachShaderStage(fragmentShader);
+      builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
+      builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+      builder.setBlendState(BlendParams(false));          // off
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      auto pipeline = builder.build();
+      ASSERT_FALSE(pipeline.isEmpty());
     
-    // state buffers + samplers
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    ASSERT_FALSE(depthBuffer.isEmpty());
+      // state buffers + samplers
+      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      ASSERT_FALSE(depthBuffer.isEmpty());
 
-    SamplerBuilder samplerBuilder(*renderer);
-    SamplerStateArray samplers;
-    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, samplers.size());
+      SamplerBuilder samplerBuilder(renderer);
+      SamplerStateArray samplers;
+      TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+      ASSERT_EQ((size_t)1, samplers.size());
 
-    // vertices
-    VertexPosColorData vertices1[] = {
-      {{0.0f,0.5f,0.f,1.f},{1.f,0.f,0.f,1.f}}, {{0.5f,-0.5f,0.f,1.f},{0.f,1.f,0.f,1.f}}, {{-0.5f,-0.5f,0.f,1.f},{0.f,0.f,1.f,1.f}}
-    };
-    uint32_t indices1[] = { 0,1,2 };
-    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
-    Buffer<ResourceUsage::immutable> vertexIndex1(*renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
+      // vertices
+      VertexPosColorData vertices1[] = {
+        {{0.0f,0.5f,0.f,1.f},{1.f,0.f,0.f,1.f}}, {{0.5f,-0.5f,0.f,1.f},{0.f,1.f,0.f,1.f}}, {{-0.5f,-0.5f,0.f,1.f},{0.f,0.f,1.f,1.f}}
+      };
+      uint32_t indices1[] = { 0,1,2 };
+      Buffer<ResourceUsage::immutable> vertexArray1(renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+      Buffer<ResourceUsage::immutable> vertexIndex1(renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
 
-    // drawing
-    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline.handle());
+      // drawing
+      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
+      renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
+      renderer.bindGraphicsPipeline(pipeline.handle());
    
-    renderer->bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
-    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
-    renderer->drawIndexed(sizeof(indices1)/sizeof(*indices1));
-    chain1.swapBuffers(depthBuffer.getDepthStencilView());
+      renderer.bindVertexArrayBuffer(0, vertexArray1.handle(), (unsigned int)sizeof(VertexPosColorData));
+      renderer.bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
+      renderer.drawIndexed(sizeof(indices1)/sizeof(*indices1));
+      chain1.swapBuffers(depthBuffer.getDepthStencilView());
+    }
     __END_DRAW_TEST();
   }
 
@@ -333,79 +335,80 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
+    {
+      SwapChain::Descriptor params;
+      params.width = __WIDTH;
+      params.height = __HEIGHT;
+      params.framebufferCount = 2u;
+      params.refreshRate = RefreshRate(60u, 1u);
+      SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
+      ASSERT_FALSE(chain1.isEmpty());
 
-    SwapChain::Descriptor params;
-    params.width = __WIDTH;
-    params.height = __HEIGHT;
-    params.framebufferCount = 2u;
-    params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
-    ASSERT_FALSE(chain1.isEmpty());
+      // graphics pipeline
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+      };
+      auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceShaderText(), strlen(__vertexInstanceShaderText()), "VSMain");
+      auto inputLayout = vertexShaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+      auto vertexShader = vertexShaderBuilder.createShader(renderer.resourceManager());
+      auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
+                                            .createShader(renderer.resourceManager());
+      ASSERT_TRUE(inputLayout.hasValue());
+      ASSERT_FALSE(vertexShader.isEmpty());
+      ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // graphics pipeline
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-      { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
-    };
-    auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceShaderText(), strlen(__vertexInstanceShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
-    auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
-                                          .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.hasValue());
-    ASSERT_FALSE(vertexShader.isEmpty());
-    ASSERT_FALSE(fragmentShader.isEmpty());
+      GraphicsPipeline::Builder builder(renderer);
+      Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+      builder.setInputLayout(inputLayout);
+      builder.setVertexTopology(VertexTopology::triangles);
+      builder.attachShaderStage(vertexShader);
+      builder.attachShaderStage(fragmentShader);
+      builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
+      builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+      builder.setBlendState(BlendParams(false));          // off
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      auto pipeline = builder.build();
+      ASSERT_FALSE(pipeline.isEmpty());
 
-    GraphicsPipeline::Builder builder(renderer);
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setInputLayout(inputLayout);
-    builder.setVertexTopology(VertexTopology::triangles);
-    builder.attachShaderStage(vertexShader);
-    builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
-    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
-    builder.setBlendState(BlendParams(false));          // off
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
-    auto pipeline = builder.build();
-    ASSERT_FALSE(pipeline.isEmpty());
+      // state buffers + samplers
+      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      ASSERT_FALSE(depthBuffer.isEmpty());
 
-    // state buffers + samplers
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    ASSERT_FALSE(depthBuffer.isEmpty());
+      SamplerBuilder samplerBuilder(renderer);
+      SamplerStateArray samplers;
+      TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+      ASSERT_EQ((size_t)1, samplers.size());
 
-    SamplerBuilder samplerBuilder(*renderer);
-    SamplerStateArray samplers;
-    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, samplers.size());
+      // vertices
+      VertexPosColorData vertices1[] = { 
+        {{0.0f,0.25f,0.f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.25f,-0.25f,0.f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.25f,-0.25f,0.f,1.f},{0.f,0.f,0.5f,1.f}}
+      };
+      uint32_t indices1[] = { 0,1,2 };
+      Buffer<ResourceUsage::immutable> vertexArray1(renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+      Buffer<ResourceUsage::immutable> vertexIndex1(renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
+      InstanceData instances1[] = { {{-0.5f,-0.5f,0.f},{0.5f,0.f,0.f}}, {{-0.5f,0.5f,0.f},{0.f,0.5f,0.f}}, 
+                                    {{0.5f,-0.5f,0.f}, {0.f,0.f,0.5f}}, {{0.5f,0.5f,0.f}, {0.25f,0.25f,0.25f}} };
+      Buffer<ResourceUsage::immutable> instanceArray1(renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
-    // vertices
-    VertexPosColorData vertices1[] = { 
-      {{0.0f,0.25f,0.f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.25f,-0.25f,0.f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.25f,-0.25f,0.f,1.f},{0.f,0.f,0.5f,1.f}}
-    };
-    uint32_t indices1[] = { 0,1,2 };
-    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
-    Buffer<ResourceUsage::immutable> vertexIndex1(*renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
-    InstanceData instances1[] = { {{-0.5f,-0.5f,0.f},{0.5f,0.f,0.f}}, {{-0.5f,0.5f,0.f},{0.f,0.5f,0.f}}, 
-                                  {{0.5f,-0.5f,0.f}, {0.f,0.f,0.5f}}, {{0.5f,0.5f,0.f}, {0.25f,0.25f,0.25f}} };
-    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
+      // drawing
+      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
+      renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
+      renderer.bindGraphicsPipeline(pipeline.handle());
 
-    // drawing
-    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline.handle());
-
-    BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
-    unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
-    unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
-    renderer->bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
-    renderer->drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
-    chain1.swapBuffers(depthBuffer.getDepthStencilView());
+      BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+      unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
+      unsigned int offsets[] = { 0,0 };
+      renderer.bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
+      renderer.bindVertexIndexBuffer(vertexIndex1.handle(), VertexIndexFormat::r32_ui);
+      renderer.drawInstancesIndexed(sizeof(instances1)/sizeof(*instances1), 0, sizeof(indices1)/sizeof(*indices1), 0, 0);
+      chain1.swapBuffers(depthBuffer.getDepthStencilView());
+    }
     __END_DRAW_TEST();
   }
 
@@ -418,99 +421,100 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
+    {
+      SwapChain::Descriptor params;
+      params.width = __WIDTH;
+      params.height = __HEIGHT;
+      params.framebufferCount = 2u;
+      params.refreshRate = RefreshRate(60u, 1u);
+      SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
+      ASSERT_FALSE(chain1.isEmpty());
 
-    SwapChain::Descriptor params;
-    params.width = __WIDTH;
-    params.height = __HEIGHT;
-    params.framebufferCount = 2u;
-    params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, DataFormat::rgba8_sRGB);
-    ASSERT_FALSE(chain1.isEmpty());
+      // graphics pipeline
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+      };
+      auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceCamShaderText(), strlen(__vertexInstanceCamShaderText()), "VSMain");
+      auto inputLayout = vertexShaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+      auto vertexShader = vertexShaderBuilder.createShader(renderer.resourceManager());
+      auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
+                                            .createShader(renderer.resourceManager());
+      ASSERT_TRUE(inputLayout.hasValue());
+      ASSERT_FALSE(vertexShader.isEmpty());
+      ASSERT_FALSE(fragmentShader.isEmpty());
 
-    // graphics pipeline
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-      { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
-    };
-    auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceCamShaderText(), strlen(__vertexInstanceCamShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
-    auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceShaderText(), strlen(__fragmentInstanceShaderText()), "PSMain")
-                                          .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.hasValue());
-    ASSERT_FALSE(vertexShader.isEmpty());
-    ASSERT_FALSE(fragmentShader.isEmpty());
+      GraphicsPipeline::Builder builder(renderer);
+      Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+      builder.setInputLayout(inputLayout);
+      builder.setVertexTopology(VertexTopology::triangles);
+      builder.attachShaderStage(vertexShader);
+      builder.attachShaderStage(fragmentShader);
+      builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
+      builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+      builder.setBlendState(BlendParams(false));          // off
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      auto pipeline = builder.build();
+      ASSERT_FALSE(pipeline.isEmpty());
 
-    GraphicsPipeline::Builder builder(renderer);
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setInputLayout(inputLayout);
-    builder.setVertexTopology(VertexTopology::triangles);
-    builder.attachShaderStage(vertexShader);
-    builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams{});     // standard: back-cull, filled, clockwise, no depth clipping
-    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
-    builder.setBlendState(BlendParams(false));          // off
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
-    auto pipeline = builder.build();
-    ASSERT_FALSE(pipeline.isEmpty());
+      // state buffers + samplers
+      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      ASSERT_FALSE(depthBuffer.isEmpty());
 
-    // state buffers + samplers
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
-    ASSERT_FALSE(depthBuffer.isEmpty());
+      SamplerBuilder samplerBuilder(renderer);
+      SamplerStateArray samplers;
+      TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+      ASSERT_EQ((size_t)1, samplers.size());
 
-    SamplerBuilder samplerBuilder(*renderer);
-    SamplerStateArray samplers;
-    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, samplers.size());
+      // vertices
+      VertexPosColorData vertices1[] = { 
+        {{-0.1875f,0.1875f,0.5f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}},
+        {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}},
 
-    // vertices
-    VertexPosColorData vertices1[] = { 
-      {{-0.1875f,0.1875f,0.5f,1.f},{0.5f,0.f,0.f,1.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}},
-      {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f}},
+        {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}},
+        {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}},
 
-      {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}},
-      {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f}},
+        {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}},
+        {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}},
 
-      {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}},
-      {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f}},
+        {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}},
+        {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, 
 
-      {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}},
-      {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f}}, 
+        {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}},
+        {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}}
+      };
+      Buffer<ResourceUsage::immutable> vertexArray1(renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+      InstanceData instances1[] = { 
+        {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
+        {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
+        {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
+        {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
+      };
+      Buffer<ResourceUsage::immutable> instanceArray1(renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
-      {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}},
-      {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f}}
-    };
-    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
-    InstanceData instances1[] = { 
-      {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
-      {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
-      {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
-      {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
-    };
-    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
+      // camera
+      CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
+      CamBuffer camData{ proj.projectionMatrix() };
+      Buffer<ResourceUsage::immutable> camBuffer(renderer, BufferType::uniform, sizeof(CamBuffer), &camData);
 
-    // camera
-    CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
-    CamBuffer camData{ proj.projectionMatrix() };
-    Buffer<ResourceUsage::immutable> camBuffer(*renderer, BufferType::uniform, sizeof(CamBuffer), &camData);
+      // drawing
+      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
+      renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
+      renderer.bindGraphicsPipeline(pipeline.handle());
 
-    // drawing
-    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline.handle());
-
-    BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
-    unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
-    unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
-    renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
-    renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
-    chain1.swapBuffers(depthBuffer.getDepthStencilView());
+      BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+      unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexPosColorData), (unsigned int)sizeof(InstanceData) };
+      unsigned int offsets[] = { 0,0 };
+      renderer.bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
+      renderer.bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
+      renderer.drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
+      chain1.swapBuffers(depthBuffer.getDepthStencilView());
+    }
     __END_DRAW_TEST();
   }
 
@@ -680,134 +684,135 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // renderer/swap-chain
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     auto format = DataFormat::rgba8_sRGB;
+    {
+      SwapChain::Descriptor params;
+      params.width = __WIDTH;
+      params.height = __HEIGHT;
+      params.framebufferCount = 2u;
+      params.refreshRate = RefreshRate(60u, 1u);
+      SwapChain chain1(DisplaySurface(renderer, window->handle()), params, format);
+      ASSERT_FALSE(chain1.isEmpty());
 
-    SwapChain::Descriptor params;
-    params.width = __WIDTH;
-    params.height = __HEIGHT;
-    params.framebufferCount = 2u;
-    params.refreshRate = RefreshRate(60u, 1u);
-    SwapChain chain1(DisplaySurface(renderer, window->handle()), params, format);
-    ASSERT_FALSE(chain1.isEmpty());
+      uint32_t sampleCount = 64u;
+      while ( ( !renderer.isColorSampleCountAvailable(DataFormat::rgba8_sRGB, sampleCount)
+             || !renderer.isDepthSampleCountAvailable(DepthStencilFormat::d32_f, sampleCount)) && sampleCount > 1) {
+        sampleCount >>= 1;
+      }
 
-    uint32_t sampleCount = 64u;
-    while ( ( !renderer->isColorSampleCountAvailable(DataFormat::rgba8_sRGB, sampleCount)
-           || !renderer->isDepthSampleCountAvailable(DepthStencilFormat::d32_f, sampleCount)) && sampleCount > 1) {
-      sampleCount >>= 1;
+      // graphics pipeline
+      D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+      };
+      auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceTexLightShaderText(), strlen(__vertexInstanceTexLightShaderText()), "VSMain");
+      auto inputLayout = vertexShaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
+      auto vertexShader = vertexShaderBuilder.createShader(renderer.resourceManager());
+      auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceTexLightShaderText(), strlen(__fragmentInstanceTexLightShaderText()), "PSMain")
+                                            .createShader(renderer.resourceManager());
+      ASSERT_TRUE(inputLayout.hasValue());
+      ASSERT_FALSE(vertexShader.isEmpty());
+      ASSERT_FALSE(fragmentShader.isEmpty());
+
+      GraphicsPipeline::Builder builder(renderer);
+      Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
+      builder.setInputLayout(inputLayout);
+      builder.setVertexTopology(VertexTopology::triangles);
+      builder.attachShaderStage(vertexShader);
+      builder.attachShaderStage(fragmentShader);
+      builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false, sampleCount)); // anti-aliasing enabled
+      builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
+      builder.setBlendState(BlendParams{});               // default blending
+      builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
+      auto pipeline = builder.build();
+      ASSERT_FALSE(pipeline.isEmpty());
+
+      // state buffers + samplers
+      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT, sampleCount); // anti-aliasing enabled
+      ASSERT_FALSE(depthBuffer.isEmpty());
+      Texture2DParams msaaTexParams(__WIDTH, __HEIGHT, format, 1u, 1u, 0, ResourceUsage::staticGpu, sampleCount);
+      TextureTarget2D msaaTarget(renderer, msaaTexParams);
+
+      SamplerBuilder samplerBuilder(renderer);
+      SamplerStateArray samplers;
+      TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
+      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
+      ASSERT_EQ((size_t)1, samplers.size());
+
+      // vertices
+      VertexTexLightData vertices1[] = { 
+        {{-0.1875f,0.1875f,0.5f,1.f},{0.5f,0.f,0.f,1.f},{0.f,0.f,-1.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f},{0.f,0.f,-1.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{0.f,1.f}},
+        {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f},{0.f,0.f,-1.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{0.f,1.f}},
+
+        {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,0.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{-1.f,0.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,1.f}},
+        {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{-1.f,0.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{-1.f,0.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,1.f}},
+
+        {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f},{1.f,0.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{1.f,0.f,0.f,1.f},{0.f,1.f}},
+        {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{1.f,0.f,0.f,1.f},{0.f,1.f}},
+
+        {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,1.f}},
+        {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,1.f}}, 
+
+        {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}},
+        {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}}
+      };
+      Buffer<ResourceUsage::immutable> vertexArray1(renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
+      InstanceData instances1[] = { 
+        {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
+        {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
+        {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
+        {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
+      };
+      Buffer<ResourceUsage::immutable> instanceArray1(renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
+
+      // texture
+      auto image2D = std::unique_ptr<uint8_t[]>(new uint8_t[128 * 128 * 4]());
+      for (size_t i = 0; i < 128; ++i)
+        memcpy(&image2D[128*4*i], ((i >> 3) & 0x1) ? textureLine128_A() : textureLine128_B(), 128*4);
+      auto image2Dmip = std::unique_ptr<uint8_t[]>(new uint8_t[64 * 64 * 4]());
+      for (size_t i = 0; i < 64; ++i)
+        memcpy(&image2Dmip[64*4*i], ((i >> 2) & 0x1) ? textureLine64_A() : textureLine64_B(), 64*4);
+      const uint8_t* image2Ddata[] = { &image2D[0], &image2Dmip[0] };
+
+      Texture2DParams tex2Dparams(128u, 128u, DataFormat::rgba8_sRGB, 1u, 2u, 0, ResourceUsage::staticGpu);
+      Texture2D tex2D(renderer, tex2Dparams, image2Ddata);
+      EXPECT_TRUE(tex2D.handle() != nullptr);
+      EXPECT_TRUE(tex2D.resourceView() != nullptr);
+      auto tex2Dview = tex2D.resourceView();
+
+      // camera
+      CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
+      CamLightData camLightData{ proj.projectionMatrix(),
+                                 DirectX::XMFLOAT4(1.1f, 1.1f, 0.8f, 1.0f),
+                                 DirectX::XMFLOAT4(0.1f, 0.25f, 0.25f, 0.0f),
+                                 DirectX::XMFLOAT4(0.25f, 0.2f, 0.1f, 32.0f),
+                                 DirectX::XMFLOAT4(-0.2f, -0.5f, 0.5f, 1.0f) };
+      Buffer<ResourceUsage::immutable> camBuffer(renderer, BufferType::uniform, sizeof(CamLightData), &camLightData);
+
+      // drawing
+      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setActiveRenderTarget(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView());
+      renderer.clearView(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
+      renderer.bindGraphicsPipeline(pipeline.handle());
+
+      BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
+      unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexTexLightData), (unsigned int)sizeof(InstanceData) };
+      unsigned int offsets[] = { 0,0 };
+      renderer.bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
+      renderer.bindFragmentUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
+      renderer.bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
+      renderer.bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
+      renderer.drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
+
+      // resolve anti-aliasing
+      chain1.resolve(msaaTarget.handle(), 0);
+      chain1.swapBuffers(depthBuffer.getDepthStencilView());
     }
-
-    // graphics pipeline
-    D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "NORMAL",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      { "POSITION", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-      { "COLOR",    1, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
-    };
-    auto vertexShaderBuilder = Shader::Builder::compile(ShaderType::vertex, __vertexInstanceTexLightShaderText(), strlen(__vertexInstanceTexLightShaderText()), "VSMain");
-    auto inputLayout = vertexShaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, sizeof(inputLayoutDescr)/sizeof(*inputLayoutDescr));
-    auto vertexShader = vertexShaderBuilder.createShader(renderer->resourceManager());
-    auto fragmentShader = Shader::Builder::compile(ShaderType::fragment, __fragmentInstanceTexLightShaderText(), strlen(__fragmentInstanceTexLightShaderText()), "PSMain")
-                                          .createShader(renderer->resourceManager());
-    ASSERT_TRUE(inputLayout.hasValue());
-    ASSERT_FALSE(vertexShader.isEmpty());
-    ASSERT_FALSE(fragmentShader.isEmpty());
-
-    GraphicsPipeline::Builder builder(renderer);
-    Viewport viewport(0,0, __WIDTH,__HEIGHT, 0.,1.);
-    builder.setInputLayout(inputLayout);
-    builder.setVertexTopology(VertexTopology::triangles);
-    builder.attachShaderStage(vertexShader);
-    builder.attachShaderStage(fragmentShader);
-    builder.setRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::fill, true, false, false, sampleCount)); // anti-aliasing enabled
-    builder.setDepthStencilState(DepthStencilParams{}); // default depth test (less)
-    builder.setBlendState(BlendParams{});               // default blending
-    builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
-    auto pipeline = builder.build();
-    ASSERT_FALSE(pipeline.isEmpty());
-
-    // state buffers + samplers
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT, sampleCount); // anti-aliasing enabled
-    ASSERT_FALSE(depthBuffer.isEmpty());
-    Texture2DParams msaaTexParams(__WIDTH, __HEIGHT, format, 1u, 1u, 0, ResourceUsage::staticGpu, sampleCount);
-    TextureTarget2D msaaTarget(*renderer, msaaTexParams);
-
-    SamplerBuilder samplerBuilder(*renderer);
-    SamplerStateArray samplers;
-    TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-    samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-    ASSERT_EQ((size_t)1, samplers.size());
-
-    // vertices
-    VertexTexLightData vertices1[] = { 
-      {{-0.1875f,0.1875f,0.5f,1.f},{0.5f,0.f,0.f,1.f},{0.f,0.f,-1.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f},{0.f,0.f,-1.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{0.f,1.f}},
-      {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.5f,0.f,1.f},{0.f,0.f,-1.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.5f,1.f},{0.f,0.f,-1.f,1.f},{0.f,1.f}},
-
-      {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,0.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{-1.f,0.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,1.f}},
-      {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{-1.f,0.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{-1.f,0.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.2f,0.f,0.2f,1.f},{-1.f,0.f,0.f,1.f},{0.f,1.f}},
-
-      {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f},{1.f,0.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{1.f,0.f,0.f,1.f},{0.f,1.f}},
-      {{0.1875f,0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.f,0.2f,0.2f,1.f},{1.f,0.f,0.f,1.f},{1.f,1.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.4f,1.f},{1.f,0.f,0.f,1.f},{0.f,1.f}},
-
-      {{-0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,1.f}},
-      {{0.1875f,0.1875f,0.85f,1.f},{0.2f,0.2f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,0.1875f,0.5f,1.f},{0.f,0.4f,0.f,1.f},{0.f,1.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,0.1875f,0.5f,1.f},{0.4f,0.f,0.f,1.f},{0.f,1.f,0.f,1.f},{0.f,1.f}}, 
-
-      {{-0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{0.f,0.f}}, {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}},
-      {{0.1875f,-0.1875f,0.5f,1.f},{0.f,0.f,0.25f,1.f},{0.f,-1.f,0.f,1.f},{1.f,0.f}}, {{0.1875f,-0.1875f,0.85f,1.f},{0.1f,0.f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{1.f,1.f}}, {{-0.1875f,-0.1875f,0.85f,1.f},{0.f,0.1f,0.1f,1.f},{0.f,-1.f,0.f,1.f},{0.f,1.f}}
-    };
-    Buffer<ResourceUsage::immutable> vertexArray1(*renderer, BufferType::vertex, sizeof(vertices1), (const void*)vertices1);
-    InstanceData instances1[] = { 
-      {{-0.4f,-0.4f,0.f},{0.5f,0.f,0.f}}, {{-0.4f,0.4f,0.f},{0.f,0.5f,0.f}}, {{0.4f,-0.4f,0.f}, {0.f,0.f,0.5f}}, {{0.4f,0.4f,0.f}, {0.2f,0.f,0.2f}},
-      {{-0.4f,-0.4f,0.7f},{0.f,0.4f,0.f}}, {{-0.4f,0.4f,0.7f},{0.f,0.f,0.4f}}, {{0.4f,-0.4f,0.7f}, {0.4f,0.f,0.f}}, {{0.4f,0.4f,0.7f}, {0.f,0.1f,0.3f}},
-      {{-0.4f,-0.4f,1.4f},{0.f,0.f,0.3f}}, {{-0.4f,0.4f,1.4f},{0.3f,0.f,0.f}}, {{0.4f,-0.4f,1.4f}, {0.f,0.3f,0.f}}, {{0.4f,0.4f,1.4f}, {0.1f,0.f,0.3f}},
-      {{-0.4f,-0.4f,2.1f},{0.2f,0.f,0.f}}, {{-0.4f,0.4f,2.1f},{0.f,0.2f,0.f}}, {{0.4f,-0.4f,2.1f}, {0.f,0.f,0.2f}}, {{0.4f,0.4f,2.1f}, {0.f,0.05f,0.1f}},
-    };
-    Buffer<ResourceUsage::immutable> instanceArray1(*renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
-
-    // texture
-    auto image2D = std::unique_ptr<uint8_t[]>(new uint8_t[128 * 128 * 4]());
-    for (size_t i = 0; i < 128; ++i)
-      memcpy(&image2D[128*4*i], ((i >> 3) & 0x1) ? textureLine128_A() : textureLine128_B(), 128*4);
-    auto image2Dmip = std::unique_ptr<uint8_t[]>(new uint8_t[64 * 64 * 4]());
-    for (size_t i = 0; i < 64; ++i)
-      memcpy(&image2Dmip[64*4*i], ((i >> 2) & 0x1) ? textureLine64_A() : textureLine64_B(), 64*4);
-    const uint8_t* image2Ddata[] = { &image2D[0], &image2Dmip[0] };
-
-    Texture2DParams tex2Dparams(128u, 128u, DataFormat::rgba8_sRGB, 1u, 2u, 0, ResourceUsage::staticGpu);
-    Texture2D tex2D(*renderer, tex2Dparams, image2Ddata);
-    EXPECT_TRUE(tex2D.handle() != nullptr);
-    EXPECT_TRUE(tex2D.resourceView() != nullptr);
-    auto tex2Dview = tex2D.resourceView();
-
-    // camera
-    CameraProjection proj(__WIDTH, __HEIGHT, 70.f);
-    CamLightData camLightData{ proj.projectionMatrix(),
-                               DirectX::XMFLOAT4(1.1f, 1.1f, 0.8f, 1.0f),
-                               DirectX::XMFLOAT4(0.1f, 0.25f, 0.25f, 0.0f),
-                               DirectX::XMFLOAT4(0.25f, 0.2f, 0.1f, 32.0f),
-                               DirectX::XMFLOAT4(-0.2f, -0.5f, 0.5f, 1.0f) };
-    Buffer<ResourceUsage::immutable> camBuffer(*renderer, BufferType::uniform, sizeof(CamLightData), &camLightData);
-
-    // drawing
-    renderer->setFragmentSamplerStates(0, samplers.get(), samplers.size());
-    renderer->setActiveRenderTarget(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView());
-    renderer->clearView(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
-    renderer->bindGraphicsPipeline(pipeline.handle());
-
-    BufferHandle vertexBuffers[] = { vertexArray1.handle(), instanceArray1.handle() };
-    unsigned int vertexStrides[] = { (unsigned int)sizeof(VertexTexLightData), (unsigned int)sizeof(InstanceData) };
-    unsigned int offsets[] = { 0,0 };
-    renderer->bindVertexUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
-    renderer->bindFragmentUniforms(0, camBuffer.handlePtr(), size_t{ 1u });
-    renderer->bindVertexArrayBuffers(0, size_t{ 2u }, vertexBuffers, vertexStrides, offsets);
-    renderer->bindFragmentTextures(0, &tex2Dview, size_t{ 1u });
-    renderer->drawInstances(sizeof(instances1)/sizeof(*instances1), 0, sizeof(vertices1)/sizeof(*vertices1), 0);
-
-    // resolve anti-aliasing
-    chain1.resolve(msaaTarget.handle(), 0);
-    chain1.swapBuffers(depthBuffer.getDepthStencilView());
     __END_DRAW_TEST();
   }
 

@@ -67,10 +67,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { _destroy(); }
           
+          Renderer() noexcept = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
           Renderer& operator=(Renderer&& rhs) noexcept;
+          inline void release() noexcept { _destroy(); _context=nullptr; _device=nullptr; _dxgiFactory=nullptr; } ///< Destroy renderer
           
           /// @brief Flush command buffer
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)

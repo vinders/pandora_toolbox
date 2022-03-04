@@ -746,6 +746,7 @@ Includes hpp implementations at the end of the file
       memset(&(this->_attachedPipeline), 0, sizeof(_DxPipelineCache));
       this->_attachedPipeline.topology = (VertexTopology)-1;
     }
+    this->_attachedPipeline.lastPipeline = pipeline;
   }
 
 
@@ -1095,7 +1096,7 @@ Includes hpp implementations at the end of the file
       _pixelSize(rhs._pixelSize),
       _framebufferCount(rhs._framebufferCount),
       _backBufferFormat(rhs._backBufferFormat),
-      _renderer(std::move(rhs._renderer)),
+      _renderer(rhs._renderer),
       _renderTarget(rhs._renderTarget),
       _renderTargetView(rhs._renderTargetView)
 #     if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
@@ -1115,7 +1116,7 @@ Includes hpp implementations at the end of the file
     this->_pixelSize = rhs._pixelSize;
     this->_framebufferCount = rhs._framebufferCount;
     this->_backBufferFormat = rhs._backBufferFormat;
-    this->_renderer = std::move(rhs._renderer);
+    this->_renderer = rhs._renderer;
     this->_renderTarget = rhs._renderTarget;
     this->_renderTargetView = rhs._renderTargetView;
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110

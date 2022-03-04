@@ -11,7 +11,6 @@ Description : Example - renderer context
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <time/timer.h>
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/renderer.h>
@@ -49,7 +48,7 @@ public:
   // -- operations --
 
   // Get renderer to bind resources (shaders, layout, textures, uniform/constant buffers...) or draw (draw, clear...)
-  std::shared_ptr<video_api::Renderer> renderer() noexcept { return _renderer; }
+  video_api::Renderer& renderer() noexcept { return _renderer; }
 
   // Cleanup and enable render target for 2D drawing
   void beginDrawing();
@@ -61,7 +60,7 @@ public:
 
 
 private:
-  std::shared_ptr<video_api::Renderer> _renderer = nullptr;
+  video_api::Renderer _renderer;
   video_api::SwapChain _swapChain;
   video_api::SamplerState _sampler;
 

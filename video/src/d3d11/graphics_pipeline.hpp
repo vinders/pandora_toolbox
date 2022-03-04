@@ -248,6 +248,10 @@ Implementation included in renderer.cpp
   // Destroy pipeline object
   void GraphicsPipeline::release() noexcept {
     if (this->_pipeline != nullptr) {
+      // unbind if still in use
+      if (this->_pipeline.get() == this->_renderer->_attachedPipeline.lastPipeline)
+        this->_renderer->bindGraphicsPipeline(nullptr);
+
       // unregister pipeline states from cache
       this->_renderer->_removeBlendState(this->_pipeline->blendCacheId);
       this->_renderer->_removeRasterizerState(this->_pipeline->rasterizerCacheId);
@@ -262,12 +266,6 @@ Implementation included in renderer.cpp
 // -- GraphicsPipeline.Builder -- ----------------------------------------------
 
   uint64_t GraphicsPipeline::Builder::_lastViewportScissorId = 0;
-
-  // Create pipeline builder
-  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) : _renderer(renderer) { // throws
-    if (this->_renderer == nullptr)
-      throw std::logic_error("GraphicsPipeline.Builder: renderer is NULL");
-  }
 
   // ---
 

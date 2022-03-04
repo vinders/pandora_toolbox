@@ -20,7 +20,7 @@ using namespace video_api;
 // Initialize renderer (throws on failure)
 RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monitor, pandora::video::WindowHandle window,
                                  uint32_t width, uint32_t height, pandora::video::RefreshRate&& rate, bool useVsync)
-  : _renderer(std::make_shared<Renderer>(monitor)),
+  : _renderer(monitor),
     _viewport(width, height),
     _scissor(0, 0, width, height),
     _timer(pandora::time::Rate(rate.numerator(), rate.denominator())),
@@ -32,38 +32,36 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
                          SwapChain::Descriptor(width, height, 2u, presentMode, rate), __COLOR_FORMAT);
 
   // create texture sampler (bilinear)
-  SamplerBuilder samplerBuilder(*_renderer);
+  SamplerBuilder samplerBuilder(_renderer);
   TextureWrap texWrap[3] = { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
   _sampler = samplerBuilder.create(SamplerParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest, texWrap));
 
   // enable sampler + viewports
-  _renderer->flush();
-  _renderer->setFragmentSamplerStates(0, _sampler.ptr(), 1);
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.flush();
+  _renderer.setFragmentSamplerStates(0, _sampler.ptr(), 1);
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
 }
 
 void RendererContext::release() noexcept {
-  if (_renderer) {
-    _sampler.release();
-    _swapChain.release();
-    _renderer.reset();
-  }
+  _sampler.release();
+  _swapChain.release();
+  _renderer.release();
 }
 
 // -- operations--
 
 void RendererContext::beginDrawing() {
-  _renderer->setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), nullptr);
+  _renderer.setCleanActiveRenderTarget(_swapChain.getRenderTargetView(), nullptr);
 
-  _renderer->setViewport(_viewport);
-  _renderer->setScissorRectangle(_scissor);
+  _renderer.setViewport(_viewport);
+  _renderer.setScissorRectangle(_scissor);
 }
 
 void RendererContext::swapBuffers() {
   _swapChain.swapBuffers();
   if (!_useVsync) {
-    _renderer->flush();
+    _renderer.flush();
     _timer.waitPeriod();
   }
 }

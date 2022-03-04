@@ -115,14 +115,14 @@ static void __loadShaders(Renderer& renderer, ShaderProgramId programId, Resourc
 // ---
 
 // --> graphics pipeline build
-void loadPipeline(std::shared_ptr<Renderer>& renderer, PipelineStateId stateId,
-                  ShaderProgramId programId, uint32_t aaSamples, ResourceStorage& out) {
+void loadPipeline(Renderer& renderer, PipelineStateId stateId, ShaderProgramId programId,
+                  uint32_t aaSamples, ResourceStorage& out) {
   GraphicsPipeline::Builder builder(renderer);
   __loadPipelineStates(stateId, builder, aaSamples);
 
   auto shaderProgram = out.shaders.find(programId);
   if (shaderProgram == out.shaders.end()) {
-    __loadShaders(*renderer, programId, out);
+    __loadShaders(renderer, programId, out);
     shaderProgram = out.shaders.find(programId);
     assert(shaderProgram != out.shaders.end());
   }

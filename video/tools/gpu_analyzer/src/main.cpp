@@ -199,14 +199,14 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
     }
     auto features = vulkan::Renderer::defaultFeatures();
     features.variableMultisampleRate = true;
-    auto renderer = std::make_shared<vulkan::Renderer>(monitor, vulkanInstance);
+    vulkan::Renderer renderer(monitor, vulkanInstance);
 
     // API level
-    uint32_t featureLevel = VK_VERSION_MINOR(renderer->featureLevel());
+    uint32_t featureLevel = VK_VERSION_MINOR(renderer.featureLevel());
 
     // memory
     size_t dedicatedRam = 0, sharedRam = 0;
-    renderer->getAdapterVramSize(dedicatedRam, sharedRam);
+    renderer.getAdapterVramSize(dedicatedRam, sharedRam);
 
     // color support
     bool iHdrScRGB = false, isHdr10 = false;
@@ -222,18 +222,18 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
 
     bool isSrgbBlendingSupported = false;
     vulkan::DataFormat srgbFormats[]{ vulkan::DataFormat::rgba8_sRGB, vulkan::DataFormat::bgra8_sRGB };
-    auto srgbFormat = renderer->findSupportedDataFormat(srgbFormats, 2u, vulkan::FormatAttachment::colorBlend);
+    auto srgbFormat = renderer.findSupportedDataFormat(srgbFormats, 2u, vulkan::FormatAttachment::colorBlend);
     isSrgbBlendingSupported = (srgbFormat != vulkan::DataFormat::unknown);
     if (!isSrgbBlendingSupported) {
-      srgbFormat = renderer->findSupportedDataFormat(srgbFormats, 2u, vulkan::FormatAttachment::color);
+      srgbFormat = renderer.findSupportedDataFormat(srgbFormats, 2u, vulkan::FormatAttachment::color);
     }
     const char* sRgbSupport = isSrgbBlendingSupported ? "color/blending" : ((srgbFormat != vulkan::DataFormat::unknown) ? "color only" : "none");
-    bool isTearingSupported = renderer->isTearingAvailable();
+    bool isTearingSupported = renderer.isTearingAvailable();
 
     // anti-aliasing support
     uint32_t maxMSAA = 64u;
-    while ((!renderer->isColorSampleCountAvailable(vulkan::DataFormat::rgba8_unorm, maxMSAA)
-         || !renderer->isDepthSampleCountAvailable(vulkan::DepthStencilFormat::d32_f, maxMSAA)) && maxMSAA > 1u)
+    while ((!renderer.isColorSampleCountAvailable(vulkan::DataFormat::rgba8_unorm, maxMSAA)
+         || !renderer.isDepthSampleCountAvailable(vulkan::DepthStencilFormat::d32_f, maxMSAA)) && maxMSAA > 1u)
       maxMSAA >>= 1;
 
     printf(" Hardware capabilities:\n\n"
@@ -246,10 +246,10 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            ""
            "",
            featureLevel, (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
-           toString(renderer->isDynamicRenderingSupported()), toString(renderer->isExtendedDynamicStateSupported()),
+           toString(renderer.isDynamicRenderingSupported()), toString(renderer.isExtendedDynamicStateSupported()),
            sRgbSupport, toString(iHdrScRGB), toString(isHdr10), "unknown",
-           toString(isTearingSupported), toString(renderer->maxViewports() > 1u), (uint32_t)renderer->maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, (uint32_t)renderer->deviceLimits().maxSamplerAnisotropy, (uint32_t)renderer->maxRenderTargets());
+           toString(isTearingSupported), toString(renderer.maxViewports() > 1u), (uint32_t)renderer.maxViewports(),
+           toString(maxMSAA > 1u), maxMSAA, (uint32_t)renderer.deviceLimits().maxSamplerAnisotropy, (uint32_t)renderer.maxRenderTargets());
   }
 #endif
 

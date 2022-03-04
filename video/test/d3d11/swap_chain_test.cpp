@@ -39,10 +39,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // -- create/manage swap-chain --
 
   TEST_F(D3d11SwapChainTest, invalidSwapChain) {
-    EXPECT_ANY_THROW(SwapChain(DisplaySurface(nullptr, nullptr), SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
-
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     EXPECT_ANY_THROW(SwapChain(DisplaySurface(renderer, nullptr), SwapChain::Descriptor{}, DataFormat::rgba8_sRGB));
 
     SwapChain defaultInit;
@@ -57,7 +55,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     .create(L"_SWAPCHAIN_TEST0", L"Test");
 
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
 
     SwapChain::Descriptor params{ 600, 400 };
     {
@@ -73,7 +71,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
       EXPECT_EQ((uint32_t)600, chain1.width());
       EXPECT_EQ((uint32_t)400, chain1.height());
-      renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+      renderer.setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
       EXPECT_NO_THROW(chain1.swapBuffers());
       chain1.setPresentMode(pandora::video::PresentMode::fifo);
       EXPECT_NO_THROW(chain1.swapBuffers());
@@ -116,7 +114,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(chain2.getRenderTargetView() != nullptr);
       EXPECT_EQ((uint32_t)600, chain2.width());
       EXPECT_EQ((uint32_t)400, chain2.height());
-      renderer->setActiveRenderTarget(chain2.getRenderTargetView(), nullptr);
+      renderer.setActiveRenderTarget(chain2.getRenderTargetView(), nullptr);
       EXPECT_NO_THROW(chain2.swapBuffers());
 
       params.framebufferCount = 2u;
@@ -132,7 +130,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_TRUE(chain3B.getRenderTargetView() != nullptr);
 
       RenderTargetView views[]{ chain3.getRenderTargetView(), chain3B.getRenderTargetView() };
-      renderer->setActiveRenderTargets(views, (size_t)2u, nullptr);
+      renderer.setActiveRenderTargets(views, (size_t)2u, nullptr);
       EXPECT_NO_THROW(chain3.swapBuffers());
     } // destroy to create new "unique" swap-chain
 
@@ -143,15 +141,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(chain4.handle() != nullptr);
     EXPECT_TRUE(chain4.handleExt() == nullptr || chain4.handleExt() == chain4.handle());
     EXPECT_TRUE(chain4.getRenderTargetView() != nullptr);
-    renderer->setActiveRenderTarget(chain4.getRenderTargetView(), nullptr);
+    renderer.setActiveRenderTarget(chain4.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain4.swapBuffers());
-    renderer->setActiveRenderTarget(nullptr, nullptr);
+    renderer.setActiveRenderTarget(nullptr, nullptr);
     
-    DepthStencilBuffer depthBuffer(*renderer, DepthStencilFormat::d32_f, 600, 400);
+    DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, 600, 400);
     EXPECT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthBuffer.handle() != nullptr);
     EXPECT_TRUE(depthBuffer.getDepthStencilView() != nullptr);
-    renderer->setActiveRenderTarget(chain4.getRenderTargetView(), depthBuffer.getDepthStencilView());
+    renderer.setActiveRenderTarget(chain4.getRenderTargetView(), depthBuffer.getDepthStencilView());
   }
 
   TEST_F(D3d11SwapChainTest, createSwapChainResized) {
@@ -162,32 +160,32 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     .create(L"_SWAPCHAIN_TEST1", L"Test");
 
     pandora::hardware::DisplayMonitor monitor;
-    auto renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
 
     SwapChain chain1(DisplaySurface(renderer, window->handle()), SwapChain::Descriptor(600,400));
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    renderer.setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain1.swapBuffers());
 
     window->resize(640, 480);
     chain1.resize(640, 480);
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    renderer.setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
 
     EXPECT_TRUE(chain1.handle() != nullptr);
     EXPECT_TRUE(chain1.handleExt() == nullptr || chain1.handleExt() == chain1.handle());
     EXPECT_TRUE(chain1.getRenderTargetView() != nullptr);
-    renderer->setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
+    renderer.setActiveRenderTarget(chain1.getRenderTargetView(), nullptr);
     EXPECT_NO_THROW(chain1.swapBuffers());
     
     Viewport viewport1(0,0, 640u,480u,0.,1.);
-    renderer->setViewports(&viewport1, size_t{1u});
-    renderer->setViewport(viewport1);
+    renderer.setViewports(&viewport1, size_t{1u});
+    renderer.setViewport(viewport1);
     Viewport viewports2[] = { Viewport(0,0, 320u,480u,0.,1.), Viewport(320,0, 320u,480u,0.,1.)};
-    renderer->setViewport(viewports2[0]);
-    renderer->setViewport(viewports2[1]);
-    renderer->setViewports(viewports2, size_t{1u});
+    renderer.setViewport(viewports2[0]);
+    renderer.setViewport(viewports2[1]);
+    renderer.setViewports(viewports2, size_t{1u});
   }
 
 #endif

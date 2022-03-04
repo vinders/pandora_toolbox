@@ -401,6 +401,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
         /// @warning - Can only be used for display shaders (vertex, fragment, geometry, tessellation).
         ///            For compute shaders, a computation pipeline must be created instead!
         ///          - Must be built using GraphicsPipeline::Builder.
+        ///          - Must be destroyed BEFORE destroying associated Renderer instance!
         /// @remarks - To use the pipeline shaders/states, bind it to the associated Renderer instance.
         ///          - Direct3D11 rendering states are dynamic by default, which means that
         ///            direct state changes are allowed (viewport, scissor test, depth-stencil test, blending).
@@ -437,8 +438,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           class Builder final {
           public:
             /// @brief Create pipeline builder
-            /// @throws logic_error if renderer is NULL.
-            Builder(std::shared_ptr<Renderer> renderer);
+            Builder(Renderer& renderer) noexcept : _renderer(&renderer) {}
             Builder(const Builder&) = delete;
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;
@@ -557,7 +557,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
 
           private:
             _DxPipelineStages _params;
-            std::shared_ptr<Renderer> _renderer = nullptr;
+            Renderer* _renderer = nullptr;
             friend class GraphicsPipeline;
 
             const Viewport* _viewports = nullptr;
@@ -574,7 +574,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
         
         private:
           std::unique_ptr<_DxPipelineStages> _pipeline = nullptr;
-          std::shared_ptr<Renderer> _renderer = nullptr;
+          Renderer* _renderer = nullptr;
         };
       }
     }

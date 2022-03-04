@@ -1045,10 +1045,10 @@ Includes hpp implementations at the end of the file
 // -- swap-chain creation -- ---------------------------------------------------
 
   // Create output surface for a swap-chain
-  DisplaySurface::DisplaySurface(std::shared_ptr<Renderer> renderer, pandora::video::WindowHandle window)
-    : _renderer(std::move(renderer)) {
+  DisplaySurface::DisplaySurface(Renderer& renderer, pandora::video::WindowHandle window)
+    : _renderer(&renderer) {
     if (this->_renderer == nullptr || window == nullptr)
-      throw std::invalid_argument("DisplaySurface: NULL renderer/window");
+      throw std::invalid_argument("DisplaySurface: NULL window");
 
     VkResult result = VulkanLoader::instance().createWindowSurface(this->_renderer->vkInstance(), window, nullptr, this->_windowSurface);
     if (result != VK_SUCCESS || this->_windowSurface == VK_NULL_HANDLE)
@@ -1064,7 +1064,7 @@ Includes hpp implementations at the end of the file
   DisplaySurface& DisplaySurface::operator=(DisplaySurface&& rhs) noexcept {
     if (this->_windowSurface != VK_NULL_HANDLE)
       vkDestroySurfaceKHR(this->_renderer->vkInstance(), this->_windowSurface, nullptr);
-    this->_renderer = std::move(rhs._renderer);
+    this->_renderer = rhs._renderer;
     this->_windowSurface = rhs._windowSurface;
     rhs._windowSurface = VK_NULL_HANDLE;
     return *this;

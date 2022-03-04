@@ -11,7 +11,6 @@ Description : Example - renderer context
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <time/timer.h>
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/renderer.h>
@@ -57,7 +56,7 @@ public:
   // Toggle texture sampler (anisotropic / trilinear)
   void toggleSampler() noexcept {
     _useAnisotropy ^= true;
-    _renderer->setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+    _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
   }
   bool isAnisotropicSampler() const noexcept { return _useAnisotropy; }
 
@@ -67,7 +66,7 @@ public:
   // -- operations --
 
   // Get renderer to bind resources (shaders, layout, textures, uniform/constant buffers...) or draw (draw, clear...)
-  std::shared_ptr<video_api::Renderer> renderer() noexcept { return _renderer; }
+  video_api::Renderer& renderer() noexcept { return _renderer; }
 
   // Cleanup and enable render target for 3D drawing
   void beginDrawing();
@@ -81,7 +80,7 @@ public:
 
 
 private:
-  std::shared_ptr<video_api::Renderer> _renderer = nullptr;
+  video_api::Renderer _renderer;
   video_api::SwapChain _swapChain;
   video_api::TextureTarget2D _msaaTarget;
   video_api::DepthStencilBuffer _depthBuffer;

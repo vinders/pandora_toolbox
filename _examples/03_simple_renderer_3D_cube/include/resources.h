@@ -178,8 +178,7 @@ struct ResourceStorage final {
 
 // -- resource loaders --
 
-void loadPipeline(std::shared_ptr<video_api::Renderer>& renderer,
-                  PipelineStateId stateId, ShaderProgramId programId,
+void loadPipeline(video_api::Renderer& renderer, PipelineStateId stateId, ShaderProgramId programId,
                   uint32_t aaSamples, ResourceStorage& out);
 void loadMaterial(video_api::Renderer& renderer, MaterialId id, ResourceStorage& out);
 void loadTexture(video_api::Renderer& renderer, TextureMapId id, ResourceStorage& out);

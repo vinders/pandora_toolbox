@@ -44,10 +44,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(VulkanGraphicsPipelineTest, vkCreateRasterStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
-
-    EXPECT_ANY_THROW(GraphicsPipeline::Builder(nullptr));
 
     // rasterizer state
     RasterizerParams paramsR1(CullMode::none, FillMode::lines, false, true, false);
@@ -64,7 +62,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(VulkanGraphicsPipelineTest, vkCreateDepthStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
 
     DepthStencilParams paramsD1(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
@@ -105,7 +103,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(VulkanGraphicsPipelineTest, vkCreateBlendingStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
     const FLOAT color[4] = { 0.f,0.f,0.f,1.f };
 
@@ -156,7 +154,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(VulkanGraphicsPipelineTest, vkPipelineStateParamsTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
 
     // rasterizer
     RasterizerParams raster;
@@ -363,9 +361,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(VulkanGraphicsPipelineTest, vkCreateGraphicsPipelineTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
-    bool useDynamics = renderer->isExtensionEnabled("VK_EXT_extended_dynamic_state");
+    bool useDynamics = renderer.isExtensionEnabled("VK_EXT_extended_dynamic_state");
 
     GraphicsPipeline empty;
     EXPECT_TRUE(empty.handle() == nullptr);
@@ -377,7 +375,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ASSERT_TRUE(shaderBuffer != nullptr);
 
     Shader::Builder shaderBuilder(ShaderType::vertex, (const uint8_t*)shaderBuffer.get(), shaderBufferSize);
-    Shader vertexShader = shaderBuilder.createShader(renderer->resourceManager());
+    Shader vertexShader = shaderBuilder.createShader(renderer.resourceManager());
     ASSERT_TRUE(vertexShader.handle() != nullptr);
     VkVertexInputBindingDescription inputBindings[] = {{ 0, sizeof(float)*8, VK_VERTEX_INPUT_RATE_VERTEX }};
     VkVertexInputAttributeDescription layoutAttributes[] = {
@@ -441,7 +439,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline pipeline = builder.build();
     EXPECT_TRUE(pipeline.handle() != VK_NULL_HANDLE);
-    renderer->bindGraphicsPipeline(pipeline.handle());
+    renderer.bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport (+ set same state params -> read from cache)
     builder.setVertexTopology(VertexTopology::triangles);
@@ -460,7 +458,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       builder.setViewports(&viewport, size_t{ 1u }, nullptr, 0, true);
       GraphicsPipeline pipelineViewport = builder.build();
       EXPECT_TRUE(pipelineViewport.handle() != VK_NULL_HANDLE);
-      renderer->bindGraphicsPipeline(pipelineViewport.handle());
+      renderer.bindGraphicsPipeline(pipelineViewport.handle());
     }
 
     // create pipeline with viewport + scissor test (+ different state params + split blending)
@@ -479,7 +477,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     GraphicsPipeline pipelineViewportScissor = builder.build();
     EXPECT_TRUE(pipelineViewportScissor.handle() != VK_NULL_HANDLE);
-    renderer->bindGraphicsPipeline(pipelineViewportScissor.handle());
+    renderer.bindGraphicsPipeline(pipelineViewportScissor.handle());
 
     Shader fakeFragmentShader = Shader(std::make_shared<ScopedResource<VkShaderModule> >(), ShaderType::fragment, "main");
     builder.attachShaderStage(fakeFragmentShader);

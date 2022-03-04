@@ -162,37 +162,39 @@ inline void mainAppLoop() {
     //     In fullscreen, it's better to use the refresh rate associated with the desired DisplayMode.
 
     // create rendering scene
-    Scene defaultScene(renderer, clientWidth, clientHeight);
-    g_currentScene = &defaultScene;
+    { // --> scope
+      Scene defaultScene(renderer, clientWidth, clientHeight);
+      g_currentScene = &defaultScene;
 
-    while (Window::pollEvents()) {
-      if (g_isVisible) {
-        defaultScene.processGameLogic(); // business logic
+      while (Window::pollEvents()) {
+        if (g_isVisible) {
+          defaultScene.processGameLogic(); // business logic
 
-        if (defaultScene.isUpdated()) {
-          try {
-            renderer.beginDrawing();
-            defaultScene.render();  // draw entities in framebuffer
-            renderer.swapBuffers(); // display frame
-          }
-          catch (...) { // device lost -> recreate renderer (on failure, exit)
-            reCreateRendererContext(window.get(), clientWidth, clientHeight);
-          }
+          if (defaultScene.isUpdated()) {
+            try {
+              renderer.beginDrawing();
+              defaultScene.render();  // draw entities in framebuffer
+              renderer.swapBuffers(); // display frame
+            }
+            catch (...) { // device lost -> recreate renderer (on failure, exit)
+              reCreateRendererContext(window.get(), clientWidth, clientHeight);
+            }
 
-          // game finished -> start new level
-          if (defaultScene.isFinished()) {
-            MessageBox::show("Congratulations!", "Press OK to start a new level.",
-                             MessageBox::ActionType::ok, MessageBox::IconType::info, true);
-            defaultScene.restartScene(renderer, clientWidth, clientHeight);
+            // game finished -> start new level
+            if (defaultScene.isFinished()) {
+              MessageBox::show("Congratulations!", "Press OK to start a new level.",
+                               MessageBox::ActionType::ok, MessageBox::IconType::info, true);
+              defaultScene.restartScene(renderer, clientWidth, clientHeight);
+            }
           }
         }
+        else { // window is hidden -> no rendering
+          renderer.skipFrame();
+          std::this_thread::sleep_for(std::chrono::milliseconds(15));
+        }
       }
-      else { // window is hidden -> no rendering
-        renderer.skipFrame();
-        std::this_thread::sleep_for(std::chrono::milliseconds(15));
-      }
-    }
-    defaultScene.release(); // --> make sure resources are freed before the renderer
+      defaultScene.release();
+    } // end of scope --> make sure resources are freed before the renderer
   }
   catch (const std::exception& exc) {
     MessageBox::flushEvents();

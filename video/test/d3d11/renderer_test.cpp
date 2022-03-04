@@ -114,28 +114,28 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11RendererTest, createSetRendererStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
-    ASSERT_TRUE(renderer->device() != nullptr);
+    Renderer renderer(monitor);
+    ASSERT_TRUE(renderer.device() != nullptr);
 
     GraphicsPipeline::Builder builder(renderer);
-    SamplerBuilder samplerBuilder(*renderer);
+    SamplerBuilder samplerBuilder(renderer);
 
     RasterizerState emptyRaster = nullptr;
-    renderer->setRasterizerState(emptyRaster);
+    renderer.setRasterizerState(emptyRaster);
     RasterizerState value1 = builder.createRasterizerState(RasterizerParams(CullMode::none, FillMode::fill, true, false));
     RasterizerState value2 = builder.createRasterizerState(RasterizerParams(CullMode::none, FillMode::lines, false, false));
     RasterizerState value3 = builder.createRasterizerState(RasterizerParams(CullMode::cullFront, FillMode::fill, false, true));
     RasterizerState value4 = builder.createRasterizerState(RasterizerParams(CullMode::cullBack, FillMode::linesAA, true, true));
-    renderer->setRasterizerState(value1);
-    renderer->setRasterizerState(value2);
-    renderer->setRasterizerState(value3);
-    renderer->setRasterizerState(value4);
+    renderer.setRasterizerState(value1);
+    renderer.setRasterizerState(value2);
+    renderer.setRasterizerState(value3);
+    renderer.setRasterizerState(value4);
     
     SamplerStateArray::Resource emptyFilter = nullptr;
-    renderer->setFragmentSamplerStates(0, nullptr, 0);
-    renderer->setFragmentSamplerStates(1, &emptyFilter, 1);
-    renderer->setFragmentSamplerStates(2, &emptyFilter, 1);
-    renderer->clearFragmentSamplerStates();
+    renderer.setFragmentSamplerStates(0, nullptr, 0);
+    renderer.setFragmentSamplerStates(1, &emptyFilter, 1);
+    renderer.setFragmentSamplerStates(2, &emptyFilter, 1);
+    renderer.clearFragmentSamplerStates();
     
     SamplerStateArray valueContainer;
     TextureWrap addrModes[3] { 
@@ -143,36 +143,36 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     };
     valueContainer.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear,
                                                               TextureFilter::linear, addrModes, 0.f,0.f)));
-    renderer->setFragmentSamplerStates(1, valueContainer.get(), 1);
-    renderer->clearFragmentSamplerStates();
-    renderer->setVertexSamplerStates(1, valueContainer.get(), 1);
-    renderer->clearVertexSamplerStates();
-    renderer->setGeometrySamplerStates(1, valueContainer.get(), 1);
-    renderer->clearGeometrySamplerStates();
-    renderer->setComputeSamplerStates(1, valueContainer.get(), 1);
-    renderer->clearComputeSamplerStates();
-    renderer->setTesselControlSamplerStates(1, valueContainer.get(), 1);
-    renderer->clearTesselControlSamplerStates();
-    renderer->setTesselEvalSamplerStates(1, valueContainer.get(), 1);
-    renderer->clearTesselEvalSamplerStates();
+    renderer.setFragmentSamplerStates(1, valueContainer.get(), 1);
+    renderer.clearFragmentSamplerStates();
+    renderer.setVertexSamplerStates(1, valueContainer.get(), 1);
+    renderer.clearVertexSamplerStates();
+    renderer.setGeometrySamplerStates(1, valueContainer.get(), 1);
+    renderer.clearGeometrySamplerStates();
+    renderer.setComputeSamplerStates(1, valueContainer.get(), 1);
+    renderer.clearComputeSamplerStates();
+    renderer.setTesselControlSamplerStates(1, valueContainer.get(), 1);
+    renderer.clearTesselControlSamplerStates();
+    renderer.setTesselEvalSamplerStates(1, valueContainer.get(), 1);
+    renderer.clearTesselEvalSamplerStates();
 
     RenderTargetView emptyView = nullptr;
-    renderer->setActiveRenderTargets(nullptr, 0, nullptr);
-    renderer->setActiveRenderTargets(&emptyView, 1, nullptr);
-    renderer->setActiveRenderTarget(nullptr, nullptr);
-    renderer->setActiveRenderTarget(emptyView, nullptr);
-    renderer->setCleanActiveRenderTargets(nullptr, 0, nullptr, nullptr);
-    renderer->setCleanActiveRenderTargets(&emptyView, 1, nullptr, nullptr);
-    renderer->setCleanActiveRenderTarget(nullptr, nullptr, nullptr);
-    renderer->setCleanActiveRenderTarget(emptyView, nullptr, nullptr);
-    renderer->clearViews(nullptr, 0, nullptr, nullptr);
-    renderer->clearViews(&emptyView, 1, nullptr, nullptr);
-    renderer->clearView(nullptr, nullptr, nullptr);
-    renderer->clearView(emptyView, nullptr, nullptr);
+    renderer.setActiveRenderTargets(nullptr, 0, nullptr);
+    renderer.setActiveRenderTargets(&emptyView, 1, nullptr);
+    renderer.setActiveRenderTarget(nullptr, nullptr);
+    renderer.setActiveRenderTarget(emptyView, nullptr);
+    renderer.setCleanActiveRenderTargets(nullptr, 0, nullptr, nullptr);
+    renderer.setCleanActiveRenderTargets(&emptyView, 1, nullptr, nullptr);
+    renderer.setCleanActiveRenderTarget(nullptr, nullptr, nullptr);
+    renderer.setCleanActiveRenderTarget(emptyView, nullptr, nullptr);
+    renderer.clearViews(nullptr, 0, nullptr, nullptr);
+    renderer.clearViews(&emptyView, 1, nullptr, nullptr);
+    renderer.clearView(nullptr, nullptr, nullptr);
+    renderer.clearView(emptyView, nullptr, nullptr);
     
     Viewport viewport1(0,0, 640u,480u,0.,1.);
-    renderer->setViewports(&viewport1, size_t{1u});
-    renderer->setViewport(viewport1);
+    renderer.setViewports(&viewport1, size_t{1u});
+    renderer.setViewport(viewport1);
   }
   
   TEST_F(D3d11RendererTest, createSamplerStateParamsTest) {

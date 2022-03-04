@@ -34,7 +34,7 @@ static InputLayout __loadInputLayout(DeviceResourceManager context,
 // ---
 
 // --> graphics pipeline build
-void loadPipeline(std::shared_ptr<Renderer>& renderer, ResourceStorage& out) {
+void loadPipeline(Renderer& renderer, ResourceStorage& out) {
   GraphicsPipeline::Builder builder(renderer);
   builder.setRasterizerState(RasterizerParams(CullMode::none, FillMode::fill, true, false, false));
   builder.setDepthStencilState(DepthStencilParams(false, false));
@@ -48,9 +48,9 @@ void loadPipeline(std::shared_ptr<Renderer>& renderer, ResourceStorage& out) {
     auto fsPath = getShaderDirectory() + __FRAG_SHADER;
     auto vsBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, vsPath.c_str(), "main");
     auto fsBuilder = Shader::Builder::compileFromFile(ShaderType::fragment, fsPath.c_str(), "main");
-    out.shaders.layout = __loadInputLayout(renderer->resourceManager(), vsBuilder, out.shaders.strideBytes);
-    out.shaders.vertex = vsBuilder.createShader(renderer->resourceManager());
-    out.shaders.fragment = fsBuilder.createShader(renderer->resourceManager());
+    out.shaders.layout = __loadInputLayout(renderer.resourceManager(), vsBuilder, out.shaders.strideBytes);
+    out.shaders.vertex = vsBuilder.createShader(renderer.resourceManager());
+    out.shaders.fragment = fsBuilder.createShader(renderer.resourceManager());
   }
 
   // bind shaders

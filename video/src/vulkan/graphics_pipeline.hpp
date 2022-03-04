@@ -160,9 +160,9 @@ Implementation included in renderer.cpp
 // -- GraphicsPipeline -- ------------------------------------------------------
 
   // Create pipeline object -- reserved for internal use or advanced usage
-  GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, std::shared_ptr<Renderer> renderer,
+  GraphicsPipeline::GraphicsPipeline(const VkGraphicsPipelineCreateInfo& createInfo, Renderer* renderer,
                                      SharedRenderPass renderPass, SharedResource<VkPipelineLayout> pipelineLayout, VkPipelineCache cache)
-    : _renderer(std::move(renderer)),
+    : _renderer(renderer),
       _renderPass(std::move(renderPass)),
       _pipelineLayout(std::move(pipelineLayout)) {
     assert(this->_renderer != nullptr);
@@ -195,10 +195,7 @@ Implementation included in renderer.cpp
 // -- GraphicsPipeline.Builder -- ----------------------------------------------
 
   // Create pipeline builder
-  GraphicsPipeline::Builder::Builder(std::shared_ptr<Renderer> renderer) : _renderer(renderer) { // throws
-    if (this->_renderer == nullptr)
-      throw std::logic_error("GraphicsPipeline.Builder: renderer is NULL");
-
+  GraphicsPipeline::Builder::Builder(Renderer& renderer) noexcept : _renderer(&renderer) {
     _multisampleDesc.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     _multisampleDesc.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     _multisampleDesc.minSampleShading = 1.0f;
@@ -228,8 +225,6 @@ Implementation included in renderer.cpp
       _shaderStagesObj[i].release();
     _inputLayoutObj.reset();
     _blendAttachmentsPerTarget.clear();
-
-    _renderer.reset();
   }
 
 

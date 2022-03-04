@@ -44,10 +44,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11GraphicsPipelineTest, createRasterStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
-
-    EXPECT_ANY_THROW(GraphicsPipeline::Builder(nullptr));
 
     // rasterizer state
     RasterizerParams paramsR1(CullMode::none, FillMode::lines, false, true, false);
@@ -55,14 +53,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valR1);
     EXPECT_TRUE(valR1.hasValue());
     EXPECT_TRUE(valR1.get() != nullptr);
-    renderer->setRasterizerState(valR1);
+    renderer.setRasterizerState(valR1);
     RasterizerParams paramsR2(CullMode::cullBack, FillMode::fill, true, true, true);
     RasterizerState valR2(builder.createRasterizerState(paramsR2));
     EXPECT_TRUE(valR2);
     EXPECT_TRUE(valR2.hasValue());
     EXPECT_TRUE(valR2.get() != nullptr);
-    renderer->setRasterizerState(valR2);
-    renderer->setRasterizerState(RasterizerState{});
+    renderer.setRasterizerState(valR2);
+    renderer.setRasterizerState(RasterizerState{});
 
     EXPECT_TRUE(paramsR1.computeId() != paramsR2.computeId());
 
@@ -90,7 +88,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11GraphicsPipelineTest, createDepthStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
 
     DepthStencilParams paramsD1(StencilCompare::less, StencilOp::incrementWrap, StencilOp::replace,
@@ -100,7 +98,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valD1);
     EXPECT_TRUE(valD1.hasValue());
     EXPECT_TRUE(valD1.get() != nullptr);
-    renderer->setDepthStencilState(valD1);
+    renderer.setDepthStencilState(valD1);
     DepthStencilParams paramsD2(StencilCompare::greaterEqual, StencilOp::zero, StencilOp::replace,
                                 StencilOp::zero, StencilOp::invert);
     DepthStencilState valD2 = builder.createDepthStencilState(paramsD2);
@@ -108,7 +106,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valD2);
     EXPECT_TRUE(valD2.hasValue());
     EXPECT_TRUE(valD2.get() != nullptr);
-    renderer->setDepthStencilState(valD2);
+    renderer.setDepthStencilState(valD2);
     DepthStencilParams paramsS1(StencilCompare::greater, StencilCompare::less, StencilOp::incrementWrap,
                                 StencilOp::replace, StencilOp::decrementWrap, StencilOp::invert);
     DepthStencilState valS1 = builder.createDepthStencilState(paramsS1);
@@ -116,7 +114,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valS1);
     EXPECT_TRUE(valS1.hasValue());
     EXPECT_TRUE(valS1.get() != nullptr);
-    renderer->setDepthStencilState(valS1);
+    renderer.setDepthStencilState(valS1);
     DepthStencilParams paramsS2(StencilCompare::always, StencilCompare::notEqual, StencilOp::zero,
                                 StencilOp::replace, StencilOp::zero, StencilOp::invert);
     DepthStencilState valS2 = builder.createDepthStencilState(paramsS2);
@@ -124,7 +122,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valS2);
     EXPECT_TRUE(valS2.hasValue());
     EXPECT_TRUE(valS2.get() != nullptr);
-    renderer->setDepthStencilState(valS2);
+    renderer.setDepthStencilState(valS2);
     DepthStencilParams paramsDS1(StencilCompare::less, StencilCompare::less, StencilCompare::greater, StencilOp::zero,
                          StencilOp::incrementWrap, StencilOp::keep, StencilOp::zero, StencilOp::decrementClamp, StencilOp::keep);
     DepthStencilState valDS1 = builder.createDepthStencilState(paramsDS1);
@@ -132,7 +130,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valDS1);
     EXPECT_TRUE(valDS1.hasValue());
     EXPECT_TRUE(valDS1.get() != nullptr);
-    renderer->setDepthStencilState(valDS1);
+    renderer.setDepthStencilState(valDS1);
     DepthStencilParams paramsDS2(StencilCompare::greater, StencilCompare::always, StencilCompare::always, StencilOp::keep,
                          StencilOp::decrementClamp, StencilOp::replace, StencilOp::keep, StencilOp::incrementClamp, StencilOp::invert);
     DepthStencilState valDS2 = builder.createDepthStencilState(paramsDS2);
@@ -140,8 +138,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valDS2);
     EXPECT_TRUE(valDS2.hasValue());
     EXPECT_TRUE(valDS2.get() != nullptr);
-    renderer->setDepthStencilState(valDS2);
-    renderer->setDepthStencilState(DepthStencilState{});
+    renderer.setDepthStencilState(valDS2);
+    renderer.setDepthStencilState(DepthStencilState{});
 
     EXPECT_TRUE(idD1 != idD2);
     EXPECT_TRUE(idD1 != idS1);
@@ -183,7 +181,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11GraphicsPipelineTest, createBlendingStatesTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
     const FLOAT color[4] = { 0.f,0.f,0.f,1.f };
 
@@ -194,8 +192,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valB1);
     EXPECT_TRUE(valB1.hasValue());
     EXPECT_TRUE(valB1.get() != nullptr);
-    renderer->setBlendState(valB1);
-    renderer->setBlendState(valB1, color);
+    renderer.setBlendState(valB1);
+    renderer.setBlendState(valB1, color);
     BlendParams paramsB2(BlendFactor::sourceColor, BlendFactor::destInvColor, BlendOp::revSubtract,
                          BlendFactor::one, BlendFactor::zero, BlendOp::maximum);
     BlendState valB2(builder.createBlendState(paramsB2));
@@ -203,8 +201,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valB2);
     EXPECT_TRUE(valB2.hasValue());
     EXPECT_TRUE(valB2.get() != nullptr);
-    renderer->setBlendState(valB2);
-    renderer->setBlendState(valB2, color);
+    renderer.setBlendState(valB2);
+    renderer.setBlendState(valB2, color);
     BlendParams paramsB3(BlendFactor::constantColor, BlendFactor::constantInvColor, BlendOp::subtract,
                          BlendFactor::constantAlpha, BlendFactor::constantInvAlpha, BlendOp::subtract);
     BlendState valB3(builder.createBlendState(paramsB3));
@@ -212,8 +210,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valB3);
     EXPECT_TRUE(valB3.hasValue());
     EXPECT_TRUE(valB3.get() != nullptr);
-    renderer->setBlendState(valB3);
-    renderer->setBlendState(valB3, color);
+    renderer.setBlendState(valB3);
+    renderer.setBlendState(valB3, color);
 
     // blend state per target
     BlendPerTargetParams paramsBpt1;
@@ -242,8 +240,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valB4);
     EXPECT_TRUE(valB4.hasValue());
     EXPECT_TRUE(valB4.get() != nullptr);
-    renderer->setBlendState(valB4);
-    renderer->setBlendState(valB4, color);
+    renderer.setBlendState(valB4);
+    renderer.setBlendState(valB4, color);
     BlendPerTargetParams paramsBpt2;
     paramsBpt2.setTargetBlend(0, BlendFactor::sourceColor, BlendFactor::destColor, BlendOp::minimum,
                                  BlendFactor::one, BlendFactor::one, BlendOp::maximum);
@@ -252,9 +250,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_TRUE(valB5);
     EXPECT_TRUE(valB5.hasValue());
     EXPECT_TRUE(valB5.get() != nullptr);
-    renderer->setBlendState(valB5);
-    renderer->setBlendState(valB5, color);
-    renderer->setBlendState(BlendState{});
+    renderer.setBlendState(valB5);
+    renderer.setBlendState(valB5, color);
+    renderer.setBlendState(BlendState{});
 
     EXPECT_TRUE(idB1 != idB2);
     EXPECT_TRUE(idB1 != idB3);
@@ -290,9 +288,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
   TEST_F(D3d11GraphicsPipelineTest, pipelineStateParamsTest) {
-    pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
-
     // rasterizer
     RasterizerParams raster;
     raster.vertexOrder(false).cullMode(CullMode::cullFront).fillMode(FillMode::lines)
@@ -481,7 +476,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   TEST_F(D3d11GraphicsPipelineTest, createGraphicsPipelineTest) {
     pandora::hardware::DisplayMonitor monitor;
-    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(monitor);
+    Renderer renderer = Renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
 
     GraphicsPipeline empty;
@@ -494,13 +489,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ASSERT_TRUE(shaderBuffer != nullptr);
 
     Shader::Builder shaderBuilder(ShaderType::vertex, (const uint8_t*)shaderBuffer.get(), shaderBufferSize);
-    Shader vertexShader = shaderBuilder.createShader(renderer->resourceManager());
+    Shader vertexShader = shaderBuilder.createShader(renderer.resourceManager());
     ASSERT_TRUE(vertexShader.handle() != nullptr);
     D3D11_INPUT_ELEMENT_DESC inputLayoutDescr[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       { "COLOR",   0,  DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
-    auto inputLayout = shaderBuilder.createInputLayout(renderer->resourceManager(), inputLayoutDescr, (size_t)2u);
+    auto inputLayout = shaderBuilder.createInputLayout(renderer.resourceManager(), inputLayoutDescr, (size_t)2u);
     ASSERT_TRUE(inputLayout.hasValue());
 
     // create simple pipeline (no viewport)
@@ -544,7 +539,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(size_t{ 0 }, pipeline.handle()->viewports.size());
     EXPECT_EQ(size_t{ 0 }, pipeline.handle()->scissorTests.size());
     EXPECT_EQ((uint64_t)0, pipeline.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipeline.handle());
+    renderer.bindGraphicsPipeline(pipeline.handle());
 
     // create pipeline with viewport (+ set same state params -> read from cache)
     Viewport viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f);
@@ -582,7 +577,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ(size_t{ 0 }, pipelineViewport.handle()->scissorTests.size());
     EXPECT_NE((uint64_t)0, pipelineViewport.handle()->viewportScissorId);
     EXPECT_TRUE(pipeline.handle()->viewportScissorId < pipelineViewport.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipelineViewport.handle());
+    renderer.bindGraphicsPipeline(pipelineViewport.handle());
 
     // create pipeline with viewport + scissor test (+ different state params + split blending)
     Viewport viewports[]{ Viewport(0.f, 0.f, 800.f, 600.f, 0.1f, 1.f), Viewport(10.f, 20.f, 800.f, 600.f, 0.1f, 1.f) };
@@ -641,7 +636,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((LONG)320, pipelineViewportScissor.handle()->scissorTests[1].bottom);
     EXPECT_NE((uint64_t)0, pipelineViewportScissor.handle()->viewportScissorId);
     EXPECT_TRUE(pipelineViewport.handle()->viewportScissorId < pipelineViewportScissor.handle()->viewportScissorId);
-    renderer->bindGraphicsPipeline(pipelineViewportScissor.handle());
+    renderer.bindGraphicsPipeline(pipelineViewportScissor.handle());
 
     builder.detachShaderStage(ShaderType::vertex);
     builder.clearDepthStencilState();
