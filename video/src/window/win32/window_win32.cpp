@@ -958,7 +958,7 @@ Includes hpp implementations at the end of the file
   // Read size of visible window
   bool __WindowImpl::readVisibleWindowArea(DisplayArea& outWindowArea) noexcept {
     RECT windowPos;
-    if (GetWindowRect(this->_handle, &windowPos) != FALSE && windowPos.right > windowPos.left) {
+    if (GetWindowRect(this->_handle, &windowPos) != FALSE && windowPos.bottom > windowPos.top) {
       outWindowArea.x = (int32_t)windowPos.left;
       outWindowArea.y = (int32_t)windowPos.top;
       outWindowArea.width = (uint32_t)(windowPos.right - windowPos.left);
@@ -970,7 +970,7 @@ Includes hpp implementations at the end of the file
   // Read size of visible client-area
   bool __WindowImpl::readVisibleClientArea(DisplayArea& outClientArea) noexcept {
     RECT clientArea;
-    if (GetClientRect(this->_handle, &clientArea) != FALSE && clientArea.right > clientArea.left) { // size
+    if (GetClientRect(this->_handle, &clientArea) != FALSE && clientArea.bottom > clientArea.top) { // size
       outClientArea.width = static_cast<uint32_t>(clientArea.right - clientArea.left);
       outClientArea.height = static_cast<uint32_t>(clientArea.bottom - clientArea.top);
       
@@ -1377,12 +1377,14 @@ Includes hpp implementations at the end of the file
     if (__WindowImplEventProc::refreshClientArea(window, outArea) > 0) {
       window.readVisibleWindowDecorations(outArea, window._decorationSizes);
     }
-    else {
+    else if ((uint32_t)HIWORD(lParam) != 0) {
       window._lastClientArea.width = outArea.width = (uint32_t)LOWORD(lParam);
       window._lastClientArea.height = outArea.height = (uint32_t)HIWORD(lParam);
       window.computeWindowDecorations(window._currentStyleFlag, window._currentStyleExtFlag,
                                       window.hasMenu(), window._decorationSizes);
     }
+    else
+      outArea = window._lastClientArea;
 
     // force homothety when maximized
     if (isMaximized && (window._resizeMode & ResizeMode::homothety) == true) {
@@ -1951,7 +1953,7 @@ Includes hpp implementations at the end of the file
             window->lastAbsoluteClientRect(clientBounds);
             if (__WindowImplEventProc::findWindowMonitor(*window, clientBounds)) {
               window->_onWindowEvent(&window->_container, WindowEvent::monitorChanged, static_cast<uint32_t>(window->contentScale()*100.0f),
-                window->_lastClientArea.width, window->_lastClientArea.height, (void*)window->_monitor->handle());
+                                     window->_lastClientArea.width, window->_lastClientArea.height, (void*)window->_monitor->handle());
             }
           }
           break;
@@ -2048,10 +2050,14 @@ Includes hpp implementations at the end of the file
         case WM_GETMINMAXINFO: {
           if (window->_mode != WindowType::fullscreen && (window->_statusFlags & __P_FLAG_FULLSCREEN_ON) == 0 && (MINMAXINFO*)lParam != nullptr) {
             DisplayArea clientArea, windowArea;
-            if (!window->readVisibleClientArea(clientArea))
+            if (window->readVisibleClientArea(clientArea)) {
+              if (!window->readVisibleWindowArea(windowArea))
+                windowArea = window->lastWindowArea();
+            }
+            else {
               clientArea = window->lastClientArea();
-            if (!window->readVisibleWindowArea(windowArea))
               windowArea = window->lastWindowArea();
+            }
 
             // min size
             MINMAXINFO* limits = (MINMAXINFO*)lParam;
