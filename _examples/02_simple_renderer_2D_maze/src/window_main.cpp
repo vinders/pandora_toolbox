@@ -60,7 +60,7 @@ void reCreateRendererContext(Window* parentWindow, uint32_t width, uint32_t heig
   if (g_currentScene)
     g_currentScene->release();
   g_renderer->release();
-  *g_renderer = RendererContext(pandora::hardware::DisplayMonitor{}, parentWindow->handle(), width, height,
+  *g_renderer = RendererContext(parentWindow->displayMonitor(), parentWindow->handle(), width, height,
                                 pandora::video::RefreshRate{}, g_renderer->hasVsync());
   if (g_currentScene)
     g_currentScene->initResources(*g_renderer);
@@ -152,7 +152,7 @@ inline void mainAppLoop() {
     // create renderer
     uint32_t clientWidth = window->getClientSize().width;
     uint32_t clientHeight = window->getClientSize().height;
-    RendererContext renderer(pandora::hardware::DisplayMonitor{}, window->handle(),
+    RendererContext renderer(window->displayMonitor(), window->handle(),
                              clientWidth, clientHeight, pandora::video::RefreshRate{}, true);
     g_renderer = &renderer;
     // --> for this demo, the default/primary monitor is used, with a default rate (60Hz).

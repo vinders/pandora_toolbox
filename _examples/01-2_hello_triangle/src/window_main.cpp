@@ -232,8 +232,7 @@ inline void mainAppLoop() {
     window->setMouseHandler(&onMouseEvent, Window::CursorMode::visible);
     window->show();
 
-    pandora::hardware::DisplayMonitor defaultMonitor;
-    Renderer renderer(defaultMonitor);
+    Renderer renderer(window->displayMonitor());
     
     // scope for renderer components/resources
     // -> always destroyed before Renderer (even if exception)
