@@ -64,6 +64,8 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/swap_chain.h"
 # include "video/vulkan/shader.h"
 # include "video/vulkan/graphics_pipeline.h"
+# include "video/vulkan/depth_stencil_buffer.h"
+
 # include "video/vulkan/_private/_resource_io.h"
 # include "video/vulkan/buffer.h"
 // # include "video/vulkan/texture.h"
