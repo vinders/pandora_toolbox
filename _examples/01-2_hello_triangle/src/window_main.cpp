@@ -254,11 +254,17 @@ inline void mainAppLoop() {
         if (g_hasClicked) {
           g_hasClicked = false; // unset flag
           
-          // change top vertex color
-          if (triangleVertices[0].color[0] == 1.f)
+          // change vertex colors
+          if (triangleVertices[0].color[0] == 1.f) { // change colors (black/cyan/magenta)
             triangleVertices[0].color[0] = 0.f;
-          else
+            triangleVertices[1].color[2] = 1.f;
+            triangleVertices[2].color[0] = 1.f;
+          }
+          else { // reset colors (red/green/blue)
             triangleVertices[0].color[0] = 1.f;
+            triangleVertices[1].color[2] = 0.f;
+            triangleVertices[2].color[0] = 0.f;
+          }
           vertexArray.write(triangleVertices);
 
           g_isRefreshed = true; // force to redraw
