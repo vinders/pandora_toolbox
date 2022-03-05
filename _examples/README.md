@@ -7,8 +7,9 @@
     * [CMake project hierarchy](#cmake-project-hierarchy)
     * [Library structure](#library-structure)
     * [Library docs](#library-docs)
-* [Project examples/tutorials](#project-examplestutorials)
-    * [Example 1 - Basic window](#example-1---basic-window)
+* [Tutorials / project examples](#tutorials--project-examples)
+    * [Example 1.1 - Basic window](#example-11---basic-window)
+    * [Example 1.2 - Hello triangle](#example-12---hello-triangle)
     * [Example 2 - Simple renderer - 2D maze](#example-2---simple-renderer---2d-maze)
     * [Example 3 - Simple renderer - 3D cube](#example-3---simple-renderer---3d-cube)
 
@@ -128,19 +129,29 @@ Before building anything, select the example project as active startup target:
 The project can then be built, executed and debugged. Note that additional [CMake options](../README.md#cmake-options) can be set.
 
 
-### Example 1 - Basic window
+### Example 1.1 - Basic window
 
-![Example01](./_img/01_base_window.png)
+![Example 1.1](./_img/01_base_window.png)
 
-> [Tutorial](./01_base_window/README.md) - | - [Project files](./01_base_window)
+> [Tutorial 1.1](./01-1_base_window/README.md) - | - [Project files](./01-1_base_window)
 
 A simple window, with homothety (when resized), a custom icon and cursor, and a background color that changes on click.
 Good entry point to understand the window and event system.
 
 
+### Example 1.2 - Hello triangle
+
+![Example 1.2](./_img/01-2_hello_triangle.png)
+
+> [Project files](./01-2_hello_triangle)
+
+A fixed-size window containing a colored triangle (with color change on click).
+Simple project to learn how to use a rendering pipeline, basic shaders, and vertex data.
+
+
 ### Example 2 - Simple renderer - 2D maze
 
-![Example02](./_img/02_simple_renderer_2D_maze.png)
+![Example 02](./_img/02_simple_renderer_2D_maze.png)
 
 > [Project files](./02_simple_renderer_2D_maze)
 
