@@ -25,19 +25,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <memory>
 # include <memory/light_vector.h>
 # include "video/d3d11/api/types.h" // includes D3D11
+# include "./_error.h" // includes D3D11
 
   namespace pandora {
     namespace video {
       namespace d3d11 {
-        // Throw native error message (or default if no message available)
-        void throwError(HRESULT result, const char* messageContent);
-        // Throw shader-specific compilation error message
-#       ifdef _P_VIDEO_SHADER_COMPILERS
-          void throwShaderError(ID3DBlob* errorMessage, const char* messagePrefix, const char* shaderInfo);
-#       endif
-        
-        // ---
-        
         /// @brief    RAII container for native Direct3D resources (lightweight version of ComPtr)
         template <typename T>
         class SharedResource final {

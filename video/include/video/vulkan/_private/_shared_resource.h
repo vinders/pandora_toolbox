@@ -23,14 +23,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <memory>
 # include "video/vulkan/api/types.h" // includes vulkan
+# include "./_error.h" // includes vulkan
 
   namespace pandora {
     namespace video {
       namespace vulkan {
         class Renderer;
-        
-        // Throw native error message (or default if no message available)
-        void throwError(VkResult result, const char* messagePrefix);
         
         /// @brief RAII container for native device rendering context
         class ScopedDeviceContext final {
