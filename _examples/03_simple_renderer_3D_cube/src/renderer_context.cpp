@@ -40,8 +40,8 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
   // create framebuffer + targets
   _swapChain = SwapChain(DisplaySurface(_renderer, window),
                          SwapChain::Descriptor(width, height, 2u, presentMode, rate), __COLOR_FORMAT);
-  _depthBuffer = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, 1);
-  _depthBufferMsaa = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
+  _depthBuffer = DepthStencilBuffer(_renderer.resourceManager(), __DEPTH_FORMAT, width, height, 1);
+  _depthBufferMsaa = DepthStencilBuffer(_renderer.resourceManager(), __DEPTH_FORMAT, width, height, _aaSamples);
 
   Texture2DParams msaaParams(width, height, __COLOR_FORMAT, 1, 1, 0, ResourceUsage::staticGpu, _aaSamples);
   _msaaTarget = TextureTarget2D(_renderer, msaaParams);
@@ -90,8 +90,8 @@ void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width
   _viewport.resize(0, 0, (float)width, (float)height);
   _scissor = ScissorRectangle(0, 0, width, height);
 
-  _depthBuffer = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, 1);
-  _depthBufferMsaa = DepthStencilBuffer(_renderer, __DEPTH_FORMAT, width, height, _aaSamples);
+  _depthBuffer = DepthStencilBuffer(_renderer.resourceManager(), __DEPTH_FORMAT, width, height, 1);
+  _depthBufferMsaa = DepthStencilBuffer(_renderer.resourceManager(), __DEPTH_FORMAT, width, height, _aaSamples);
   Texture2DParams msaaParams(width, height, __COLOR_FORMAT, 1, 1, 0, ResourceUsage::staticGpu, _aaSamples);
   _msaaTarget.release();
   _msaaTarget = TextureTarget2D(_renderer, msaaParams);

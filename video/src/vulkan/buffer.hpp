@@ -23,87 +23,247 @@ Implementation included in renderer.cpp
 // includes + namespaces: in renderer.cpp
 
 
-// -- depth/stencil buffer -- --------------------------------------------------
+// -- data buffer (constant/uniform, vertex, index) -- -------------------------
 
-  // Create depth/stencil buffer for existing renderer/render-target
-  DepthStencilBuffer::DepthStencilBuffer(Renderer& renderer, DepthStencilFormat format, uint32_t width,
-                                         uint32_t height, uint32_t sampleCount, VkImageTiling tiling)
-    : _context(renderer.resourceManager()), _pixelSize(_toPixelSize(width, height)), _format(format) { // throws
-    if (width == 0 || height == 0)
-      throw std::invalid_argument("DepthStencil: width/height is 0");
+  // Create buffer container (vertex/index/uniform)
+  VkBuffer pandora::video::vulkan::__createBufferContainer(DeviceContext context, size_t byteSize, VkBufferUsageFlags type,
+                                                           uint32_t* concurrentQueueFamilies, uint32_t queueCount) { // throws
+    if (byteSize == 0)
+      throw std::invalid_argument("Buffer: size 0");
     
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1u;
-    imageInfo.mipLevels = 1u;
-    imageInfo.arrayLayers = 1u;
-    imageInfo.format = (VkFormat)format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    imageInfo.samples = (VkSampleCountFlagBits)sampleCount;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VkResult result = vkCreateImage(renderer.context(), &imageInfo, nullptr, &(this->_depthStencilBuffer));
-    if (result != VK_SUCCESS || this->_depthStencilBuffer == VK_NULL_HANDLE)
-      throwError(result, "DepthStencil: buffer creation error");
-
-    this->_depthStencilMemory = __allocBufferImage(this->_context->context(), this->_context->device(),
-                                                   this->_depthStencilBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    this->_depthStencilView = __createBufferView(this->_context->context(), this->_depthStencilBuffer, (VkFormat)format,
-                                                 VK_IMAGE_ASPECT_DEPTH_BIT, 1u, 1u, 0);
-  }
-
-  // Destroy depth/stencil buffer
-  void DepthStencilBuffer::release() noexcept {
-    if (this->_depthStencilBuffer) {
-      if (this->_depthStencilView) {
-        vkDestroyImageView(this->_context->context(), this->_depthStencilView, nullptr);
-        this->_depthStencilView = VK_NULL_HANDLE;
-      }
-      vkDestroyImage(this->_context->context(), this->_depthStencilBuffer, nullptr);
-      this->_depthStencilBuffer = VK_NULL_HANDLE;
-      
-      if (this->_depthStencilMemory) {
-        vkFreeMemory(this->_context->context(), this->_depthStencilMemory, nullptr);
-        this->_depthStencilMemory = VK_NULL_HANDLE;
-      }
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = (VkDeviceSize)byteSize;
+    bufferInfo.usage = type;
+    
+    if (concurrentQueueFamilies == nullptr || queueCount == 0) {
+      bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
+    else {
+      bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+      bufferInfo.pQueueFamilyIndices = concurrentQueueFamilies;
+      bufferInfo.queueFamilyIndexCount = queueCount;
+    }
+    
+    VkBuffer buffer;
+    VkResult result = vkCreateBuffer(context, &bufferInfo, nullptr, &buffer);
+    if (result != VK_SUCCESS || buffer == VK_NULL_HANDLE)
+      throwError(result, "Buffer: creation failure");
+    return buffer;
+  }
+  // Destroy/release static buffer instance
+  void pandora::video::vulkan::__destroyBufferContainer(DeviceContext context, BufferHandle handle, VkDeviceMemory allocation) noexcept {
+    vkDestroyBuffer(context, handle, nullptr);
+    if (allocation != VK_NULL_HANDLE)
+      vkFreeMemory(context, allocation, nullptr);
+  }
+  
+  // Create buffer view (for render target buffer, depth buffer, texture buffer...)
+  VkImageView pandora::video::vulkan::__createBufferView(DeviceContext context, VkImage bufferImage, VkFormat bufferFormat,
+                                                        VkImageAspectFlags type, uint32_t layerCount,
+                                                        uint32_t mipLevels, uint32_t mostDetailedMip) { // throws
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = bufferImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = bufferFormat;
+    viewInfo.subresourceRange.aspectMask = type;
+    viewInfo.subresourceRange.baseMipLevel = mostDetailedMip;
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = layerCount;
+    
+    VkImageView imageView = VK_NULL_HANDLE;
+    VkResult result = vkCreateImageView(context, &viewInfo, nullptr, &imageView);
+    if (result != VK_SUCCESS || imageView == VK_NULL_HANDLE)
+      throwError(result, "Resource: view not created");
+    return imageView;
   }
   
   // ---
   
-  DepthStencilBuffer::DepthStencilBuffer(DepthStencilBuffer&& rhs) noexcept 
-    : _depthStencilView(rhs._depthStencilView),
-      _depthStencilBuffer(rhs._depthStencilBuffer),
-      _depthStencilMemory(rhs._depthStencilMemory),
-      _context(std::move(rhs._context)),
-      _pixelSize(rhs._pixelSize),
-      _format(rhs._format) {
-    rhs._depthStencilView = VK_NULL_HANDLE;
-    rhs._depthStencilBuffer = VK_NULL_HANDLE;
-    rhs._depthStencilMemory = VK_NULL_HANDLE;
-    rhs._context = nullptr;
-  }
-  DepthStencilBuffer& DepthStencilBuffer::operator=(DepthStencilBuffer&& rhs) noexcept {
-    release();
-    this->_depthStencilBuffer = rhs._depthStencilBuffer;
-    this->_depthStencilView = rhs._depthStencilView;
-    this->_depthStencilMemory = rhs._depthStencilMemory;
-    this->_context = std::move(rhs._context);
-    this->_pixelSize = rhs._pixelSize;
-    this->_format = rhs._format;
-    rhs._depthStencilView = VK_NULL_HANDLE;
-    rhs._depthStencilBuffer = VK_NULL_HANDLE;
-    rhs._depthStencilMemory = VK_NULL_HANDLE;
-    rhs._context = nullptr;
-    return *this;
+  // Find memory type for a requested resource memory usage
+  uint32_t pandora::video::vulkan::__findMemoryTypeIndex(VkPhysicalDevice device, uint32_t memoryTypeBits,
+                                                         VkMemoryPropertyFlags resourceUsage) {
+    VkPhysicalDeviceMemoryProperties memoryProps;
+    vkGetPhysicalDeviceMemoryProperties(device, &memoryProps);
+    
+    for (uint32_t i = 0; i < memoryProps.memoryTypeCount; ++i) {
+      if ((memoryTypeBits & (1u << i))
+      && (memoryProps.memoryTypes[i].propertyFlags & resourceUsage) == resourceUsage) {
+        return i;
+      }
+    }
+    throw std::out_of_range("Buffer: no suitable memory type");
   }
   
+  // Allocate device memory for buffer image
+  VkDeviceMemory pandora::video::vulkan::__allocBufferImage(DeviceContext context, DeviceHandle physDevice,
+                                                            VkImage bufferImage, VkMemoryPropertyFlags resourceUsage) { // throws
+    VkMemoryRequirements requirements;
+    vkGetImageMemoryRequirements(context, bufferImage, &requirements);
+    
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = requirements.size;
+    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(physDevice, requirements.memoryTypeBits, resourceUsage);
+
+    VkDeviceMemory imageMemory = VK_NULL_HANDLE;
+    VkResult result = vkAllocateMemory(context, &allocInfo, nullptr, &imageMemory);
+    if (result != VK_SUCCESS || imageMemory == VK_NULL_HANDLE)
+      throwError(result, "BufferImage: memory allocation failure");
+
+    result = vkBindImageMemory(context, bufferImage, imageMemory, 0);
+    if (result != VK_SUCCESS) {
+      vkFreeMemory(context, imageMemory, nullptr);
+      throwError(result, "BufferImage: memory binding failure");
+    }
+    return imageMemory;
+  }
+  // Allocate device memory for buffer container
+  VkDeviceMemory pandora::video::vulkan::__allocBufferContainer(DeviceContext context, DeviceHandle physDevice,
+                                                                VkBuffer buffer, VkMemoryPropertyFlags resourceUsage) { // throws
+    VkMemoryRequirements requirements;
+    vkGetBufferMemoryRequirements(context, buffer, &requirements);
+    
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = requirements.size;
+    allocInfo.memoryTypeIndex = __findMemoryTypeIndex(physDevice, requirements.memoryTypeBits, resourceUsage);
+
+    VkDeviceMemory bufferMemory = VK_NULL_HANDLE;
+    VkResult result = vkAllocateMemory(context, &allocInfo, nullptr, &bufferMemory);
+    if (result != VK_SUCCESS || bufferMemory == VK_NULL_HANDLE)
+      throwError(result, "Buffer: memory allocation failure");
+
+    result = vkBindBufferMemory(context, buffer, bufferMemory, 0);
+    if (result != VK_SUCCESS) {
+      vkFreeMemory(context, bufferMemory, nullptr);
+      throwError(result, "Buffer: memory binding failure");
+    }
+    return bufferMemory;
+  }
   
+  // ---
+  
+  // Write dynamic/staging buffer via memory mapping
+  bool pandora::video::vulkan::__writeMappedDataBuffer(DeviceContext context, size_t bufferSize, VkDeviceMemory allocation,
+                                                       size_t allocOffset, const void* sourceData) noexcept {
+    assert(allocation != VK_NULL_HANDLE && sourceData != nullptr);
+    
+    void* mapped = nullptr;
+    VkResult result = vkMapMemory(context, allocation, allocOffset, (VkDeviceSize)bufferSize, 0, &mapped);
+    if (result != VK_SUCCESS || mapped == nullptr)
+      return false;
+    
+    memcpy(mapped, sourceData, bufferSize);
+    vkUnmapMemory(context, allocation);
+    return true;
+  }
+  
+  // Write static/immutable buffer by filling and copying a staging buffer
+  bool pandora::video::vulkan::__writeWithStagingBuffer(DeviceContext context, DeviceHandle physDevice, VkCommandPool commandPool,
+                                                        VkQueue copyCommandQueue, BufferHandle buffer, size_t bufferSize,
+                                                        const void* sourceData) noexcept {
+    assert(buffer != VK_NULL_HANDLE && sourceData != nullptr);
+    VkBuffer stagingBuffer = VK_NULL_HANDLE;
+    bool reply = false;
+    try {
+      stagingBuffer = __createBufferContainer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, nullptr, 0);
+      auto stagingMemory = __allocBufferContainer(context, physDevice, stagingBuffer,
+                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+      
+      reply = (__writeMappedDataBuffer(context, bufferSize, stagingMemory, 0, sourceData)
+            && __copyDataBuffer(context, commandPool, copyCommandQueue, stagingBuffer, buffer, bufferSize) );
+      vkDestroyBuffer(context, stagingBuffer, nullptr);
+      vkFreeMemory(context, stagingMemory, nullptr);
+    }
+    catch (...) {
+      if (stagingBuffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(context, stagingBuffer, nullptr);
+    }
+    return reply;
+  }
+  
+  // ---
+  
+  // Copy mappable buffer into other mappable buffer
+  bool pandora::video::vulkan::__copyMappedDataBuffer(DeviceContext context, size_t bufferSize, VkDeviceMemory source,
+                                                      size_t sourceOffset, VkDeviceMemory dest, size_t destOffset) noexcept {
+    assert(source != VK_NULL_HANDLE && dest != VK_NULL_HANDLE);
+    void* sourceData = nullptr;
+    void* mapped = nullptr;
+    
+    bool reply = false;
+    VkResult result = vkMapMemory(context, source, sourceOffset, (VkDeviceSize)bufferSize, 0, &sourceData);
+    if (result == VK_SUCCESS && sourceData != nullptr) {
+      result = vkMapMemory(context, dest, destOffset, (VkDeviceSize)bufferSize, 0, &mapped);
+      if (result == VK_SUCCESS && mapped != nullptr) {
+        memcpy(mapped, sourceData, bufferSize);
+        vkUnmapMemory(context, dest);
+        reply = true;
+      }
+      vkUnmapMemory(context, source);
+    }
+    return reply;
+  }
+  
+  // Copy buffer into other buffer (command list)
+  bool pandora::video::vulkan::__copyDataBuffer(DeviceContext context, VkCommandPool commandPool, VkQueue copyCommandQueue,
+                                                BufferHandle source, BufferHandle dest, size_t bufferSize) noexcept {
+    assert(source != VK_NULL_HANDLE && dest != VK_NULL_HANDLE);
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    bool reply = false;
+    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+    VkResult result = vkAllocateCommandBuffers(context, &allocInfo, &commandBuffer);
+    if (result == VK_SUCCESS && commandBuffer != VK_NULL_HANDLE) {
+      
+      VkCommandBufferBeginInfo beginInfo{}; // begin recording
+      beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      if (vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS) {
+        VkBufferCopy copyRegion{};
+        copyRegion.size = bufferSize;
+        vkCmdCopyBuffer(commandBuffer, source, dest, 1, &copyRegion);
+
+        if (vkEndCommandBuffer(commandBuffer) == VK_SUCCESS) { // end recording
+          VkSubmitInfo submitInfo{};
+          submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+          submitInfo.commandBufferCount = 1;
+          submitInfo.pCommandBuffers = &commandBuffer;
+          reply = (vkQueueSubmit(copyCommandQueue, 1, &submitInfo, VK_NULL_HANDLE) == VK_SUCCESS);
+          vkQueueWaitIdle(copyCommandQueue);
+        }
+      }
+      vkFreeCommandBuffers(context, commandPool, 1, &commandBuffer);
+    }
+    return reply;
+  }
+  
+  // ---
+  
+  // Map dynamic/staging data buffer for read/write operations
+  void* pandora::video::vulkan::__mapDataBuffer(DeviceContext context, size_t bufferSize,
+                                                VkDeviceMemory allocation, size_t allocOffset) noexcept {
+    assert(allocation != VK_NULL_HANDLE);
+    
+    void* mapped = nullptr;
+    VkResult result = vkMapMemory(context, allocation, allocOffset, (VkDeviceSize)bufferSize, 0, &mapped);
+    return (result == VK_SUCCESS) ? mapped : nullptr;
+  }
+  // Unmap dynamic/staging data buffer
+  void pandora::video::vulkan::__unmapDataBuffer(DeviceContext context, VkDeviceMemory allocation) noexcept {
+    assert(allocation != VK_NULL_HANDLE);
+    vkUnmapMemory(context, allocation);
+  }
+
+
 // -- buffer memory allocation -- ----------------------------------------------
 
   BufferMemory::BufferMemory(VkDeviceMemory deviceMemory, DeviceResourceManager context) noexcept

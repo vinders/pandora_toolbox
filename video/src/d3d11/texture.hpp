@@ -297,7 +297,8 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
     if (descriptor.SampleDesc.Count > 1u) { // set MSAA quality (+ disable MSAA if not supported)
       D3D11_TEXTURE2D_DESC* mutableDesc = const_cast<D3D11_TEXTURE2D_DESC*>(&descriptor);
-      if (!renderer._isSampleCountSupported(mutableDesc->Format, mutableDesc->SampleDesc.Count, mutableDesc->SampleDesc.Quality)) {
+      if (!Renderer::_isSampleCountSupported(renderer.device(), mutableDesc->Format, mutableDesc->SampleDesc.Count,
+                                             mutableDesc->SampleDesc.Quality)) {
         mutableDesc->SampleDesc.Count = 1u;
         mutableDesc->SampleDesc.Quality = 0;
       }
@@ -408,7 +409,8 @@ static constexpr inline const char* __error_viewCreationFailed() noexcept { retu
                  : (uint8_t)Texture2DParams::maxMipLevels(descriptor.Width, descriptor.Height)) { // throws
 
     if (descriptor.SampleDesc.Count > 1u  // set MSAA quality (+ disable MSAA if not supported)
-    && !renderer._isSampleCountSupported(descriptor.Format, descriptor.SampleDesc.Count, descriptor.SampleDesc.Quality)) {
+    && !Renderer::_isSampleCountSupported(renderer.device(), descriptor.Format, descriptor.SampleDesc.Count,
+                                          descriptor.SampleDesc.Quality)) {
       descriptor.SampleDesc.Count = 1u;
       descriptor.SampleDesc.Quality = 0;
     }

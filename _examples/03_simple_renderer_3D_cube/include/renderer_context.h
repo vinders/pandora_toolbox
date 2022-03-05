@@ -14,12 +14,10 @@ Description : Example - renderer context
 #include <time/timer.h>
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <video/d3d11/renderer.h>
-# include <video/d3d11/buffer.h>
 # include <video/d3d11/texture.h>
   namespace video_api = pandora::video::d3d11;
 #elif defined(_VIDEO_VULKAN_SUPPORT)
 # include <video/vulkan/renderer.h>
-# include <video/vulkan/buffer.h>
 # include <video/vulkan/texture.h>
   namespace video_api = pandora::video::vulkan;
 #endif

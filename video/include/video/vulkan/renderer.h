@@ -215,7 +215,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- render target operations --
 
           /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
-          inline size_t maxViewports() noexcept { return this->_features->multiViewport ? this->_physicalDeviceInfo->limits.maxViewports : 1; }
+          inline size_t maxViewports() const noexcept { return this->_features->multiViewport ? this->_physicalDeviceInfo->limits.maxViewports : 1; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           /// @warning - With Vulkan, this viewport change is only supported if the GraphicsPipeline
@@ -244,7 +244,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
 
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
-          inline size_t maxRenderTargets() noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
+          inline size_t maxRenderTargets() const noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
 
           
         private:
@@ -269,4 +269,5 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 # include "./swap_chain.h"        // includes vulkan
 # include "./graphics_pipeline.h" // includes vulkan
+# include "./depth_stencil_buffer.h" // includes vulkan
 #endif

@@ -145,7 +145,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_NO_THROW(chain4.swapBuffers());
     renderer.setActiveRenderTarget(nullptr, nullptr);
     
-    DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, 600, 400);
+    DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, 600, 400);
     EXPECT_FALSE(depthBuffer.isEmpty());
     EXPECT_TRUE(depthBuffer.handle() != nullptr);
     EXPECT_TRUE(depthBuffer.getDepthStencilView() != nullptr);

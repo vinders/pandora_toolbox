@@ -121,17 +121,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Verify color sample count support for multisampling (must be a power of 2)
           inline bool isColorSampleCountAvailable(DataFormat format, uint32_t sampleCount) const noexcept {
             UINT qualityLevel = 0;
-            return _isSampleCountSupported(_getDataFormatComponents(format), (UINT)sampleCount, qualityLevel);
+            return _isSampleCountSupported(this->_device, _getDataFormatComponents(format), (UINT)sampleCount, qualityLevel);
           }
           /// @brief Verify depth sample count support for multisampling (must be a power of 2)
           inline bool isDepthSampleCountAvailable(DepthStencilFormat format, uint32_t sampleCount) const noexcept {
             UINT qualityLevel = 0;
-            return _isSampleCountSupported((DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
+            return _isSampleCountSupported(this->_device, (DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
           }
           /// @brief Verify stencil sample count support for multisampling (must be a power of 2)
           inline bool isStencilSampleCountAvailable(DepthStencilFormat format, uint32_t sampleCount) const noexcept {
             UINT qualityLevel = 0;
-            return _isSampleCountSupported((DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
+            return _isSampleCountSupported(this->_device, (DXGI_FORMAT)format, (UINT)sampleCount, qualityLevel);
           }
           /// @brief Screen tearing supported (variable refresh rate display)
           bool isTearingAvailable() const noexcept;
@@ -151,7 +151,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- render target operations --
 
           /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
-          constexpr inline size_t maxViewports() noexcept { return D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }
+          constexpr inline size_t maxViewports() const noexcept { return D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           /// @warning Should only be used if the GraphicsPipeline was configured with dynamic viewports.
@@ -176,7 +176,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
 
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
-          constexpr inline size_t maxRenderTargets() noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
+          constexpr inline size_t maxRenderTargets() const noexcept { return D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; }
           
           /// @brief Clear render-targets content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
@@ -228,7 +228,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- primitive binding --
           
           /// @brief Max slots (or array size from first slot) for vertex buffers
-          constexpr inline size_t maxVertexBufferSlots() noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
+          constexpr inline size_t maxVertexBufferSlots() const noexcept { return D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; }
           
           /// @brief Bind active vertex array buffer to input stage slot
           /// @param slotIndex      Input stage slot to set/replace with vertex array buffer
@@ -308,7 +308,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- pipeline status operations - constant/uniform buffers --
           
           /// @brief Max slots (or array size from first slot) for constant/uniform buffers
-          constexpr inline size_t maxUniformSlots() noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
+          constexpr inline size_t maxUniformSlots() const noexcept { return D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; }
           
           /// @brief Bind constant/uniform buffer(s) to the vertex shader stage
           /// @remarks To unbind some buffer indices, use NULL value at their index ('handles' array must not be NULL)
@@ -433,7 +433,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- pipeline status operations - textures / shader resources --
           
           /// @brief Max slots (or array size from first slot) for shader resources / textures
-          constexpr inline size_t maxResourceSlots() noexcept { return D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; }
+          constexpr inline size_t maxResourceSlots() const noexcept { return D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; }
           
           /// @brief Bind texture resource(s) to the vertex shader stage
           /// @remarks To unbind some indices, use NULL value at their index ('handles' array must not be NULL)
@@ -526,7 +526,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // ---
           
           /// @brief Max slots (or array size from first slot) for samplers/filters
-          constexpr inline size_t maxSamplerStateSlots() noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+          constexpr inline size_t maxSamplerStateSlots() const noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
+          /// @brief Max anisotropy level value (usually 8 or 16)
+          constexpr inline uint32_t maxAnisotropy() const noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
@@ -596,7 +598,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         private:
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
           inline bool _isFlipSwapAvailable() const noexcept { return (this->_dxgiLevel >= 4u); }
-          bool _isSampleCountSupported(DXGI_FORMAT format, UINT sampleCount, UINT& outMaxQualityLevel) const noexcept;
+          static bool _isSampleCountSupported(DeviceHandle device, DXGI_FORMAT format, UINT sampleCount, UINT& outMaxQualityLevel) noexcept;
 
           void _addRasterizerState(const RasterizerStateId& id, const RasterizerState& handle);
           void _addDepthStencilState(const DepthStencilStateId& id, const DepthStencilState& handle);
@@ -634,4 +636,5 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 # include "./swap_chain.h" // includes D3D11
 # include "./graphics_pipeline.h" // includes D3D11
+# include "./depth_stencil_buffer.h" // includes D3D11
 #endif

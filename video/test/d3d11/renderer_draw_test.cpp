@@ -295,7 +295,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       ASSERT_FALSE(pipeline.isEmpty());
     
       // state buffers + samplers
-      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
       SamplerBuilder samplerBuilder(renderer);
@@ -375,7 +375,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       ASSERT_FALSE(pipeline.isEmpty());
 
       // state buffers + samplers
-      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
       SamplerBuilder samplerBuilder(renderer);
@@ -461,7 +461,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       ASSERT_FALSE(pipeline.isEmpty());
 
       // state buffers + samplers
-      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
+      DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
       SamplerBuilder samplerBuilder(renderer);
@@ -733,7 +733,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       ASSERT_FALSE(pipeline.isEmpty());
 
       // state buffers + samplers
-      DepthStencilBuffer depthBuffer(renderer, DepthStencilFormat::d32_f, __WIDTH,__HEIGHT, sampleCount); // anti-aliasing enabled
+      DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT, sampleCount); // anti-aliasing enabled
       ASSERT_FALSE(depthBuffer.isEmpty());
       Texture2DParams msaaTexParams(__WIDTH, __HEIGHT, format, 1u, 1u, 0, ResourceUsage::staticGpu, sampleCount);
       TextureTarget2D msaaTarget(renderer, msaaTexParams);
