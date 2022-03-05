@@ -116,7 +116,7 @@ To generate docs:
 
 ---
 
-## Project examples/tutorials
+## Tutorials / project examples
 
 A few examples and tutorials are available, to learn how to create simple windows and renderers with the Pandora libs.
 Some of them can also be used as boilerplate projects.
