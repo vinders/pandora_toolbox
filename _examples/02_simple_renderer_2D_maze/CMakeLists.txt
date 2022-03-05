@@ -18,12 +18,14 @@ cmake_minimum_required(VERSION 3.14)
 #           they can be referenced from Cmake files that do not use CWork.
 set(PANDORA_TOOLBOX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
+# --> cwork options
 set(CWORK_SHADER_COMPILERS ON CACHE INTERNAL "" FORCE) # shaders compiled at runtime
                                                        # (only 1 group of shaders in project -> no need to pre-compile)
 set(CWORK_GEOM_STAGE_OFF ON CACHE INTERNAL "" FORCE)   # no geometry shader used by project -> disable unused features
 set(CWORK_TESS_STAGE_OFF ON CACHE INTERNAL "" FORCE)   # no tessellation shader used by project -> disable unused features
+
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON)
+cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON) # version read from file
 
 # --> solution params (replace "example" with your solution name)
 project("example" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
