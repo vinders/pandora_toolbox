@@ -40,11 +40,13 @@ Description : Example - window creation + main loop
 using namespace pandora::video;
 using namespace video_api;
 
+// --> an event storage system would be preferable
 bool g_isRefreshed = false;
 bool g_hasClicked = false;
 
 
-// create main window
+// -- window creation -- -------------------------------------------------------
+
 std::unique_ptr<Window> createWindow() { // throws on failure
 # ifdef _WINDOWS
     auto mainIcon = WindowResource::buildIconFromPackage(MAKEINTRESOURCE(IDI_LOGO_BIG_ICON));
@@ -65,10 +67,12 @@ std::unique_ptr<Window> createWindow() { // throws on failure
         .create(_SYSTEM_STR("APP_WINDOW0"), _SYSTEM_STR("Example Window"));
 }
 
-// ---
 
+// -- graphics pipeline creation -- --------------------------------------------
+
+// vertex data type -- force 16-byte memory alignment
 __align_type(16,
-  struct VertexData final {
+struct VertexData final {
   float position[4];
   float color[4];
 });
@@ -97,14 +101,20 @@ __align_type(16,
       "  float4 position : SV_POSITION;"
       "  float4 color : COLOR;"
       "};"
-      "float4 main(PixelInputType input) : SV_TARGET"
-      "{"
+      "float4 main(PixelInputType input) : SV_TARGET {"
       "  return input.color;"
       "}";
   }
-#elif defined(_VIDEO_VULKAN_SUPPORT)
-  //TODO...
+#else
+    constexpr const char* vertexShaderCode() noexcept {
+      return "";//TODO...
+    }
+    constexpr const char* fragmentShaderCode() noexcept {
+      return "";//TODO...
+    }
 #endif
+
+// ---
 
 GraphicsPipeline createPipeline(Renderer& renderer, uint32_t width, uint32_t height) {
   // create shaders
@@ -139,20 +149,18 @@ GraphicsPipeline createPipeline(Renderer& renderer, uint32_t width, uint32_t hei
          .setVertexTopology(VertexTopology::triangles)
          .attachShaderStage(vertexShader)
          .attachShaderStage(fragmentShader)
-         .setRasterizerState(RasterizerParams{})     // default (back-culling, clockwise)
-         .setDepthStencilState(DepthStencilParams{}) // default depth test (less)
-         .setBlendState(BlendParams(false))          // blending off
+         .setRasterizerState(RasterizerParams{})               // default (back-culling, clockwise)
+         .setDepthStencilState(DepthStencilParams(false,false))// depth test off
+         .setBlendState(BlendParams(false))                    // blending off
          .setViewports(&viewport, size_t{ 1u }, &scissor, size_t{ 1u }, false)
          .build();
 }
 
 
-// -- handlers -- --------------------------------------------------------------
+// -- window handlers -- -------------------------------------------------------
 
 // window/hardware event handler --> should never throw!
-bool onWindowEvent(Window* sender, WindowEvent event, uint32_t, int32_t, int32_t, void*) {
-  g_isRefreshed = true;
-  
+bool onWindowEvent(Window* sender, WindowEvent event, uint32_t status, int32_t, int32_t, void*) {
   switch (event) {
     case WindowEvent::windowClosed: { // close event received -> confirmation
       auto reply = MessageBox::show("Confirmation", "Are you sure you want to exit?", 
@@ -160,6 +168,11 @@ bool onWindowEvent(Window* sender, WindowEvent event, uint32_t, int32_t, int32_t
                                     MessageBox::IconType::question, true);
       if (reply == MessageBox::Result::action2) // 2nd button for "Yes/No" -> "No"
         return true; // cancel default close event
+      break;
+    }
+    case WindowEvent::stateChanged: {
+      if ((WindowActivity)status != WindowActivity::hidden)
+        g_isRefreshed = true;
       break;
     }
     default: break;
@@ -223,7 +236,7 @@ inline void mainAppLoop() {
     Renderer renderer(defaultMonitor);
     
     // scope for renderer components/resources
-    // -> always destroyed before renderer (even if exception)
+    // -> always destroyed before Renderer (even if exception)
     {
       // renderer components
       SwapChain::Descriptor params;
@@ -265,15 +278,12 @@ inline void mainAppLoop() {
             triangleVertices[1].color[2] = 0.f;
             triangleVertices[2].color[0] = 0.f;
           }
-          vertexArray.write(triangleVertices);
-
+          vertexArray.write(triangleVertices); // update vertex buffer
           g_isRefreshed = true; // force to redraw
         }
         
         // drawing
         if (g_isRefreshed) {
-          g_isRefreshed = false; // unset flag
-
           renderer.setCleanActiveRenderTarget(framebuffer.getRenderTargetView(), nullptr);
           renderer.bindGraphicsPipeline(pipeline.handle());
        
@@ -281,12 +291,13 @@ inline void mainAppLoop() {
           renderer.bindVertexIndexBuffer(vertexIndex.handle(), VertexIndexFormat::r32_ui);
           renderer.drawIndexed(sizeof(triangleIndices)/sizeof(*triangleIndices));
           
-          framebuffer.swapBuffers();
+          framebuffer.swapBuffers(); // display on screen
+          g_isRefreshed = false; // unset flag
         }
 
         std::this_thread::sleep_for(std::chrono::microseconds(16600LL)); // 60Hz
       }
-    }
+    }// end of scope -> resources destroyed (before Renderer)
   }
   catch (const std::exception& exc) {
     MessageBox::flushEvents();
@@ -305,11 +316,6 @@ inline void mainAppLoop() {
     pandora::system::WindowsApp::instance().init((pandora::system::AppInstanceHandle)appInstance);
     mainAppLoop();
     return 0;
-  }
-#elif defined(__ANDROID__)
-  void android_main(struct android_app* state) {
-    pandora::system::AndroidApp::instance().init(state);
-    mainAppLoop();
   }
 #else
   int main() {
