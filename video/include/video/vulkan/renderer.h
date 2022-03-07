@@ -246,6 +246,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Max number of simultaneous render-target views (swap-chains, texture targets...)
           inline size_t maxRenderTargets() const noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
 
+          /// @brief Max anisotropy level value (usually 8 or 16)
+          inline uint32_t maxAnisotropy() const noexcept {
+            return static_cast<uint32_t>(this->_physicalDeviceInfo->limits.maxSamplerAnisotropy);
+          }
+
           
         private:
           inline bool _areColorSpacesAvailable() const noexcept { return (this->_instance->featureLevel() != VK_API_VERSION_1_0); }

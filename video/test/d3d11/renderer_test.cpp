@@ -67,7 +67,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
            renderer.dxgiLevel(), ((uint32_t)renderer.featureLevel() > 0) ? "1+" : "0",
            (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            (uint32_t)renderer.maxRenderTargets(), (uint32_t)renderer.maxSamplerStateSlots(), 
-           SamplerParams::maxAnisotropy(),
+           renderer.maxAnisotropy(),
            maxColorSamples, maxDepthSamples, maxStencilSamples,
            isHdrMonitor ? trueVal : falseVal,
            renderer.isTearingAvailable() ? trueVal : falseVal);
@@ -254,8 +254,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     addrModes[0] = TextureWrap::repeat;
     addrModes[1] = TextureWrap::clampToBorder;
     addrModes[2] = TextureWrap::clampToEdge;
-    valueContainer.append(builder.create(SamplerParams(SamplerParams::maxAnisotropy(), addrModes, 0.f,4.f)));
-    valueContainer.append(builder.create(SamplerParams(SamplerParams::maxAnisotropy()/2u, addrModes, 0.f,0.f)));
+    valueContainer.append(builder.create(SamplerParams(renderer.maxAnisotropy(), addrModes, 0.f,4.f)));
+    valueContainer.append(builder.create(SamplerParams(renderer.maxAnisotropy()/2u, addrModes, 0.f,0.f)));
     valueContainer.clear();
     
     // comparison anisotropic samplers
@@ -271,8 +271,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     addrModes[0] = TextureWrap::repeat;
     addrModes[1] = TextureWrap::clampToBorder;
     addrModes[2] = TextureWrap::clampToEdge;
-    valueContainer.append(builder.create(SamplerParams(SamplerParams::maxAnisotropy(), addrModes, 0.f,4.f, StencilCompare::less)));
-    valueContainer.append(builder.create(SamplerParams(SamplerParams::maxAnisotropy()/2u, addrModes, 0.f,0.f, StencilCompare::greater)));
+    valueContainer.append(builder.create(SamplerParams(renderer.maxAnisotropy(), addrModes, 0.f,4.f, StencilCompare::less)));
+    valueContainer.append(builder.create(SamplerParams(renderer.maxAnisotropy()/2u, addrModes, 0.f,0.f, StencilCompare::greater)));
     valueContainer.clear();
   }
 

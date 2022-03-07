@@ -28,7 +28,6 @@ Local GPU API specifications analyzer (Direct3D, Vulkan, OpenGL)
 # include <system/api/windows_api.h>
 # if defined(_VIDEO_D3D11_SUPPORT)
 #   include <video/d3d11/renderer.h>
-#   include <video/d3d11/texture.h>
 # endif
 # define _SYSTEM_STR(str) L"" str
 #else
@@ -177,7 +176,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            featureLevel, renderer.dxgiLevel(), (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            sRgbSupport, toString(iHdrScRGB), toString(iHdr10), toString(isHdrMonitor),
            toString(isTearingSupported), toString(renderer.maxViewports() > 1u), (uint32_t)renderer.maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, d3d11::SamplerParams::maxAnisotropy(), (uint32_t)renderer.maxRenderTargets());
+           toString(maxMSAA > 1u), maxMSAA, renderer.maxAnisotropy(), (uint32_t)renderer.maxRenderTargets());
   }
 #endif
 
@@ -249,7 +248,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            toString(renderer.isDynamicRenderingSupported()), toString(renderer.isExtendedDynamicStateSupported()),
            sRgbSupport, toString(iHdrScRGB), toString(isHdr10), "unknown",
            toString(isTearingSupported), toString(renderer.maxViewports() > 1u), (uint32_t)renderer.maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, (uint32_t)renderer.deviceLimits().maxSamplerAnisotropy, (uint32_t)renderer.maxRenderTargets());
+           toString(maxMSAA > 1u), maxMSAA, renderer.maxAnisotropy(), (uint32_t)renderer.maxRenderTargets());
   }
 #endif
 
