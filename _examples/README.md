@@ -1,6 +1,6 @@
 > [Home](../README.md) - | - [Features](../FEATURES.md) - | - [CMake options](../OPTIONS.md) - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
 
-# Examples &mp; tutorials
+# Examples &amp; tutorials
 
 * [Generating project with CMake](#generating-project-with-cmake)
 * [Using Pandora libraries](#using-pandora-libraries)
