@@ -1,4 +1,4 @@
-> [Features](../FEATURES.md) - | - [Cmake options](../README.md#cmake-options) - | - Examples &amp; tutorials - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
+> [Home](../README.md) - | - [Features](../FEATURES.md) - | - [CMake options](../OPTIONS.md) - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
 
 # Examples
 
@@ -38,7 +38,7 @@ Examples :
 
 If CMake is installed on your system (version >= 3.14), you can use *cmake-gui* to generate any CMake project.
 Open the *'CMakeLists.txt'* project file with it (either the one located in the toolbox root dir, or any *'_examples/<title>/CMakeLists.txt'*).
-Then set some CMake options (if you don't want the default values). See [list of CMake options](../README.md#cmake-options).
+Then set some CMake options (if you don't want the default values). See [list of CMake options](../OPTIONS.md).
 
 Use the *Configure* button to create the project cache for a specific IDE (don't forget to set the "Optional platform" with the target architecture: 32/64-bit/ARM).
 The *Generate* button then creates the project files for the selected IDE.
@@ -47,14 +47,14 @@ Finally, click the *Open project* button.
 #### CMake-compatible IDE
 
 Some IDEs/editors (VSCode, CLion...) can directly open *'CMakeLists.txt'* files as projects.
-Set the appropriate [CMake options](../README.md#cmake-options) in them (if you don't want the default values).
+Set the appropriate [CMake options](../OPTIONS.md) in them (if you don't want the default values).
 
 
 ### CMake project hierarchy
 
 The Pandora Toolbox project has its own CMake framework (called CWork), to make CMake management a lot easier.
 This framework can also be used (or not) for parent projects with Pandora libs as dependencies.
-[Various CMake options](../README.md#cmake-options) are available for the Pandora libs (and for parent projects using CWork too).
+[Various CMake options](../OPTIONS.md) are available for the Pandora libs (and for parent projects using CWork too).
 
 Different approaches can be used to include the Pandora libs:
 * Open the root *'CMakeLists.txt'* (located in the root directory of the toolbox) as a project solution.
@@ -62,7 +62,7 @@ Different approaches can be used to include the Pandora libs:
   This may look like the best approach, but it's not convenient at all for open projects with online CIs and many contributors.
 * Use the CWork framework for [your own project](./cmake/project.txt) too, and directly include the Pandora libs
   (either as [internal libs in the same solution](./cmake/direct_solution.txt), or preferably [as sub-solution libs](./cmake/parent_solution.txt) in a git submodule).
-  All the CWork functions/macros that can be used are located and documented in *'_cmake/cwork.cmake'*. Other Cwork files contain internal mechanics.
+  All the CWork functions/macros that can be used are located and documented in *'_cmake/cwork.cmake'*. Other CWork files contain internal mechanics.
   Note that extra module finders can be added in *'_cmake/modules'* to access external libraries (such as SDL, Qt, Nuklear...).
 * Create an intermediate "sub-solution" CMake file with CWork (to include Pandora libs as internal libs), then add it as a subdirectory in your own CMake project.
   See the root toolbox *'CMakeLists.txt'* [file](../CMakeLists.txt) as an inspiration for your intermediate file (or use it, to include all libs).
@@ -126,7 +126,7 @@ Before building anything, select the example project as active startup target:
 
 ![Select startup project](./_img/project_start.png)
 
-The project can then be built, executed and debugged. Note that additional [CMake options](../README.md#cmake-options) can be set.
+The project can then be built, executed and debugged. Note that additional [CMake options](../OPTIONS.md) can be set.
 
 
 ### Example 1.1 - Basic window

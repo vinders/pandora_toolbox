@@ -1,4 +1,4 @@
-> [Features](./FEATURES.md) - | - [Cmake options](./README.md#cmake-options) - | - [Examples &amp; tutorials](./_examples/README.md) - | - [Changelog](./CHANGELOG.md) - | - Issue reporting &amp; contribution
+> [Home](./README.md) - | - [Features](./FEATURES.md) - | - [CMake options](./OPTIONS.md) - | - [Examples &amp; tutorials](./_examples/README.md) - | - [Changelog](./CHANGELOG.md)
 
 # Contributing
 
@@ -24,7 +24,7 @@ Suggestions, bug fixes and new features are welcome, as long as they respect tha
 
 Bugs are demonstrable problems caused by the code in the repository. Good bug reports are very helpful.
 Please only report actual bugs as issues (segfaults, crashes, corrupted data, display issues...).
-For suggestions, requests for features, improvements or hardware support, please just contact me without creating an issue.
+For suggestions, feature requests, improvements or hardware support, please contact me directly.
 
 Guidelines for bug reports:
 * Search the existing GitHub issues: make sure it hasn't already been reported.

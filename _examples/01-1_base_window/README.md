@@ -1,4 +1,4 @@
-> [Features](../../FEATURES.md) - | - [Cmake options](../../README.md#cmake-options) - | - [Examples &amp; tutorials](../README.md) - | - [Changelog](../../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../../CONTRIBUTING.md)
+> [Home](../../README.md) - | - [Examples &amp; tutorials](../README.md)
 
 # Tutorial 1.1 - Basic window
 

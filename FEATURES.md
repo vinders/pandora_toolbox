@@ -1,4 +1,4 @@
-> Features - | - [Cmake options](./README.md#cmake-options) - | - [Examples &amp; tutorials](./_examples/README.md) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
+> [Home](./README.md) - | - [CMake options](./OPTIONS.md) - | - [Examples &amp; tutorials](./_examples/README.md) - | - [Changelog](./CHANGELOG.md) - | - [Issue reporting &amp; contribution](./CONTRIBUTING.md)
 
 # Features and compatibility
 
