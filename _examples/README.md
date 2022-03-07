@@ -1,9 +1,9 @@
 > [Home](../README.md) - | - [Features](../FEATURES.md) - | - [CMake options](../OPTIONS.md) - | - [Changelog](../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../CONTRIBUTING.md)
 
-# Examples
+# Examples &mp; tutorials
 
-* [Building projects](#building-projects)
-    * [Generating project with CMake](#generating-project-with-cmake)
+* [Generating project with CMake](#generating-project-with-cmake)
+* [Using Pandora libraries](#using-pandora-libraries)
     * [CMake project hierarchy](#cmake-project-hierarchy)
     * [Library structure](#library-structure)
     * [Library docs](#library-docs)
@@ -15,14 +15,12 @@
 
 ---
 
-## Building projects
-
-### Generating project with CMake
+## Generating project with CMake
 
 Different methods exist to generate the CMake project. The section below is a summary of each method.
 Step-by-step explanations are available here: [Windows](./build_steps_windows.txt) - [Linux/Unix/BSD](./build_steps_linux.txt).
 
-#### Scripts
+### Scripts
 
 If CMake is installed on your system (version >= 3.14), you can run a script from the *'_scripts'* directory (located in the toolbox root dir).
 Choose the script for your IDE, then simply run it. To generate *'_examples'* projects,
@@ -34,7 +32,7 @@ Examples :
 * *cmake_vs2019-64.bat*: CMake generation for Visual Studio 2019 with 64-bit compilation.
 * *cmake_vs2019-64-win10*: CMake generation for Visual Studio 2019 with 64-bit compilation, and optimized for Windows 10+ (higher feature levels, but not retro-compatible).
 
-#### CMake GUI
+### CMake GUI
 
 If CMake is installed on your system (version >= 3.14), you can use *cmake-gui* to generate any CMake project.
 Open the *'CMakeLists.txt'* project file with it (either the one located in the toolbox root dir, or any *'_examples/<title>/CMakeLists.txt'*).
@@ -44,7 +42,7 @@ Use the *Configure* button to create the project cache for a specific IDE (don't
 The *Generate* button then creates the project files for the selected IDE.
 Finally, click the *Open project* button.
 
-#### Command line
+### Command line
 
 Using CMake command line:
 > cmake -S [source_dir] -G [generator_name] -A [arch] -B [build_dir] -D[option_name]=[option_value]
@@ -54,11 +52,15 @@ Examples:
 > * cmake -S . -G "Unix Makefiles" -B _build -DCWORK_DOCS=ON
 > * cmake -S . -G "MinGW Makefiles" -B _build -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
 
-#### CMake-compatible IDE
+### CMake-compatible IDE
 
 Some IDEs/editors (VSCode, CLion...) can directly open *'CMakeLists.txt'* files as projects.
 Set the appropriate [CMake options](../OPTIONS.md) in them (if you don't want the default values).
 
+
+---
+
+## Using Pandora libraries
 
 ### CMake project hierarchy
 
