@@ -1,10 +1,10 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
-## 0.121.2.884
-2022-02-12 - 17e56a484b6c4f9657c8c0f19af137621fda2e34
+## 0.121.4.938
+2022-03-07 - 9d5fdafdb1dc5e689caa6a39543609c5319ea44c
 ### features
-vinders (20):
+vinders (21):
 * hardware: X11 libraries: add XCB for Vulkan support
 * video: window resource builder: add system string to UTF-8 converter
 * video: Vulkan library/extension loader
@@ -18,6 +18,7 @@ vinders (20):
 * cwork: custom cmake framework option: make runtime shader compilers optional
 * cwork: add options to disable tessellation/geometry stages (improve efficiency if they're not used)
 * memory: lightweight vector implementation (to avoid STL overhead)
+* video: Direct3D11 scissor-test rectangle + methods in renderer
 * video: Direct3D11 graphics pipeline: store shader stages + bind them together
 * video: Direct3D11 graphics pipeline stages/states: builder + params
 * video: Direct3D11 swap-chain/texture/depth-buffer: support multisampling
@@ -26,7 +27,8 @@ vinders (20):
 * video: Vulkan depth/stencil buffer and view
 * video: Vulkan vertex/index/uniform buffers (static/dynamic/immut./staging) + resource mapping + suballocations (memory / buffer)
 ### fixes
-vinders (9):
+vinders (14):
+* video: Direct3D11 viewport: support fractional size
 * video: Direct3D11 renderer: remove flush after changing/clearing render target (improve performance) + add public flush method
 * video: Direct3D11 renderer/swap-chain: improve color space & HDR support
 * video: Direct3D11 swap-chain: define present mode in constructor
@@ -36,17 +38,10 @@ vinders (9):
 * video: Direct3D11 swap-chain & texture-target: add buffer discard() + protect against double deletion
 * video: Direct3D11 buffers: refactor static/dynamic/immut. buffer system + support staging and resource mapping
 * video: Direct3D11 buffers: allow suballocation for vertex/index/uniform buffers + multi-type buffers
-
----
-
-## 0.101.1.724
-2021-08-31 - b61ec92a276d4d0600a8da99e6a568585f96794e
-### features
-vinders (1):
-* video: Direct3D11 scissor-test rectangle + apply methods in renderer
-### fixes
-vinders (1):
-* video: Direct3D viewport: support fractional size
+* video: Direct3D11/Vulkan swap-chain & graphics pipeline: renderer no longer copied as shared_ptr, to avoid overhead
+* video: Direct3D11/Vulkan depth/stencil buffer: move into separate files + remove dependency from renderer header
+* video: window manager (windows): fix fixed-size behavior after minimization
+* cwork: custom cmake framework: add option for Vulkan feature level
 
 ---
 
