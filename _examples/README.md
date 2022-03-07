@@ -46,8 +46,8 @@ Finally, click the *Open project* button.
 
 #### Command line
 
-Using CMake command line: \
-**cmake -S [source_dir] -G [generator_name] -A [arch] -B [build_dir] -D[option_name]=[option_value]**
+Using CMake command line:
+> cmake -S [source_dir] -G [generator_name] -A [arch] -B [build_dir] -D[option_name]=[option_value]
 
 Examples:
 > * cmake -S . -G "Visual Studio 16 2019" -A x64 -B _build -DCWORK_TESTS=OFF
