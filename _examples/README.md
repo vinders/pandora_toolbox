@@ -44,6 +44,16 @@ Use the *Configure* button to create the project cache for a specific IDE (don't
 The *Generate* button then creates the project files for the selected IDE.
 Finally, click the *Open project* button.
 
+#### Command line
+
+Using CMake command line: \
+**cmake -S [source_dir] -G [generator_name] -A [arch] -B [build_dir] -D[option_name]=[option_value]**
+
+Examples:
+> * cmake -S . -G "Visual Studio 16 2019" -A x64 -B _build -DCWORK_TESTS=OFF
+> * cmake -S . -G "Unix Makefiles" -B _build -DCWORK_DOCS=ON
+> * cmake -S . -G "MinGW Makefiles" -B _build -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
+
 #### CMake-compatible IDE
 
 Some IDEs/editors (VSCode, CLion...) can directly open *'CMakeLists.txt'* files as projects.

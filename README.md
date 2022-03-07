@@ -43,10 +43,11 @@ Libraries (video/io/hardware...) can be included separately.
 
 ### Building project with CMake
 
-This project can be open with any IDE that can natively handle CMake files, or can be generated with CMake. Some scripts are available to automatically generate the project for common IDEs ("_scripts" directory).
-A few options can be used to build the solution when calling CMake (or in the CMake settings of the IDE).
+This project can be generated with CMake for any IDE (or directly open with an IDE that can natively handle CMake files).
+Some scripts are also available to automatically generate the project for most IDEs ("_scripts" directory).
+Some options can be set to configure the solution when calling CMake (CMake-GUI, command line, or via an IDE).
 
-Using CMake: \
+Using CMake command line: \
 **cmake -S [source_dir] -G [generator_name] -A [arch] -B [build_dir] -D[option_name]=[option_value]**
 
 Examples:
@@ -54,4 +55,4 @@ Examples:
 > * cmake -S . -G "Unix Makefiles" -B _build -DCWORK_DOCS=ON
 > * cmake -S . -G "MinGW Makefiles" -B _build -DCMAKE_C_COMPILER=gcc.exe -DCMAKE_CXX_COMPILER=g++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe
 
-See [CMake options](./OPTIONS.md).
+> More info: [CMake explanations &amp; examples](./_examples/README.md) - | - [CMake options](./OPTIONS.md)
