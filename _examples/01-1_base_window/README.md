@@ -1,6 +1,6 @@
 > [Features](../../FEATURES.md) - | - [Cmake options](../../README.md#cmake-options) - | - [Examples &amp; tutorials](../README.md) - | - [Changelog](../../CHANGELOG.md) - | - [Issue reporting &amp; contribution](../../CONTRIBUTING.md)
 
-# Example 1 - Basic window
+# Tutorial 1.1 - Basic window
 
 The purpose of this tutorial is to learn the basics about the Pandora Toolbox.
 It will help getting familiar with how the libraries work, how to use the documentation, 
@@ -859,6 +859,6 @@ These last changes are the end of this tutorial. I hope you enjoyed it!
 
 ![Example01](../_img/01_base_window.png)
 
-> [Source code files](../01_base_window)
+> [Source code files](../01-1_base_window)
 
 [Go to TOP](#example-1---basic-window)
