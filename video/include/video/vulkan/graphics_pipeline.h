@@ -592,7 +592,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
               _descriptor.pNext = nullptr;
               return *this;
             }
-#           if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+#           if defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12
               /// @brief Provide dynamic rendering definition (formats only)
               ///        The Renderer must be built either for Vulkan 1.3+ or with extension "VK_KHR_dynamic_rendering",
               ///        with argument extensions.allowDynamicRendering==true.

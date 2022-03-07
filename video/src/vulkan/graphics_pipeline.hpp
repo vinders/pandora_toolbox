@@ -455,7 +455,7 @@ Implementation included in renderer.cpp
 
   // ---
 
-# if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+# if defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12
     GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(const VkPipelineRenderingCreateInfoKHR& dynamicRenderingInfo) {
       if (!_renderer->isDynamicRenderingSupported())
         throw std::runtime_error("Vulkan: extension KHR dynamic rendering not enabled");

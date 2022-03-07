@@ -603,7 +603,7 @@ Includes hpp implementations at the end of the file
       this->_deviceExtensions.emplace(deviceInfo.ppEnabledExtensionNames[i]);
     
     _isDynamicRenderingSupported = false;
-#   if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197
+#   if defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12
       VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingInfo{};
       if (extensions.allowDynamicRendering) {
         if (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) > __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)
