@@ -41,7 +41,7 @@ vinders (14):
 * video: Direct3D11/Vulkan swap-chain & graphics pipeline: renderer no longer copied as shared_ptr, to avoid overhead
 * video: Direct3D11/Vulkan depth/stencil buffer: move into separate files + remove dependency from renderer header
 * video: window manager (windows): fix fixed-size behavior after minimization
-* cwork: custom cmake framework: add option for Vulkan feature level
+* cwork: custom cmake framework: add option for max Vulkan feature level
 
 ---
 
@@ -70,12 +70,11 @@ vinders (20):
 * video: Direct3D11 1D/2D/3D/target texture buffers + params
 * video: Direct3D11 texture data reader (staged) + writer (static/dynamic/staged) + copy/copyRegion
 ### fixes
-vinders (13):
+vinders (12):
 * video: window manager + builder for Windows: fix window fullscreen restore with clipped cursor
 * video: Direct3D11: remove outdated multisampling mode
 * pattern: advanced type traits: fix move detection for new MSVC compiler
 * video: window manager + builder: remove scrollbar support (not very useful -> improve speed + reduce weight)
-* video: drop OpenGLES support + add Vulkan support
 * video: refactor Direct3D11 renderer/swap-chain/state factory: improve efficiency, reduce weight, make interface usable for vulkan/openGL
 * video: Direct3D11 viewport: reimplement viewport per API
 * cwork: custom cmake framework: fix child solution system: always include child libs

@@ -193,12 +193,17 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
       VK_API_VERSION_1_2, VK_API_VERSION_1_1, VK_API_VERSION_1_0
     };
     std::shared_ptr<vulkan::VulkanInstance> vulkanInstance = nullptr;
+    vulkan::Renderer renderer;
     for (uint32_t i = 0; i < sizeof(vulkanVersions) / sizeof(*vulkanVersions) && vulkanInstance == nullptr; ++i) {
-      vulkanInstance = vulkan::VulkanInstance::create("gpu_analyzer", VK_MAKE_VERSION(1, 0, 0), vulkanVersions[i]);
+      try {
+        vulkanInstance = vulkan::VulkanInstance::create("gpu_analyzer", VK_MAKE_VERSION(1, 0, 0), vulkanVersions[i]);
+
+        auto features = vulkan::Renderer::defaultFeatures();
+        features.variableMultisampleRate = true;
+        renderer = vulkan::Renderer(monitor, vulkanInstance, features, false);
+      }
+      catch (...) { renderer.release(); vulkanInstance = nullptr; }
     }
-    auto features = vulkan::Renderer::defaultFeatures();
-    features.variableMultisampleRate = true;
-    vulkan::Renderer renderer(monitor, vulkanInstance);
 
     // API level
     uint32_t featureLevel = VK_VERSION_MINOR(renderer.featureLevel());
