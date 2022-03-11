@@ -19,7 +19,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
 # include <gtest/gtest.h>
 # include <video/d3d11/renderer.h>
-# include <video/d3d11/texture.h>
+# include <video/d3d11/sampler.h>
 
   using namespace pandora::video::d3d11;
 

@@ -83,6 +83,7 @@ Includes hpp implementations at the end of the file
 
 # include "video/d3d11/shader.h"
 # include "video/d3d11/buffer.h"
+# include "video/d3d11/sampler.h"
 # include "video/d3d11/texture.h"
 # include "video/d3d11/texture_reader.h"
 # include "video/d3d11/texture_writer.h"
@@ -877,6 +878,7 @@ Includes hpp implementations at the end of the file
 # include "./graphics_pipeline.hpp"
 # include "./depth_stencil_buffer.hpp"
 # include "./buffer.hpp"
+# include "./sampler.hpp"
 # include "./texture.hpp"
 # include "./texture_reader_writer.hpp"
 # include "./shader.hpp"
