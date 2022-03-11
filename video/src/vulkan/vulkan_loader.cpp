@@ -20,8 +20,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdlib>
 # include <cstring>
 # include <stdexcept>
+# include <memory/dynamic_array.h>
 # include "video/vulkan/api/vulkan_loader.h"
-# include "video/vulkan/api/_private/_dynamic_array.h"
 
 # if defined(_WINDOWS)
 #   ifndef __MINGW32__
@@ -66,6 +66,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #   endif
 # endif
   using namespace pandora::video::vulkan;
+  using pandora::memory::DynamicArray;
 
   VulkanLoader VulkanLoader::_libs{};
 
@@ -165,12 +166,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       throw std::runtime_error("Vulkan: failed to count extensions");
 
     auto allExt = DynamicArray<VkExtensionProperties>(extCount);
-    if (enumerator(nullptr, &extCount, allExt.value))
+    if (enumerator(nullptr, &extCount, allExt.data()))
       throw std::runtime_error("Vulkan: failed to query extensions");
     
     // search for platform extension
-    VkExtensionProperties* endIt = allExt.value + (intptr_t)extCount;
-    for (VkExtensionProperties* it = allExt.value; it < endIt; ++it) {
+    VkExtensionProperties* endIt = allExt.end();
+    for (VkExtensionProperties* it = allExt.begin(); it < endIt; ++it) {
       if (!hasBaseKhr && strcmp(it->extensionName, "VK_KHR_surface") == 0) {
         hasBaseKhr = true;
       }
@@ -280,16 +281,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       throw std::runtime_error("Vulkan: failed to count instance extensions");
 
     auto availableExt = DynamicArray<VkExtensionProperties>(availableExtCount);
-    VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.value);
+    VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.data());
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query instance extensions");
 
     size_t numberFound = 0;
     memset(outResults, 0, length*sizeof(*outResults)); // set all results to false
     
-    VkExtensionProperties* endIt = availableExt.value + (intptr_t)availableExtCount;
+    VkExtensionProperties* endIt = availableExt.end();
     for (const char** currentExt = extensions; length; --length, ++currentExt, ++outResults) {
-      for (VkExtensionProperties* it = availableExt.value; it < endIt; ++it) {
+      for (VkExtensionProperties* it = availableExt.begin(); it < endIt; ++it) {
         if (strcmp(*currentExt, it->extensionName) == 0) {
           *outResults = true;
           ++numberFound;
@@ -306,12 +307,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       throw std::runtime_error("Vulkan: failed to count layers");
 
     auto availableLayers = DynamicArray<VkLayerProperties>(availableLayerCount);
-    VkResult queryResult = this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, availableLayers.value);
+    VkResult queryResult = this->vk.EnumerateInstanceLayerProperties_(&availableLayerCount, availableLayers.data());
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query layers");
 
-    VkLayerProperties* endIt = availableLayers.value + (intptr_t)availableLayerCount;
-    for (VkLayerProperties* it = availableLayers.value; it < endIt; ++it) {
+    VkLayerProperties* endIt = availableLayers.end();
+    for (VkLayerProperties* it = availableLayers.begin(); it < endIt; ++it) {
       if (strcmp(layerName, it->layerName) == 0)
         return true;
     }

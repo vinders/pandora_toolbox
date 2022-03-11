@@ -1,6 +1,6 @@
 /*******************************************************************************
 MIT License
-Copyright (c) 2021 Romain Vinders
+Copyright (c) 2022 Romain Vinders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <memory>
 # include <string>
 # include <unordered_set>
+# include <memory/dynamic_array.h>
 # include <hardware/display_monitor.h>
-# include "./api/_private/_dynamic_array.h"
 # include "video/vulkan/_private/_shared_resource.h" // includes vulkan
 # include "./api/types.h"      // includes vulkan
 # include "./scissor.h"        // includes vulkan
@@ -104,7 +104,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                            If set to 'false', call 'deviceFeatures()' after creation to verify if something's missing.
           /// @param deviceExtensions  Structure with custom array of device extensions to enable
           ///                          (or NULL array to enable all standard extensions used by the toolbox).
-          ///                          Before using specific extensions, make sure they're supported (HardwareAdapter::findDeviceExtensions).
+          ///                          Before using specific extensions, make sure they're supported (GraphicsAdapter::findDeviceExtensions).
           ///                          Warning: if the array is not NULL, no other extension than those specified will be enabled
           ///                          -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
           /// @param commandQueueCount Number of parallel command queues created (usually one per swap-chain/target).

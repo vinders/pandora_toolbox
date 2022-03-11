@@ -152,7 +152,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           private:
             Builder(ShaderType type, DynamicArray<char>&& shaderBuffer, const char* entryPoint)
               : _shaderBuffer(std::move(shaderBuffer)),
-                _data(reinterpret_cast<const uint8_t*>(_shaderBuffer.value)),
+                _data(reinterpret_cast<const uint8_t*>(_shaderBuffer.data())),
                 _length(static_cast<size_t>(_shaderBuffer.length())),
                 _type(type),
                 _entryPoint(entryPoint) {}

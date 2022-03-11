@@ -43,13 +43,13 @@ Includes hpp implementations at the end of the file
 # include <cmath>
 # include <stdexcept>
 # include <memory/light_string.h>
+# include <memory/dynamic_array.h>
 # define GLM_FORCE_DEPTH_ZERO_TO_ONE // force Vulkan depth range (0.0 to 1.0) instead of OpenGL
 # include <glm/glm.hpp>
 # include <glm/gtc/color_space.hpp>
 
 # include "video/window_resource.h"
 # include "video/vulkan/api/vulkan_loader.h"
-# include "video/vulkan/api/_private/_dynamic_array.h"
 # include "video/vulkan/api/_private/_glslang_utils.h"
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(default: 4701)  // restore init warnings after including glm
@@ -188,17 +188,17 @@ Includes hpp implementations at the end of the file
       ++enabledExtCount;
 
     auto enabledExtensions = DynamicArray<const char*>(enabledExtCount);
-    memcpy(enabledExtensions.value, instanceBaseExt, baseExtCount*sizeof(*instanceBaseExt));
+    memcpy(enabledExtensions.data(), instanceBaseExt, baseExtCount*sizeof(*instanceBaseExt));
     if (additionalExtCount != 0)
-      memcpy(&enabledExtensions.value[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
+      memcpy(&enabledExtensions[baseExtCount], instanceAdditionalExts, additionalExtCount*sizeof(*instanceAdditionalExts));
     if (loader.vk.isKhrDisplaySupported)
-      enabledExtensions.value[enabledExtCount - 1] = "VK_KHR_display";
+      enabledExtensions[enabledExtCount - 1] = "VK_KHR_display";
 
     // create vulkan instance
     VkInstanceCreateInfo instanceInfo{};
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
-    instanceInfo.ppEnabledExtensionNames = enabledExtensions.value;
+    instanceInfo.ppEnabledExtensionNames = enabledExtensions.data();
     instanceInfo.enabledExtensionCount = (uint32_t)enabledExtCount;
 
 #   if defined(_DEBUG) || !defined(NDEBUG)
@@ -306,16 +306,16 @@ Includes hpp implementations at the end of the file
       throw std::runtime_error("Vulkan: failed to count device extensions");
 
     auto availableExt = DynamicArray<VkExtensionProperties>(availableExtCount);
-    VkResult queryResult = vkEnumerateDeviceExtensionProperties(device, nullptr, &availableExtCount, availableExt.value);
+    VkResult queryResult = vkEnumerateDeviceExtensionProperties(device, nullptr, &availableExtCount, availableExt.data());
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query device extensions");
 
     size_t numberFound = 0;
     memset(outResults, 0, length*sizeof(*outResults)); // set all results to false
 
-    VkExtensionProperties* endIt = availableExt.value + (intptr_t)availableExtCount;
+    VkExtensionProperties* endIt = availableExt.end();
     for (const char** currentExt = extensions; length; --length, ++currentExt, ++outResults) {
-      for (VkExtensionProperties* it = availableExt.value; it < endIt; ++it) {
+      for (VkExtensionProperties* it = availableExt.begin(); it < endIt; ++it) {
         if (strcmp(*currentExt, it->extensionName) == 0) {
           *outResults = true;
           ++numberFound;
@@ -335,12 +335,12 @@ Includes hpp implementations at the end of the file
     
     DynamicArray<const char*> supportedExt(outExtCount);
     if (outExtCount == _ArraySize) {
-      memcpy(supportedExt.value, extensions, _ArraySize*sizeof(*extensions));
+      memcpy(supportedExt.data(), extensions, _ArraySize*sizeof(*extensions));
     }
     else {
       bool* curResult = results;
       const char** endExt = extensions + _ArraySize;
-      for (const char** curExt = extensions, **out = supportedExt.value; curExt < endExt; ++curExt, ++curResult) {
+      for (const char** curExt = extensions, **out = supportedExt.begin(); curExt < endExt; ++curExt, ++curResult) {
         if (*curResult) {
           *out = *curExt;
           ++out;
@@ -456,10 +456,10 @@ Includes hpp implementations at the end of the file
       uint32_t displayCount = 0;
       if (vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, nullptr) == VK_SUCCESS && displayCount) {
         auto displays = DynamicArray<VkDisplayPropertiesKHR>(displayCount);
-        VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.value);
+        VkResult result = vkGetPhysicalDeviceDisplayPropertiesKHR(device, &displayCount, displays.data());
 
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-          for (const VkDisplayPropertiesKHR* it = displays.value; displayCount; --displayCount, ++it) {
+          for (const VkDisplayPropertiesKHR* it = displays.begin(); displayCount; --displayCount, ++it) {
             if (it->displayName != nullptr && (monitorName == it->displayName || monitorDesc == it->displayName))
               return true;
           }
@@ -486,7 +486,7 @@ Includes hpp implementations at the end of the file
       if (queueFamilyCount == 0)
         return false;
       auto queueFamilies = DynamicArray<VkQueueFamilyProperties>(queueFamilyCount);
-      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.value);
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
       // find compatible families (if available) - ordered from best to worst
       DynamicArray<_VkLinkedFamily> buffers(queueFamilyCount);
@@ -494,10 +494,10 @@ Includes hpp implementations at the end of the file
       uint32_t orderedResultsLength = 0;
 
       for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-        VkQueueFamilyProperties& family = queueFamilies.value[i];
+        VkQueueFamilyProperties& family = queueFamilies[i];
         if ((family.queueFlags & VK_QUEUE_GRAPHICS_BIT) && family.queueCount >= (uint32_t)minQueueCount
         && (!useSparseBinding || (family.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT))) {
-          _VkLinkedFamily* entry = &(buffers.value[i]);
+          _VkLinkedFamily* entry = &(buffers[i]);
           entry->index = i;
           entry->queueCount = family.queueCount;
           entry->score = 0;
@@ -522,7 +522,7 @@ Includes hpp implementations at the end of the file
 
       if (orderedResults != nullptr) {
         outQueueFamilyIndices = DynamicArray<uint32_t>(orderedResultsLength);
-        uint32_t* out = &(outQueueFamilyIndices.value[0]);
+        uint32_t* out = outQueueFamilyIndices.begin();
         for (_VkLinkedFamily* it = orderedResults; it != nullptr; ++out, it = it->next)
           *out = it->index;
         return true;
@@ -544,8 +544,8 @@ Includes hpp implementations at the end of the file
       throw std::runtime_error("Vulkan: failed to find compatible GPUs");
 
     auto physicalDevices = DynamicArray<VkPhysicalDevice>(physicalDeviceCount);
-    memset(physicalDevices.value, 0, physicalDeviceCount*sizeof(VkPhysicalDevice));
-    VkResult queryResult = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.value);
+    memset(physicalDevices.data(), 0, physicalDeviceCount*sizeof(VkPhysicalDevice));
+    VkResult queryResult = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
       throw std::runtime_error("Vulkan: failed to query physical devices");
 
@@ -564,7 +564,7 @@ Includes hpp implementations at the end of the file
     uint32_t bestDeviceScore = 0;
     featureLevel = __P_VK_API_VERSION_NOVARIANT(featureLevel);
 
-    for (VkPhysicalDevice* it = physicalDevices.value; physicalDeviceCount; --physicalDeviceCount, ++it) {
+    for (VkPhysicalDevice* it = physicalDevices.data(); physicalDeviceCount; --physicalDeviceCount, ++it) {
       VkPhysicalDeviceProperties deviceProperties;
       vkGetPhysicalDeviceProperties(*it, &deviceProperties);
 
@@ -634,7 +634,7 @@ Includes hpp implementations at the end of the file
     }
     else {
       defaultExt = __defaultDeviceExtensions(physicalDevice, deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
-      deviceInfo.ppEnabledExtensionNames = defaultExt.value;
+      deviceInfo.ppEnabledExtensionNames = defaultExt.data();
     }
     for (uint32_t i = 0; i < deviceInfo.enabledExtensionCount; ++i)
       this->_deviceExtensions.emplace(deviceInfo.ppEnabledExtensionNames[i]);
@@ -681,19 +681,19 @@ Includes hpp implementations at the end of the file
 
     // device command queues
     DynamicArray<VkDeviceQueueCreateInfo> cmdQueueInfos(cmdQueueFamilyIndices.length());
-    memset(cmdQueueInfos.value, 0, cmdQueueFamilyIndices.length()*sizeof(VkDeviceQueueCreateInfo));
+    memset(cmdQueueInfos.data(), 0, cmdQueueFamilyIndices.length()*sizeof(VkDeviceQueueCreateInfo));
     DynamicArray<float> queuePriorities(commandQueueCount);
     for (size_t i = 0; i < commandQueueCount; ++i)
-      queuePriorities.value[i] = 1.0f;
+      queuePriorities[i] = 1.0f;
 
     for (size_t i = 0; i < cmdQueueFamilyIndices.length(); ++i) {
-      VkDeviceQueueCreateInfo& cmdQueueInfo = cmdQueueInfos.value[i];
+      VkDeviceQueueCreateInfo& cmdQueueInfo = cmdQueueInfos[i];
       cmdQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-      cmdQueueInfo.queueFamilyIndex = cmdQueueFamilyIndices.value[i];
+      cmdQueueInfo.queueFamilyIndex = cmdQueueFamilyIndices[i];
       cmdQueueInfo.queueCount = (uint32_t)commandQueueCount;
-      cmdQueueInfo.pQueuePriorities = queuePriorities.value;
+      cmdQueueInfo.pQueuePriorities = queuePriorities.data();
     }
-    deviceInfo.pQueueCreateInfos = cmdQueueInfos.value;
+    deviceInfo.pQueueCreateInfos = cmdQueueInfos.data();
     deviceInfo.queueCreateInfoCount = (uint32_t)cmdQueueInfos.length();
 
     // create logical rendering device (context)
@@ -706,11 +706,11 @@ Includes hpp implementations at the end of the file
     // get command queue handles
     DynamicArray<CommandQueues> graphicsQueuesPerFamily(cmdQueueFamilyIndices.length());
     for (size_t i = 0; i < cmdQueueFamilyIndices.length(); ++i) {
-      CommandQueues& family = graphicsQueuesPerFamily.value[i];
-      family.familyIndex = cmdQueueFamilyIndices.value[i];
+      CommandQueues& family = graphicsQueuesPerFamily[i];
+      family.familyIndex = cmdQueueFamilyIndices[i];
       family.commandQueues = DynamicArray<VkQueue>(commandQueueCount);
       for (size_t queue = 0; queue < commandQueueCount; ++queue) {
-        VkQueue* target = &(family.commandQueues.value[queue]);
+        VkQueue* target = &(family.commandQueues[queue]);
         vkGetDeviceQueue(deviceContextHandle, family.familyIndex, (uint32_t)queue, target);
         if (*target == VK_NULL_HANDLE)
           throw std::runtime_error("Vulkan: failed to obtain command queue access");
@@ -720,7 +720,7 @@ Includes hpp implementations at the end of the file
     
     // create command pool for short-lived operations (copies...)
     VkCommandPool transientCommandPool = VK_NULL_HANDLE;
-    uint32_t transientCommandQueueFamily = cmdQueueFamilyIndices.value[0];//TODO: choose queue with transfer capability (if possible, also graphics caps)
+    uint32_t transientCommandQueueFamily = cmdQueueFamilyIndices[0];//TODO: choose queue with transfer capability (if possible, also graphics caps)
     VkCommandPoolCreateInfo transientPoolInfo{};
     transientPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     transientPoolInfo.queueFamilyIndex = transientCommandQueueFamily;
@@ -906,7 +906,7 @@ Includes hpp implementations at the end of the file
     else { // realign data (only for weird compilers where alignment differs)
       auto data = DynamicArray<VkViewport>(numberViewports);
       if (numberViewports) {
-        VkViewport* out = &(data.value[numberViewports - 1u]);
+        VkViewport* out = &(data[numberViewports - 1u]);
         for (const Viewport* it = &viewports[numberViewports - 1u]; it >= viewports; --it, --out)
           memcpy((void*)out, (void*)it, sizeof(VkViewport));
       }
@@ -929,7 +929,7 @@ Includes hpp implementations at the end of the file
     else { // realign data (only for weird compilers where alignment differs)
       auto data = DynamicArray<VkRect2D>(numberRectangles);
       if (numberRectangles) {
-        VkRect2D* out = &(data.value[numberRectangles - 1u]);
+        VkRect2D* out = &(data[numberRectangles - 1u]);
         for (const ScissorRectangle* it = &rectangles[numberRectangles - 1u]; it >= rectangles; --it, --out)
           memcpy((void*)out, (void*)it, sizeof(VkRect2D));
       }

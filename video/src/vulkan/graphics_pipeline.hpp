@@ -232,9 +232,9 @@ Implementation included in renderer.cpp
 
   // Bind vertex shader input layout description (optional)
   GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputLayout(InputLayout inputLayout) noexcept {
-    _inputLayoutDesc.pVertexBindingDescriptions = inputLayout->bindings.value;
+    _inputLayoutDesc.pVertexBindingDescriptions = inputLayout->bindings.data();
     _inputLayoutDesc.vertexBindingDescriptionCount = static_cast<uint32_t>(inputLayout->bindings.length());
-    _inputLayoutDesc.pVertexAttributeDescriptions = inputLayout->attributes.value;
+    _inputLayoutDesc.pVertexAttributeDescriptions = inputLayout->attributes.data();
     _inputLayoutDesc.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputLayout->attributes.length());
     _inputLayoutObj = std::move(inputLayout);
     return *this;
@@ -403,10 +403,10 @@ Implementation included in renderer.cpp
 
     if (_blendAttachmentsPerTarget.length() < size_t{ 1u })
       _blendAttachmentsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(size_t{ 1u });
-    memcpy(_blendAttachmentsPerTarget.value, &state._attachDesc(), sizeof(VkPipelineColorBlendAttachmentState));
+    memcpy(_blendAttachmentsPerTarget.data(), &state._attachDesc(), sizeof(VkPipelineColorBlendAttachmentState));
     _useBlendPerTarget = false;
 
-    _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
+    _blendDesc.pAttachments = _blendAttachmentsPerTarget.data();
     _blendDesc.attachmentCount = 1u;
     _useDynamicBlendConstants = state._isDynamicConstantEnabled(); // no need for extensions
     return *this;
@@ -418,10 +418,10 @@ Implementation included in renderer.cpp
 
     if (_blendAttachmentsPerTarget.length() < state._attachDesc().size())
       _blendAttachmentsPerTarget = DynamicArray<VkPipelineColorBlendAttachmentState>(state._attachDesc().size());
-    memcpy(_blendAttachmentsPerTarget.value, state._attachDesc().data(), sizeof(VkPipelineColorBlendAttachmentState)*state._attachDesc().size());
+    memcpy(_blendAttachmentsPerTarget.data(), state._attachDesc().data(), sizeof(VkPipelineColorBlendAttachmentState)*state._attachDesc().size());
     _useBlendPerTarget = true;
 
-    _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
+    _blendDesc.pAttachments = _blendAttachmentsPerTarget.data();
     _blendDesc.attachmentCount = static_cast<uint32_t>(state._attachDesc().size());
     _useDynamicBlendConstants = state._isDynamicConstantEnabled(); // no need for extensions
     return *this;
@@ -593,15 +593,15 @@ Implementation included in renderer.cpp
         if ((size_t)_maxColorAttachmentCount > _blendAttachmentsPerTarget.length()) { // realloc container if too small
           DynamicArray<VkPipelineColorBlendAttachmentState> resizedBlendPerTarget(_maxColorAttachmentCount);
           if (_blendAttachmentsPerTarget.length() > 0)
-            memcpy(resizedBlendPerTarget.value, _blendAttachmentsPerTarget.value,
+            memcpy(resizedBlendPerTarget.data(), _blendAttachmentsPerTarget.data(),
                     _blendAttachmentsPerTarget.length()*sizeof(VkPipelineColorBlendAttachmentState));
           _blendAttachmentsPerTarget = std::move(resizedBlendPerTarget);
-          _blendDesc.pAttachments = _blendAttachmentsPerTarget.value;
+          _blendDesc.pAttachments = _blendAttachmentsPerTarget.data();
         }
 
         if (!_useBlendPerTarget) { // grouped blend -> copy first value to every slot
           for (uint32_t i = _blendDesc.attachmentCount; i < _maxColorAttachmentCount; ++i)
-            memcpy(&(_blendAttachmentsPerTarget.value[i]), _blendAttachmentsPerTarget.value, sizeof(VkPipelineColorBlendAttachmentState));
+            memcpy(&(_blendAttachmentsPerTarget[i]), _blendAttachmentsPerTarget.data(), sizeof(VkPipelineColorBlendAttachmentState));
         }
       }
       _blendDesc.attachmentCount = _maxColorAttachmentCount;
@@ -630,18 +630,18 @@ Implementation included in renderer.cpp
       if (this->_viewportsDesc.pViewports != nullptr) {
         fixedViewports = DynamicArray<VkViewport>(this->_viewportsDesc.viewportCount);
         for (uint32_t i = 0; i < this->_viewportsDesc.viewportCount; ++i)
-          memcpy(&fixedViewports.value[i], &srcViewports[i], sizeof(VkViewport));
+          memcpy(&fixedViewports[i], &srcViewports[i], sizeof(VkViewport));
       }
       DynamicArray<VkRect2D> fixedScissors;
       const ScissorRectangle* srcScissors = (const ScissorRectangle*)this->_viewportsDesc.pScissors;
       if (this->_viewportsDesc.pScissors != nullptr) {
         fixedScissors = DynamicArray<VkRect2D>(this->_viewportsDesc.scissorCount);
         for (uint32_t i = 0; i < this->_viewportsDesc.scissorCount; ++i)
-          memcpy(&fixedScissors.value[i], &srcScissors[i], sizeof(VkViewport));
+          memcpy(&fixedScissors[i], &srcScissors[i], sizeof(VkViewport));
       }
 
-      _viewportsDesc.pViewports = fixedViewports.value;
-      _viewportsDesc.pScissors = fixedScissors.value;
+      _viewportsDesc.pViewports = fixedViewports.data();
+      _viewportsDesc.pScissors = fixedScissors.data();
       return GraphicsPipeline(_descriptor, _renderer, _renderPassObj, _pipelineLayoutObj, parentCache);
     }
     return GraphicsPipeline(_descriptor, _renderer, _renderPassObj, _pipelineLayoutObj, parentCache);

@@ -154,7 +154,7 @@ Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
             else {
               auto& transientCommandQueue = _device->transientCommandQueues().commandQueues;
               __writeWithStagingBuffer(_device->context(), _device->device(), _device->transientCommandPool(),
-                                       transientCommandQueue.value[transientCommandQueue.length()-1u],
+                                       transientCommandQueue[transientCommandQueue.length()-1u],
                                        this->_handle, bufferByteSize, initData);
             }
           }
@@ -508,7 +508,7 @@ Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
   template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
   bool __P_BUFFER_STATIC_CLASS::copy(pandora::video::vulkan::Buffer<_RhsUsage>& source, uint32_t commandQueueIndex) noexcept {
     return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                            _device->transientCommandQueues().commandQueues.value[commandQueueIndex],
+                            _device->transientCommandQueues().commandQueues[commandQueueIndex],
                             source.handle(), this->_handle, this->_bufferSize);
   }
   template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
@@ -523,7 +523,7 @@ Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
                                     source.allocation(), source.allocationOffset(), allocation(), allocationOffset());
     else
       return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                              _device->transientCommandQueues().commandQueues.value[commandQueueIndex],
+                              _device->transientCommandQueues().commandQueues[commandQueueIndex],
                               source.handle(), this->_handle, this->_bufferSize);
   }
   template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
@@ -534,14 +534,14 @@ Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
                                     source.allocation(), source.allocationOffset(), allocation(), allocationOffset());
     else
       return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                              _device->transientCommandQueues().commandQueues.value[commandQueueIndex],
+                              _device->transientCommandQueues().commandQueues[commandQueueIndex],
                               source.handle(), this->_handle, this->_bufferSize);
   }
 
   // bool Buffer.write(const void* sourceData)
   template <> inline bool __P_BUFFER_STATIC_CLASS::write(const void* sourceData, uint32_t commandQueueIndex) noexcept {
     return __writeWithStagingBuffer(_device->context(), _device->device(), _device->transientCommandPool(),
-                                    _device->transientCommandQueues().commandQueues.value[commandQueueIndex],
+                                    _device->transientCommandQueues().commandQueues[commandQueueIndex],
                                     this->_handle, this->_bufferSize, sourceData);
   }
   template <> inline bool __P_BUFFER_IMMUTABLE_CLASS::write(const void*, uint32_t) noexcept {

@@ -30,6 +30,7 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
 #   define NOSERVICE
 # endif
 # include <cstdint>
+# include <memory/dynamic_array.h>
 # include "./d3d_11.h"
 # include <system/_private/_enum_flags.h>
 
@@ -52,6 +53,9 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         
         using InputLayoutHandle = ID3D11InputLayout*;     ///< Input layout representation, for shader input stage
         using ColorChannel = FLOAT;                       ///< R/G/B/A color value
+
+        template <typename T>
+        using DynamicArray = pandora::memory::DynamicArray<T>;
         
         
         // -- rasterizer settings --

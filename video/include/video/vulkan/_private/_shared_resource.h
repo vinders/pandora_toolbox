@@ -65,7 +65,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_graphicsQueuesPerFamily; } ///< Vulkan command queues (per family)
           inline VkCommandPool transientCommandPool() const noexcept { return this->_transientCommandPool; } ///< Get command pool for short-lived operations
           inline const CommandQueues& transientCommandQueues() const noexcept { ///< Get queue family for transient command pool
-            return _graphicsQueuesPerFamily.value[_transientQueuesArrayIndex];
+            return _graphicsQueuesPerFamily[_transientQueuesArrayIndex];
           }
           
         private:

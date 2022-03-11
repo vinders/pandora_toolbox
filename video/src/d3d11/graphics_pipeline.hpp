@@ -213,7 +213,7 @@ Implementation included in renderer.cpp
     this->_pipeline = std::make_unique<_DxPipelineStages>(builder._params); // copy pipeline states + shader stages
 
     // copy viewport/scissor descriptors
-    this->_pipeline->viewports = pandora::memory::LightVector<D3D11_VIEWPORT>(builder._viewportCount);
+    this->_pipeline->viewports = DynamicArray<D3D11_VIEWPORT>(builder._viewportCount);
     if (builder._viewportCount > 0) {
       __if_constexpr (sizeof(Viewport) == sizeof(D3D11_VIEWPORT)) {
         memcpy(this->_pipeline->viewports.data(), builder._viewports, sizeof(D3D11_VIEWPORT)*builder._viewportCount);
@@ -225,7 +225,7 @@ Implementation included in renderer.cpp
           memcpy(lhs, rhs, sizeof(D3D11_VIEWPORT));
       }
     }
-    this->_pipeline->scissorTests = pandora::memory::LightVector<D3D11_RECT>(builder._scissorCount);
+    this->_pipeline->scissorTests = DynamicArray<D3D11_RECT>(builder._scissorCount);
     if (builder._scissorCount > 0) {
       __if_constexpr (sizeof(ScissorRectangle) == sizeof(D3D11_RECT)) {
         memcpy(this->_pipeline->scissorTests.data(), builder._scissorTests, sizeof(D3D11_RECT)*builder._scissorCount);

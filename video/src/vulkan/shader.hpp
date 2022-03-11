@@ -76,7 +76,7 @@ Implementation included in renderer.cpp
         glslang::GlslangToSpv(*shader.getIntermediate(), spirvStorage, &logger, &spvOptions);
 
         DynamicArray<char> output(spirvStorage.size()*sizeof(unsigned int));
-        memcpy(output.value, spirvStorage.data(), spirvStorage.size()*sizeof(unsigned int));
+        memcpy(output.data(), spirvStorage.data(), spirvStorage.size()*sizeof(unsigned int));
 #       if !defined(_CPP_REVISION) || _CPP_REVISION != 14
           return output;
 #       else
@@ -122,8 +122,8 @@ Implementation included in renderer.cpp
         size_t fileSize = ftell(shaderFile);
         fseek(shaderFile, 0, SEEK_SET);
         shaderData = DynamicArray<char>(fileSize + 1);
-        memset(shaderData.value, 0, (fileSize + 1) * sizeof(char));
-        fread(shaderData.value, 1, fileSize, shaderFile);
+        memset(shaderData.data(), 0, (fileSize + 1) * sizeof(char));
+        fread(shaderData.data(), 1, fileSize, shaderFile);
 
         fclose(shaderFile);
         shaderFile = nullptr;
@@ -133,7 +133,7 @@ Implementation included in renderer.cpp
           fclose(shaderFile);
         throw;
       }
-      return Shader::Builder(type, g_compiler.glslToSpirv(type, shaderData.value, shaderData.length()-1u,
+      return Shader::Builder(type, g_compiler.glslToSpirv(type, shaderData.data(), shaderData.length()-1u,
                                                           entryPoint, clientTarget, spirvTarget, defaultVersion,
                                                           customTBuiltInResource), entryPoint);
     }
@@ -174,10 +174,10 @@ Implementation included in renderer.cpp
     InputLayout layout = std::make_shared<InputLayoutDescription>();
     layout->bindings = DynamicArray<VkVertexInputBindingDescription>(bindingsLength);
     if (bindingsLength)
-      memcpy(layout->bindings.value, inputBindings, bindingsLength*sizeof(VkVertexInputBindingDescription));
+      memcpy(layout->bindings.data(), inputBindings, bindingsLength*sizeof(VkVertexInputBindingDescription));
     layout->attributes = DynamicArray<VkVertexInputAttributeDescription>(attributesLength);
     if (attributesLength)
-      memcpy(layout->attributes.value, layoutAttributes, attributesLength*sizeof(VkVertexInputAttributeDescription));
+      memcpy(layout->attributes.data(), layoutAttributes, attributesLength*sizeof(VkVertexInputAttributeDescription));
 
 #   if !defined(_CPP_REVISION) || _CPP_REVISION != 14
       return layout;

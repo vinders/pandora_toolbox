@@ -23,7 +23,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <cstring>
 # include <memory>
-# include <memory/light_vector.h>
 # include "video/d3d11/api/types.h" // includes D3D11
 # include "./_error.h" // includes D3D11
 
@@ -419,8 +418,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           InputLayout inputLayout;
           VertexTopology topology = VertexTopology::triangles;
           // output constraints
-          pandora::memory::LightVector<D3D11_VIEWPORT> viewports;
-          pandora::memory::LightVector<D3D11_RECT> scissorTests;
+          DynamicArray<D3D11_VIEWPORT> viewports;
+          DynamicArray<D3D11_RECT> scissorTests;
           uint64_t viewportScissorId = 0;
         };
         /// @brief Attached graphics pipeline cache -- reserved for internal use

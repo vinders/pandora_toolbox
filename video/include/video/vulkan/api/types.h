@@ -28,7 +28,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 # include <cstdint>
 # include "./vulkan.h"
 # include <system/_private/_enum_flags.h>
-# include "./_private/_dynamic_array.h"
+# include <memory/dynamic_array.h>
 # ifndef VK_API_VERSION_MAJOR
 #   define VK_API_VERSION_MAJOR(version) VK_VERSION_MAJOR(version)
 #   define VK_API_VERSION_MINOR(version) VK_VERSION_MINOR(version)
@@ -51,6 +51,9 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
         using ColorChannel = float;             ///< R/G/B/A color value
+
+        template <typename T>
+        using DynamicArray = pandora::memory::DynamicArray<T>;
 
         ///@brief Extended physical device feature description
         struct AdapterFeatures final {
@@ -85,7 +88,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         struct DeviceExtensions final { ///< Specify logical device extensions for Renderer
           const char** deviceExtensions = nullptr; ///< Custom array of device extensions to enable
                                                    ///  (or NULL to enable all standard extensions used by the toolbox).
-                                                   ///  Before using specific extensions, make sure they're supported (HardwareAdapter::findDeviceExtensions).
+                                                   ///  Before using specific extensions, make sure they're supported (GraphicsAdapter::findDeviceExtensions).
                                                    ///  Warning: if the value is not NULL, no other extension than those specified here will be enabled
                                                    ///  -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
           size_t extensionCount = 0;               ///< Array size for 'deviceExtensions'

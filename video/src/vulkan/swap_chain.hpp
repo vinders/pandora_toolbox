@@ -37,9 +37,9 @@ Implementation included in renderer.cpp
                                                &formatCount, nullptr) == VK_SUCCESS && formatCount) {
         auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
         VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(this->_renderer->_deviceContext.device(),
-                                                               this->_windowSurface, &formatCount, formats.value);
+                                                               this->_windowSurface, &formatCount, formats.data());
         if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
-          for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
+          for (const VkSurfaceFormatKHR* it = formats.data(); formatCount; --formatCount, ++it) {
             if (it->format == format)
               return true;
           }
@@ -95,12 +95,12 @@ Implementation included in renderer.cpp
     VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, nullptr);
     if (result == VK_SUCCESS && formatCount) {
       auto formats = DynamicArray<VkSurfaceFormatKHR>(formatCount);
-      result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, formats.value);
+      result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, windowSurface, &formatCount, formats.data());
       if (result == VK_SUCCESS || result == VK_INCOMPLETE) {
 
         VkColorSpaceKHR colorSpace = VK_COLOR_SPACE_MAX_ENUM_KHR;
         VkColorSpaceKHR preferredColorSpace = __getColorSpace(backBufferFormat);
-        for (const VkSurfaceFormatKHR* it = formats.value; formatCount; --formatCount, ++it) {
+        for (const VkSurfaceFormatKHR* it = formats.begin(); formatCount; --formatCount, ++it) {
           if (it->format == backBufferFormat) {
             if (it->colorSpace == preferredColorSpace) { // preferred color space found -> exit loop
               colorSpace = it->colorSpace;
@@ -115,7 +115,7 @@ Implementation included in renderer.cpp
 
         // format not found -> use first available format (only if default format requested)
         if (backBufferFormat == VK_FORMAT_R8G8B8A8_SRGB || backBufferFormat == VK_FORMAT_R8G8B8A8_UNORM)
-          return VkSurfaceFormatKHR(formats.value[0]);
+          return VkSurfaceFormatKHR(formats[0]);
       }
     }
 
@@ -132,22 +132,22 @@ Implementation included in renderer.cpp
     if (result != VK_SUCCESS || presentModeCount == 0)
       throwError(result, "SwapChain: can't count present modes");
     DynamicArray<VkPresentModeKHR> supportedModes(presentModeCount);
-    result = vkGetPhysicalDeviceSurfacePresentModesKHR(this->_renderer->device(), this->_windowSurface, &presentModeCount, supportedModes.value);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(this->_renderer->device(), this->_windowSurface, &presentModeCount, supportedModes.data());
     if (result != VK_SUCCESS && result != VK_INCOMPLETE)
       throwError(result, "SwapChain: can't read present modes");
 
     VkPresentModeKHR mode = VK_PRESENT_MODE_FIFO_KHR;
     if (preferredMode == PresentMode::immediate) {
-      for (size_t i = 0; i < presentModeCount; ++i) {
-        if (supportedModes.value[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+      for (auto it = supportedModes.begin(); it < supportedModes.end(); ++it) {
+        if (*it == VK_PRESENT_MODE_IMMEDIATE_KHR) {
           mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
           break;
         }
       }
     }
     else if (framebufferCount >= 3 && (this->_flags & SwapChain::OutputFlag::disableFlipSwap) == false) {
-      for (size_t i = 0; i < presentModeCount; ++i) {
-        if (supportedModes.value[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+      for (auto it = supportedModes.begin(); it < supportedModes.end(); ++it) {
+        if (*it == VK_PRESENT_MODE_MAILBOX_KHR) {
           mode = VK_PRESENT_MODE_MAILBOX_KHR;
           break;
         }
@@ -160,7 +160,7 @@ Implementation included in renderer.cpp
   static inline uint32_t _findPresentQueueArrayIndex(const Renderer& renderer, VkSurfaceKHR windowSurface) { // throws
     uint32_t queueArrayIndex = (uint32_t)-1;
 
-    auto* family = renderer.commandQueues().value;
+    auto* family = renderer.commandQueues().begin();
     for (size_t i = 0; i < renderer.commandQueues().length(); ++i, ++family) {
       VkBool32 presentSupport = VK_FALSE;
       if (vkGetPhysicalDeviceSurfaceSupportKHR(renderer.device(), family->familyIndex,
@@ -258,7 +258,7 @@ Implementation included in renderer.cpp
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = oldSwapchain;
 
-    const auto* cmdQueues = this->_renderer->commandQueues().value;
+    const auto* cmdQueues = this->_renderer->commandQueues().data();
     uint32_t cmdQueueIndices[2] = { cmdQueues[0].familyIndex, cmdQueues[_presentQueueArrayIndex].familyIndex };
     createInfo.pQueueFamilyIndices = &cmdQueueIndices[0];
     if (this->_presentQueueArrayIndex != 0) {
@@ -298,18 +298,18 @@ Implementation included in renderer.cpp
       throwError(result, "SwapChain: failed to count buffer images");
 
     this->_bufferImages = DynamicArray<VkImage>(imageCount);
-    result = vkGetSwapchainImagesKHR(this->_renderer->context(), this->_swapChain, &imageCount, this->_bufferImages.value);
+    result = vkGetSwapchainImagesKHR(this->_renderer->context(), this->_swapChain, &imageCount, this->_bufferImages.data());
     if (result != VK_SUCCESS && result != VK_INCOMPLETE)
       throwError(result, "SwapChain: failed to obtain buffer images");
 
     // retrieve swap-chain target image views
     this->_renderTargetViews = DynamicArray<VkImageView>(imageCount);
-    memset(this->_renderTargetViews.value, 0, imageCount*sizeof(VkImageView));
+    memset(this->_renderTargetViews.data(), 0, imageCount*sizeof(VkImageView));
     uint32_t layerCount = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? 2 : 1;
     
     for (uint32_t i = 0; i < imageCount; ++i) {
-      this->_renderTargetViews.value[i] = __createBufferView(this->_renderer->context(),
-                                                            this->_bufferImages.value[i], this->_backBufferFormat,
+      this->_renderTargetViews[i] = __createBufferView(this->_renderer->context(),
+                                                            this->_bufferImages[i], this->_backBufferFormat,
                                                             VK_IMAGE_ASPECT_COLOR_BIT, layerCount, 1u, 0);
     }
   }
@@ -325,8 +325,8 @@ Implementation included in renderer.cpp
           vkDeviceWaitIdle(this->_renderer->context());
 
           for (size_t i = 0; i < this->_renderTargetViews.length(); ++i) {
-            if (this->_renderTargetViews.value[i] != VK_NULL_HANDLE)
-              vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+            if (this->_renderTargetViews[i] != VK_NULL_HANDLE)
+              vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews[i], nullptr);
           }
           this->_renderTargetViews.clear();
           this->_bufferImages.clear();
@@ -392,7 +392,7 @@ Implementation included in renderer.cpp
       //...destroy framebuffers
       //...free command buffers
       for (size_t i = 0; i < this->_renderTargetViews.length(); ++i)
-        vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews.value[i], nullptr);
+        vkDestroyImageView(this->_renderer->context(), this->_renderTargetViews[i], nullptr);
       this->_renderTargetViews.clear();
       this->_bufferImages.clear();
       

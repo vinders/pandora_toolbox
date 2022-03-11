@@ -20,9 +20,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
 # include <cstdint>
+# include <memory/dynamic_array.h>
 # include "../window_handle.h"
 # include "../common_types.h"
-# include "./api/_private/_dynamic_array.h"
 # include "./api/types.h" // includes Vulkan
 # include "./renderer.h"  // includes Vulkan
 
@@ -122,7 +122,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Get render-target view of current SwapChain
           /// @remarks - This value should be used to call 'Renderer.setActiveRenderTargets'.
           ///          - Activating the render-target is necessary to draw into SwapChain back-buffers.
-          inline RenderTargetView getRenderTargetView() const noexcept { return this->_renderTargetViews.value[_currentImageIndex]; }
+          inline RenderTargetView getRenderTargetView() const noexcept { return this->_renderTargetViews[_currentImageIndex]; }
           
           inline uint32_t width() const noexcept  { return _width(); } ///< Get current swap-chain width
           inline uint32_t height() const noexcept { return _height(); }///< Get current swap-chain height
