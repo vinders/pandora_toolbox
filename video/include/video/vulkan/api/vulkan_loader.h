@@ -110,13 +110,13 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Get extension ID used for current platform surface (ex: "VK_KHR_win32_surface")
           /// @warning The returned value is a constant: it must not be freed!
           const char* getPlatformSurfaceExtensionId() const noexcept;
-          /// @brief Detect presence of a list of extensions on current system
+          /// @brief Detect presence of a list of instance extensions on current system
           /// @param extensions  Array of extensions to find.
           /// @param length      Length of 'extensions' and 'outResults'.
           /// @param outResults  Array to store results (must be preallocated).
           /// @returns Number of extensions (from the 'extensions' array) found.
           /// @throws runtime_error if the list of extensions can't be read from driver.
-          size_t findExtensions(const char** extensions, size_t length, bool* outResults) const;
+          size_t findInstanceExtensions(const char** extensions, size_t length, bool* outResults) const;
           /// @brief Detect presence of an API layer
           /// @throws runtime_error if the list of API layers can't be read.
           bool findLayer(const char* layerName) const;

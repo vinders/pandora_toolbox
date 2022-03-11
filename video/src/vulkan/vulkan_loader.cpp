@@ -274,15 +274,15 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return ""; // should not happen (verified during init)
   }
   
-  size_t VulkanLoader::findExtensions(const char** extensions, size_t length, bool* outResults) const {
+  size_t VulkanLoader::findInstanceExtensions(const char** extensions, size_t length, bool* outResults) const {
     uint32_t availableExtCount = 0;
     if (this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, nullptr) != VK_SUCCESS || availableExtCount == 0)
-      throw std::runtime_error("Vulkan: failed to count extensions");
+      throw std::runtime_error("Vulkan: failed to count instance extensions");
 
     auto availableExt = DynamicArray<VkExtensionProperties>(availableExtCount);
     VkResult queryResult = this->vk.EnumerateInstanceExtensionProperties_(nullptr, &availableExtCount, availableExt.value);
     if (queryResult != VK_SUCCESS && queryResult != VK_INCOMPLETE)
-      throw std::runtime_error("Vulkan: failed to query extensions");
+      throw std::runtime_error("Vulkan: failed to query instance extensions");
 
     size_t numberFound = 0;
     memset(outResults, 0, length*sizeof(*outResults)); // set all results to false
@@ -291,8 +291,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     for (const char** currentExt = extensions; length; --length, ++currentExt, ++outResults) {
       for (VkExtensionProperties* it = availableExt.value; it < endIt; ++it) {
         if (strcmp(*currentExt, it->extensionName) == 0) {
-          it->extensionName[0] = '\0'; // remove from list -> faster comparison
-          
           *outResults = true;
           ++numberFound;
           break;
@@ -395,8 +393,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       auto surfaceCreator = (__vk_CreateWin32SurfaceKHR)
                             getVulkanInstanceFunction(instance, "vkCreateWin32SurfaceKHR");
       if (surfaceCreator != nullptr) {
-        VkWin32SurfaceCreateInfoKHR params;
-        memset(&params, 0, sizeof(params));
+        VkWin32SurfaceCreateInfoKHR params{};
         params.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         params.hinstance = (HINSTANCE)GetWindowLongPtrW((HWND)window, GWLP_HINSTANCE);
         if (!params.hinstance) {
@@ -433,8 +430,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           auto surfaceCreator = (__vk_CreateWaylandSurfaceKHR)
                                 getVulkanInstanceFunction(instance, "vkCreateWaylandSurfaceKHR");
           if (surfaceCreator != nullptr) {
-            VkWaylandSurfaceCreateInfoKHR params;
-            memset(&params, 0, sizeof(params));
+            VkWaylandSurfaceCreateInfoKHR params{};
             params.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
             params.display = LibrariesWayland::instance().wl.display;
             params.surface = (wl_surface*)window;
@@ -446,8 +442,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             auto surfaceCreator = (__vk_CreateXcbSurfaceKHR)
                                   getVulkanInstanceFunction(instance, "vkCreateXcbSurfaceKHR");
             if (connection != nullptr && surfaceCreator != nullptr) {
-              VkXcbSurfaceCreateInfoKHR params;
-              memset(&params, 0, sizeof(params));
+              VkXcbSurfaceCreateInfoKHR params{};
               params.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
               params.connection = connection;
               params.window = (xcb_window_t)window;
@@ -458,8 +453,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             auto surfaceCreator = (__vk_CreateXlibSurfaceKHR)
                                   getVulkanInstanceFunction(instance, "vkCreateXlibSurfaceKHR");
             if (surfaceCreator != nullptr) {
-              VkXlibSurfaceCreateInfoKHR params;
-              memset(&params, 0, sizeof(params));
+              VkXlibSurfaceCreateInfoKHR params{};
               params.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
               params.dpy = LibrariesX11::instance().displayServer;
               params.window = (Window)window;
