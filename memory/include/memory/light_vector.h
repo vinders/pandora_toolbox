@@ -32,6 +32,7 @@ namespace pandora {
     /// @class LightVector
     /// @brief Simple vector container with dynamic allocation.
     ///        Useful to avoid the huge weight/overhead of std::vector when not needed.
+    /// @remarks If the container size never changes (immutable/fixed-size), use DynamicArray instead.
     template <typename _DataType>
     class LightVector final {
     public:
@@ -44,10 +45,10 @@ namespace pandora {
           _constructDefault((_DataType*)this->_value, this->_size);
         }
       }
-      inline LightVector(const _DataType* value, size_t length) : _size(length), _allocSize(_getAllocSize(length)) { ///< Create initialized vector
+      inline LightVector(const _DataType* values, size_t length) : _size(length), _allocSize(_getAllocSize(length)) { ///< Create initialized vector
         if (this->_size > 0) {
           this->_value = new uint8_t[this->_allocSize*sizeof(_DataType)];
-          _constructCopyData((_DataType*)this->_value, value, length);
+          _constructCopyData((_DataType*)this->_value, values, length);
         }
       }
       inline ~LightVector() noexcept { clear(); }
@@ -80,12 +81,12 @@ namespace pandora {
       constexpr inline size_t size() const noexcept { return this->_size; }   ///< Get current size of the vector
       constexpr inline bool empty() const noexcept { return (this->_value == nullptr); } ///< Verify if the vector is empty
       
-      inline const _DataType& operator[](uint32_t index) const {
-        assert(index < static_cast<uint32_t>(this->_size));
+      inline const _DataType& operator[](size_t index) const {
+        assert(index < this->_size);
         return ((const _DataType*)this->_value)[index];
       }
-      inline _DataType& operator[](uint32_t index) {
-        assert(index < static_cast<uint32_t>(this->_size));
+      inline _DataType& operator[](size_t index) {
+        assert(index < this->_size);
         return ((_DataType*)this->_value)[index];
       }
 
