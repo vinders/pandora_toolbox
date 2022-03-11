@@ -51,7 +51,9 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
   TextureWrap texWrap[3] = { TextureWrap::repeatMirror, TextureWrap::repeatMirror, TextureWrap::repeatMirror };
   _samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear,
                                                        TextureFilter::linear, texWrap)));
-  uint32_t anisotropyLevel = (_renderer.maxAnisotropy() > 4u) ? _renderer.maxAnisotropy()/2 : _renderer.maxAnisotropy();
+  uint32_t anisotropyLevel = (_renderer.maxSamplerAnisotropy() > 4u)
+                           ? _renderer.maxSamplerAnisotropy()/2
+                           : _renderer.maxSamplerAnisotropy();
   _samplers.append(samplerBuilder.create(SamplerParams(anisotropyLevel, texWrap)));
 
   // enable sampler + viewports

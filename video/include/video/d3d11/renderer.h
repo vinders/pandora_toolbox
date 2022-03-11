@@ -528,7 +528,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Max slots (or array size from first slot) for samplers/filters
           constexpr inline size_t maxSamplerStateSlots() const noexcept { return D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; }
           /// @brief Max anisotropy level value (usually 8 or 16)
-          constexpr inline uint32_t maxAnisotropy() const noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
+          constexpr inline uint32_t maxSamplerAnisotropy() const noexcept { return (uint32_t)D3D11_MAX_MAXANISOTROPY; }
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
