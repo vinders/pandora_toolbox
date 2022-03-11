@@ -151,7 +151,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       pandora::hardware::DisplayMonitor monitor;
       const char* extensionIds[] { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-      DeviceExtensions extensions{ extensionIds, sizeof(extensionIds) / sizeof(*extensionIds), true };
+      DeviceExtensions extensions{ extensionIds, sizeof(extensionIds) / sizeof(*extensionIds) };
       Renderer renderer(monitor, customInstance, Renderer::defaultFeatures(), false, extensions, size_t{ 1u });
       EXPECT_TRUE(renderer.device() != VK_NULL_HANDLE);
       EXPECT_TRUE(renderer.context() != VK_NULL_HANDLE);

@@ -52,6 +52,24 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
         using ColorChannel = float;             ///< R/G/B/A color value
 
+        ///@brief Extended physical device feature description
+        struct AdapterFeatures final {
+          VkPhysicalDeviceFeatures2 base{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+          VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderColor{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT };
+          VkBool32 extendedDynamicState = VK_FALSE;
+          VkBool32 dynamicRendering = VK_FALSE;
+        };
+        /// @brief Extended physical device feature request
+        struct RequestedAdapterFeatures final {
+          VkPhysicalDeviceFeatures base{};
+          VkBool32 customBorderColor = VK_FALSE;    ///< Allow custom colors for texture sampler border if supported
+                                                    ///  (if extension "VK_EXT_custom_border_color" enabled)
+          VkBool32 extendedDynamicState = VK_FALSE; ///< Allow extended dynamic states (dynamic culling/depth-stencil/viewport count...) if supported
+                                                    ///  (if Vulkan >= 1.3 or if extension "VK_EXT_extended_dynamic_state" enabled)
+          VkBool32 dynamicRendering = VK_FALSE;     ///< Allow dynamic rendering (without render passes) if supported
+                                                    ///  (if Vulkan >= 1.3 or if extension "VK_KHR_dynamic_rendering" enabled (header >= v1.2.197 required))
+        };
+
         /// @brief Command queues from one family (with graphics support)
         struct CommandQueues final {
           DynamicArray<VkQueue> commandQueues = VK_NULL_HANDLE;
@@ -67,12 +85,10 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         struct DeviceExtensions final { ///< Specify logical device extensions for Renderer
           const char** deviceExtensions = nullptr; ///< Custom array of device extensions to enable
                                                    ///  (or NULL to enable all standard extensions used by the toolbox).
-                                                   ///  Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+                                                   ///  Before using specific extensions, make sure they're supported (HardwareAdapter::findDeviceExtensions).
                                                    ///  Warning: if the value is not NULL, no other extension than those specified here will be enabled
                                                    ///  -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
           size_t extensionCount = 0;               ///< Array size for 'deviceExtensions'
-          bool allowDynamicRendering = false;      ///< Allow dynamic rendering (without render passes) if supported
-                                                   ///  (if Vulkan >= 1.3 or if extension "VK_KHR_dynamic_rendering" enabled (header >= v1.2.197 required))
         };
 
         

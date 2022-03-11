@@ -176,7 +176,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            featureLevel, renderer.dxgiLevel(), (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
            sRgbSupport, toString(iHdrScRGB), toString(iHdr10), toString(isHdrMonitor),
            toString(isTearingSupported), toString(renderer.maxViewports() > 1u), (uint32_t)renderer.maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, renderer.maxAnisotropy(), (uint32_t)renderer.maxRenderTargets());
+           toString(maxMSAA > 1u), maxMSAA, renderer.maxSamplerAnisotropy(), (uint32_t)renderer.maxRenderTargets());
   }
 #endif
 
@@ -199,7 +199,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
         vulkanInstance = vulkan::VulkanInstance::create("gpu_analyzer", VK_MAKE_VERSION(1, 0, 0), vulkanVersions[i]);
 
         auto features = vulkan::Renderer::defaultFeatures();
-        features.variableMultisampleRate = true;
+        features.base.variableMultisampleRate = true;
         renderer = vulkan::Renderer(monitor, vulkanInstance, features, false);
       }
       catch (...) { renderer.release(); vulkanInstance = nullptr; }
@@ -250,10 +250,10 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
            ""
            "",
            featureLevel, (float)dedicatedRam/1048576.0f, (float)sharedRam/1048576.0f,
-           toString(renderer.isDynamicRenderingSupported()), toString(renderer.isExtendedDynamicStateSupported()),
+           toString(renderer.deviceFeatures().dynamicRendering), toString(renderer.deviceFeatures().extendedDynamicState),
            sRgbSupport, toString(iHdrScRGB), toString(isHdr10), "unknown",
            toString(isTearingSupported), toString(renderer.maxViewports() > 1u), (uint32_t)renderer.maxViewports(),
-           toString(maxMSAA > 1u), maxMSAA, renderer.maxAnisotropy(), (uint32_t)renderer.maxRenderTargets());
+           toString(maxMSAA > 1u), maxMSAA, renderer.maxSamplerAnisotropy(), (uint32_t)renderer.maxRenderTargets());
   }
 #endif
 

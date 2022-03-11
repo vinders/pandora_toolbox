@@ -525,12 +525,12 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
 
             /// @brief Bind rasterization state (required)
             /// @throws runtime_error if dynamic culling/order is requested but not supported by current Renderer
-            ///                       (verify with Renderer.isExtendedDynamicStateSupported).
+            ///                       (verify with Renderer.deviceFeatures().extendedDynamicState).
             Builder& setRasterizerState(const RasterizerParams& state);
             /// @brief Bind depth/stencil test state (required if depth buffer used)
             /// @warning Required to use a depth/stencil buffer when rendering.
             /// @throws runtime_error if dynamic septh/stencil test is requested but not supported by current Renderer
-            ///                       (verify with Renderer.isExtendedDynamicStateSupported).
+            ///                       (verify with Renderer.deviceFeatures().extendedDynamicState).
             Builder& setDepthStencilState(const DepthStencilParams& state);
             /// @brief Remove depth/stencil test state (if no depth buffer is used)
             inline Builder& clearDepthStencilState() noexcept {
@@ -557,7 +557,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             ///                        The count can't be 0, unless 'useDynamicCount' is true.
             /// @param useDynamicCount Allow different viewport/scissor-test counts to be set during dynamic bindings:
             ///                        only possible if VulkanLoader.isDynamicViewportCountSupported is true
-            ///                        and if Renderer.isExtendedDynamicStateSupported is true.
+            ///                        and if Renderer.deviceFeatures().extendedDynamicState is VK_TRUE.
             /// @remarks The value of viewportCount and scissorCount can't exceed Renderer.maxViewports().
             /// @throws runtime_error if dynamic count is requested but not supported by driver.
             /// @warning The current Viewport and ScissorRectangle arrays must be kept alive as long as the Builder is used.
@@ -592,11 +592,11 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
               _descriptor.pNext = nullptr;
               return *this;
             }
-#           if defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12
+#           if (defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12) || (defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197)
               /// @brief Provide dynamic rendering definition (formats only)
               ///        The Renderer must be built either for Vulkan 1.3+ or with extension "VK_KHR_dynamic_rendering",
               ///        with argument extensions.allowDynamicRendering==true.
-              ///        Verify support for dynamic rendering with Renderer.isDynamicRenderingSupported.
+              ///        Verify support for dynamic rendering with Renderer.deviceFeatures().dynamicRendering.
               /// @throws runtime_error if dynamic rendering is not supported by renderer.
               /// @warning - The pipeline will need to be used with compatible render-targets only.
               ///          - The current VkPipelineRenderingCreateInfoKHR must be kept alive as long as the Builder is used.

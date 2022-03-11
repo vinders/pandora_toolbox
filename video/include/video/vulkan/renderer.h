@@ -53,7 +53,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @param instanceAdditionalExts Array of additional instance extension to enable (or NULL).
           ///                               Note that 'surface', 'platform-specific surface', 'get physical device properties2', 'display'
           ///                               and 'driver properties' extensions are already enabled if supported (you should NOT specify them in your array).
-          ///                               Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+          ///                               Before using specific extensions, make sure they're supported (VulkanLoader::findInstanceExtensions).
           /// @param additionalExtCount     Array size for 'instanceAdditionalExts'.
           /// @throws - runtime_error: creation failure (vulkan not supported, missing extensions, feature level too high...).
           ///         - bad_alloc: memory allocation failure.
@@ -101,22 +101,23 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///                  If you choose advanced features, you'll probably need to specify 'deviceExtensions' as well.
           ///                  Warning: if some features are disabled, functionalities of the toolbox depending on them won't be usable anymore.
           /// @param areFeaturesRequired If some features are not supported by the GPU, throw error (true) or just disable them (false).
-          ///                            If set to 'false', call 'enabledFeatures()' after creation to verify if something's missing.
+          ///                            If set to 'false', call 'deviceFeatures()' after creation to verify if something's missing.
           /// @param deviceExtensions  Structure with custom array of device extensions to enable
           ///                          (or NULL array to enable all standard extensions used by the toolbox).
-          ///                          Before using specific extensions, make sure they're supported (VulkanLoader::findExtensions).
+          ///                          Before using specific extensions, make sure they're supported (HardwareAdapter::findDeviceExtensions).
           ///                          Warning: if the array is not NULL, no other extension than those specified will be enabled
           ///                          -> functionalities of the toolbox depending on missing extensions won't be usable anymore.
           /// @param commandQueueCount Number of parallel command queues created (usually one per swap-chain/target).
           /// @throws - runtime_error: creation failure.
+          ///         - out_of_range: no compatible GPU found (instance.featureLevel() too high or 'commandQueueCount' too high).
           ///         - bad_alloc: memory allocation failure.
           Renderer(const pandora::hardware::DisplayMonitor& monitor, std::shared_ptr<VulkanInstance> instance = nullptr,
-                   const VkPhysicalDeviceFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
+                   const RequestedAdapterFeatures& features = defaultFeatures(), bool areFeaturesRequired = false,
                    const DeviceExtensions& extensions = DeviceExtensions{}, size_t commandQueueCount = 1);
           /// @brief Destroy device and context resources
           ~Renderer() noexcept { release(); }
           
-          Renderer() noexcept = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
+          Renderer() = default; ///< Empty renderer -- not usable (only useful to store variable not immediately initialized)
           Renderer(const Renderer&) = delete;
           Renderer(Renderer&& rhs) noexcept;
           Renderer& operator=(const Renderer&) = delete;
@@ -126,19 +127,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Create default list of vulkan features (all basic standard features enabled)
           /// @remarks Used to create a Renderer object.
           ///          Should be fine-tuned before use, to improve performance or to support special shader features.
-          static VkPhysicalDeviceFeatures defaultFeatures() noexcept;
+          static RequestedAdapterFeatures defaultFeatures() noexcept;
+
           /// @brief Get list of features enabled in vulkan renderer
-          inline const VkPhysicalDeviceFeatures& enabledFeatures() const noexcept { return *(this->_features); }
+          inline const AdapterFeatures& deviceFeatures() const noexcept { return *(this->_features); }
+          /// @brief Get device properties for vulkan renderer
+          inline const VkPhysicalDeviceProperties& deviceProperties() const noexcept { return *(this->_physicalDeviceInfo); }
           /// @brief Get limits of physical device associated with device context
           inline const VkPhysicalDeviceLimits& deviceLimits() const noexcept { return this->_physicalDeviceInfo->limits; }
           /// @brief Verify if a device extension is enabled in vulkan renderer
-          inline bool isExtensionEnabled(const std::string& name) const noexcept {
-            return (this->_deviceExtensions.find(name) != this->_deviceExtensions.end());
-          }
-          /// @brief Verify if dynamic rendering (without render passes) is supported by logical device
-          inline bool isDynamicRenderingSupported() const noexcept { return this->_isDynamicRenderingSupported; }
-          /// @brief Verify if extended dynamic states are supported by logical device
-          inline bool isExtendedDynamicStateSupported() const noexcept { return this->_isExtendedDynamicStateSupported; }
+          bool isExtensionEnabled(const std::string& name) const noexcept;
           
           /// @brief Flush command buffers
           /// @remarks Should only be called: - just before a long CPU wait (ex: sleep)
@@ -152,7 +150,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline DeviceContext context() const noexcept { return this->_deviceContext.context(); } ///< Get logical device context (VkDevice)
           inline DeviceResourceManager resourceManager() noexcept { return &_deviceContext; } ///< Get resource manager (to build resources such as shaders)
           inline VkInstance vkInstance() const noexcept { return this->_instance->vkInstance(); }   ///< Get Vulkan instance
-          inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get instance API level (VK_API_VERSION_1_2...)
+          inline uint32_t featureLevel() const noexcept { return this->_instance->featureLevel(); } ///< Get renderer API level (VK_API_VERSION_1_2...)
           inline const DynamicArray<CommandQueues>& commandQueues() const noexcept { return this->_deviceContext.commandQueues(); } ///< Get Vulkan command queues (per family)
           inline VkCommandPool transientCommandPool() const noexcept { return this->_deviceContext.transientCommandPool(); } ///< Get command pool for short-lived operations
           
@@ -198,7 +196,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           }
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
-          inline bool isTearingAvailable() const noexcept { return static_cast<bool>(this->_features->variableMultisampleRate); }
+          inline bool isTearingAvailable() const noexcept {
+            return static_cast<bool>(this->_features->base.features.variableMultisampleRate);
+          }
           
           
           // -- pipeline status operations - shaders / states --
@@ -215,7 +215,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- render target operations --
 
           /// @brief Max number of simultaneous viewports/scissor-test rectangles per pipeline
-          inline size_t maxViewports() const noexcept { return this->_features->multiViewport ? this->_physicalDeviceInfo->limits.maxViewports : 1; }
+          inline size_t maxViewports() const noexcept { return this->_physicalDeviceInfo->limits.maxViewports; }
           
           /// @brief Replace rasterizer viewport(s) (3D -> 2D projection rectangle(s)) -- multi-viewport support
           /// @warning - With Vulkan, this viewport change is only supported if the GraphicsPipeline
@@ -247,7 +247,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline size_t maxRenderTargets() const noexcept { return this->_physicalDeviceInfo->limits.maxColorAttachments; }
 
           /// @brief Max anisotropy level value (usually 8 or 16)
-          inline uint32_t maxAnisotropy() const noexcept {
+          inline uint32_t maxSamplerAnisotropy() const noexcept {
             return static_cast<uint32_t>(this->_physicalDeviceInfo->limits.maxSamplerAnisotropy);
           }
 
@@ -262,10 +262,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ScopedDeviceContext _deviceContext;
           std::shared_ptr<VulkanInstance> _instance = nullptr;
           std::unordered_set<std::string> _deviceExtensions;
-          std::unique_ptr<VkPhysicalDeviceFeatures> _features = nullptr;
+          std::unique_ptr<AdapterFeatures> _features = nullptr;
           std::unique_ptr<VkPhysicalDeviceProperties> _physicalDeviceInfo = nullptr;
-          bool _isDynamicRenderingSupported = false;
-          bool _isExtendedDynamicStateSupported = false;
 
           VkPipeline _attachedPipeline = VK_NULL_HANDLE;
         };

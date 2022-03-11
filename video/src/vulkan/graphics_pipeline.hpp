@@ -341,7 +341,7 @@ Implementation included in renderer.cpp
     if (state._isDynamicCullingEnabled()) {
       if (!VulkanLoader::instance().isDynamicCullingSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic culling/order not supported by driver");
-      if (!_renderer->isExtendedDynamicStateSupported())
+      if (_renderer->deviceFeatures().extendedDynamicState == VK_FALSE)
         throw std::runtime_error("Vulkan: extension for dynamic states (culling/order) not enabled");
     }
 
@@ -349,7 +349,8 @@ Implementation included in renderer.cpp
     _descriptor.pRasterizationState = &_rasterizationDesc;
 
     _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)state._getSampleCount();
-    if (state._getSampleCount() > 1 && state._getMinSampleShading() != 0.f && _renderer->enabledFeatures().sampleRateShading) {
+    if (state._getSampleCount() > 1 && state._getMinSampleShading() != 0.f
+    && _renderer->deviceFeatures().base.features.sampleRateShading) {
       _multisampleDesc.sampleShadingEnable = VK_TRUE;
       _multisampleDesc.minSampleShading = state._getMinSampleShading();
     }
@@ -383,7 +384,7 @@ Implementation included in renderer.cpp
         throw std::runtime_error("Vulkan: dynamic depth-test not supported by driver");
       if (state._isDynamicStencilTestEnabled() && !loader.isDynamicStencilTestSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic stencil-test not supported by driver");
-      if (!_renderer->isExtendedDynamicStateSupported())
+      if (_renderer->deviceFeatures().extendedDynamicState == VK_FALSE)
         throw std::runtime_error("Vulkan: extension for dynamic states (depth/stencil-tests) not enabled");
     }
 
@@ -435,7 +436,7 @@ Implementation included in renderer.cpp
     if (useDynamicCount) {
       if (!VulkanLoader::instance().isDynamicViewportCountSupported(this->_renderer->vkInstance()))
         throw std::runtime_error("Vulkan: dynamic viewport count not supported by driver");
-      if (!_renderer->isExtendedDynamicStateSupported())
+      if (_renderer->deviceFeatures().extendedDynamicState == VK_FALSE)
         throw std::runtime_error("Vulkan: extension for dynamic states (viewport count) not enabled");
     }
     
@@ -455,9 +456,9 @@ Implementation included in renderer.cpp
 
   // ---
 
-# if defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12
+# if (defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12) || (defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197)
     GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(const VkPipelineRenderingCreateInfoKHR& dynamicRenderingInfo) {
-      if (!_renderer->isDynamicRenderingSupported())
+      if (!_renderer->deviceFeatures().dynamicRendering)
         throw std::runtime_error("Vulkan: extension KHR dynamic rendering not enabled");
       _renderPassObj = nullptr;
       _maxColorAttachmentCount = dynamicRenderingInfo.colorAttachmentCount;
@@ -571,8 +572,10 @@ Implementation included in renderer.cpp
   GraphicsPipeline GraphicsPipeline::Builder::build(VkPipelineCache parentCache) { // throws
     if (_renderPassObj != nullptr)
       _descriptor.renderPass = _renderPassObj->handle.value();
-    else if (_descriptor.pNext != nullptr && _renderer->isDynamicRenderingSupported())
-      _descriptor.renderPass = nullptr;
+#   if (defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12) || (defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197)
+      else if (_descriptor.pNext != nullptr && _renderer->deviceFeatures().dynamicRendering)
+        _descriptor.renderPass = nullptr;
+#   endif
     else
       throw std::invalid_argument("GraphicsPipeline: RenderPass required");
 

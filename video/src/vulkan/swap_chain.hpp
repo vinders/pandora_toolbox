@@ -164,7 +164,7 @@ Implementation included in renderer.cpp
     for (size_t i = 0; i < renderer.commandQueues().length(); ++i, ++family) {
       VkBool32 presentSupport = VK_FALSE;
       if (vkGetPhysicalDeviceSurfaceSupportKHR(renderer.device(), family->familyIndex,
-                                               windowSurface, &presentSupport) == VK_SUCCESS && presentSupport == VK_TRUE) {
+                                               windowSurface, &presentSupport) == VK_SUCCESS && presentSupport != VK_FALSE) {
         queueArrayIndex = (uint32_t)i;
         break;
       }
