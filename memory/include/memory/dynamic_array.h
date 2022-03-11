@@ -45,8 +45,16 @@ namespace pandora {
           delete[] _value;
       }
 
-      DynamicArray(const DynamicArray&) = delete;
-      DynamicArray& operator=(const DynamicArray&) = delete;
+      inline DynamicArray(const DynamicArray& rhs)
+        : _value(rhs._length ? new _DataType[rhs._length] : nullptr), _length(rhs._length) {
+        _constructCopyData<_DataType>(_value, rhs._value, _length);
+      }
+      inline DynamicArray& operator=(const DynamicArray& rhs) {
+        clear();
+        this->_value = rhs._length ? new _DataType[rhs._length] : nullptr;
+        this->_length = rhs._length;
+        _constructCopyData<_DataType>(_value, rhs._value, _length);
+      }
       inline DynamicArray(DynamicArray&& rhs) noexcept : _value(rhs._value), _length(rhs._length) {
         rhs._value = nullptr;
         rhs._length = 0;

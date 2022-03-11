@@ -145,6 +145,13 @@ TEST_F(DynamicArrayTest, arrayAccessorsCtorsInt) {
   EXPECT_EQ((int)0, preallocConst->front());
   EXPECT_EQ((int)15, preallocConst->back());
   EXPECT_EQ(size_t{16u}, prealloc.size());
+
+  DynamicArray<int> copy(prealloc);
+  EXPECT_TRUE(copy.data() != nullptr);
+  EXPECT_EQ(size_t{16u}, copy.size());
+  for (int i = 0; i < 16; ++i) {
+    EXPECT_EQ(i, copy[i]);
+  }
 }
 
 TEST_F(DynamicArrayTest, arrayAccessorsCtorsObject) {
