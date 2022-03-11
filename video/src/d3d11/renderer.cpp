@@ -23,6 +23,7 @@ Includes hpp implementations at the end of the file
 # ifndef __MINGW32__
 #   pragma warning(push)
 #   pragma warning(disable: 4100)  // disable warnings about unused params
+#   pragma warning(disable: 6387)  // disable warnings about empty handles
 #   pragma warning(disable: 33011) // disable warnings about upper bound check
 # endif
 # include <cstddef>
@@ -421,7 +422,7 @@ Includes hpp implementations at the end of the file
           
           DXGI_ADAPTER_DESC adapterInfo;
           if (adapter->GetDesc(&adapterInfo) == S_OK) {
-            outDedicatedRam = (size_t)adapterInfo.DedicatedVideoMemory;
+            outDedicatedRam = (size_t)adapterInfo.DedicatedVideoMemory + (size_t)adapterInfo.DedicatedSystemMemory;
             outSharedRam = (size_t)adapterInfo.SharedSystemMemory;
             isSuccess = true;
           }
