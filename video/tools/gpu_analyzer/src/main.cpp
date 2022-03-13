@@ -199,7 +199,7 @@ inline int readNumericInput(int minValue, int maxValue) noexcept {
         vulkanInstance = vulkan::VulkanInstance::create("gpu_analyzer", VK_MAKE_VERSION(1, 0, 0), vulkanVersions[i]);
 
         auto features = vulkan::Renderer::defaultFeatures();
-        features.base.variableMultisampleRate = true;
+        features.features.variableMultisampleRate = true;
         renderer = vulkan::Renderer(monitor, vulkanInstance, features, false);
       }
       catch (...) { renderer.release(); vulkanInstance = nullptr; }

@@ -265,7 +265,7 @@ Implementation included in renderer.cpp
       *curObj = *it;
       curDesc->sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       curDesc->stage = (VkShaderStageFlagBits)curObj->type();
-      curDesc->module = curObj->handle()->value();
+      curDesc->module = curObj->handle();
       curDesc->pName = curObj->entryPoint();
     }
 
@@ -306,7 +306,7 @@ Implementation included in renderer.cpp
 
     Shader* targetObj = this->_shaderStagesObj + (target - this->_shaderStagesDesc);
     *targetObj = shaderStage;
-    target->module = targetObj->handle()->value();
+    target->module = targetObj->handle();
     target->pName = targetObj->entryPoint();
     return *this;
   }
@@ -350,7 +350,7 @@ Implementation included in renderer.cpp
 
     _multisampleDesc.rasterizationSamples = (VkSampleCountFlagBits)state._getSampleCount();
     if (state._getSampleCount() > 1 && state._getMinSampleShading() != 0.f
-    && _renderer->deviceFeatures().base.features.sampleRateShading) {
+    && _renderer->deviceFeatures().features.sampleRateShading) {
       _multisampleDesc.sampleShadingEnable = VK_TRUE;
       _multisampleDesc.minSampleShading = state._getMinSampleShading();
     }

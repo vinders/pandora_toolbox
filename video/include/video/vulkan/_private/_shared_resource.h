@@ -137,6 +137,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline operator bool() const noexcept { return (_handle != VK_NULL_HANDLE); } ///< Verify validity
           inline bool hasValue() const noexcept { return (_handle != VK_NULL_HANDLE); } ///< Verify validity
           inline T value() const noexcept { return _handle; } ///< Read value (no verification -> call hasValue() first!)
+          inline const T* ptr() const noexcept { return &_handle; } ///< Get pointer to value (no verification -> call hasValue() first!)
 
           inline bool operator==(const ScopedResource<T>& rhs) const noexcept { return (_handle == rhs._handle); }
           inline bool operator!=(const ScopedResource<T>& rhs) const noexcept { return (_handle != rhs._handle); }

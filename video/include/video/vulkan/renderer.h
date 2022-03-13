@@ -197,7 +197,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @brief Screen tearing supported (variable refresh rate display)
           /// @remarks The variableMultisampleRate feature must have been enabled in constructor.
           inline bool isTearingAvailable() const noexcept {
-            return static_cast<bool>(this->_features->base.features.variableMultisampleRate);
+            return static_cast<bool>(this->_features->features.variableMultisampleRate);
           }
           
           

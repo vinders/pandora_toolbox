@@ -69,8 +69,6 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/_private/_resource_io.h"
 # include "video/vulkan/buffer.h"
 // # include "video/vulkan/texture.h"
-// # include "video/vulkan/texture_reader.h"
-// # include "video/vulkan/texture_writer.h"
 // # include "video/vulkan/camera_utils.h"
 #if !defined(_CPP_REVISION) || _CPP_REVISION != 14
 # define __if_constexpr if constexpr
@@ -245,7 +243,7 @@ Includes hpp implementations at the end of the file
     defaultFeatures.customBorderColor = VK_TRUE;
     defaultFeatures.extendedDynamicState = VK_TRUE;
 
-    VkPhysicalDeviceFeatures& feat = defaultFeatures.base;
+    VkPhysicalDeviceFeatures& feat = defaultFeatures.features;
     feat.alphaToOne = feat.depthBiasClamp = feat.depthBounds = feat.depthClamp = feat.dualSrcBlend = feat.fillModeNonSolid 
       = feat.imageCubeArray = feat.independentBlend = feat.multiDrawIndirect = feat.multiViewport = feat.samplerAnisotropy
       = feat.shaderClipDistance = feat.shaderCullDistance = feat.shaderResourceMinLod = feat.shaderStorageImageExtendedFormats
@@ -280,8 +278,8 @@ Includes hpp implementations at the end of the file
     bool areMainFeaturesSupported = true;
 
     // raw iteration -> no missing feature if vulkan is updated
-    const uint8_t* reqIt = reinterpret_cast<const uint8_t*>(&(requested.base));
-    const uint8_t* availIt = reinterpret_cast<const uint8_t*>(&(available.base.features));
+    const uint8_t* reqIt = reinterpret_cast<const uint8_t*>(&(requested.features));
+    const uint8_t* availIt = reinterpret_cast<const uint8_t*>(&(available.features));
     constexpr const size_t paddedPropertyOffset = offsetof(VkPhysicalDeviceFeatures, sparseResidencyImage3D)
                                                 - offsetof(VkPhysicalDeviceFeatures, sparseResidencyImage2D);
     for (const uint8_t* endReqIt = reqIt + (intptr_t)sizeof(VkPhysicalDeviceFeatures);
@@ -293,7 +291,7 @@ Includes hpp implementations at the end of the file
     }
     
     return (areMainFeaturesSupported
-         && (requested.customBorderColor == VK_FALSE || available.customBorderColor.customBorderColorWithoutFormat != VK_FALSE)
+         && (requested.customBorderColor == VK_FALSE || available.customBorderColor != VK_FALSE)
          && (requested.dynamicRendering == VK_FALSE || available.dynamicRendering != VK_FALSE)
          && (requested.extendedDynamicState == VK_FALSE || available.extendedDynamicState != VK_FALSE) );
   }
@@ -609,7 +607,7 @@ Includes hpp implementations at the end of the file
       commandQueueCount = 1u;
     DynamicArray<uint32_t> cmdQueueFamilyIndices;
     auto physicalDevice = __getHardwareAdapter(this->_instance->vkInstance(), monitor,
-                                               this->_instance->featureLevel(), requestedFeatures.base.sparseBinding,
+                                               this->_instance->featureLevel(), requestedFeatures.features.sparseBinding,
                                                commandQueueCount, cmdQueueFamilyIndices); // throws
     if (physicalDevice == VK_NULL_HANDLE)
       throw std::out_of_range("Vulkan: failed to find compatible GPU");
@@ -641,16 +639,23 @@ Includes hpp implementations at the end of the file
 
     // feature support detection
     this->_features = std::make_unique<AdapterFeatures>();
-    VkPhysicalDeviceFeatures* baseFeatures = &(this->_features->base.features);
+    VkPhysicalDeviceFeatures* baseFeatures = &(this->_features->features);
 
     if (requestedFeatures.customBorderColor
     && this->_deviceExtensions.find("VK_EXT_custom_border_color") != this->_deviceExtensions.end()) {
-      this->_features->base.pNext = &(this->_features->customBorderColor);
-      vkGetPhysicalDeviceFeatures2(physicalDevice, &(this->_features->base));
+      VkPhysicalDeviceFeatures2 featuresExtended{};
+      VkPhysicalDeviceCustomBorderColorFeaturesEXT borderColorFeatures{};
+      borderColorFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
+      featuresExtended.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+      featuresExtended.pNext = &borderColorFeatures;
+      
+      vkGetPhysicalDeviceFeatures2(physicalDevice, &featuresExtended);
+      memcpy(baseFeatures, &(featuresExtended.features), sizeof(VkPhysicalDeviceFeatures));
+      this->_features->customBorderColor = borderColorFeatures.customBorderColorWithoutFormat;
     }
     else
       vkGetPhysicalDeviceFeatures(physicalDevice, baseFeatures);
-    __filterSupportedFeatures(requestedFeatures.base, baseFeatures);
+    __filterSupportedFeatures(requestedFeatures.features, baseFeatures);
 
     this->_physicalDeviceInfo = std::make_unique<VkPhysicalDeviceProperties>();
     memset(this->_physicalDeviceInfo.get(), 0, sizeof(VkPhysicalDeviceProperties));

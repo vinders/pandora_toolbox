@@ -57,14 +57,14 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 
         ///@brief Extended physical device feature description
         struct AdapterFeatures final {
-          VkPhysicalDeviceFeatures2 base{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
-          VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderColor{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT };
+          VkPhysicalDeviceFeatures features{};
+          VkBool32 customBorderColor = VK_FALSE;
           VkBool32 extendedDynamicState = VK_FALSE;
           VkBool32 dynamicRendering = VK_FALSE;
         };
         /// @brief Extended physical device feature request
         struct RequestedAdapterFeatures final {
-          VkPhysicalDeviceFeatures base{};
+          VkPhysicalDeviceFeatures features{};
           VkBool32 customBorderColor = VK_FALSE;    ///< Allow custom colors for texture sampler border if supported
                                                     ///  (if extension "VK_EXT_custom_border_color" enabled)
           VkBool32 extendedDynamicState = VK_FALSE; ///< Allow extended dynamic states (dynamic culling/depth-stencil/viewport count...) if supported
