@@ -104,7 +104,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           /// @brief Convert standard sRGB(A) color to gamma-correct linear RGB(A)
           /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
-          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
+          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorFloat outRgba[4]) noexcept;
           
           
           // -- feature support --
@@ -182,12 +182,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
           ///          - If the color value is NULL, the default color is used (black).
           ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
-          void clearViews(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
+          void clearViews(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, const ColorFloat clearColorRgba[4] = nullptr) noexcept;
           /// @brief Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
           /// @remarks - Recommended before drawing frames that don't cover the whole buffer (unless keeping 'dirty' previous data is desired).
           ///          - If the color value is NULL, the default color is used (black).
           ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
-          void clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
+          void clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorFloat clearColorRgba[4] = nullptr) noexcept;
           
           /// @brief Bind/replace active render-target(s) in Renderer (multi-target)
           /// @warning Binding multiple targets simultaneously is only possible if:
@@ -217,12 +217,12 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           ///          - If the color value is NULL, the default color is used (black).
           ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
           void setCleanActiveRenderTargets(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, 
-                                           const ColorChannel clearColorRgba[4] = nullptr) noexcept;
+                                           const ColorFloat clearColorRgba[4] = nullptr) noexcept;
           /// @brief Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
           /// @remarks - If the render-target is a new buffer (or resized), this is the recommended method (to reset it before using it).
           ///          - If the color value is NULL, the default color is used (black).
           ///          - Color should be gamma correct (see Renderer.sRgbToGammaCorrectColor).
-          void setCleanActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4] = nullptr) noexcept;
+          void setCleanActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer, const ColorFloat clearColorRgba[4] = nullptr) noexcept;
           
           
           // -- primitive binding --
@@ -521,7 +521,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           /// @remarks - The blend state will already be configured through a GraphicPipeline object. Try to limit dynamic changes.
           ///          - The constant color is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///            (defaults to factor 1.0 if 'constantColorRgba' is NULL).
-          void setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4] = nullptr) noexcept;
+          void setBlendState(const BlendState& state, const ColorFloat constantColorRgba[4] = nullptr) noexcept;
           
           // ---
           
@@ -532,36 +532,36 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           /// @brief Set array of sampler filters to the vertex shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setVertexSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+          inline void setVertexSamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
             this->_context->VSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
 #         ifndef __P_DISABLE_TESSELLATION_STAGE
             /// @brief Set array of sampler filters to the tessellation-control/hull shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselControlSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+            inline void setTesselControlSamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
               this->_context->HSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
             /// @brief Set array of sampler filters to the tessellation-evaluation/domain shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setTesselEvalSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+            inline void setTesselEvalSamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
               this->_context->DSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
 #         ifndef __P_DISABLE_GEOMETRY_STAGE
             /// @brief Set array of sampler filters to the geometry shader stage
             /// @remarks To remove some filters, use NULL value at their index
-            inline void setGeometrySamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+            inline void setGeometrySamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
               this->_context->GSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
             }
 #         endif
           /// @brief Set array of sampler filters to the fragment/pixel shader stage (standard)
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setFragmentSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+          inline void setFragmentSamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
             this->_context->PSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           /// @brief Set array of sampler filters to the compute shader stage
           /// @remarks To remove some filters, use NULL value at their index
-          inline void setComputeSamplerStates(uint32_t firstSlotIndex, const SamplerStateArray::Resource* states, size_t length) noexcept {
+          inline void setComputeSamplerStates(uint32_t firstSlotIndex, const SamplerHandle* states, size_t length) noexcept {
             this->_context->CSSetSamplers((UINT)firstSlotIndex, (UINT)length, states);
           }
           

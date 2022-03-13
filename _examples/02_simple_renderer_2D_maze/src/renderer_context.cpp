@@ -32,13 +32,14 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
                          SwapChain::Descriptor(width, height, 2u, presentMode, rate), __COLOR_FORMAT);
 
   // create texture sampler (bilinear)
-  SamplerBuilder samplerBuilder(_renderer);
+  Sampler::Builder samplerBuilder(_renderer.resourceManager());
   TextureWrap texWrap[3] = { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-  _sampler = samplerBuilder.create(SamplerParams(TextureFilter::nearest, TextureFilter::nearest, TextureFilter::nearest, texWrap));
+  _sampler = samplerBuilder.createSampler(SamplerParams(TextureFilter::nearest, TextureFilter::nearest,
+                                                        TextureFilter::nearest, texWrap));
 
   // enable sampler + viewports
   _renderer.flush();
-  _renderer.setFragmentSamplerStates(0, _sampler.ptr(), 1);
+  _renderer.setFragmentSamplerStates(0, _sampler.handlePtr(), 1);
   _renderer.setViewport(_viewport);
   _renderer.setScissorRectangle(_scissor);
 }

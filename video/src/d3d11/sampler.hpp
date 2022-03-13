@@ -23,7 +23,7 @@ Implementation included in renderer.cpp
 // includes + namespaces: in renderer.cpp
 
 
-// -- sampler builder -- -------------------------------------------------------
+// -- sampler params -- --------------------------------------------------------
 
   SamplerParams::SamplerParams() noexcept {
     ZeroMemory(&_params, sizeof(D3D11_SAMPLER_DESC));
@@ -41,23 +41,38 @@ Implementation included in renderer.cpp
     _params.MaxLOD = lodMax;
   }
   
-  SamplerParams& SamplerParams::borderColor(const ColorChannel rgba[4]) noexcept {
+  // ---
+  
+  SamplerParams& SamplerParams::borderColor(const ColorFloat rgba[4]) noexcept {
     if (rgba)
-      memcpy(&_params.BorderColor[0], &rgba[0], 4u*sizeof(ColorChannel));
+      memcpy(&_params.BorderColor[0], &rgba[0], 4u*sizeof(ColorFloat));
     else
-      memset(&_params.BorderColor[0], 0, 4u*sizeof(ColorChannel));
+      memset(&_params.BorderColor[0], 0, 4u*sizeof(ColorFloat));
+    return *this;
+  }
+  
+  SamplerParams& SamplerParams::borderColor(const ColorInt rgba[4]) noexcept {
+    if (rgba) {
+      _params.BorderColor[0] = static_cast<FLOAT>(rgba[0])/255.f;
+      _params.BorderColor[1] = static_cast<FLOAT>(rgba[1])/255.f;
+      _params.BorderColor[2] = static_cast<FLOAT>(rgba[2])/255.f;
+      _params.BorderColor[3] = static_cast<FLOAT>(rgba[3])/255.f;
+    }
+    else
+      memset(&_params.BorderColor[0], 0, 4u*sizeof(ColorFloat));
     return *this;
   }
 
-  // ---
 
-  // Create sampler filter state - can be used to change sampler filter state when needed (setSamplerState)
-  SamplerState SamplerBuilder::create(const SamplerParams& params) {
+// -- sampler builder -- -------------------------------------------------------
+
+  // Create sampler state object
+  Sampler Sampler::Builder::createSampler(const SamplerParams& params) {
     ID3D11SamplerState* stateData = nullptr;
     auto result = this->_device->CreateSamplerState(&(params.descriptor()), &stateData);
     if (FAILED(result) || stateData == nullptr)
-      throwError(result, "Factory: sampler error");
-    return SamplerState(stateData);
+      throwError(result, "Sampler: creation error");
+    return Sampler(stateData);
   }
 
 #endif

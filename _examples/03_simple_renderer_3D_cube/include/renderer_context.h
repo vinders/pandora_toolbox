@@ -56,7 +56,8 @@ public:
   // Toggle texture sampler (anisotropic / trilinear)
   void toggleSampler() noexcept {
     _useAnisotropy ^= true;
-    _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+    auto samplerHandle = _useAnisotropy ? _samplerAnisotropic.handle() : _samplerTrilinear.handle();
+    _renderer.setFragmentSamplerStates(0, &samplerHandle, 1);
   }
   bool isAnisotropicSampler() const noexcept { return _useAnisotropy; }
 
@@ -85,7 +86,8 @@ private:
   video_api::TextureTarget2D _msaaTarget;
   video_api::DepthStencilBuffer _depthBuffer;
   video_api::DepthStencilBuffer _depthBufferMsaa;
-  video_api::SamplerStateArray _samplers;
+  video_api::Sampler _samplerTrilinear;
+  video_api::Sampler _samplerAnisotropic;
 
   video_api::Viewport _viewport;
   video_api::ScissorRectangle _scissor;

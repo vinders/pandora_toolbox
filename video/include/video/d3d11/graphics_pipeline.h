@@ -316,9 +316,9 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
+          BlendParams& blendConstant(const ColorFloat constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
-          inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
+          inline const ColorFloat* blendConstant() const noexcept { return this->_blendConstant; }
           
           /// @brief Bit-mask specifying which RGBA components are enabled for writing
           inline BlendParams& targetWriteMask(ColorComponentFlag mask) noexcept {
@@ -331,12 +331,12 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           inline const D3D11_BLEND_DESC& descriptor() const noexcept { return this->_params; } ///< Get native Direct3D descriptor
           BlendStateId computeId() const noexcept; ///< Compute single-target resource ID based on params -- Reserved for internal use
 
-          static BlendFactorId computeFactorId(const ColorChannel constant[4]) noexcept;           ///< Reserved for internal use
+          static BlendFactorId computeFactorId(const ColorFloat constant[4]) noexcept;           ///< Reserved for internal use
           static constexpr inline BlendFactorId defaultFactorId() noexcept { return 0x80808080u; } ///< Reserved for internal use
           
         private:
           D3D11_BLEND_DESC _params;
-          ColorChannel _blendConstant[4]{ 1.f,1.f,1.f,1.f };
+          ColorFloat _blendConstant[4]{ 1.f,1.f,1.f,1.f };
         };
 
         // ---
@@ -378,9 +378,9 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - Bool param ("isDynamic") is ignored and only exists for compatibility with other APIs
-          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
+          BlendPerTargetParams& blendConstant(const ColorFloat constantFactorRgba[4], bool /*isDynamic*/ = true) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
-          inline const ColorChannel* blendConstant() const noexcept { return this->_blendConstant; }
+          inline const ColorFloat* blendConstant() const noexcept { return this->_blendConstant; }
 
           inline D3D11_BLEND_DESC& descriptor() noexcept { return this->_params; } ///< Get native Direct3D descriptor
           inline const D3D11_BLEND_DESC& descriptor() const noexcept { return this->_params; } ///< Get native Direct3D descriptor
@@ -388,7 +388,7 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
           
         private:
           D3D11_BLEND_DESC _params;
-          ColorChannel _blendConstant[4]{ 1.f,1.f,1.f,1.f };
+          ColorFloat _blendConstant[4]{ 1.f,1.f,1.f,1.f };
         };
 
 
@@ -440,9 +440,9 @@ Direct3D11 - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTarge
             /// @brief Create pipeline builder
             Builder(Renderer& renderer) noexcept : _renderer(&renderer) {}
             Builder(const Builder&) = delete;
-            Builder(Builder&&) noexcept = default;
+            Builder(Builder&&) noexcept = delete;
             Builder& operator=(const Builder&) = delete;
-            Builder& operator=(Builder&&) noexcept = default;
+            Builder& operator=(Builder&&) noexcept = delete;
             ~Builder() noexcept = default;
 
             // -- vertex input layout --

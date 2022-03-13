@@ -178,7 +178,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline operator bool() const noexcept { return (_length != 0); } ///< Container is not empty
           inline bool empty() const noexcept { return (_length == 0); }    ///< Container is empty
           inline size_t size() const noexcept { return _length; } ///< Number of slots currently filled in container
-          static size_t maxSize() noexcept { return _MaxSize; }   ///< Max number of resources in container
+          static constexpr inline size_t maxSize() noexcept { return _MaxSize; } ///< Max number of resources in container
           
           inline _Type** get() noexcept { return _values; } ///< Get collection, to bind all (or first N) resources
           inline const _Type** get() const noexcept { return _values; } ///< Get collection (constant)
@@ -376,11 +376,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         using DepthStencilState = SharedResource<ID3D11DepthStencilState>;
         /// @brief Blend state driver resource - usage: GraphicsPipeline::Builder / Renderer.setBlendState
         using BlendState = SharedResource<ID3D11BlendState>;
-        
-        /// @brief Sampler/filter state driver resource - usage: Renderer.set<...>SamplerState
-        using SamplerState = SharedResource<ID3D11SamplerState>;
-        /// @brief Array of sampler/filter state driver resources - usage: Renderer.set<...>SamplerStates
-        using SamplerStateArray = SharedResourceArray<ID3D11SamplerState, D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT>;
         /// @brief Data input layout for shader object(s) - usage: GraphicsPipeline::Builder
         using InputLayout = SharedResource<ID3D11InputLayout>;
 
@@ -403,7 +398,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           SharedResource<ID3D11DeviceChild> shaderStages[__P_D3D11_MAX_DISPLAY_SHADER_STAGE_INDEX + 1]{};
 
           // pipeline state identifiers for cache
-          ColorChannel blendConstant[4]{ 1.f,1.f,1.f,1.f };
+          ColorFloat blendConstant[4]{ 1.f,1.f,1.f,1.f };
           BlendStateId blendCacheId;
           RasterizerStateId rasterizerCacheId;
           DepthStencilStateId depthStencilCacheId;

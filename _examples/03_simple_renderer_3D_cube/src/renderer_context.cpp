@@ -47,34 +47,31 @@ RendererContext::RendererContext(const pandora::hardware::DisplayMonitor& monito
   _msaaTarget = TextureTarget2D(_renderer, msaaParams);
 
   // create samplers
-  SamplerBuilder samplerBuilder(_renderer);
+  Sampler::Builder samplerBuilder(_renderer.resourceManager());
   TextureWrap texWrap[3] = { TextureWrap::repeatMirror, TextureWrap::repeatMirror, TextureWrap::repeatMirror };
-  _samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear,
-                                                       TextureFilter::linear, texWrap)));
+  _samplerTrilinear = samplerBuilder.createSampler(SamplerParams(TextureFilter::linear, TextureFilter::linear,
+                                                                 TextureFilter::linear, texWrap));
   uint32_t anisotropyLevel = (_renderer.maxSamplerAnisotropy() > 4u)
                            ? _renderer.maxSamplerAnisotropy()/2
                            : _renderer.maxSamplerAnisotropy();
-  _samplers.append(samplerBuilder.create(SamplerParams(anisotropyLevel, texWrap)));
+  _samplerAnisotropic = samplerBuilder.createSampler(SamplerParams(anisotropyLevel, texWrap));
 
   // enable sampler + viewports
   _renderer.flush();
-  _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+  auto samplerHandle = _useAnisotropy ? _samplerAnisotropic.handle() : _samplerTrilinear.handle();
+  _renderer.setFragmentSamplerStates(0, &samplerHandle, 1);
   _renderer.setViewport(_viewport);
   _renderer.setScissorRectangle(_scissor);
 }
 
 void RendererContext::release() noexcept {
-    if (!_samplers.empty())
-      _samplers.clear();
-    if (!_msaaTarget.isEmpty())
-      _msaaTarget.release();
-    if (!_depthBufferMsaa.isEmpty())
-      _depthBufferMsaa.release();
-    if (!_depthBuffer.isEmpty())
-      _depthBuffer.release();
-    if (!_swapChain.isEmpty())
-      _swapChain.release();
-    _renderer.release();
+  _samplerTrilinear.release();
+  _samplerAnisotropic.release();
+  _msaaTarget.release();
+  _depthBufferMsaa.release();
+  _depthBuffer.release();
+  _swapChain.release();
+  _renderer.release();
 }
 
 // -- settings --
@@ -100,12 +97,13 @@ void RendererContext::resize(pandora::video::WindowHandle window, uint32_t width
   _msaaTarget = TextureTarget2D(_renderer, msaaParams);
   
   _renderer.flush();
-  _renderer.setFragmentSamplerStates(0, _samplers.getFrom(_useAnisotropy ? 1 : 0), 1);
+  auto samplerHandle = _useAnisotropy ? _samplerAnisotropic.handle() : _samplerTrilinear.handle();
+  _renderer.setFragmentSamplerStates(0, &samplerHandle, 1);
   _renderer.setViewport(_viewport);
   _renderer.setScissorRectangle(_scissor);
 }
 
-// -- operations--
+// -- operations --
 
 void RendererContext::beginDrawing() {
   if (_useAntialiasing)

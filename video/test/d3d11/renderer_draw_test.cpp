@@ -299,11 +299,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
-      SamplerBuilder samplerBuilder(renderer);
-      SamplerStateArray samplers;
+      Sampler::Builder samplerBuilder(renderer.resourceManager());
       TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-      ASSERT_EQ((size_t)1, samplers.size());
+      Sampler sampler = samplerBuilder.createSampler(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes));
+      ASSERT_FALSE(sampler.isEmpty());
 
       // vertices
       VertexPosColorData vertices1[] = {
@@ -314,7 +313,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Buffer<ResourceUsage::immutable> vertexIndex1(renderer, BufferType::vertexIndex, sizeof(indices1), (const void*)indices1);
 
       // drawing
-      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setFragmentSamplerStates(0, sampler.handlePtr(), size_t{ 1u });
       renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
       renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
       renderer.bindGraphicsPipeline(pipeline.handle());
@@ -379,11 +378,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
-      SamplerBuilder samplerBuilder(renderer);
-      SamplerStateArray samplers;
+      Sampler::Builder samplerBuilder(renderer.resourceManager());
       TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-      ASSERT_EQ((size_t)1, samplers.size());
+      Sampler sampler = samplerBuilder.createSampler(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes));
+      ASSERT_FALSE(sampler.isEmpty());
 
       // vertices
       VertexPosColorData vertices1[] = { 
@@ -397,7 +395,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Buffer<ResourceUsage::immutable> instanceArray1(renderer, BufferType::vertex, sizeof(instances1), (const void*)instances1);
 
       // drawing
-      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setFragmentSamplerStates(0, sampler.handlePtr(), size_t{ 1u });
       renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
       renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
       renderer.bindGraphicsPipeline(pipeline.handle());
@@ -465,11 +463,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DepthStencilBuffer depthBuffer(renderer.resourceManager(), DepthStencilFormat::d32_f, __WIDTH,__HEIGHT);
       ASSERT_FALSE(depthBuffer.isEmpty());
 
-      SamplerBuilder samplerBuilder(renderer);
-      SamplerStateArray samplers;
+      Sampler::Builder samplerBuilder(renderer.resourceManager());
       TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-      ASSERT_EQ((size_t)1, samplers.size());
+      Sampler sampler = samplerBuilder.createSampler(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes));
+      ASSERT_FALSE(sampler.isEmpty());
 
       // vertices
       VertexPosColorData vertices1[] = { 
@@ -503,7 +500,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Buffer<ResourceUsage::immutable> camBuffer(renderer, BufferType::uniform, sizeof(CamBuffer), &camData);
 
       // drawing
-      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setFragmentSamplerStates(0, sampler.handlePtr(), size_t{ 1u });
       renderer.setActiveRenderTarget(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView());
       renderer.clearView(chain1.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
       renderer.bindGraphicsPipeline(pipeline.handle());
@@ -739,11 +736,10 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Texture2DParams msaaTexParams(__WIDTH, __HEIGHT, format, 1u, 1u, 0, ResourceUsage::staticGpu, sampleCount);
       TextureTarget2D msaaTarget(renderer, msaaTexParams);
 
-      SamplerBuilder samplerBuilder(renderer);
-      SamplerStateArray samplers;
+      Sampler::Builder samplerBuilder(renderer.resourceManager());
       TextureWrap addrModes[3] { TextureWrap::repeat, TextureWrap::repeat, TextureWrap::repeat };
-      samplers.append(samplerBuilder.create(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes)));
-      ASSERT_EQ((size_t)1, samplers.size());
+      Sampler sampler = samplerBuilder.createSampler(SamplerParams(TextureFilter::linear, TextureFilter::linear, TextureFilter::linear, addrModes));
+      ASSERT_FALSE(sampler.isEmpty());
 
       // vertices
       VertexTexLightData vertices1[] = { 
@@ -796,7 +792,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       Buffer<ResourceUsage::immutable> camBuffer(renderer, BufferType::uniform, sizeof(CamLightData), &camLightData);
 
       // drawing
-      renderer.setFragmentSamplerStates(0, samplers.get(), samplers.size());
+      renderer.setFragmentSamplerStates(0, sampler.handlePtr(), size_t{ 1u });
       renderer.setActiveRenderTarget(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView());
       renderer.clearView(msaaTarget.getRenderTargetView(), depthBuffer.getDepthStencilView(), nullptr);
       renderer.bindGraphicsPipeline(pipeline.handle());

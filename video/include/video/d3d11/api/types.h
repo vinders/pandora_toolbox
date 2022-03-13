@@ -46,13 +46,16 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
         using TextureHandle1D = ID3D11Texture1D*;         ///< 1D texture resource container
         using TextureHandle2D = ID3D11Texture2D*;         ///< 2D texture resource container
         using TextureHandle3D = ID3D11Texture3D*;         ///< 3D texture resource container
+        using SamplerHandle = ID3D11SamplerState*;        ///< Texture sampler state object
         using BufferHandle = ID3D11Buffer*;               ///< Vertex/index/constant/resource buffer
         using RenderTargetView = ID3D11RenderTargetView*; ///< Bindable render-target view for renderer (shader output buffer)
         using DepthStencilView = ID3D11DepthStencilView*; ///< Bindable depth/stencil view for renderer
         using TextureView = ID3D11ShaderResourceView*;    ///< Bindable texture view for shaders
         
         using InputLayoutHandle = ID3D11InputLayout*;     ///< Input layout representation, for shader input stage
-        using ColorChannel = FLOAT;                       ///< R/G/B/A color value
+        using ColorFloat = FLOAT;                         ///< Normalized R/G/B/A color value (0.0 to 1.0)
+        using ColorInt = int32_t;                         ///< Integer R/G/B/A color value (0 to 255)
+        using ColorUInt = uint32_t;                       ///< Unsigned integer R/G/B/A color value (0 to 255)
 
         template <typename T>
         using DynamicArray = pandora::memory::DynamicArray<T>;
@@ -88,6 +91,27 @@ Direct3D11 - bindings with native types (same labels/values as other renderers: 
           nearest = 0, ///< Use nearest point
           linear  = 1  ///< Linear interpolation
         };
+        
+        constexpr inline D3D11_FILTER _toFilterType(TextureFilter minify, TextureFilter magnify,
+                                                    TextureFilter mip, bool isCompared) noexcept {
+          return (isCompared == false)
+            ? ((minify == TextureFilter::linear)
+               ? ((magnify == TextureFilter::linear)
+                  ? ((mip == TextureFilter::linear) ? D3D11_FILTER_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT) // L-L-L / L-L-N
+                  : ((mip == TextureFilter::linear) ? D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT) ) // L-N-L / L-N-N
+               : ((magnify == TextureFilter::linear)
+                  ? ((mip == TextureFilter::linear) ? D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT) // N-L-L / N-L-N
+                  : ((mip == TextureFilter::linear) ? D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR : D3D11_FILTER_MIN_MAG_MIP_POINT) ) // N-N-L / N-N-N
+              )
+            : ((minify == TextureFilter::linear)
+               ? ((magnify == TextureFilter::linear)
+                  ? ((mip == TextureFilter::linear) ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT)
+                  : ((mip == TextureFilter::linear) ? D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT) )
+               : ((magnify == TextureFilter::linear)
+                  ? ((mip == TextureFilter::linear) ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT)
+                  : ((mip == TextureFilter::linear) ? D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR : D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT) )
+              );
+        }
         
         
         // -- component data formats --

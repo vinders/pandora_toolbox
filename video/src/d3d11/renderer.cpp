@@ -457,7 +457,7 @@ Includes hpp implementations at the end of the file
   }
   
   // Convert standard sRGB(A) color to gamma-correct linear RGB(A)
-  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorFloat outRgba[4]) noexcept {
     DirectX::XMFLOAT3 colorArray(colorRgba);
     DirectX::XMStoreFloat3(&colorArray, DirectX::XMColorSRGBToRGB(DirectX::XMLoadFloat3(&colorArray))); // gamma-correct color
     outRgba[0] = colorArray.x;
@@ -575,7 +575,7 @@ Includes hpp implementations at the end of the file
   
   // Clear render-targets + depth buffer: reset to 'clearColorRgba' and to depth 1
   void Renderer::clearViews(RenderTargetView* views, size_t numberViews, DepthStencilView depthBuffer, 
-                            const ColorChannel clearColorRgba[4]) noexcept {
+                            const ColorFloat clearColorRgba[4]) noexcept {
     auto it = views;
     for (size_t i = 0; i < numberViews; ++i, ++it) {
       if (*it != nullptr)
@@ -585,7 +585,7 @@ Includes hpp implementations at the end of the file
       this->_context->ClearDepthStencilView(depthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
   }
   // Clear render-target content + depth buffer: reset to 'clearColorRgba' and to depth 1
-  void Renderer::clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4]) noexcept {
+  void Renderer::clearView(RenderTargetView view, DepthStencilView depthBuffer, const ColorFloat clearColorRgba[4]) noexcept {
     if (view != nullptr)
       this->_context->ClearRenderTargetView(view, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
@@ -605,7 +605,7 @@ Includes hpp implementations at the end of the file
   
   // Bind/replace active render-target(s) in Renderer (multi-target) + clear render-target/buffer
   void Renderer::setCleanActiveRenderTargets(RenderTargetView* views, size_t numberViews, 
-                                             DepthStencilView depthBuffer, const ColorChannel clearColorRgba[4]) noexcept {
+                                             DepthStencilView depthBuffer, const ColorFloat clearColorRgba[4]) noexcept {
     if (views != nullptr && numberViews > 0) { // set active view(s)
       auto it = views;
       for (size_t i = 0; i < numberViews; ++i, ++it) {
@@ -624,7 +624,7 @@ Includes hpp implementations at the end of the file
 
   // Bind/replace active render-target in Renderer (single target) + clear render-target/buffer
   void Renderer::setCleanActiveRenderTarget(RenderTargetView view, DepthStencilView depthBuffer, 
-                                            const ColorChannel clearColorRgba[4]) noexcept {
+                                            const ColorFloat clearColorRgba[4]) noexcept {
     if (view != nullptr)
       this->_context->ClearRenderTargetView(view, clearColorRgba ? &clearColorRgba[0] : __defaultBlackColor);
     if (depthBuffer != nullptr)
@@ -650,7 +650,7 @@ Includes hpp implementations at the end of the file
 # endif
 
   // Change output merger blend state with constant factors (color/alpha blending with render-target(s))
-  void Renderer::setBlendState(const BlendState& state, const ColorChannel constantColorRgba[4]) noexcept {
+  void Renderer::setBlendState(const BlendState& state, const ColorFloat constantColorRgba[4]) noexcept {
     this->_context->OMSetBlendState(state.get(), constantColorRgba, 0xFFFFFFFFu);
     this->_attachedPipeline.blendState = state.get();
     this->_attachedPipeline.blendFactorId = constantColorRgba ? BlendParams::computeFactorId(constantColorRgba)

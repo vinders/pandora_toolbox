@@ -117,8 +117,8 @@ Implementation included in renderer.cpp
     _params.RenderTarget->BlendOpAlpha = (D3D11_BLEND_OP)alphaBlendOp;
   }
 
-  BlendParams& BlendParams::blendConstant(const ColorChannel constantColorRgba[4], bool) noexcept {
-    memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorChannel)*4u);
+  BlendParams& BlendParams::blendConstant(const ColorFloat constantColorRgba[4], bool) noexcept {
+    memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorFloat)*4u);
     return *this;
   }
 
@@ -146,14 +146,14 @@ Implementation included in renderer.cpp
     return *this;
   }
 
-  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorChannel constantColorRgba[4], bool) noexcept {
-    memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorChannel)*4u);
+  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorFloat constantColorRgba[4], bool) noexcept {
+    memcpy(this->_blendConstant, constantColorRgba, sizeof(ColorFloat)*4u);
     return *this;
   }
 
   // ---
 
-  uint32_t BlendParams::computeFactorId(const ColorChannel constant[4]) noexcept {
+  uint32_t BlendParams::computeFactorId(const ColorFloat constant[4]) noexcept {
     return (static_cast<uint32_t>(constant[0]*128.f)
          ^ (static_cast<uint32_t>(constant[1]*128.f) << 8)
          ^ (static_cast<uint32_t>(constant[2]*128.f) << 16)
@@ -329,7 +329,7 @@ Implementation included in renderer.cpp
     this->_params.blendState.release();
     this->_params.blendCacheId = state.computeId();
     this->_params.blendFactorId = BlendParams::computeFactorId(state.blendConstant());
-    memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorChannel)*4u);
+    memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorFloat)*4u);
 
     if (!this->_renderer->_findBlendState(this->_params.blendCacheId, this->_params.blendState))
       this->_params.blendState = createBlendState(state);
@@ -340,7 +340,7 @@ Implementation included in renderer.cpp
     this->_params.blendState.release();
     this->_params.blendCacheId = state.computeId();
     this->_params.blendFactorId = BlendParams::computeFactorId(state.blendConstant());
-    memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorChannel)*4u);
+    memcpy(this->_params.blendConstant, state.blendConstant(), sizeof(ColorFloat)*4u);
 
     if (!this->_renderer->_findBlendState(this->_params.blendCacheId, this->_params.blendState))
       this->_params.blendState = createBlendState(state);

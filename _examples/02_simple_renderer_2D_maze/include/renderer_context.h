@@ -62,7 +62,7 @@ public:
 private:
   video_api::Renderer _renderer;
   video_api::SwapChain _swapChain;
-  video_api::SamplerState _sampler;
+  video_api::Sampler _sampler;
 
   video_api::Viewport _viewport;
   video_api::ScissorRectangle _scissor;
