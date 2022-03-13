@@ -38,21 +38,19 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         /// @brief GPU shading program/effects for Vulkan renderer
         class Shader final {
         public:
-          using Handle = SharedResource<VkShaderModule>;
+          using Handle = VkShaderModule;
           
           /// @brief Create usable shader stage object -- reserved for internal use or advanced usage
           /// @remarks Prefer Shader::Builder for standard usage
           /// @warning Shader objects must be destroyed BEFORE the associated Renderer instance!
-          Shader(Handle handle, ShaderType type, const char* entryPoint = "main")
+          Shader(SharedResource<VkShaderModule> handle, ShaderType type, const char* entryPoint = "main")
             : _handle(std::move(handle)), _entryPoint(entryPoint), _type(type) {}
           
           Shader() = default; ///< Empty shader -- not usable (only useful to store variable not immediately initialized)
-          Shader(const Shader& rhs) = default;
-          Shader(Shader&& rhs) noexcept : _handle(std::move(rhs._handle)), _entryPoint(std::move(rhs._entryPoint)), _type(rhs._type) {
-            rhs._handle = nullptr;
-          }
-          Shader& operator=(const Shader& rhs) = default;
-          Shader& operator=(Shader&& rhs) noexcept;
+          Shader(const Shader&) = default;
+          Shader(Shader&&) noexcept = default;
+          Shader& operator=(const Shader&) = default;
+          Shader& operator=(Shader&&) noexcept = default;
           ~Shader() noexcept { release(); }
 
           inline void release() noexcept { this->_handle = nullptr; } ///< Destroy shader object
@@ -61,7 +59,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           // -- accessors --
           
           /// @brief Get native shader handle -- for internal use or advanced features
-          inline Handle handle() const noexcept { return this->_handle; }
+          inline Handle handle() const noexcept { return this->_handle ? this->_handle->value() : VK_NULL_HANDLE; }
           inline ShaderType type() const noexcept { return (ShaderType)this->_type; } ///< Get shader category/model type
           inline bool isEmpty() const noexcept { return (this->_handle == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
 
@@ -165,7 +163,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           };
           
         private:
-          Handle _handle;
+          SharedResource<VkShaderModule> _handle = nullptr;
           pandora::memory::LightString _entryPoint;
           ShaderType _type = ShaderType::vertex;
         };

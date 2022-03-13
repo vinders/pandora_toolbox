@@ -69,7 +69,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ASSERT_TRUE(renderer.device() != nullptr);
     
     Shader emptyShader;
-    EXPECT_TRUE(emptyShader.handle() == nullptr);
+    EXPECT_TRUE(emptyShader.handle() == VK_NULL_HANDLE);
     EXPECT_TRUE(emptyShader.isEmpty());
     
     std::ifstream binaryFile(_P_TEST_RESOURCE_DIR "/vulkan/" __P_COMPILED_SHADER, std::fstream::in|std::fstream::binary);
@@ -83,7 +83,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     binaryFile.close();
     Shader::Builder binaryBuilder(ShaderType::vertex, (const uint8_t*)binaryFileBuffer, (size_t)binaryFileSize, "main");
     auto binaryShader = binaryBuilder.createShader(renderer.resourceManager());
-    EXPECT_TRUE(binaryShader.handle() != nullptr);
+    EXPECT_TRUE(binaryShader.handle() != VK_NULL_HANDLE);
     EXPECT_TRUE(binaryShader.type() == ShaderType::vertex);
     EXPECT_FALSE(binaryShader.isEmpty());
     
@@ -110,41 +110,41 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       auto vertexBuilder = Shader::Builder::compileFromFile(ShaderType::vertex, __createPath(L"/vulkan/test_vertex.vert"), "VSMain");
       auto vertexShader = vertexBuilder.createShader(renderer.resourceManager());
       auto inputLayout = vertexBuilder.createInputLayout(&inputBindings, 1, layoutAttributes, sizeof(layoutAttributes)/sizeof(*layoutAttributes));
-      EXPECT_TRUE(vertexShader.handle() != nullptr);
+      EXPECT_TRUE(vertexShader.handle() != VK_NULL_HANDLE);
       EXPECT_TRUE(vertexShader.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader.isEmpty());
       EXPECT_TRUE(inputLayout.get() != nullptr);
     
       auto fragmentShader = Shader::Builder::compileFromFile(ShaderType::fragment, __createPath(L"/vulkan/test_fragment.frag"), "PSMain")
                             .createShader(renderer.resourceManager());
-      EXPECT_TRUE(fragmentShader.handle() != nullptr);
+      EXPECT_TRUE(fragmentShader.handle() != VK_NULL_HANDLE);
       EXPECT_TRUE(fragmentShader.type() == ShaderType::fragment);
       EXPECT_FALSE(fragmentShader.isEmpty());
 
 #     ifndef __P_DISABLE_GEOMETRY_STAGE
         auto geometryShader = Shader::Builder::compileFromFile(ShaderType::geometry, __createPath(L"/vulkan/test_geometry.geom"), "GSMain")
                               .createShader(renderer.resourceManager());
-        EXPECT_TRUE(geometryShader.handle() != nullptr);
+        EXPECT_TRUE(geometryShader.handle() != VK_NULL_HANDLE);
         EXPECT_TRUE(geometryShader.type() == ShaderType::geometry);
         EXPECT_FALSE(geometryShader.isEmpty());
 #     endif
 
       auto computeShader = Shader::Builder::compileFromFile(ShaderType::compute, __createPath(L"/vulkan/test_compute.comp"), "CSMain")
                            .createShader(renderer.resourceManager());
-      EXPECT_TRUE(computeShader.handle() != nullptr);
+      EXPECT_TRUE(computeShader.handle() != VK_NULL_HANDLE);
       EXPECT_TRUE(computeShader.type() == ShaderType::compute);
       EXPECT_FALSE(computeShader.isEmpty());
 
 #     ifndef __P_DISABLE_TESSELLATION_STAGE
         auto controlShader = Shader::Builder::compileFromFile(ShaderType::tessCtrl, __createPath(L"/vulkan/test_control.tesc"), "HSMain")
                              .createShader(renderer.resourceManager());
-        EXPECT_TRUE(controlShader.handle() != nullptr);
+        EXPECT_TRUE(controlShader.handle() != VK_NULL_HANDLE);
         EXPECT_TRUE(controlShader.type() == ShaderType::tessCtrl);
         EXPECT_FALSE(controlShader.isEmpty());
 
         auto evalShader = Shader::Builder::compileFromFile(ShaderType::tessEval, __createPath(L"/vulkan/test_eval.tese"), "DSMain")
                           .createShader(renderer.resourceManager());
-        EXPECT_TRUE(evalShader.handle() != nullptr);
+        EXPECT_TRUE(evalShader.handle() != VK_NULL_HANDLE);
         EXPECT_TRUE(evalShader.type() == ShaderType::tessEval);
         EXPECT_FALSE(evalShader.isEmpty());
 #     endif
@@ -159,7 +159,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       auto vertexTextBuilder = Shader::Builder::compile(ShaderType::vertex, vertexShaderText, strlen(vertexShaderText), "VSMain");
       auto vertexShader2 = vertexTextBuilder.createShader(renderer.resourceManager());
       auto inputLayout2 = vertexTextBuilder.createInputLayout(&inputBindings, 1, layoutAttributes, sizeof(layoutAttributes)/sizeof(*layoutAttributes));
-      EXPECT_TRUE(vertexShader2.handle() != nullptr);
+      EXPECT_TRUE(vertexShader2.handle() != VK_NULL_HANDLE);
       EXPECT_TRUE(vertexShader2.type() == ShaderType::vertex);
       EXPECT_FALSE(vertexShader2.isEmpty());
       EXPECT_TRUE(inputLayout2.get() != nullptr);

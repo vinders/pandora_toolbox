@@ -159,12 +159,6 @@ Implementation included in renderer.cpp
     return Shader(std::make_shared<ScopedResource<VkShaderModule> >(shaderModule, device, vkDestroyShaderModule),
                   this->_type, this->_entryPoint.c_str());
   }
-
-  Shader& Shader::operator=(Shader&& rhs) noexcept {
-    this->_handle=std::move(rhs._handle); this->_entryPoint=std::move(rhs._entryPoint); this->_type=rhs._type;
-    rhs._handle = nullptr;
-    return *this;
-  }
   
   // ---
 
