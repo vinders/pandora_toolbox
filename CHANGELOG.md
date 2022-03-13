@@ -1,6 +1,21 @@
 # Changelog
 All notable changes will be documented in this file (generated).
 
+## 0.123.2.959
+2022-03-13 - 24f109f8e10d4f743b62c7cbe0446383daa48377
+### features
+vinders (2):
+* memory: dynamic array container (fixed-size set at runtime as constructor param)
+* video: Vulkan sampler/filter state + builder
+### fixes
+vinders (4):
+* video: Vulkan library/extension loader: don't modify constant extension names + rename instance extension finder for clarity
+* video: Vulkan renderer: expose extended device features (custom border color, dynamic rendering...) + fix device extension detection
+* video: Direct3D11 renderer: fix VRAM size calculation (include dedicated system memory)
+* video: Direct3D11 sampler/filter state: refactor (align API with vulkan)
+
+---
+
 ## 0.121.4.938
 2022-03-07 - 9d5fdafdb1dc5e689caa6a39543609c5319ea44c
 ### features
