@@ -114,7 +114,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       };
       EXPECT_TRUE((uint32_t)renderer.findSupportedDepthStencilFormat(depthFormats, sizeof(depthFormats)/sizeof(*depthFormats)) != 0);
 
-      ColorChannel gammaCorrectWhite[4];
+      ColorFloat gammaCorrectWhite[4];
       float white[] { 1.f, 1.f, 1.f, 0.5f };
       renderer.sRgbToGammaCorrectColor(white, gammaCorrectWhite);
       EXPECT_TRUE(gammaCorrectWhite[0] >= 0.9f && gammaCorrectWhite[0] <= 1.2f);

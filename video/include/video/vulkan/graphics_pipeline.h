@@ -326,9 +326,9 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - To be able to change the constant factor dynamically, set isDynamic=true.
-          BlendParams& blendConstant(const ColorChannel constantFactorRgba[4], bool isDynamic = false) noexcept;
+          BlendParams& blendConstant(const ColorFloat constantFactorRgba[4], bool isDynamic = false) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
-          inline const ColorChannel* blendConstant() const noexcept { return _params.blendConstants; }
+          inline const ColorFloat* blendConstant() const noexcept { return _params.blendConstants; }
           
           /// @brief Bit-mask specifying which RGBA components are enabled for writing
           inline BlendParams& targetWriteMask(ColorComponentFlag mask) noexcept {
@@ -384,9 +384,9 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
           /// @brief Set constant factor (RGBA) for constant blend factors
           /// @remarks - The constant factor is only used if the blend state uses BlendFactor::constantColor/constantInvColor
           ///          - To be able to change the constant factor dynamically, set isDynamic=true.
-          BlendPerTargetParams& blendConstant(const ColorChannel constantFactorRgba[4], bool isDynamic = false) noexcept;
+          BlendPerTargetParams& blendConstant(const ColorFloat constantFactorRgba[4], bool isDynamic = false) noexcept;
           /// @brief Get constant factor (RGBA) used by constant blend factors
-          inline const ColorChannel* blendConstant() const noexcept { return _params.blendConstants; }
+          inline const ColorFloat* blendConstant() const noexcept { return _params.blendConstants; }
 
           inline VkPipelineColorBlendStateCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native vulkan descriptor
           inline const VkPipelineColorBlendStateCreateInfo& descriptor() const noexcept { return this->_params; } ///< Get native descriptor
@@ -465,9 +465,9 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
             /// @brief Create pipeline builder
             Builder(Renderer& renderer) noexcept;
             Builder(const Builder&) = delete;
-            Builder(Builder&&) noexcept = default;
+            Builder(Builder&&) noexcept = delete;
             Builder& operator=(const Builder&) = delete;
-            Builder& operator=(Builder&&) noexcept = default;
+            Builder& operator=(Builder&&) noexcept = delete;
             ~Builder() noexcept;
 
             // -- vertex input layout --

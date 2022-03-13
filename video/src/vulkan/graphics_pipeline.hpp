@@ -89,8 +89,8 @@ Implementation included in renderer.cpp
     // no attachment here -> bound at pipeline creation (+ duplicated for each existing target)
   }
 
-  BlendParams& BlendParams::blendConstant(const ColorChannel constantColorRgba[4], bool isDynamic) noexcept {
-    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorChannel)*4u);
+  BlendParams& BlendParams::blendConstant(const ColorFloat constantColorRgba[4], bool isDynamic) noexcept {
+    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorFloat)*4u);
     _useDynamicBlendConstants = isDynamic;
     return *this;
   }
@@ -146,8 +146,8 @@ Implementation included in renderer.cpp
     return *this;
   }
 
-  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorChannel constantColorRgba[4], bool isDynamic) noexcept {
-    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorChannel)*4u);
+  BlendPerTargetParams& BlendPerTargetParams::blendConstant(const ColorFloat constantColorRgba[4], bool isDynamic) noexcept {
+    memcpy(_params.blendConstants, constantColorRgba, sizeof(ColorFloat)*4u);
     _useDynamicBlendConstants = isDynamic;
     return *this;
   }

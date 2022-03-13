@@ -46,11 +46,14 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         using TextureHandle1D = VkImage;        ///< 1D texture resource container
         using TextureHandle2D = VkImage;        ///< 2D texture resource container
         using TextureHandle3D = VkImage;        ///< 3D texture resource container
+        using SamplerHandle = VkSampler;        ///< Texture sampler state object
         using BufferHandle = VkBuffer;          ///< Vertex/index/constant/resource buffer
         using RenderTargetView = VkImageView;   ///< Bindable render-target view for renderer (shader output buffer)
         using DepthStencilView = VkImageView;   ///< Bindable depth/stencil view for renderer
         using TextureView = VkImageView;        ///< Bindable texture view for shaders
-        using ColorChannel = float;             ///< R/G/B/A color value
+        using ColorFloat = float;               ///< Normalized R/G/B/A color value (0.0 to 1.0)
+        using ColorInt = int32_t;               ///< Integer R/G/B/A color value (0 to 255)
+        using ColorUInt = uint32_t;             ///< Unsigned integer R/G/B/A color value (0 to 255)
 
         template <typename T>
         using DynamicArray = pandora::memory::DynamicArray<T>;

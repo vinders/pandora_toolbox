@@ -172,7 +172,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           /// @brief Convert standard sRGB(A) color to gamma-correct linear RGB(A)
           /// @remarks Should be called to obtain colors to use with 'clearView(s)', 'setCleanActiveRenderTarget(s)', 'RendererStateFactory.create<...>Filter'
-          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept;
+          static void sRgbToGammaCorrectColor(const float colorRgba[4], ColorFloat outRgba[4]) noexcept;
           
           
           // -- feature support --

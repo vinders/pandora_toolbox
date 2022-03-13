@@ -68,6 +68,7 @@ Includes hpp implementations at the end of the file
 
 # include "video/vulkan/_private/_resource_io.h"
 # include "video/vulkan/buffer.h"
+# include "video/vulkan/sampler.h"
 // # include "video/vulkan/texture.h"
 // # include "video/vulkan/camera_utils.h"
 #if !defined(_CPP_REVISION) || _CPP_REVISION != 14
@@ -856,7 +857,7 @@ Includes hpp implementations at the end of the file
   }
   
   // Convert standard sRGB(A) color to gamma-correct linear RGB(A)
-  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorChannel outRgba[4]) noexcept {
+  void Renderer::sRgbToGammaCorrectColor(const float colorRgba[4], ColorFloat outRgba[4]) noexcept {
     glm::vec3 gammaCorrect = glm::convertSRGBToLinear(glm::vec3(colorRgba[0], colorRgba[1], colorRgba[2]));
     outRgba[0] = gammaCorrect.r;
     outRgba[1] = gammaCorrect.g;
@@ -955,6 +956,7 @@ Includes hpp implementations at the end of the file
 # include "./graphics_pipeline.hpp"
 # include "./depth_stencil_buffer.hpp"
 # include "./buffer.hpp"
+# include "./sampler.hpp"
 // # include "./texture.hpp"
 # include "./shader.hpp"
 // # include "./camera_utils.hpp"
