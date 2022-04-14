@@ -45,12 +45,15 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
         if(WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
             if("${CMAKE_SYSTEM_VERSION}" EQUAL 6.1 OR "${CMAKE_SYSTEM_VERSION}" EQUAL 6.2 OR MINGW)
                 set(_DEFAULT_MIN_WINDOWS_VERSION "7")
-            else()
+            elseif("${CMAKE_SYSTEM_VERSION}" EQUAL 6.3)
                 set(_DEFAULT_MIN_WINDOWS_VERSION "8")
+            else()
+                set(_DEFAULT_MIN_WINDOWS_VERSION "10")
             endif()
         
             set(CWORK_WINDOWS_VERSION ${_DEFAULT_MIN_WINDOWS_VERSION} CACHE STRING "minimum Windows version (7, 8(8.1), 10(10.RS2))") # support versions of Windows older than Windows 10
             set_property(CACHE CWORK_WINDOWS_VERSION PROPERTY STRINGS "10" "8" "7") # possible values for GUI
+            unset(_DEFAULT_MIN_WINDOWS_VERSION)
         endif()
     endif()
     if(NOT DEFINED CWORK_LINUX_WAYLAND)
@@ -88,8 +91,14 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             if(APPLE)
                 set(CWORK_OPENGL4_VERSION "41" CACHE STRING "maximum OpenGL 4 revision support") # mac OS only supports OpenGL 4.1
             else()
-                set(CWORK_OPENGL4_VERSION "45" CACHE STRING "maximum OpenGL 4 revision support")
+                if(CWORK_WINDOWS_VERSION AND CWORK_WINDOWS_VERSION STREQUAL "7")
+                    set(_DEFAULT_OPENGL4_MAX_VERSION "45")
+                else()
+                    set(_DEFAULT_OPENGL4_MAX_VERSION "46")
+                endif()
+                set(CWORK_OPENGL4_VERSION ${_DEFAULT_OPENGL4_MAX_VERSION} CACHE STRING "maximum OpenGL 4 revision support")
                 set_property(CACHE CWORK_OPENGL4_VERSION PROPERTY STRINGS "46" "45" "43" "41") # possible values for GUI
+                unset(_DEFAULT_OPENGL4_MAX_VERSION)
             endif()
         endif()
     endif()
@@ -109,6 +118,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             endif()
             set(CWORK_D3D11_VERSION ${_DEFAULT_D3D11_MAX_VERSION} CACHE STRING "maximum Direct3D 11 revision support")
             set_property(CACHE CWORK_D3D11_VERSION PROPERTY STRINGS "114" "113" "111" "110") # possible values for GUI
+            unset(_DEFAULT_D3D11_MAX_VERSION)
         endif()
     endif()
 
@@ -141,6 +151,7 @@ if(NOT DEFINED _CWORK_OPTIONS_FOUND)
             
             set(CWORK_VULKAN_VERSION ${_DEFAULT_VULKAN_MAX_VERSION} CACHE STRING "maximum Vulkan revision support")
             set_property(CACHE CWORK_VULKAN_VERSION PROPERTY STRINGS "13" "12") # possible values for GUI
+            unset(_DEFAULT_VULKAN_MAX_VERSION)
         endif()
     endif()
     
