@@ -45,7 +45,7 @@ else()
             # └──────────────────────────────────────────────────────────────────┘
             if(NOT EXISTS ${LIBGLSLANG__PATH} OR NOT EXISTS "${LIBGLSLANG__PATH}/CMakeLists.txt")
                 set(_GIT_EXT_REPOSITORY https://github.com/KhronosGroup/glslang.git)
-                set(_GIT_EXT_TAG "11.6.0")
+                set(_GIT_EXT_TAG "11.9.0")
                 set(_GIT_EXT_CACHE ${CWORK_MODULE_DESTINATION}/.cache/glslang)
                 set(_GIT_EXT_DIR ${LIBGLSLANG__PATH})
                 configure_file("${CMAKE_CURRENT_LIST_DIR}/git_external.cmake" "${_GIT_EXT_CACHE}/CMakeLists.txt")
@@ -76,6 +76,7 @@ else()
                 
                 set(CMAKE_C_FLAGS "") # disable the countless warnings in glslang
                 set(CMAKE_CXX_FLAGS "")
+                set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
                 add_subdirectory(${LIBGLSLANG__PATH} ${CMAKE_BINARY_DIR}/libglslang)
                 set(CMAKE_C_FLAGS ${_CMAKE_C_FLAGS_ORIG})
                 set(CMAKE_CXX_FLAGS ${_CMAKE_CXX_FLAGS_ORIG})
