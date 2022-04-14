@@ -86,6 +86,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             Builder(ShaderType type, const uint8_t* binaryFileData, size_t length, const char* entryPoint = "main")
               : _data(binaryFileData), _length(length), _type(type), _entryPoint(entryPoint) {}
             
+            Builder() = default; ///< Empty buffer -- not usable (only useful for variables with deferred init)
             Builder(const Builder&) = delete;
             Builder(Builder&& rhs) noexcept = default;
             Builder& operator=(const Builder&) = delete;

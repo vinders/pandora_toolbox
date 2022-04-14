@@ -79,11 +79,14 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             Builder(ShaderType type, const uint8_t* binaryFileData, size_t length)
               : _shaderBuffer(nullptr), _data(binaryFileData), _length(length), _type(type) {}
             
+            Builder() = default; ///< Empty builder -- not usable (only useful to store variable not immediately initialized)
             Builder(const Builder&) = delete;
             Builder(Builder&& rhs) noexcept
               : _shaderBuffer(rhs._shaderBuffer), _data(rhs._data), _length(rhs._length), _type(rhs._type) { rhs._shaderBuffer = nullptr; }
             Builder& operator=(const Builder&) = delete;
             Builder& operator=(Builder&& rhs) noexcept { 
+              if (_shaderBuffer != nullptr)
+                _shaderBuffer->Release();
               this->_shaderBuffer=rhs._shaderBuffer; this->_data=rhs._data; this->_length=rhs._length; this->_type=rhs._type;
               rhs._shaderBuffer = nullptr; 
               return *this; 

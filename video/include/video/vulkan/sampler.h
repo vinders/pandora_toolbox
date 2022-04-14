@@ -29,7 +29,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         /// @class SamplerParams
         /// @brief Sampler configuration (texture filter/wrap, level-of-detail...)
-        /// @remarks The same SamplerParams can be used to build multiple SamplerState instances (if needed).
+        /// @remarks The same SamplerParams can be used to build multiple Sampler instances (if needed).
         class SamplerParams final {
         public:
           /// @brief Highest / most detailed level-of-detail.
@@ -176,7 +176,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         
         
         // ---------------------------------------------------------------------
-        // sampler builder
+        // sampler container/builder
         // ---------------------------------------------------------------------
         
         /// @class Sampler
@@ -213,6 +213,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           public:
             /// @brief Initialize sampler builder
             Builder(DeviceResourceManager device) : _device(device) {}
+
+            Builder() noexcept = default; ///< Empty buffer -- not usable (only useful for variables with deferred init)
             Builder(const Builder&) = delete;
             Builder(Builder&&) noexcept = default;
             Builder& operator=(const Builder&) = delete;
