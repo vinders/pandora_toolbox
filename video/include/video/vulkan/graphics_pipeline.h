@@ -39,7 +39,7 @@ Vulkan - RasterizerParams / DepthStencilParams / BlendParams / BlendPerTargetPar
         // pipeline state params
         // ---------------------------------------------------------------------
 
-		// -- rasterizer state params -- ---------------------------------------
+        // -- rasterizer state params -- ---------------------------------------
         
         /// @class RasterizerParams
         /// @brief Rasterizer state configuration (filling/culling/clipping/bias params)

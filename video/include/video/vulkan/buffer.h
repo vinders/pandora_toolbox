@@ -16,194 +16,251 @@ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------------
-Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
+Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
+       - Buffer<ResourceUsage::local/dynamic/staging>::Builder
+       - BufferParams<ResourceUsage::local/dynamic/staging>
        - MappedBufferIO
 *******************************************************************************/
 #pragma once
 
 #if defined(_VIDEO_VULKAN_SUPPORT)
+# include <cassert>
 # include <cstdint>
-# include "./_private/_shared_resource.h" // includes vulkan
-# include "./_private/_resource_io.h" // includes vulkan
-# include "./renderer.h" // includes vulkan
+# include <cstring>
+# include <type_traits>
+# include "video/vulkan/_private/_buffer.h" // includes vulkan
+# include "video/vulkan/_private/_memory.h" // includes vulkan
+# include "video/vulkan/_private/_shared_resource.h" // includes vulkan
+# include "./device_memory_pool.h"
 # if !defined(_CPP_REVISION) || _CPP_REVISION != 14
-#   define __if_constexpr if constexpr
+#   define __if_constexpr          if constexpr
+#   define __move_cpp14_only(obj)  obj // no move to avoid copy ellision
 # else
-#   define __if_constexpr if
+#   define __if_constexpr          if
+#   define __move_cpp14_only(obj)  std::move(obj)
 # endif
 
   namespace pandora {
     namespace video {
       namespace vulkan {
-        class BufferMemory;
+        // -- buffer params --
+        
+        /// @class BufferParams
+        /// @brief Data/storage buffer configuration (vertex/index/uniform data for shader stages)
+        /// @remarks The same BufferParams can be used to build multiple Buffer instances (if needed).
+        /// @tparam _Usage Buffer memory usage:
+        ///                * Local/static: GPU read-write (fastest) / indirect CPU write-only (slow).
+        ///                   -> meant to be persistent: should be updated at most once per frame (or less if big size);
+        ///                   -> best option for buffers that never change (fixed geometry...).
+        ///                   -> can be copied from compatible staging buffer: preferable to update large buffers.
+        ///                   -> used for static meshes with skinning/skeletal animation in shaders;
+        ///                   -> 'specialMemUsage': set immutable buffer (read-only).
+        ///                * Dynamic: GPU read-write (slow) / CPU write-only (fast).
+        ///                   -> meant to be updated often by the CPU: at least once per frame;
+        ///                   -> recommended for writable buffers with huge data transfers;
+        ///                   -> used for meshes with variable vertex count (dynamic terrains) and for vertex animation;
+        ///                   -> 'specialMemUsage': use GPU VRAM heap with direct CPU access (if available).
+        ///                * Staging: CPU-only read-write (very fast).
+        ///                   -> recommended for readable/writable buffers accessed many times per frame by the CPU;
+        ///                   -> recommended for buffers with content that must be read by the CPU;
+        ///                   -> usually used with a static buffer: data is copied from one buffer to another;
+        ///                   -> 'specialMemUsage': use CPU cache (fastest linear access, slower for random access).
+        ///                * For more details about memory usages, see 'ResourceUsage' in <video/api/types.h>.
+        template <ResourceUsage _Usage>
+        class BufferParams final {
+        public:
+          /// @brief Initialize buffer params
+          /// @param type  Type of buffer to create:
+          ///              * uniform buffer: global information shared between vertices (material, camera, lighting...).
+          ///              * vertex array buffer: mesh data storage (vertex position, normal, color...).
+          ///              * vertex index buffer: vertex ordering/indexing for associated vertex array buffer.
+          ///              * For more details about buffer types, see 'BufferType' in <video/api/types.h>.
+          ///              Note: - vertex/index binding types can usually be combined (logical OR operator);
+          ///                    - most drivers do not support mixing vertices/indices with uniform data;
+          ///                    - the buffer type will be ignored for staging buffers (not typed).
+          /// @param bufferByteSize  Total number of bytes (sizeof structure/array)
+          ///                        Must be a multiple of 16 bytes for uniform buffers!
+          /// @param specialMemUsage Special memory usage (depending on template argument '_Usage'):
+          ///                        * local: immutable buffer (read-only):
+          ///                            - ideal for static resources that don't change (textures, geometry...);
+          ///                            - ideal for large random-access resources (such as textures);
+          ///                            - note: with Vulkan, the immutable flag has no effect.
+          ///                        * dynamic: special VRAM heap with DMA/direct CPU access (if available):
+          ///                            - fast access for small buffers from both CPU and GPU;
+          ///                            - recommended for small uniform buffers updated often;
+          ///                            - many GPUs provide up to 256MB of such memory.
+          ///                        * staging: use CPU cache:
+          ///                            - faster linear CPU read/write access: ideal for small data used with 'memcpy';
+          ///                            - slow CPU random access: would cause cache misses and be much slower!
+          /// @param transferMode    * bidirectional: copy operations can use this buffer as source and destination.
+          ///                        * standard (recommended):
+          ///                            - Static usage: only destination;
+          ///                            - Staging usage: only source;
+          ///                            - Dynamic usage: no copy allowed.
+          /// @warning Writing is MUCH more efficient when source data type uses 16-byte alignment (see <system/align.h>).
+          inline BufferParams(BufferType type, size_t bufferByteSize, bool specialMemUsage = false,
+                              TransferMode transferMode = TransferMode::standard) noexcept
+            : _preferredUsage(_toPreferredMemoryUsageFlags(_Usage, specialMemUsage)) {
+            _params.size = (VkDeviceSize)bufferByteSize;
+            _params.usage = _toBufferUsageFlags(type, _Usage, transferMode);
+            _params.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+          }
+          
+          BufferParams() noexcept = default; ///< Empty buffer params -- not usable as is
+          BufferParams(const BufferParams& rhs) noexcept = default;
+          BufferParams& operator=(const BufferParams& rhs) noexcept = default;
+          ~BufferParams() noexcept = default;
+          
+          // -- buffer type and size --
+          
+          /// @brief Set buffer type, memory usage and transfer mode
+          /// @param type            Type of buffer to create (see class constructor).
+          /// @param specialMemUsage Local=>immutable / Dynamic=>DMA / Staging=>cached (see class constructor).
+          /// @param transferMode    Bidirectional / standard (see class constructor).
+          inline BufferParams& type(BufferType type, bool specialMemUsage = false,
+                                    TransferMode transferMode = TransferMode::standard) noexcept {
+            _params.usage = _toBufferUsageFlags(type, _Usage, transferMode);
+            _preferredUsage = _toPreferredMemoryUsageFlags(_Usage, specialMemUsage);
+            return *this;
+          }
+          /// @brief Set buffer size (bytes)
+          /// @param bufferByteSize  Total number of bytes (sizeof structure/array)
+          ///                        Must be a multiple of 16 bytes for uniform buffers!
+          /// @warning Writing is MUCH more efficient when source data type uses 16-byte alignment (see <system/align.h>).
+          inline BufferParams& size(size_t bufferByteSize) noexcept {
+            _params.size = (VkDeviceSize)bufferByteSize;
+            return *this;
+          }
+          
+          // -- advanced features --
+          
+          /// @brief Set advanced API-specific flags
+          /// @warning For cross-API projects, avoid this method.
+          inline BufferParams& specialFlags(VkBufferCreateFlags flags) noexcept {
+            _params.flags = flags;
+            return *this;
+          }
+          /// @brief Set context sharing mode (exclusive / concurrent)
+          /// @param concurrentQueueFamilies Concurrent sharing mode: array of queue family indices with access to buffer.
+          ///                                Set NULL to use exclusive mode (recommended and usually faster).
+          /// @param queueCount              Array size of 'concurrentQueueFamilies'.
+          /// @warning For cross-API projects, avoid this method.
+          inline BufferParams& sharingMode(uint32_t* concurrentQueueFamilies, uint32_t queueCount) noexcept {
+            __setBufferSharingMode(_params, concurrentQueueFamilies, queueCount);
+            return *this;
+          }
+
+          inline VkBufferCreateInfo& descriptor() noexcept { return this->_params; } ///< Get native Vulkan descriptor
+          inline const VkBufferCreateInfo& descriptor() const noexcept { return this->_params; }///< Vulkan descriptor
+          inline const VkBufferCreateInfo* descriptorPtr() const noexcept { return &_params; }  ///< Vulkan descriptor
+          inline VkMemoryPropertyFlags _descPreferredUsage() const noexcept { return _preferredUsage; }
+        
+        private:
+          VkBufferCreateInfo _params{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+          VkMemoryPropertyFlags _preferredUsage = _toPreferredMemoryUsageFlags(_Usage,false);
+        };
+        
+        using StaticBufferParams = BufferParams<ResourceUsage::local>;
+        using DynamicBufferParams = BufferParams<ResourceUsage::dynamic>;
+        using StagingBufferParams = BufferParams<ResourceUsage::staging>;
+        
+        
+        // ---------------------------------------------------------------------
+        // buffer container/builder
+        // ---------------------------------------------------------------------
         
         /// @class Buffer
-        /// @brief Vulkan data buffer for shader stage(s): constant/uniform buffer, vertex array buffer, vertex index buffer...
-        ///        * Immutable buffer (isImmutable==true): initialized at creation, then GPU read-only (fastest).
-        ///           -> best option for buffers that never change.
-        ///        * Static buffer (staticGpu): GPU read-write (very fast) / indirect CPU write-only (slow).
-        ///           -> recommended for writable buffers rarely updated by the CPU, or with small data;
-        ///           -> used for static meshes with skinning/skeletal animation in shaders.
-        ///        * Dynamic buffer (dynamicCpu): GPU read-write (slow) / CPU write-only (very fast).
-        ///           -> recommended for writable buffers updated for each frame (or more) by the CPU;
-        ///           -> recommended for writable buffers with huge data transfers;
-        ///           -> used for meshes with variable vertex count (usually terrains) and for per-vertex animation.
-        ///        * Staging buffer: no GPU access, CPU read-write (fastest).
-        ///           -> recommended for writable buffers accessed many times per frame by the CPU;
-        ///           -> recommended for buffers with content that must be read by the CPU;
-        ///           -> usually used with a static buffer: data is copied from one buffer to another, to allow CPU read/write operations (staging) and GPU usage (static).
-        ///        * For more details about buffer types, see 'BufferType' in <video/api/types.h>.
-        ///        * For more details about buffer usages, see 'ResourceUsage' in <video/api/types.h>.
-        /// @remarks - To use it, bind it to the associated Renderer object (must be the same as the one used in constructor).
-        ///          - Constant/uniform buffer data type size must be a multiple of 16 byte: add padding in structure/array-item if necessary.
-        ///          - Static buffers are meant to be persistent: should be updated at most once per frame (and less than that if the buffer size is big).
-        ///          - Dynamic buffers are meant to be updated often: at least once per frame (or close to it if the buffer size is big).
+        /// @brief Vulkan data/storage buffer for shader stage(s): uniform, vertex array, vertex index...
+        /// @tparam _Usage Buffer memory usage:
+        ///                * Local/static: GPU read-write (fastest) / indirect CPU write-only (slow).
+        ///                   -> meant to be persistent: should be updated at most once per frame (or less if big size);
+        ///                   -> best option for buffers that never change (fixed geometry...).
+        ///                   -> can be copied from compatible staging buffer: preferable to update large buffers.
+        ///                   -> used for static meshes with skinning/skeletal animation in shaders.
+        ///                * Dynamic: GPU read-write (slow) / CPU write-only (fast).
+        ///                   -> meant to be updated often by the CPU: at least once per frame;
+        ///                   -> recommended for writable buffers with huge data transfers;
+        ///                   -> used for meshes with variable vertex count (dynamic terrains) and for vertex animation.
+        ///                * Staging: CPU-only read-write (very fast).
+        ///                   -> recommended for readable/writable buffers accessed many times per frame by the CPU;
+        ///                   -> recommended for buffers with content that must be read by the CPU;
+        ///                   -> usually used with a static buffer: data is copied from one buffer to another.
+        ///                * For more details about memory usages, see 'ResourceUsage' in <video/api/types.h>.
+        /// @remarks - To use a buffer, bind it to the associated Renderer object with a descriptor set.
+        ///          - Uniform data type size must be a multiple of 16 byte: add padding in data structure if necessary.
         ///          - Common practice: * geometry centered around (0;0;0) -> vertex buffers;
-        ///                             * world matrix to offset the entire model in the environment -> combined with camera view into constant/uniform buffer;
-        ///                             * vertices repositioned in vertex shader by world/view matrix and projection matrix.
-        ///          - The following topics are only for big projects using hundreds of buffers:
-        ///            - Suballocation in same memory block (Vulkan and D3D12 specific):
+        ///                             * world matrix to offset the entire model in the environment
+        ///                               -> combined with camera view into uniform buffer;
+        ///                             * vertices positioned in vertex shader by world/view matrix & projection matrix.
+        ///          - The following advanced topics are meant for big projects using hundreds of buffers:
+        ///            - Suballocation in same memory block:
         ///                * many GPU drivers limit the total number of allocations (usually 4096 or more allocations).
-        ///                * to work around this limit, and to reduce time spent on allocations, a large allocation can contain multiple buffer.
+        ///                * to work around this limit & reduce time spent on allocations, the same memory allocation
+        ///                  (usually a large allocation) may be bound with various buffer objects.
         ///                * to use this type of suballocation:
-        ///                  - create Buffer objects with Buffer::createUnallocatedBuffer, to avoid individual allocation;
-        ///                  - call BufferMemory::create to create a large VkDeviceMemory instance (256MB for example);
-        ///                  - call BufferMemory.bind(VkBuffer, offset) on each Buffer object.
-        ///                * for example, the same memory allocation may be bound with various vertex/index/uniform buffers.
-        ///                * vertex/index buffers should be aligned in memory (4*32bits blocks).
-        ///                * constant/uniform buffers should be aligned in memory (16*4*32bits blocks).
-        ///                * more efficient with AMD GPUs.
-        ///                * WARNING: this feature is not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
-        ///            - Suballocation within buffer (cross-API):
-        ///                * total number of buffers may also be limited, and using too many buffers can cause overhead and memory fragmentation.
+        ///                  - create large DeviceMemoryPool instance (256MB for example);
+        ///                  - create Buffer/Texture builder with compatible usage/transfer/concurrency;
+        ///                  - build Buffer/Texture objects with suballocation: build(memoryPool, byteOffset);
+        ///                  - align byteOffset: DeviceMemoryPool::align(desiredOffset, builder.requiredAlignment());
+        ///                  - make sure the DeviceMemoryPool won't be destroyed before any Buffer/Texture using it.
+        ///                * vertex/index buffers should be aligned (usually 16-byte blocks, verify with Buffer::Builder).
+        ///                * uniform buffers should be aligned (at least 256-byte blocks, verify with Buffer::Builder).
+        ///                * NOTE: this feature is mocked by higher-level APIs (D3D11,OpenGL) -> always default allocs.
+        ///            - Virtual sub-buffers within buffer:
+        ///                * using too many buffers can cause overhead and memory fragmentation.
         ///                * to reduce those side effects, large buffers containing multiple data sets can be used.
-        ///                * this can be done instead of creating many buffers for an allocation (both techniques can also be combined).
-        ///                * a single buffer can use multiple binding types (example: BufferType::vertex | BufferType::vertexIndex).
-        ///                  Note that most drivers do not support mixing vertices/indices with uniform data.
+        ///                * a single buffer can use multiple binding types (combined with logical OR operator).
+        ///                  Note that most drivers only support mixing vertices and indices.
         ///                * for example, the same large buffer could contain vertices + indices for the same mesh.
         ///                * a single buffer can contain data for multiple meshes or multiple lights...
-        ///                  (a sub-set of the buffer can be bound to the renderer, using 'byteOffset' and 'strideByteSize' params).
-        ///                * when using suballocation for vertices/indices, align memory for every sub-component (aligned at 4*32bits blocks).
-        ///                * when using suballocation for constants/uniforms, align memory for every sub-component (aligned at 16*4*32bits blocks).
-        ///                * very efficient with Nvidia GPUs.
-        /// @warning Buffers do not guarantee the lifetime of the associated Renderer. They must be destroyed BEFORE destroying the Renderer!
+        ///                  (a sub-set of the buffer can be bound to the renderer, using offset and size params).
+        ///                * vert./ind.: align memory for each entry (usually 16-byte blocks, verify with Buffer::Builder).
+        ///                * uniforms: align memory for each entry (at least 256-byte blocks, verify with Buffer::Builder).
+        /// @warning Buffers do not guarantee the lifetime of the associated Renderer.
+        ///          They must be destroyed BEFORE destroying the Renderer!
         template <ResourceUsage _Usage>
         class Buffer final {
         public:
           using Type = Buffer<_Usage>;
         
-          /// @brief Create buffer (to store data for shader stages) - undefined value
-          ///        Individual memory allocation is made in constructor (automatic memory management, cross-API).
-          /// @param renderer        The renderer for which the buffer is created: use the same renderer when binding it or writing in it.
-          /// @param type            Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
-          ///                        Note: to use suballocation, the same buffer can use multiple binding types
-          ///                        (example: BufferType::vertex | BufferType::vertexIndex).
-          ///                        Warning: most drivers do not support mixing vertices/indices with constant/uniform data.
-          /// @param bufferByteSize  The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
-          /// @param isBidirectional Copy operations can occur using this buffer both as a source and a destination.
-          ///                        If 'isBidirectional'==false: * staticGpu buffers can only be destinations;
-          ///                                                     * staging buffers can only be sources;
-          ///                                                     * dynamicCpu buffers can't be any.
-          /// @param concurrentQueueFamilies  Only for concurrent sharing mode: array of queue family indices that can access the buffer.
-          ///                                 Set to NULL to use exclusive mode (recommended and usually faster).
-          /// @param queueCount               Array size of 'concurrentQueueFamilies'.
-          /// @warning - Static buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
-          ///          - For cross-API projects, keep implicit/default values for params 'isBidirectional'/'concurrentQueueFamilies'/'queueCount'.
-          /// @throws - invalid_argument: if 'bufferByteSize' is 0;
-          ///         - out_of_range: if current GPU doesn't support this combination of params (type/isBidirectional/sharing);
-          ///         - runtime_error: on creation failure.
-          inline Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, bool isBidirectional = false,
-                 uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0)
-            : _bufferSize(bufferByteSize), _device(renderer.resourceManager()), _type(type) {
-            this->_handle = __createBufferContainer(renderer.context(), bufferByteSize,
-                                                    _getTypeUsageFlags(type, isBidirectional),
-                                                    concurrentQueueFamilies, queueCount);
-            this->_allocation = __allocBufferContainer(renderer.context(), renderer.device(), this->_handle, _getMemoryUsageFlags());
-          }
+          /// @brief Create data/storage buffer object -- reserved for internal use
+          /// @remarks Prefer Buffer::Builder for standard usage
+          /// @warning Buffer objects must be destroyed BEFORE the associated Renderer instance!
+          Buffer(DeviceContext context, VkBuffer bufferHandle, size_t bufferByteSize,
+                 VkBufferUsageFlags typeFlags, VkMemoryPropertyFlags memoryUsage,
+                 VkDeviceMemory individualMemory) noexcept
+            : _handle(bufferHandle), _allocation(individualMemory), _allocOffset(_individualAlloc()),
+              _context(context), _bufferSize(bufferByteSize), _typeFlags(typeFlags), _memoryUsage(memoryUsage) {}
+          /// @brief Create data/storage buffer object -- reserved for internal use -- suballocation
+          /// @remarks Prefer Buffer::Builder for standard usage
+          /// @warning Buffer objects must be destroyed BEFORE the associated Renderer instance!
+          Buffer(DeviceContext context, VkBuffer bufferHandle, size_t bufferByteSize,
+                 VkBufferUsageFlags typeFlags, VkMemoryPropertyFlags memoryUsage,
+                 VkDeviceMemory memoryPool, size_t memoryOffset) noexcept
+            : _handle(bufferHandle), _allocation(memoryPool), _allocOffset(memoryOffset),
+              _context(context), _bufferSize(bufferByteSize), _typeFlags(typeFlags), _memoryUsage(memoryUsage) {}
           
-          /// @brief Create buffer (to store data for shader stages) with initial value
-          ///        Individual memory allocation is made in constructor (automatic memory management, cross-API).
-          /// @param renderer        The renderer for which the buffer is created: use the same renderer when binding it or when calling write.
-          /// @param type            Type of buffer to create: constant/uniform buffer, vertex array buffer, vertex index buffer...
-          ///                        Note: to use suballocation, the same buffer can use multiple binding types
-          ///                        (example: BufferType::vertex | BufferType::vertexIndex).
-          ///                        Warning: most drivers do not support mixing vertices/indices with constant/uniform data.
-          /// @param bufferByteSize  The total number of bytes of the buffer (sizeof structure/array) -- must be a multiple of 16 bytes for constant/uniform buffers.
-          /// @param initData        Buffer initial value -- structure or array of input values (must not be NULL if immutable).
-          /// @param isBidirectional Copy operations can occur using this buffer both as a source and a destination.
-          ///                        If 'isBidirectional'==false: * staticGpu buffers can only be destinations;
-          ///                                                     * staging buffers can only be sources;
-          ///                                                     * dynamicCpu and immutable buffers can't be any.
-          /// @param concurrentQueueFamilies  Only for concurrent sharing mode: array of queue family indices that can access the buffer.
-          ///                                 Set to NULL to use exclusive mode (recommended and usually faster).
-          /// @param queueCount               Array size of 'concurrentQueueFamilies'.
-          /// @warning - Static/immutable buffers: init/writing is a LOT more efficient when the source data type has a 16-byte alignment (see <system/align.h>).
-          ///          - For cross-API projects, keep implicit/default values for params 'isBidirectional'/'concurrentQueueFamilies'/'queueCount'.
-          /// @throws - invalid_argument: if 'bufferByteSize' is 0;
-          ///         - out_of_range: if current GPU doesn't support this combination of params (type/isBidirectional/sharing);
-          ///         - runtime_error: on creation failure.
-          Buffer(Renderer& renderer, BufferType type, size_t bufferByteSize, const void* initData,
-                 bool isBidirectional = false, uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0)
-            : _bufferSize(bufferByteSize), _device(renderer.resourceManager()), _type(type) {
-            this->_handle = __createBufferContainer(renderer.context(), bufferByteSize, _getTypeUsageFlags(type, isBidirectional),
-                                                    concurrentQueueFamilies, queueCount);
-            this->_allocation = __allocBufferContainer(renderer.context(), renderer.device(), this->_handle, _getMemoryUsageFlags());
-            
-            __if_constexpr (_Usage != ResourceUsage::immutable)
-              write(initData);
-            else {
-              auto& transientCommandQueue = _device->transientCommandQueues().commandQueues;
-              __writeWithStagingBuffer(_device->context(), _device->device(), _device->transientCommandPool(),
-                                       transientCommandQueue[transientCommandQueue.length()-1u],
-                                       this->_handle, bufferByteSize, initData);
-            }
-          }
-          
-          /// @brief Create buffer (to store data for shader stages) without any memory allocation, to allow suballocation.
-          ///        A call to BufferMemory.bind must be performed after the creation.
-          /// @warning Not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
-          static inline Buffer createUnallocatedBuffer(Renderer& renderer, BufferType type,
-                                                       size_t bufferByteSize, bool isBidirectional = false,
-                                                       uint32_t* concurrentQueueFamilies = nullptr, uint32_t queueCount = 0) {
-            return Buffer(renderer, __createBufferContainer(renderer.context(), bufferByteSize, _getTypeUsageFlags(type, isBidirectional),
-                                                            concurrentQueueFamilies, queueCount), bufferByteSize, type, VK_NULL_HANDLE);
-          }
-          
-          /// @brief Create from native buffer handle -- reserved for advanced usage
-          /// @param individualMemory  Individual memory allocation for this buffer only
-          ///                          (or VK_NULL_HANDLE to create unallocated buffer and use BufferMemory.bind for suballocation).
-          /// @warning Native usage must be the same as template type! (or write operations won't work)
-          ///          immutable/staticGpu: VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-          ///          dynamicCpu/staging: VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT.
-          inline Buffer(Renderer& renderer, BufferHandle handle, size_t bufferSize, BufferType type,
-                        VkDeviceMemory individualMemory = VK_NULL_HANDLE) noexcept
-            : _handle(handle), _bufferSize(bufferSize), _device(renderer.resourceManager()), _allocation(individualMemory),
-              _allocationOffset((individualMemory != VK_NULL_HANDLE) ? _individualAlloc() : 0), _type(type) {}
-          
-          Buffer() noexcept = default; ///< Empty buffer -- not usable (only useful to store variable not immediately initialized)
+          Buffer() noexcept = default; ///< Empty buffer -- not usable (only useful for variables with deferred init)
           Buffer(const Type&) = delete;
           Buffer(Type&& rhs) noexcept
-            : _handle(rhs._handle), _bufferSize(rhs._bufferSize), _device(rhs._device),
-              _allocation(rhs._allocation), _allocationOffset(rhs._allocationOffset), _type(rhs._type) {
+            : _handle(rhs._handle), _allocation(rhs._allocation), _allocOffset(rhs._allocOffset),
+              _context(rhs._context), _bufferSize(rhs._bufferSize), _typeFlags(rhs._typeFlags),
+              _memoryUsage(rhs._memoryUsage) {
             rhs._handle = VK_NULL_HANDLE;
-            rhs._allocation = VK_NULL_HANDLE;
           }
           Type& operator=(const Type&) = delete;
           Type& operator=(Type&& rhs) noexcept {
-            _handle=rhs._handle; _bufferSize=rhs._bufferSize; _device=rhs._device;
-            _allocation=rhs._allocation; _allocationOffset=rhs._allocationOffset; _type=rhs._type;
+            release();
+            memcpy(this, &rhs, sizeof(Type));
             rhs._handle = VK_NULL_HANDLE;
-            rhs._allocation = VK_NULL_HANDLE;
             return *this;
           }
           inline ~Buffer() noexcept { release(); }
-
+          
           inline void release() noexcept { ///< Destroy/release buffer instance
             if (_handle != VK_NULL_HANDLE) {
-              __destroyBufferContainer(_device->context(), _handle,
-                                       (_allocationOffset == _individualAlloc()) ? _allocation : VK_NULL_HANDLE);
+              __destroyBuffer(_context, _handle, (_allocOffset==_individualAlloc()) ? _allocation : VK_NULL_HANDLE);
               _handle = VK_NULL_HANDLE;
-              _allocation = VK_NULL_HANDLE;
             }
           }
           
@@ -217,348 +274,487 @@ Vulkan - Buffer<ResourceUsage:: immutable/staticGpu/dynamicCpu/staging>
           /// @brief Verify if initialized (false) or empty/moved/released (true)
           inline bool isEmpty() const noexcept { return (_handle == VK_NULL_HANDLE); }
           inline size_t size() const noexcept { return _bufferSize; } ///< Get buffer byte size
-          inline BufferType type() const noexcept { return _type; }   ///< Get buffer type: uniform/vertex/index
           
-          static constexpr inline ResourceUsage usage() noexcept { return _Usage; }    ///< Get buffer resource usage
-          inline DeviceContext context() const noexcept { return _device->context(); } ///< Get parent context -- reserved for internal use
-          inline VkDeviceMemory allocation() const noexcept { return _allocation; }    ///< Get memory alloc -- reserved for internal use
-          inline size_t allocationOffset() const noexcept { ///< Get memory offset -- reserved for internal use
-            return (this->_allocationOffset != _individualAlloc()) ? this->_allocationOffset : 0;
+          /// @brief Get buffer type: uniform/vertex/index...
+          /// @remarks Will return 0 for staging buffers (not typed)
+          inline BufferType type() const noexcept { return _toBufferType(_typeFlags); }
+          /// @brief Get transfer mode: standard/bidirectional
+          inline TransferMode transferMode() const noexcept { return _toTransferMode(_typeFlags); }
+          /// @brief Get buffer memory usage: local/dynamic/staging...
+          constexpr inline ResourceUsage memoryUsage() const noexcept { return _Usage; }
+          /// @brief Get buffer memory usage flags -- reserved for internal or advanced use
+          inline VkMemoryPropertyFlags memoryUsageFlags() const noexcept { return _memoryUsage; }
+          
+          inline DeviceContext context() const noexcept { return _context; } ///< Vulkan context handle
+          inline VkDeviceMemory allocation() const noexcept { return _allocation; } ///< Memory allocation
+          inline size_t allocOffset() const noexcept { ///< Byte offset in memory allocation -- internal use
+            return (this->_allocOffset != _individualAlloc()) ? this->_allocOffset : 0;
           }
           
           // -- operations --
           
-          /// @brief Copy content of another buffer resource.
-          ///        Recommended usage: to copy staging buffer data to a static buffer (GPU memory).
-          ///                           -> allows using data as a shader resource after preparing it in a staging buffer.
-          /// @param commandQueueIndex Choose command queue index (from family Renderer.resourceManage().transientCommandQueues()).
-          ///                          Allows synchronization with rendering commands (same queue) or asynchronous copy (different).
-          ///                          Only used when reading/writing in static/immutable buffer(s).
-          ///                          Not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
+          /// @brief Copy content from another buffer resource (local source and/or destination).
+          ///        Recommended usage: copy staging buffer data to static buffer (GPU memory).
+          ///                           -> allows using data as shader resource after preparing it in a staging buffer.
           /// @warning - Both buffers must be the same size (bufferByteSize) and the same type (BufferType).
           ///          - Both buffers must use compatible internal formats.
-          ///          - If current buffer usage is staging/dynamicCpu, the buffer must be "bidirectional".
-          ///          - If 'source' buffer usage is immutable/staticGpu/dynamicCpu, the buffer must be "bidirectional".
-          ///          - Buffers can't be currently mapped (with a MappedBufferIO instance or using vkMapMemory, for example).
-          ///          - This command is not supported on immutable buffers.
-          ///          - The renderer used with buffer constructor must still exist, or this may crash.
-          template <ResourceUsage _RhsUsage>
-          bool copy(Buffer<_RhsUsage>& source, uint32_t commandQueueIndex = 0) noexcept;
-          
-          /// @brief Discard previous data and write buffer data. Can only be used to write the entire buffer.
-          ///        To only write sub-parts of it, use MappedBufferIO instead (only for dynamic and staging buffers).
-          /// @param sourceData  Structure/array of the same byte size as 'bufferByteSize' in constructor. Can't be NULL.
-          /// @param commandQueueIndex Choose command queue index (from family Renderer.resourceManage().transientCommandQueues()).
-          ///                          Allows synchronization with rendering commands (same queue) or asynchronous copy (different).
-          ///                          Only used when reading/writing in static/immutable buffer(s).
-          ///                          Not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
-          /// @returns Memory access/update success
-          /// @warning - 'sourceData' must be the same size as the buffer ('bufferByteSize').
-          ///          - The buffer can't be currently mapped (with a MappedBufferIO instance or using vkMapMemory, for example).
-          ///          - The renderer used with buffer constructor must still exist, or this may crash.
-          ///          - This command is not supported on immutable buffers.
-          ///          - Make sure the 'sourceData' memory is properly aligned.
-          bool write(const void* sourceData, uint32_t commandQueueIndex = 0) noexcept;
-
-        private:
-          static constexpr VkBufferUsageFlags _getTypeUsageFlags(BufferType type, bool isBidirectional) noexcept;
-          static constexpr VkMemoryPropertyFlags _getMemoryUsageFlags() noexcept;
-          static constexpr inline size_t _individualAlloc() noexcept { return (size_t)-1; }
-          friend class BufferMemory;
-          
-        private:
-          BufferHandle _handle = VK_NULL_HANDLE;
-          size_t _bufferSize = 0;
-          ScopedDeviceContext* _device = nullptr;
-          VkDeviceMemory _allocation = VK_NULL_HANDLE;
-          size_t _allocationOffset = _individualAlloc();
-          BufferType _type = BufferType::uniform;
-        };
-
-        using ImmutableBuffer = Buffer<ResourceUsage::immutable>;
-        using StaticBuffer = Buffer<ResourceUsage::staticGpu>;
-        using DynamicBuffer = Buffer<ResourceUsage::dynamicCpu>;
-        using StagingBuffer = Buffer<ResourceUsage::staging>;
-        
-        // ---
-        
-        /// @class BufferMemory
-        /// @brief Common device memory allocation for buffer suballocation.
-        ///        Only used with Buffer objects created with Buffer:createUnallocatedBuffer(...).
-        ///        Must not be used with automatic/individual allocated buffers (other Buffer constructors).
-        /// @warning - All attached Buffer objects must be destroyed BEFORE destroying the BufferMemory instance.
-        ///          - Not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
-        class BufferMemory final {
-        public:
-          /// @brief Initialize memory -- reserved for internal or advanced use -- call BufferMemory::create instead.
-          BufferMemory(VkDeviceMemory deviceMemory, DeviceResourceManager context) noexcept;
-          BufferMemory() noexcept = default; ///< Empty -- not usable (only useful to store variable not immediately initialized)
-          BufferMemory(const BufferMemory&) = delete;
-          BufferMemory(BufferMemory&&) noexcept = default;
-          BufferMemory& operator=(const BufferMemory&) = delete;
-          BufferMemory& operator=(BufferMemory&&) noexcept = default;
-          ~BufferMemory() noexcept = default;
-          
-          inline void release() noexcept { _handle.release(); } ///< Destroy/release memory
-          
-          // -- accessors --
-
-          inline VkDeviceMemory handle() const noexcept { return _handle.value(); } ///< Get native vulkan memory allocation handle
-          /// @brief Verify if initialized (false) or empty/moved/released (true)
-          inline bool isEmpty() const noexcept { return !_handle.hasValue(); }
-          
-          // -- operations --
-          
-          /// @brief Bind buffer to suballocation in existing memory allocation.
-          ///        Must be called only once after buffer creation (only with Buffer:createUnallocatedBuffer(...)).
-          /// @param allocation  Memory allocation created for the same Buffer type
-          ///                    (ResourceUsage/BufferType/isBidirectional/concurrentQueueFamilies).
-          /// @throws - logic_error: if 'buffer' has an individual allocation or is already bound.
-          ///         - runtime_error: on failure.
-          /// @warning - Only available if Buffer built with with Buffer:createUnallocatedBuffer(...).
-          ///          - Not available for higher-level APIs (D3D11, OpenGL).
-          template <ResourceUsage _Usage>
-          inline void bind(Buffer<_Usage>& buffer, size_t byteOffset) {
-            _bind(buffer.handle(), byteOffset, buffer._allocation);
-            buffer._allocationOffset = byteOffset;
+          ///          - If destination buffer usage is staging/dynamic, the buffer must be "bidirectional".
+          ///          - If source buffer usage is local/dynamic, the source buffer must be "bidirectional".
+          ///          - Buffers must not already be mapped (MappedBufferIO instance, vkMapMemory...).
+          template <ResourceUsage _RhsUsage, ResourceUsage _Priv = _Usage>
+          inline typename std::enable_if<_RhsUsage==ResourceUsage::local || _Priv==ResourceUsage::local,
+          bool>::type copyFrom(DeviceResourceManager device, const Buffer<_RhsUsage>& source) noexcept {
+            auto& transientCommandQueue = device->transientCommandQueues().commandQueues;
+            const VkBufferCopy copyRegion{ 0, 0, _bufferSize };
+            return __copyLocalBuffer(_context, device->transientCommandPool(),
+                                     transientCommandQueue[transientCommandQueue.length()-1u],
+                                     source.handle(), _handle, &copyRegion, 1);
+          }
+          /// @brief Copy content from another buffer resource (mappable buffers).
+          /// @warning - Both buffers must be the same size (bufferByteSize) and the same type (BufferType).
+          ///          - Both buffers must use compatible internal formats.
+          ///          - If destination buffer usage is staging/dynamic, the buffer must be "bidirectional".
+          ///          - If source buffer usage is local/dynamic, the source buffer must be "bidirectional".
+          ///          - Buffers must not already be mapped (MappedBufferIO instance, vkMapMemory...).
+          template <ResourceUsage _RhsUsage, ResourceUsage _Priv = _Usage>
+          inline typename std::enable_if<_RhsUsage!=ResourceUsage::local && _Priv!=ResourceUsage::local,
+          bool>::type copyFrom(const Buffer<_RhsUsage>& source) noexcept {
+            return ((_memoryUsage & source.memoryUsageFlags()) & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+                  ? __copyMappedBuffer(_context, source.allocation(), source.allocOffset(),
+                                       _allocation, allocOffset(), _bufferSize)
+                  : __copyMappedBuffer(_context, source.memoryUsageFlags(), source.allocation(), source.allocOffset(),
+                                       _memoryUsage, _allocation, allocOffset(), _bufferSize);
           }
           
-          // -- builder --
-        
-          /// @brief Create memory allocation (for multiple buffer suballocations)
-          /// @param renderer       Rendering device instance hosting the memory.
-          /// @param usage          Resource memory usage mode (see Buffer class description).
-          /// @param byteSize       Total byte size of the allocation (must be a multiple of 256 bytes).
-          /// @param eachBufferType Array of typed buffers for which memory is allocated (with template _Usage=='mode').
-          ///                       This is only used to determine the memory type to allocate (the buffers in the list won't be bound).
-          ///                       This doesn't need to contain all buffers that should be bound to this allocation.
-          ///                       But it should contain one of each type (BufferType/isBidirectional/concurrentQueueFamilies).
-          ///                       Note: if too many types are mixed (different directions, different sharing modes...),
-          ///                             the API may fail to find a suitable memory type (-> out_of_range exception).
-          /// @throws out_of_range: if GPU doesn't support all the types specified at once;
-          ///         runtime_error: on creation failure.
-          /// @warning - The buffers listed in 'eachBufferType' will NOT be bound to the allocation.
-          ///            Buffer.bind must be called for each buffer (even if it was in the list).
-          ///          - Each buffer must have the same ResourceUsage as param 'mode'.
-          ///          - This is not available for higher-level APIs (D3D11, OpenGL). For cross-API projects, use ifdefs or avoid it.
-          static BufferMemory create(Renderer& renderer, ResourceUsage mode, size_t byteSize,
-                                     const BufferHandle* eachBufferType, size_t bufferCount);
+          /// @brief Discard previous data and write local buffer data. 
+          ///        Only used to write the entire buffer.
+          /// @param sourceData  Structure/array of the same byte size as 'buffer.size()'. Can't be NULL.
+          /// @returns Memory access/update success
+          /// @remarks Local buffer access: very inefficient (temporary staging buffer creation).
+          ///          Prefer copyFrom with a staging buffer if written often.
+          /// @warning - The buffer must not already be mapped (MappedBufferIO instance, vkMapMemory...).
+          ///          - Make sure the memory of 'sourceData' is properly aligned.
+          template <ResourceUsage _Private = _Usage>
+          inline typename std::enable_if<_Private==ResourceUsage::local,
+          bool>::type write(DeviceResourceManager device, const void* sourceData) noexcept {
+            auto& transientCommandQueue = device->transientCommandQueues().commandQueues;
+            return __writeLocalBuffer(_context, device->memoryProps(), device->transientCommandPool(),
+                                     transientCommandQueue[transientCommandQueue.length()-1u],
+                                     _handle, _bufferSize, sourceData);
+          }
+          /// @brief Discard previous data and write mappable buffer (dynamic/staging).
+          ///        Only used to write the entire buffer. To write sub-parts of it, use MappedBufferIO instead.
+          /// @param sourceData  Structure/array of the same byte size as 'buffer.size()'. Can't be NULL.
+          /// @returns Memory access/update success
+          /// @warning - The buffer must not already be mapped (MappedBufferIO instance, vkMapMemory...).
+          ///          - Make sure the memory of 'sourceData' is properly aligned.
+          template <ResourceUsage _Private = _Usage>
+          inline typename std::enable_if<_Private!=ResourceUsage::local,
+          bool>::type write(const void* sourceData) noexcept {
+            return __writeMappedBuffer(_context, _memoryUsage, _allocation, allocOffset(), _bufferSize, sourceData);
+          }
 
+
+          // -- create buffers --
+        
+          /// @class Buffer.Builder
+          /// @brief Data/storage buffer creator
+          class Builder final {
+          public:
+            /// @brief Initialize buffer builder
+            /// @warning - The BufferParams object must be kept alive while the Builder exists.
+            ///          - The BufferParams object shouldn't be modified while still used by the Builder
+            ///            (except potentially the buffer size, but AFTER each call to 'build' (for the next call),
+            ///            to create similar buffers with various sizes).
+            /// @throws - invalid_argument: if buffer size param is 0;
+            ///         - runtime_error: on buffer descriptor creation failure.
+            inline Builder(DeviceResourceManager device, BufferParams<_Usage>& params) // non-const ref to force ext var
+              : _device(device), _params(params.descriptorPtr()), _preferredUsageFlags(params._descPreferredUsage()) {
+              _bufferHandle = __createBuffer(device->context(), params.descriptor(), _memReq);
+            }
+            
+            Builder() noexcept = default; ///< Empty builder -- not usable (only for variables with deferred init)
+            Builder(const Builder&) = delete;
+            Builder(Builder&& rhs) noexcept
+              : _device(rhs._device), _params(rhs._params), _bufferHandle(rhs._bufferHandle),
+                _memoryTypeIndex(rhs._memoryTypeIndex), _allocReq(rhs._allocReq), _memReq(rhs._memReq) {
+              rhs._bufferHandle = VK_NULL_HANDLE;
+            }
+            Builder& operator=(const Builder&) = delete;
+            Builder& operator=(Builder&& rhs) noexcept {
+              if (_bufferHandle != VK_NULL_HANDLE)
+                __destroyBuffer(_device->context(), _bufferHandle, VK_NULL_HANDLE);
+              memcpy(this, &rhs, sizeof(Builder));
+              rhs._bufferHandle = VK_NULL_HANDLE;
+              return *this;
+            }
+            /// @brief Destroy buffer builder
+            inline ~Builder() noexcept {
+              if (_bufferHandle != VK_NULL_HANDLE)
+                __destroyBuffer(_device->context(), _bufferHandle, VK_NULL_HANDLE);
+            }
+            
+            // -- memory requirements --
+            
+            /// @brief Get dedicated allocation requirements.
+            ///        Must be called to verify if a buffer:
+            ///        * must use a dedicated allocation (Requirement::required)
+            ///        * should use dedicated allocation to improve performance (Requirement::preferred).
+            ///        * should use default allocation or suballocation (Requirement::none).
+            inline Requirement dedicatedAllocRequirement() const noexcept {
+              return _allocReq.requiresDedicatedAllocation
+                    ? Requirement::required
+                    : (_allocReq.prefersDedicatedAllocation
+                      ? Requirement::preferred
+                      : Requirement::none);
+            }
+            /// @brief Get memory alignment requirement (bytes).
+            inline size_t requiredAlignment() const noexcept { return (size_t)_memReq.memoryRequirements.alignment; }
+            /// @brief Get memory allocation size requirement (bytes).
+            inline size_t requiredMemorySize() const noexcept { return (size_t)_memReq.memoryRequirements.size; }
+            
+            /// @brief Get buffer memory usage: local/dynamic/staging...
+            constexpr inline ResourceUsage memoryUsage() const noexcept { return _Usage; }
+            /// @brief Get compatible vulkan memory type indices -- reserved for internal or advanced use
+            inline uint32_t memoryTypeBits() const noexcept { return _memReq.memoryRequirements.memoryTypeBits; }
+            
+            // -- build --
+            
+            /// @brief Create Buffer object - default / dedicated allocation
+            /// @param dedicatedAllocMode  Force dedicated allocation (::force) or use default driver alloc (::disable).
+            ///                            Set to 'FeatureMode::autodetect' to use the preferred allocation type.
+            /// @warning Immutable buffers must be built with 'build(initData,dedicatedAllocMode)' instead.
+            /// @throws - out_of_range if no compatible memory type could be found;
+            ///         - runtime_error on failure.
+            Buffer<_Usage> build(FeatureMode dedicatedAllocMode = FeatureMode::autodetect) {
+              if (_memoryTypeIndex == MemoryProps::indexNotFound()) { // first dedicated build -> find memory type
+                _memoryTypeIndex = _device->memoryProps().findMemoryTypeIndex(_memReq.memoryRequirements.memoryTypeBits,
+                                                             _toRequiredMemoryUsageFlags(_Usage), _preferredUsageFlags);
+                if (_memoryTypeIndex == MemoryProps::indexNotFound())
+                  __throwMemoryTypeNotFound();
+              }
+
+              DeviceContext context = _device->context();
+              if (_bufferHandle == VK_NULL_HANDLE) // has been built before -> create new handle
+                _bufferHandle = __createBuffer(context, *_params); // throws
+              auto memory = __allocBuffer(context, _bufferHandle, _memReq.memoryRequirements.size, _memoryTypeIndex,
+                                          __isDedicatedBuffer(dedicatedAllocMode, _allocReq.requiresDedicatedAllocation,
+                                                              _allocReq.prefersDedicatedAllocation, _params->size));
+              VkBuffer buffer = _bufferHandle;
+              _bufferHandle = VK_NULL_HANDLE; // reset _bufferHandle in case 'build' is called again
+              return Buffer(context, buffer, (size_t)_params->size, _params->usage,
+                            _device->memoryProps().getPropertyFlags(_memoryTypeIndex), memory);
+            }
+            /// @brief Create Buffer object - suballocation in shared memory block
+            ///          * many GPU drivers limit the total number of allocations (usually 4096 or more allocations).
+            ///          * to work around this limit & reduce time spent on allocations, the same memory allocation
+            ///            (usually a large allocation) may be bound with various buffer objects.
+            ///          * vertex/index: should be aligned (usually 16-byte blocks, verify with requiredAlignment).
+            ///          * uniform: should be aligned (at least 256-byte blocks, verify with requiredAlignment).
+            /// @param byteOffset  Aligned byte offset in memory pool
+            ///                    (call 'DeviceMemoryPool::align(desiredOffset, builder.requiredAlignment())').
+            /// @warning * Make sure 'byteOffset' is aligned with 'requiredAlignment()'.
+            ///            Using unaligned offsets may result in undefined behaviors (such as memory aliasing);
+            ///          * Immutable buffers must be built with 'build(initData,memoryPool,byteOffset)' instead;
+            ///          * Use a compatible memory pool (same memory usage, type, transfer mode, concurrency mode).
+            /// @throws runtime_error on failure
+            Buffer<_Usage> build(DeviceMemoryPool& memoryPool, size_t byteOffset) {
+              DeviceContext context = _device->context();
+              if (_bufferHandle == VK_NULL_HANDLE) // already built -> create new handle
+                _bufferHandle = __createBuffer(context, *_params); // throws
+              
+              __bindBuffer(context, _bufferHandle, _memReq.memoryRequirements.size,
+                           memoryPool.handle(), byteOffset); // throws
+              VkBuffer buffer = _bufferHandle;
+              _bufferHandle = VK_NULL_HANDLE; // reset _bufferHandle in case 'build' is called again
+              return Buffer(context, buffer, (size_t)_params->size, _params->usage,
+                            _device->memoryProps().getPropertyFlags(memoryPool.memoryTypeIndex()),
+                            memoryPool.handle(), byteOffset);
+            }
+            
+            // ---
+            
+            /// @brief Create initialized local Buffer - default / dedicated allocation
+            /// @param dedicatedAllocMode  Force dedicated allocation (::force) or use default driver alloc (::disable).
+            ///                            Set to 'FeatureMode::autodetect' to use the preferred allocation type.
+            /// @param initData  Set initial buffer data (must be the same size as buffer, can't be NULL).
+            /// @warning The initialization will create a temporary staging buffer to copy content.
+            ///          If you intend to create a staging buffer for regular updates, consider using
+            ///          the 'build' method without 'initData' instead (to avoid the extra cost),
+            ///          then fill data with your own staging buffer.
+            /// @throws runtime_error on failure
+            template <ResourceUsage _Private = _Usage>
+            inline Buffer<_Usage> build(typename std::enable_if<_Private==ResourceUsage::local, const void*>::type
+                                        initData, FeatureMode dedicatedAllocMode = FeatureMode::autodetect) {
+              Buffer<_Usage> buffer = build(dedicatedAllocMode);
+              auto& transientCommandQueue = _device->transientCommandQueues().commandQueues;
+              if (!__writeLocalBuffer(_device->context(), _device->memoryProps(), _device->transientCommandPool(),
+                                      transientCommandQueue[transientCommandQueue.length()-1u],
+                                      buffer.handle(), buffer.size(), initData))
+                __throwWriteError();
+              return __move_cpp14_only(buffer);
+            }
+            /// @brief Create initialized mappable Buffer (dynamic/staging) - default / dedicated allocation
+            /// @param dedicatedAllocMode  Force dedicated allocation (::force) or use default driver alloc (::disable).
+            ///                            Set to 'FeatureMode::autodetect' to use the preferred allocation type.
+            /// @param initData  Set initial buffer data (must be the same size as buffer, can't be NULL).
+            /// @throws runtime_error on failure
+            template <ResourceUsage _Private = _Usage>
+            inline Buffer<_Usage> build(typename std::enable_if<_Private!=ResourceUsage::local, const void*>::type
+                                        initData, FeatureMode dedicatedAllocMode = FeatureMode::autodetect) {
+              Buffer<_Usage> buffer = build(dedicatedAllocMode);
+              if (!__writeMappedBuffer(buffer.context(), buffer.memoryUsageFlags(), buffer.allocation(),
+                                       buffer.allocOffset(), buffer.size(), initData))
+                __throwWriteError();
+              return __move_cpp14_only(buffer);
+            }
+            
+            // ---
+            
+            /// @brief Create initialized local Buffer - suballocation in shared memory block
+            /// @param byteOffset Aligned byte offset in memory pool
+            ///                   (call 'DeviceMemoryPool::align(desiredOffset, builder.requiredAlignment())').
+            /// @param initData   Set initial buffer data (must be the same size as buffer, can't be NULL).
+            /// @warning * Make sure 'byteOffset' is aligned with 'requiredAlignment()'.
+            ///            Using unaligned offsets may result in undefined behaviors (such as memory aliasing).
+            ///          * The initialization will create a temporary staging buffer to copy content.
+            ///            If you intend to create a staging buffer for regular updates, consider using
+            ///            the 'build' method without 'initData' instead (to avoid the extra cost),
+            ///            then fill data with your own staging buffer.
+            /// @throws runtime_error on failure
+            template <ResourceUsage _Private = _Usage>
+            inline Buffer<_Usage> build(typename std::enable_if<_Private==ResourceUsage::local, const void*>::type
+                                        initData, DeviceMemoryPool& memoryPool, size_t byteOffset) {
+              Buffer<_Usage> buffer = build(memoryPool, byteOffset);
+              auto& transientCommandQueue = _device->transientCommandQueues().commandQueues;
+              if (!__writeLocalBuffer(_device->context(), _device->memoryProps(), _device->transientCommandPool(),
+                                      transientCommandQueue[transientCommandQueue.length()-1u],
+                                      buffer.handle(), buffer.size(), initData))
+                __throwWriteError();
+              return __move_cpp14_only(buffer);
+            }
+            /// @brief Create initialized mappable Buffer (dynamic/staging) - suballocation in shared memory block
+            /// @param byteOffset Aligned byte offset in memory pool
+            ///                   (call 'DeviceMemoryPool::align(desiredOffset, builder.requiredAlignment())').
+            /// @param initData   Set initial buffer data (must be the same size as buffer, can't be NULL).
+            /// @warning Make sure 'byteOffset' is aligned with 'requiredAlignment()'.
+            ///          Using unaligned offsets may result in undefined behaviors (such as memory aliasing).
+            /// @throws runtime_error on failure
+            template <ResourceUsage _Private = _Usage>
+            inline Buffer<_Usage> build(typename std::enable_if<_Private!=ResourceUsage::local, const void*>::type
+                                        initData, DeviceMemoryPool& memoryPool, size_t byteOffset) {
+              Buffer<_Usage> buffer = build(memoryPool, byteOffset);
+              if (!__writeMappedBuffer(buffer.context(), buffer.memoryUsageFlags(), buffer.allocation(),
+                                       buffer.allocOffset(), buffer.size(), initData))
+                __throwWriteError();
+              return __move_cpp14_only(buffer);
+            }
+          
+          private:
+            constexpr inline VkMemoryPropertyFlags _requiredUsage() const noexcept {
+              return _toRequiredMemoryUsageFlags(_Usage);
+            }
+            inline VkMemoryPropertyFlags _preferredUsage() const noexcept { return _preferredUsageFlags; }
+            friend class DeviceMemoryPool;
+            
+          private:
+            DeviceResourceManager _device = nullptr;
+            const VkBufferCreateInfo* _params = nullptr;
+            BufferHandle _bufferHandle = VK_NULL_HANDLE;
+            uint32_t _memoryTypeIndex = MemoryProps::indexNotFound();
+            VkMemoryPropertyFlags _preferredUsageFlags = (VkMemoryPropertyFlags)0;
+          
+            VkMemoryDedicatedRequirementsKHR _allocReq {
+              VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR
+            };
+            VkMemoryRequirements2 _memReq {
+                VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+                &_allocReq
+            };
+          };
+          
         private:
-          void _bind(BufferHandle buffer, size_t byteOffset, VkDeviceMemory& outAllocation);
+          static constexpr inline size_t _individualAlloc() noexcept { return (size_t)-1; }
         private:
-          ScopedResource<VkDeviceMemory> _handle;
+          BufferHandle _handle = VK_NULL_HANDLE;
+          VkDeviceMemory _allocation = VK_NULL_HANDLE;
+          size_t _allocOffset = _individualAlloc();
+          DeviceContext _context = nullptr;
+          
+          size_t _bufferSize = 0;
+          VkBufferUsageFlags _typeFlags = (VkBufferUsageFlags)0;
+          VkMemoryPropertyFlags _memoryUsage = (VkMemoryPropertyFlags)0;
         };
         
-        // ---
+        using StaticBuffer = Buffer<ResourceUsage::local>;
+        using DynamicBuffer = Buffer<ResourceUsage::dynamic>;
+        using StagingBuffer = Buffer<ResourceUsage::staging>;
+        
+        
+        // ---------------------------------------------------------------------
+        // buffer mapping
+        // ---------------------------------------------------------------------
 
         /// @class MappedBufferIO
-        /// @brief Mapped read/write data buffer access (constant/uniform, vertex, index)
+        /// @brief Mapped read/write data buffer access (uniform, vertex, index...)
         ///        Supports dynamic (write) and staging (read/write) buffers only.
         /// @warning The Buffer object must be kept alive while this instance is open.
         class MappedBufferIO final {
         public:
-          /// @brief Open mapped data access for a dynamic buffer
-          /// @params buffer  Dynamic buffer to map (must contain a valid handle: undefined behavior otherwise).
-          /// @params mode    Dynamic mapping mode:
-          ///                 * discard: Discard previous data (as soon as GPU stops using it) -> content will be undefined.
-          ///                            Recommended for each first write of a buffer for a new frame.
-          ///                 * subsequent: Keep previous data (warning: data currently used by GPU must not be overwritten!).
-          ///                               Recommended for subsequent writes of a buffer within the same frame.
-          /// @throws runtime_error on failure
-          MappedBufferIO(Buffer<ResourceUsage::dynamicCpu>& buffer);
-          /// @brief Open mapped data access for a staging buffer
-          /// @params buffer  Staging buffer to map (must contain a valid handle: undefined behavior otherwise).
-          /// @params mode    Access mode: read / write / readWrite.
-          /// @throws runtime_error on failure
-          MappedBufferIO(Buffer<ResourceUsage::staging>& buffer, StagedMapping mode = StagedMapping::readWrite);
+          MappedBufferIO() noexcept = default; ///< Create empty/closed instance (call 'open' to map a buffer).
           
-          MappedBufferIO() noexcept = default; ///< Empty -- not usable (only useful to store variable not immediately initialized)
+          /// @brief Map dynamic buffer memory -- entire buffer (discard mode)
+          ///        Will discard previous data. Recommended for each first write of a buffer for a new frame.
+          ///        Before calling this, make sure the GPU is no longer reading the buffer.
+          /// @params buffer  Dynamic buffer (must contain a valid handle).
+          /// @warning No exception: verify success by calling 'isOpen()' after construction.
+          inline MappedBufferIO(DynamicBuffer& buffer) noexcept
+            : _context(buffer.context()), _memory(buffer.allocation()) {
+            _openWriteMode(buffer.allocOffset(), buffer.size(),
+                           (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+          }
+          /// @brief Map dynamic buffer memory -- partial mapping (stream mode)
+          ///        Only rewrite a subset of the buffer. Data currently used by GPU must not be overwritten!
+          ///        Typical use: increase 'offset' for each subsequent mapping to avoid overlapping previous data.
+          /// @params buffer  Dynamic buffer (must contain a valid handle).
+          /// @params offset  Byte offset inside buffer memory (or 0 to map buffer from first byte).
+          /// @params size    Byte size to map (or 0 to map buffer until last byte).
+          /// @warning No exception: verify success by calling 'isOpen()' after construction.
+          inline MappedBufferIO(DynamicBuffer& buffer, size_t offset, size_t size) noexcept
+            : _context(buffer.context()), _memory(buffer.allocation()) {
+            _openWriteMode(buffer.allocOffset() + offset, (size != 0) ? size : buffer.size() - offset,
+                           (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+          }
+          
+          /// @brief Map staging buffer memory -- entire buffer
+          /// @params buffer  Staging buffer (must contain a valid handle).
+          /// @params mode    Mapping mode: read / write / readWrite.
+          /// @warning No exception: verify success by calling 'isOpen()' after construction.
+          inline MappedBufferIO(StagingBuffer& buffer, IOMode mode) noexcept
+            : _context(buffer.context()), _memory(buffer.allocation()) {
+            _open(buffer.allocOffset(), buffer.size(),
+                  mode, (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+          }
+          /// @brief Map staging buffer memory -- partial mapping
+          /// @params buffer  Staging buffer (must contain a valid handle).
+          /// @params mode    Mapping mode: read / write / readWrite.
+          /// @params offset  Byte offset inside buffer memory (or 0 to map buffer from first byte).
+          /// @params size    Byte size to map (or 0 to map buffer until last byte).
+          /// @warning No exception: verify success by calling 'isOpen()' after construction.
+          inline MappedBufferIO(StagingBuffer& buffer, IOMode mode, size_t offset, size_t size) noexcept
+            : _context(buffer.context()), _memory(buffer.allocation()) {
+            _open(buffer.allocOffset() + offset, (size != 0) ? size : buffer.size() - offset,
+                  mode, (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+          }
+          
           MappedBufferIO(const MappedBufferIO&) = delete;
           MappedBufferIO(MappedBufferIO&& rhs) noexcept
-            : _mapped(rhs._mapped), _context(rhs._context), _buffer(rhs._buffer) { rhs._mapped = nullptr; }
+            : _mapped(rhs._mapped), _context(rhs._context), _memory(rhs._memory),
+              _flushedOffset(rhs._flushedOffset), _flushedSize(rhs._flushedSize) { rhs._mapped = nullptr; }
           MappedBufferIO& operator=(const MappedBufferIO&) = delete;
           MappedBufferIO& operator=(MappedBufferIO&& rhs) noexcept {
-            _mapped=rhs._mapped; _context=rhs._context; _buffer=rhs._buffer;
+            _mapped=rhs._mapped; _context=rhs._context; _memory=rhs._memory;
+            _flushedOffset=rhs._flushedOffset; _flushedSize=rhs._flushedSize;
             rhs._mapped = nullptr;
             return *this;
           }
-          ~MappedBufferIO() noexcept { close(); }
+          inline ~MappedBufferIO() noexcept { close(); }
           
           
           // -- read/write access --
           
-          inline bool isOpen() noexcept { return (this->_mapped != nullptr); } ///< Get current state
-          
-          /// @brief Get mapped data access for read/write operations (or NULL if no access is open)
+          inline bool isOpen() const noexcept { return (_mapped != nullptr); } ///< Get current state
+
+          /// @brief Get mapped data access for read/write operations (or NULL if not open)
           ///        Can be cast to the structure/class type to read/write, or used with memcpy/memset operations.
           /// @warning Write operations should never exceed the size of the open buffer!
-          inline void* data() noexcept { return this->_mapped; }
-          /// @brief Get mapped data access for read operations (or NULL if no access is open)
+          inline void* data() noexcept { return _mapped; }
+          /// @brief Get mapped data access for read operations (or NULL if not open)
           ///        Can be cast to the structure/class type to read, or used with memcpy operations.
           /// @warning Only for staging buffers open with StagedMapping::read or StagedMapping::readWrite.
-          inline const void* data() const noexcept { return this->_mapped; }
+          inline const void* data() const noexcept { return _mapped; }
           
           
           // -- operations --
-        
-          /// @brief Open mapped data access for a dynamic buffer
-          /// @params buffer  Dynamic buffer to map (must contain a valid handle: undefined behavior otherwise).
-          /// @params mode    Dynamic mapping mode:
-          ///                 * discard: Discard previous data (as soon as GPU stops using it) -> content will be undefined.
-          ///                            Recommended for each first write of a buffer for a new frame.
-          ///                 * subsequent: Keep previous data (warning: data currently used by GPU must not be overwritten!).
-          ///                               Recommended for subsequent writes of a buffer within the same frame.
+          
+          /// @brief Map dynamic buffer memory -- entire buffer (discard mode)
+          ///        Will discard previous data. Recommended for each first write of a buffer for a new frame.
+          ///        Before calling this, make sure the GPU is no longer reading the buffer.
+          /// @params buffer  Dynamic buffer (must contain a valid handle).
           /// @returns Success
-          inline bool open(Buffer<ResourceUsage::dynamicCpu>& buffer) noexcept {
-            close();
-            this->_context = buffer.context();
-            this->_buffer = buffer.allocation();
-            this->_mapped = __mapDataBuffer(buffer.context(), buffer.size(),
-                                            buffer.allocation(), buffer.allocationOffset());
-            return (this->_mapped != nullptr);
+          /// @warning If already open, 'close' MUST be called before mapping another buffer,
+          ///          or a leak will occur (in debug mode, an assertion will fail).
+          inline bool open(DynamicBuffer& buffer) noexcept {
+            _context = buffer.context();
+            _memory = buffer.allocation();
+            return _openWriteMode(buffer.allocOffset(), buffer.size(),
+                                  (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
           }
-          /// @brief Open mapped data access for a staging buffer
-          /// @params buffer  Staging buffer to map (must contain a valid handle: undefined behavior otherwise).
-          /// @params mode    Access mode: read / write / readWrite.
+          /// @brief Map dynamic buffer memory -- partial mapping (stream mode)
+          ///        Only rewrite a subset of the buffer. Data currently used by GPU must not be overwritten!
+          ///        Typical use: increase 'offset' for each subsequent mapping to avoid overlapping previous data.
+          /// @params buffer  Dynamic buffer (must contain a valid handle).
+          /// @params offset  Byte offset inside buffer memory (or 0 to map buffer from first byte).
+          /// @params size    Byte size to map (or 0 to map buffer until last byte).
           /// @returns Success
-          inline bool open(Buffer<ResourceUsage::staging>& buffer,
-                           StagedMapping /*mode*/ = StagedMapping::readWrite) noexcept {
-            close();
-            this->_context = buffer.context();
-            this->_buffer = buffer.allocation();
-            this->_mapped = __mapDataBuffer(buffer.context(), buffer.size(),
-                                            buffer.allocation(), buffer.allocationOffset());
-            return (this->_mapped != nullptr);
+          /// @warning If already open, 'close' MUST be called before mapping another buffer,
+          ///          or a leak will occur (in debug mode, an assertion will fail).
+          inline bool open(DynamicBuffer& buffer, size_t offset, size_t size) noexcept {
+            _context = buffer.context();
+            _memory = buffer.allocation();
+            return _openWriteMode(buffer.allocOffset() + offset, (size != 0) ? size : buffer.size() - offset,
+                                  (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
           }
-          /// @brief Close mapped buffer access.
-          /// @warning No other read/write operations can be performed until 'open' is called again.
-          inline void close() noexcept {
-            if (_mapped != nullptr) {
-              __unmapDataBuffer(_context, _buffer);
-              _mapped = nullptr;
-            }
+          
+          // ---
+          
+          /// @brief Map staging buffer memory -- entire buffer
+          /// @params buffer  Staging buffer (must contain a valid handle).
+          /// @params mode    Mapping mode: read / write / readWrite.
+          /// @returns Success
+          /// @warning If already open, 'close' MUST be called before mapping another buffer,
+          ///          or a leak will occur (in debug mode, an assertion will fail).
+          inline bool open(StagingBuffer& buffer, IOMode mode) noexcept {
+            _context = buffer.context();
+            _memory = buffer.allocation();
+            return _open(buffer.allocOffset(), buffer.size(),
+                         mode, (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
           }
+          /// @brief Map staging buffer memory -- partial mapping
+          /// @params buffer  Staging buffer (must contain a valid handle).
+          /// @params mode    Mapping mode: read / write / readWrite.
+          /// @params offset  Byte offset inside buffer memory (or 0 to map buffer from first byte).
+          /// @params size    Byte size to map (or 0 to map buffer until last byte).
+          /// @returns Success
+          /// @warning If already open, 'close' MUST be called before mapping another buffer,
+          ///          or a leak will occur (in debug mode, an assertion will fail).
+          inline bool open(StagingBuffer& buffer, IOMode mode, size_t offset, size_t size) noexcept {
+            _context = buffer.context();
+            _memory = buffer.allocation();
+            return _open(buffer.allocOffset() + offset, (size != 0) ? size : buffer.size() - offset,
+                         mode, (buffer.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+          }
+          
+          // ---
 
+          /// @brief Unmap data buffer (close access, if a buffer is mapped)
+          /// @warning No read/write operations can be performed after it until 'open' is called again.
+          void close() noexcept;
+
+        private:
+          bool _open(size_t offset, size_t size, IOMode mode, bool isHostCoherent) noexcept; // staging
+          bool _openWriteMode(size_t offset, size_t size, bool isHostCoherent) noexcept; // dynamic
         private:
           void* _mapped = nullptr;
           DeviceContext _context = VK_NULL_HANDLE;
-          VkDeviceMemory _buffer = VK_NULL_HANDLE;
+          VkDeviceMemory _memory = VK_NULL_HANDLE;
+          size_t _flushedOffset = 0; // only used if a flush is required before unmapping
+          size_t _flushedSize = 0;   // only used if a flush is required before unmapping
         };
       }
     }
   }
   
-  // ---
-  
-# define __P_BUFFER_STATIC_CLASS    pandora::video::vulkan::Buffer<pandora::video::vulkan::ResourceUsage::staticGpu>
-# define __P_BUFFER_IMMUTABLE_CLASS pandora::video::vulkan::Buffer<pandora::video::vulkan::ResourceUsage::immutable>
-# define __P_BUFFER_DYNAMIC_CLASS   pandora::video::vulkan::Buffer<pandora::video::vulkan::ResourceUsage::dynamicCpu>
-# define __P_BUFFER_STAGING_CLASS   pandora::video::vulkan::Buffer<pandora::video::vulkan::ResourceUsage::staging>
-  
-  // VkBufferUsageFlags Buffer._getTypeUsageFlags(BufferType type, bool isBidirectional)
-  template <> static constexpr inline
-  VkBufferUsageFlags __P_BUFFER_STATIC_CLASS::_getTypeUsageFlags(pandora::video::vulkan::BufferType type,
-                                                                 bool isBidirectional) noexcept {
-    return isBidirectional
-           ? ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-           : ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-  }
-  template <> static constexpr inline
-  VkBufferUsageFlags __P_BUFFER_IMMUTABLE_CLASS::_getTypeUsageFlags(pandora::video::vulkan::BufferType type,
-                                                                    bool isBidirectional) noexcept {
-    return isBidirectional
-           ? ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-           : ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-  }
-  template <> static constexpr inline
-  VkBufferUsageFlags __P_BUFFER_DYNAMIC_CLASS::_getTypeUsageFlags(pandora::video::vulkan::BufferType type,
-                                                                  bool isBidirectional) noexcept {
-    return isBidirectional
-           ? ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-           : (VkBufferUsageFlags)type;
-  }
-  template <> static constexpr inline
-  VkBufferUsageFlags __P_BUFFER_STAGING_CLASS::_getTypeUsageFlags(pandora::video::vulkan::BufferType,
-                                                                  bool isBidirectional) noexcept {
-    return isBidirectional
-           ? (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-           : VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  }
-  
-  // VkMemoryPropertyFlags Buffer._getMemoryUsageFlags()
-  template <> static constexpr inline
-  VkMemoryPropertyFlags __P_BUFFER_STATIC_CLASS::_getMemoryUsageFlags() noexcept {
-    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-  }
-  template <> static constexpr inline
-  VkMemoryPropertyFlags __P_BUFFER_IMMUTABLE_CLASS::_getMemoryUsageFlags() noexcept {
-    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-  }
-  template <> static constexpr inline
-  VkMemoryPropertyFlags __P_BUFFER_DYNAMIC_CLASS::_getMemoryUsageFlags() noexcept {
-    return (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  }
-  template <> static constexpr inline
-  VkMemoryPropertyFlags __P_BUFFER_STAGING_CLASS::_getMemoryUsageFlags() noexcept {
-    return (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  }
-  
-  // bool Buffer.copy<ResourceUsage>(Buffer& source)
-  template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
-  bool __P_BUFFER_STATIC_CLASS::copy(pandora::video::vulkan::Buffer<_RhsUsage>& source, uint32_t commandQueueIndex) noexcept {
-    return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                            _device->transientCommandQueues().commandQueues[commandQueueIndex],
-                            source.handle(), this->_handle, this->_bufferSize);
-  }
-  template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
-  bool __P_BUFFER_IMMUTABLE_CLASS::copy(pandora::video::vulkan::Buffer<_RhsUsage>& source, uint32_t commandQueueIndex) noexcept {
-    return false;
-  }
-  template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
-  bool __P_BUFFER_DYNAMIC_CLASS::copy(pandora::video::vulkan::Buffer<_RhsUsage>& source, uint32_t commandQueueIndex) noexcept {
-    __if_constexpr (_RhsUsage == pandora::video::vulkan::ResourceUsage::staging
-                 || _RhsUsage == pandora::video::vulkan::ResourceUsage::dynamicCpu)
-      return __copyMappedDataBuffer(this->_device->context(), this->_bufferSize,
-                                    source.allocation(), source.allocationOffset(), allocation(), allocationOffset());
-    else
-      return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                              _device->transientCommandQueues().commandQueues[commandQueueIndex],
-                              source.handle(), this->_handle, this->_bufferSize);
-  }
-  template <> template <pandora::video::vulkan::ResourceUsage _RhsUsage> inline
-  bool __P_BUFFER_STAGING_CLASS::copy(pandora::video::vulkan::Buffer<_RhsUsage>& source, uint32_t commandQueueIndex) noexcept {
-    __if_constexpr (_RhsUsage == pandora::video::vulkan::ResourceUsage::staging
-                 || _RhsUsage == pandora::video::vulkan::ResourceUsage::dynamicCpu)
-      return __copyMappedDataBuffer(this->_device->context(), this->_bufferSize,
-                                    source.allocation(), source.allocationOffset(), allocation(), allocationOffset());
-    else
-      return __copyDataBuffer(_device->context(), _device->transientCommandPool(),
-                              _device->transientCommandQueues().commandQueues[commandQueueIndex],
-                              source.handle(), this->_handle, this->_bufferSize);
-  }
-
-  // bool Buffer.write(const void* sourceData)
-  template <> inline bool __P_BUFFER_STATIC_CLASS::write(const void* sourceData, uint32_t commandQueueIndex) noexcept {
-    return __writeWithStagingBuffer(_device->context(), _device->device(), _device->transientCommandPool(),
-                                    _device->transientCommandQueues().commandQueues[commandQueueIndex],
-                                    this->_handle, this->_bufferSize, sourceData);
-  }
-  template <> inline bool __P_BUFFER_IMMUTABLE_CLASS::write(const void*, uint32_t) noexcept {
-    return false;
-  }
-  template <> inline bool __P_BUFFER_DYNAMIC_CLASS::write(const void* sourceData, uint32_t) noexcept {
-    return __writeMappedDataBuffer(this->_device->context(), this->_bufferSize, this->_allocation,
-                                   allocationOffset(), sourceData);
-  }
-  template <> inline bool __P_BUFFER_STAGING_CLASS::write(const void* sourceData, uint32_t) noexcept {
-    return __writeMappedDataBuffer(this->_device->context(), this->_bufferSize, this->_allocation,
-                                   allocationOffset(), sourceData);
-  }
-
-# undef __P_BUFFER_STATIC_CLASS
-# undef __P_BUFFER_IMMUTABLE_CLASS
-# undef __P_BUFFER_DYNAMIC_CLASS
-# undef __P_BUFFER_STAGING_CLASS
 # undef __if_constexpr
+# undef __move_cpp14_only
 #endif

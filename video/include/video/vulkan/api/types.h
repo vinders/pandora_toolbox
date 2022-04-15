@@ -57,10 +57,24 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
 
         template <typename T>
         using DynamicArray = pandora::memory::DynamicArray<T>;
+        
+        /// @brief Feature/alloc/mode requirement type
+        enum class Requirement : int {
+          none = 0,
+          preferred = 1,
+          required = 2
+        };
+        /// @brief Feature/alloc/mode activation
+        enum class FeatureMode : int {
+          disable = 0,
+          force = 1,
+          autodetect = 2
+        };
 
-        ///@brief Extended physical device feature description
+        /// @brief Extended physical device feature description
         struct AdapterFeatures final {
           VkPhysicalDeviceFeatures features{};
+          VkBool32 depthClipping = VK_FALSE;
           VkBool32 customBorderColor = VK_FALSE;
           VkBool32 extendedDynamicState = VK_FALSE;
           VkBool32 dynamicRendering = VK_FALSE;
@@ -68,6 +82,7 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         /// @brief Extended physical device feature request
         struct RequestedAdapterFeatures final {
           VkPhysicalDeviceFeatures features{};
+          VkBool32 depthClipping = VK_FALSE;        ///< Explicit depth-clipping control, similar to Direct3D (instead of implicit control through depth-clamp)
           VkBool32 customBorderColor = VK_FALSE;    ///< Allow custom colors for texture sampler border if supported
                                                     ///  (if extension "VK_EXT_custom_border_color" enabled)
           VkBool32 extendedDynamicState = VK_FALSE; ///< Allow extended dynamic states (dynamic culling/depth-stencil/viewport count...) if supported
@@ -290,49 +305,113 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         
         /// @brief Data Buffer content type
         enum class BufferType : int/*VkBufferUsageFlagBits*/ {
-          uniform = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,  ///< Constant/uniform data buffer for shader stage(s): 
+          none = 0,
+          uniform = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,  ///< Constant/uniform data buffer for shader stage(s):
                                                          ///  * can be bound with any shader stage(s): Renderer.bind<...>ConstantBuffers.
                                                          ///  * should contain data useful as a whole for shaders:
                                                          ///    -> buffer entirely copied in GPU cache during Draw calls, to be available for each vertex/pixel.
                                                          ///    -> recommended for view/projection/world matrices, transformations, lights and options.
                                                          ///    -> not appropriate for big data blocks of which only a few bytes are read by each vertex/pixel.
-          vertex = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    ///< Vertex data buffer for vertex shader
+          vertex = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    ///< Vertex/mesh data storage buffer for vertex shader:
                                                          ///  * can be bound with vertex shader stage: Renderer.bindVertexArrayBuffer(s).
                                                          ///  * contains vertices to process in renderer.
                                                          ///  * can be used with an optional index buffer, to improve speed and bandwidth.
                                                          ///  * can also be used as instance buffers, to duplicate meshes many times (example: trees, leaves...).
                                                          ///  * Common practice: - geometry centered around (0;0;0) -> vertex buffers;
-                                                         ///                     - world matrix to offset the entire model in the environment -> combined with camera view into constant buffer;
+                                                         ///                     - world matrix to offset the entire model in the environment
+                                                         ///                       -> combined with camera view into constant buffer;
                                                          ///                     - vertices repositioned in vertex shader by world/view matrix and projection matrix.
-          vertexIndex = VK_BUFFER_USAGE_INDEX_BUFFER_BIT ///< Indices of vertex buffer(s)
+          vertexIndex = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,///< Indices of vertex buffer(s):
                                                          ///  * can be bound with vertex shader stage: Renderer.bindVertexArrayBuffer(s).
                                                          ///  * optionally used with vertex array buffer(s), to improve speed and bandwidth.
                                                          ///  * contains indices to allow removal of redundant/common vertices from associated vertex array buffer(s).
+          //storage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT ///< Structured/storage buffer for shader stage(s):
+                                                         ///  * can be used to produce or consume values in shaders.
         };
-        /// @brief Resource / texture memory usage - ResourceBuffer / Texture<...>
-        enum class ResourceUsage : int {
-          immutable = 0,  ///< Immutable: GPU memory initialized at creation, not visible from CPU:
-                          ///          - fastest GPU access: ideal for static resources that don't change (textures, geometry...);
-          staticGpu = 1,  ///< Static: GPU memory, not directly visible from CPU:
-                          ///          - fast GPU access: ideal for static resources rarely updated or for small resources;
-                          ///          - indirect CPU write access: should be used when NOT updated frequently (or if data is small);
-                          ///          - mapped if supported by GPU / defaults to 'VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT' if not supported (indirect CPU access).
-          dynamicCpu = 2, ///< Dynamic: CPU mappable memory, visible from GPU (through PCIe):
-                          ///           - slow GPU read access: should be used when data isn't kept for multiple frames;
-                          ///           - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
-          staging   = 3   ///< Staging: CPU-only mappable memory:
-                          ///           - no GPU access: should not be used for display or render-targets;
-                          ///           - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
-                          ///           - staged content is usually used to populate/read/update static resources (textures, geometry...)
-                          ///             -> copied with data transfers from/to staticGpu resources (which can be accessed by the GPU).
+#       define __P_VULKAN_BUFFERTYPE_ENUM_LENGTH 3
+
+        /// @brief Image Buffer content type
+        enum class ImageType : int {
+          none = 0,
+          image1D = 0x1, ///< One-dimensional texture
+          image2D = 0x2, ///< Two-dimensional texture
+          image3D = 0x4, ///< Three-dimensional texture
+          targetImage2D = 0x8 ///< Two-dimensional render-target texture
+        };
+#       define __P_VULKAN_IMAGETYPE_ENUM_LENGTH 4
+
+        /// @brief Buffer data transfer mode
+        enum class TransferMode : int {
+          standard = 0x1,      ///< Standard transfer mode: 'local' as destination, 'staging' as source.
+          bidirectional = 0x2, ///< Bidirectional transfer mode: 'local'/'dynamic'/'staging' as source/destination.
         };
         
-        /// @brief Staging resource / texture memory mapping
-        enum class StagedMapping : int {
-          read = 0x1,      ///< Read-only access
-          write = 0x2,     ///< Write-only access
+        /// @brief Resource / texture memory usage - ResourceBuffer / Texture<...>
+        enum class ResourceUsage : int {
+          local = 0,   ///< Local: GPU static memory, not directly visible from CPU:
+                       ///    - very fast GPU access: ideal for static resources rarely updated;
+                       ///    - fast GPU random access: ideal for resources such as textures;
+                       ///    - indirect CPU write access: should be used when NOT updated frequently (or if data is small);
+                       ///    - can be copied from compatible staging resource: preferable method to update large random-access resources (such as textures).
+          dynamic = 1, ///< Dynamic: CPU mappable memory, visible from GPU (through PCIe), CPU write only:
+                       ///    - only for vertex/index/uniform buffers (not appropriate for textures);
+                       ///    - slow GPU read access: should be used when data isn't kept for multiple frames;
+                       ///    - very slow GPU random access: should be avoided for large random-access resources (such as textures);
+                       ///    - very fast CPU write access: ideal for constants/uniforms and vertices/indices re-written by CPU every frame.
+          staging = 2, ///< Staging: CPU-only mappable memory, CPU read/write:
+                       ///    - no GPU access: should not be used for display or render-targets;
+                       ///    - very fast CPU read/write access: usable to manipulate resource data, or to read buffer content from CPU;
+                       ///    - fast CPU random access: ideal for large CPU-side random-access resources (such as staged textures);
+                       ///    - staged content is usually used to populate/read/update static resources (textures, geometry...)
+                       ///      -> copied with data transfers from/to 'local' resources (which can be accessed by the GPU).
+        };
+        
+        /// @brief IO mode for memory mapping, storage mode...
+        enum class IOMode : int {
+          read = 0x1,      ///< Read-only access / consume
+          write = 0x2,     ///< Write-only access / produce
           readWrite = 0x3  ///< Read-write access
         };
+        
+        constexpr inline VkMemoryPropertyFlags _toRequiredMemoryUsageFlags(ResourceUsage usage) noexcept {
+          return (usage == ResourceUsage::local)
+                ? (VkMemoryPropertyFlags)0
+                : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        }
+        constexpr inline VkMemoryPropertyFlags _toPreferredMemoryUsageFlags(ResourceUsage usage, bool specialUsage) noexcept {
+          return (usage == ResourceUsage::local)
+                ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                : ((usage == ResourceUsage::dynamic)
+                  ? (specialUsage // dynamic
+                    ? (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) // GPU VRAM with DMA
+                    : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) )
+                  : (specialUsage // staging
+                    ? (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_CACHED_BIT) // CPU cache
+                    : (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) ) );
+        }
+        
+        constexpr inline VkBufferUsageFlags _toBufferUsageFlags(BufferType type, ResourceUsage usage,
+                                                                TransferMode transferMode) noexcept {
+          return (usage == ResourceUsage::local)
+                ? ((transferMode == TransferMode::bidirectional)
+                  ? ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT) // bidirectional
+                  : ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_DST_BIT) )
+                : ((usage == ResourceUsage::dynamic)
+                  ? ((transferMode == TransferMode::bidirectional) // dynamic
+                    ? ((VkBufferUsageFlags)type | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT) // bidirectional
+                    : (VkBufferUsageFlags)type )
+                  : ((transferMode == TransferMode::bidirectional) // staging
+                    ? (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT) // bidirectional
+                    : VK_BUFFER_USAGE_TRANSFER_SRC_BIT ) );
+        }
+        constexpr inline BufferType _toBufferType(VkBufferUsageFlags flags) noexcept {
+          return (BufferType)(flags & ~(VkBufferUsageFlags)(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        }
+        constexpr inline TransferMode _toTransferMode(VkBufferUsageFlags flags) noexcept {
+          return ((flags & (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT))
+                        == (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT))
+                ? TransferMode::bidirectional : TransferMode::standard;
+        }
         
         
         // -- color/alpha blending --
@@ -428,7 +507,10 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
     }
   }
   _P_FLAGS_OPERATORS(pandora::video::vulkan::ColorComponentFlag, int);
+  _P_FLAGS_OPERATORS(pandora::video::vulkan::IOMode, int);
   _P_FLAGS_OPERATORS(pandora::video::vulkan::BufferType, int);
+  _P_FLAGS_OPERATORS(pandora::video::vulkan::ImageType, int);
+  _P_FLAGS_OPERATORS(pandora::video::vulkan::TransferMode, int);
   
 # if defined(_WINDOWS) && !defined(__MINGW32__)
 #   pragma warning(pop)

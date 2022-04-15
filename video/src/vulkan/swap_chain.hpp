@@ -308,9 +308,9 @@ Implementation included in renderer.cpp
     uint32_t layerCount = ((this->_flags & SwapChain::OutputFlag::stereo) == true) ? 2 : 1;
     
     for (uint32_t i = 0; i < imageCount; ++i) {
-      this->_renderTargetViews[i] = __createBufferView(this->_renderer->context(),
-                                                            this->_bufferImages[i], this->_backBufferFormat,
-                                                            VK_IMAGE_ASPECT_COLOR_BIT, layerCount, 1u, 0);
+      this->_renderTargetViews[i] = __createImageView(this->_renderer->context(),
+                                                      this->_bufferImages[i], this->_backBufferFormat,
+                                                      VK_IMAGE_ASPECT_COLOR_BIT, layerCount, 1u, 0);
     }
   }
 
