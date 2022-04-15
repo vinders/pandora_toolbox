@@ -229,7 +229,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           Buffer(DeviceContext context, VkBuffer bufferHandle, size_t bufferByteSize,
                  VkBufferUsageFlags typeFlags, VkMemoryPropertyFlags memoryUsage,
                  VkDeviceMemory individualMemory) noexcept
-            : _handle(bufferHandle), _allocation(individualMemory), _allocOffset(_individualAlloc()),
+            : _handle(bufferHandle), _allocation(individualMemory), _allocOffset(_individualAllocBit()),
               _context(context), _bufferSize(bufferByteSize), _typeFlags(typeFlags), _memoryUsage(memoryUsage) {}
           /// @brief Create data/storage buffer object -- reserved for internal use -- suballocation
           /// @remarks Prefer Buffer::Builder for standard usage
@@ -259,7 +259,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           
           inline void release() noexcept { ///< Destroy/release buffer instance
             if (_handle != VK_NULL_HANDLE) {
-              __destroyBuffer(_context, _handle, (_allocOffset==_individualAlloc()) ? _allocation : VK_NULL_HANDLE);
+              __destroyBuffer(_context, _handle, (_allocOffset==_individualAllocBit()) ? _allocation : VK_NULL_HANDLE);
               _handle = VK_NULL_HANDLE;
             }
           }
@@ -288,7 +288,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           inline DeviceContext context() const noexcept { return _context; } ///< Vulkan context handle
           inline VkDeviceMemory allocation() const noexcept { return _allocation; } ///< Memory allocation
           inline size_t allocOffset() const noexcept { ///< Byte offset in memory allocation -- internal use
-            return (this->_allocOffset != _individualAlloc()) ? this->_allocOffset : 0;
+            return (this->_allocOffset & _allocValueMask());
           }
           
           // -- operations --
@@ -319,11 +319,9 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           template <ResourceUsage _RhsUsage, ResourceUsage _Priv = _Usage>
           inline typename std::enable_if<_RhsUsage!=ResourceUsage::local && _Priv!=ResourceUsage::local,
           bool>::type copyFrom(const Buffer<_RhsUsage>& source) noexcept {
-            return ((_memoryUsage & source.memoryUsageFlags()) & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-                  ? __copyMappedBuffer(_context, source.allocation(), source.allocOffset(),
-                                       _allocation, allocOffset(), _bufferSize)
-                  : __copyMappedBuffer(_context, source.memoryUsageFlags(), source.allocation(), source.allocOffset(),
-                                       _memoryUsage, _allocation, allocOffset(), _bufferSize);
+            bool isHostCoherent = ((_memoryUsage & source.memoryUsageFlags()) & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            return __copyMappedBuffer(_context, source.allocation(), source.allocOffset(),
+                                      _allocation, allocOffset(), _bufferSize, isHostCoherent);
           }
           
           /// @brief Discard previous data and write local buffer data. 
@@ -574,11 +572,17 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           };
           
         private:
-          static constexpr inline size_t _individualAlloc() noexcept { return (size_t)-1; }
+          static constexpr inline size_t _individualAllocBit() noexcept { return ~((~(size_t)0uLL) >> 1); }
+          static constexpr inline size_t _allocValueMask() noexcept { return ((~(size_t)0uLL) >> 1); }
+          static_assert((sizeof(size_t)==8u && _individualAllocBit()==(size_t)0x8000000000000000uLL
+                                            && _allocValueMask()==(size_t)0x7FFFFFFFFFFFFFFFuLL)
+                     || (sizeof(size_t)==4u && _individualAllocBit()==(size_t)0x80000000uL
+                                            && _allocValueMask()==(size_t)0x7FFFFFFFuL)
+                     || (sizeof(size_t)!=8u && sizeof(size_t)!=4u), "vulkan::Buffer: non-standard 'size_t' type...");
         private:
           BufferHandle _handle = VK_NULL_HANDLE;
           VkDeviceMemory _allocation = VK_NULL_HANDLE;
-          size_t _allocOffset = _individualAlloc();
+          size_t _allocOffset = _individualAllocBit();
           DeviceContext _context = nullptr;
           
           size_t _bufferSize = 0;

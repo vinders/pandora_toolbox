@@ -170,34 +170,10 @@ Implementation included in renderer.cpp
   
   // ---
   
-  // Copy mappable buffer content to other mappable buffer (host-coherent only)
-  bool pandora::video::vulkan::__copyMappedBuffer(DeviceContext context, VkDeviceMemory source,
-                                                  size_t sourceOffset, VkDeviceMemory dest,
-                                                  size_t destOffset, size_t bufferSize) noexcept {
-    assert(source != VK_NULL_HANDLE && dest != VK_NULL_HANDLE);
-    void* sourceData = nullptr;
-    void* destData = nullptr;
-    
-    bool isSuccess = false;
-    VkResult result = vkMapMemory(context, source, sourceOffset, (VkDeviceSize)bufferSize, 0, &sourceData);
-    if (result == VK_SUCCESS && sourceData != nullptr) {
-      result = vkMapMemory(context, dest, destOffset, (VkDeviceSize)bufferSize, 0, &destData);
-      if (result == VK_SUCCESS && destData != nullptr) {
-        memcpy(destData, sourceData, bufferSize); // copy
-
-        vkUnmapMemory(context, dest);
-        isSuccess = true;
-      }
-      vkUnmapMemory(context, source);
-    }
-    return isSuccess;
-  }
-  
   // Copy mappable buffer content to other mappable buffer
-  bool pandora::video::vulkan::__copyMappedBuffer(DeviceContext context, VkMemoryPropertyFlags sourceUsage,
-                                                  VkDeviceMemory source, size_t sourceOffset,
-                                                  VkMemoryPropertyFlags destUsage, VkDeviceMemory dest,
-                                                  size_t destOffset, size_t bufferSize) noexcept {
+  bool pandora::video::vulkan::__copyMappedBuffer(DeviceContext context, VkDeviceMemory source,
+                                                  size_t sourceOffset, VkDeviceMemory dest, size_t destOffset,
+                                                  size_t bufferSize, bool isHostCoherent) noexcept {
     assert(source != VK_NULL_HANDLE && dest != VK_NULL_HANDLE);
     void* sourceData = nullptr;
     void* destData = nullptr;
@@ -207,25 +183,24 @@ Implementation included in renderer.cpp
     if (result == VK_SUCCESS && sourceData != nullptr) {
       result = vkMapMemory(context, dest, destOffset, (VkDeviceSize)bufferSize, 0, &destData);
       if (result == VK_SUCCESS && destData != nullptr) {
-        
-        // if source buffer is not host-coherent, refresh it before reading
-        if ((sourceUsage & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
-          VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-          range.memory = source;
-          range.offset = sourceOffset;
-          range.size = bufferSize;
-          vkInvalidateMappedMemoryRanges(context, 1u, &range);
+        if (isHostCoherent) {
+          memcpy(destData, sourceData, bufferSize); // copy
         }
-        
-        memcpy(destData, sourceData, bufferSize); // copy
-        
-        // if destination buffer is not host-coherent, flush it before unmapping
-        if ((destUsage & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
-          VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-          range.memory = dest;
-          range.offset = destOffset;
-          range.size = bufferSize;
-          vkFlushMappedMemoryRanges(context, 1u, &range);
+        // if source/dest buffer is not host-coherent, refresh before reading and flush before unmapping
+        else {
+          VkMappedMemoryRange rangeSrc{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+          rangeSrc.memory = source;
+          rangeSrc.offset = sourceOffset;
+          rangeSrc.size = bufferSize;
+          vkInvalidateMappedMemoryRanges(context, 1u, &rangeSrc);
+
+          memcpy(destData, sourceData, bufferSize); // copy
+
+          VkMappedMemoryRange rangeDest{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+          rangeDest.memory = dest;
+          rangeDest.offset = destOffset;
+          rangeDest.size = bufferSize;
+          vkFlushMappedMemoryRanges(context, 1u, &rangeDest);
         }
         vkUnmapMemory(context, dest);
         isSuccess = true;

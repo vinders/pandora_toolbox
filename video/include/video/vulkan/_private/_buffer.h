@@ -58,13 +58,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                 VkCommandPool commandPool, VkQueue copyCommandQueue,
                                 BufferHandle buffer, size_t bufferSize, const void* sourceData) noexcept;
         
-        // Copy mappable buffer content to other mappable buffer (host-coherent only)
-        bool __copyMappedBuffer(DeviceContext context, VkDeviceMemory source, size_t sourceOffset,
-                                VkDeviceMemory dest, size_t destOffset, size_t bufferSize) noexcept;
         // Copy mappable buffer content to other mappable buffer
-        bool __copyMappedBuffer(DeviceContext context, VkMemoryPropertyFlags sourceUsage,
-                                VkDeviceMemory source, size_t sourceOffset, VkMemoryPropertyFlags destUsage,
-                                VkDeviceMemory dest, size_t destOffset, size_t bufferSize) noexcept;
+        bool __copyMappedBuffer(DeviceContext context, VkDeviceMemory source, size_t sourceOffset, VkDeviceMemory dest,
+                                size_t destOffset, size_t bufferSize, bool isHostCoherent) noexcept;
         // Copy buffer content to other buffer (command list)
         bool __copyLocalBuffer(DeviceContext context, VkCommandPool commandPool, VkQueue commandQueue,
                                BufferHandle source, BufferHandle dest,
