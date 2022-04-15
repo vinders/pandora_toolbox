@@ -333,7 +333,7 @@ Includes hpp implementations at the end of the file
   static DynamicArray<const char*> __getSupportedDeviceExtensions(VkPhysicalDevice device,
                                                                   const char* extensions[_ArraySize]) {
     bool results[_ArraySize];
-    size_t extCount = (uint32_t)VulkanLoader::instance().findInstanceExtensions(extensions, _ArraySize, results);
+    size_t extCount = __findDeviceExtensions(device, extensions, _ArraySize, results);
     if (extCount == 0)
       return DynamicArray<const char*>{};
     
@@ -694,7 +694,7 @@ Includes hpp implementations at the end of the file
       this->_physicalDeviceInfo->limits.maxSamplerAnisotropy = 1.f;
     
 #   if (defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12) || (defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 197)
-      VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingInfo{};
+      VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingInfo{};
       if (requestedFeatures.dynamicRendering) {
         if (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) >= __P_VK_API_VERSION_NOVARIANT(VK_MAKE_VERSION(1,3,0))
         || this->_deviceExtensions.find("VK_KHR_dynamic_rendering") != this->_deviceExtensions.end()) {
@@ -705,10 +705,18 @@ Includes hpp implementations at the end of the file
         }
       }
 #   endif
-    this->_features->extendedDynamicState = (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) >= __P_VK_API_VERSION_NOVARIANT(VK_MAKE_VERSION(1,3,0))
-                                          || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end())
-                                          ? VK_TRUE : VK_FALSE;
-    
+    VkPhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateInfo{};
+    if (requestedFeatures.extendedDynamicState) {
+      if (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) >= __P_VK_API_VERSION_NOVARIANT(VK_MAKE_VERSION(1,3,0))
+       || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end()) {
+        extendedDynamicStateInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+        extendedDynamicStateInfo.extendedDynamicState = VK_TRUE;
+        extendedDynamicStateInfo.pNext = (void*)deviceInfo.pNext;
+        deviceInfo.pNext = &extendedDynamicStateInfo;
+        this->_features->extendedDynamicState = VK_TRUE;
+      }
+    }
+
     deviceInfo.pEnabledFeatures = baseFeatures;
     if (areFeaturesRequired && !__verifyFeatureSupport(requestedFeatures, *(this->_features)))
       throw std::runtime_error("Vulkan: required features not available");

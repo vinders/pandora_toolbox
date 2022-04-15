@@ -363,7 +363,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     pandora::hardware::DisplayMonitor monitor;
     Renderer renderer(monitor);
     GraphicsPipeline::Builder builder(renderer);
-    bool useDynamics = renderer.isExtensionEnabled("VK_EXT_extended_dynamic_state");
+    bool useDynamics = renderer.deviceFeatures().extendedDynamicState;
 
     GraphicsPipeline empty;
     EXPECT_TRUE(empty.handle() == nullptr);
