@@ -211,13 +211,8 @@ if(WIN32 OR WIN64 OR _WIN32 OR _WIN64)
 endif()
 cwork_set_test_resource_dir("${CWORK_SOLUTION_PATH}/_img/test_common")
 
-set(_VIDEO_TOOLS "tools/window_viewer" "tools/gpu_analyzer")
-if(NOT IOS AND NOT ANDROID)
-    set(_VIDEO_TOOLS ${_VIDEO_TOOLS} "tools/3D_scene")
-endif()
-
 cwork_create_project("static" "${CWORK_SOLUTION_PATH}/_cmake" "${CWORK_SOLUTION_PATH}/_cmake/modules"
-                     "include" "src" "test" ${_VIDEO_TOOLS})
+                     "include" "src" "test" "tools/window_viewer" "tools/gpu_analyzer")
 
 # rendering api config - feedback messages
 message(" ") # new line
