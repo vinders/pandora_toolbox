@@ -361,7 +361,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //TODO... bind
       //TODO... clear bindings
 
-      BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
+      //BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
       //TODO... bind
       //TODO... clear bindings
 
@@ -376,7 +376,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(TransferMode::standard, moved.transferMode());
       EXPECT_EQ(ResourceUsage::local, moved.memoryUsage());
       EXPECT_TRUE((moved.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0);
-      memset(&buffer1, 0, sizeof(buffer1));
       buffer1 = std::move(moved);
       EXPECT_FALSE(buffer1.isEmpty());
       EXPECT_TRUE(moved.isEmpty());
@@ -513,7 +512,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //TODO... bind
       //TODO... clear bindings
 
-      BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
+      //BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
       //TODO... bind
       //TODO... clear bindings
 
@@ -528,7 +527,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(TransferMode::standard, moved.transferMode());
       EXPECT_EQ(ResourceUsage::dynamic, moved.memoryUsage());
       EXPECT_TRUE((moved.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-      memset(&buffer1, 0, sizeof(buffer1));
       buffer1 = std::move(moved);
       EXPECT_FALSE(buffer1.isEmpty());
       EXPECT_TRUE(moved.isEmpty());
@@ -665,7 +663,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //TODO... bind
       //TODO... clear bindings
 
-      BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
+      //BufferHandle buffers[] = { buffer2.handle(), buffer5.handle() };
       //TODO... bind
       //TODO... clear bindings
 
@@ -680,7 +678,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(TransferMode::standard, moved.transferMode());
       EXPECT_EQ(ResourceUsage::staging, moved.memoryUsage());
       EXPECT_TRUE((moved.memoryUsageFlags() & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-      memset(&buffer1, 0, sizeof(buffer1));
       buffer1 = std::move(moved);
       EXPECT_FALSE(buffer1.isEmpty());
       EXPECT_TRUE(moved.isEmpty());
@@ -734,7 +731,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     constexpr const size_t vertexSize = __alignMemorySize(sizeof(data1a));
     constexpr const size_t indexSize = __alignMemorySize(sizeof(data2a));
     BufferParams<_Usage> params1((BufferType::vertex | BufferType::vertexIndex), vertexSize + indexSize, false, TransferMode::bidirectional);
-    Buffer<_Usage> buffer1 = Buffer<_Usage>::Builder(renderer.resourceManager(), params1).build();
+    Buffer<_Usage> buffer1 = typename Buffer<_Usage>::Builder(renderer.resourceManager(), params1).build();
     EXPECT_EQ(vertexSize + indexSize, buffer1.size());
     EXPECT_EQ((BufferType::vertex | BufferType::vertexIndex), buffer1.type());
 
@@ -767,7 +764,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       constexpr const size_t uniform1Size = __alignUniformSize(sizeof(data1a));
       constexpr const size_t uniform2Size = __alignUniformSize(sizeof(data2b));
       BufferParams<_Usage> params2(BufferType::uniform, uniform1Size + uniform2Size, false, TransferMode::bidirectional);
-      Buffer<_Usage> buffer2 = Buffer<_Usage>::Builder(renderer.resourceManager(), params2).build();
+      Buffer<_Usage> buffer2 = typename Buffer<_Usage>::Builder(renderer.resourceManager(), params2).build();
       EXPECT_EQ(uniform1Size + uniform2Size, buffer2.size());
       EXPECT_EQ((BufferType::uniform), buffer2.type());
 
@@ -791,9 +788,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       EXPECT_EQ(data2b.rgba[3], uniform2Staging->rgba[3]);
       reader.close();
 
-      BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
-      unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
-      unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
+      //BufferHandle uniforms[2]{ buffer2.handle(), buffer2.handle() };
+      //unsigned int byte16Offsets[2]{ 0, (unsigned int)uniform1Size >> 4 };
+      //unsigned int byte16Sizes[2]{ (unsigned int)uniform1Size >> 4, (unsigned int)uniform2Size >> 4 };
       //TODO... bind + unbind
     }
   }
@@ -820,15 +817,16 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     };
     Buffer<_Usage> buffers[sizeof(bufferInfo)/sizeof(*bufferInfo)]{};
     Buffer<_Usage> buffersWithInit[sizeof(bufferInfo)/sizeof(*bufferInfo)]{};
-    Buffer<_Usage>::Builder builders[sizeof(bufferInfo)/sizeof(*bufferInfo)]{};
+    typename Buffer<_Usage>::Builder builders[sizeof(bufferInfo)/sizeof(*bufferInfo)]{};
     BufferParams<_Usage> params[sizeof(bufferInfo)/sizeof(*bufferInfo)]{};
+    int bufferCount = (int)sizeof(bufferInfo)/sizeof(*bufferInfo);
 
     // vertex + index + uniform + uniform
     size_t totalSize = 0;
-    for (int i = 0; i < sizeof(bufferInfo)/sizeof(*bufferInfo); ++i) {
+    for (int i = 0; i < bufferCount; ++i) {
       auto& current = bufferInfo[i];
       params[i] = BufferParams<_Usage>(current.type, current.size, false, current.transfer);
-      builders[i] = Buffer<_Usage>::Builder(renderer.resourceManager(), params[i]);
+      builders[i] = typename Buffer<_Usage>::Builder(renderer.resourceManager(), params[i]);
       totalSize = DeviceMemoryPool::align(totalSize, builders[i].requiredAlignment());
       current.alignedOffset = totalSize;
       totalSize += builders[i].requiredMemorySize();
@@ -838,7 +836,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     DeviceMemoryPool memoryPool(renderer.resourceManager(), totalSize, builders, (uint32_t)(sizeof(bufferInfo)/sizeof(*bufferInfo)));
     ASSERT_TRUE(memoryPool.handle() != VK_NULL_HANDLE);
 
-    for (int i = 0; i < sizeof(bufferInfo)/sizeof(*bufferInfo); ++i) {
+    for (int i = 0; i < bufferCount; ++i) {
       const auto& current = bufferInfo[i];
       buffers[i] = builders[i].build(memoryPool, current.alignedOffset);
       buffersWithInit[i] = builders[i].build(bufferInfo[i].data, memoryPool, current.alignedOffset);
@@ -859,7 +857,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     MappedBufferIO reader;
-    int bufferCount = (int)sizeof(bufferInfo)/sizeof(*bufferInfo);
     for (int i = 0; i < 2*bufferCount; ++i) {
       const auto& current = bufferInfo[(i < bufferCount) ? i : i - bufferCount];
       if (current.transfer == TransferMode::bidirectional) { // only check content of readable buffers
@@ -885,7 +882,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
     }
 
-    for (int i = 0; i < sizeof(bufferInfo)/sizeof(*bufferInfo); ++i)
+    for (int i = 0; i < bufferCount; ++i)
       buffers[i].release();
     memoryPool.release();
   }

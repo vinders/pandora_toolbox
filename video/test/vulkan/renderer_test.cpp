@@ -39,7 +39,11 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     //static void SetUpTestCase() {}
     //static void TearDownTestCase() {}
 
-    void SetUp() override {}
+    void SetUp() override {
+#     ifdef _WINDOWS
+        pandora::system::WindowsApp::instance().init(GetModuleHandle(NULL));
+#     endif
+    }
     void TearDown() override {}
   };
 
