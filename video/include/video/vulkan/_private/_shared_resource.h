@@ -1,6 +1,6 @@
 /*******************************************************************************
 MIT License
-Copyright (c) 2021 Romain Vinders
+Copyright (c) 2022 Romain Vinders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # include <cstdint>
 # include <memory>
 # include "video/vulkan/api/types.h" // includes vulkan
-# include "./_error.h" // includes vulkan
+# include "./_memory.h" // includes vulkan
+# include "./_error.h"  // includes vulkan
 
   namespace pandora {
     namespace video {
@@ -39,7 +40,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline ScopedDeviceContext(ScopedDeviceContext&& rhs) noexcept
             : _deviceContext(rhs._deviceContext), _physicalDevice(rhs._physicalDevice),
               _graphicsQueuesPerFamily(std::move(rhs._graphicsQueuesPerFamily)),
-              _transientCommandPool(rhs._transientCommandPool) {
+              _transientCommandPool(rhs._transientCommandPool),
+              _transientQueuesArrayIndex(rhs._transientQueuesArrayIndex),
+              _memoryProps(rhs._memoryProps) {
             rhs._deviceContext = VK_NULL_HANDLE;
             rhs._physicalDevice = VK_NULL_HANDLE;
             rhs._transientCommandPool = VK_NULL_HANDLE;
@@ -49,6 +52,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             _deviceContext=rhs._deviceContext; _physicalDevice=rhs._physicalDevice;
             _graphicsQueuesPerFamily=std::move(rhs._graphicsQueuesPerFamily);
             _transientCommandPool=rhs._transientCommandPool;
+            _transientQueuesArrayIndex=rhs._transientQueuesArrayIndex;
+            _memoryProps=rhs._memoryProps;
             rhs._deviceContext = VK_NULL_HANDLE;
             rhs._physicalDevice = VK_NULL_HANDLE;
             rhs._transientCommandPool = VK_NULL_HANDLE;
@@ -57,7 +62,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline ~ScopedDeviceContext() noexcept { release(); }
           
           ScopedDeviceContext(VkDevice deviceContext, VkPhysicalDevice physicalDevice) noexcept ///< Initialize device rendering context
-            : _deviceContext(deviceContext), _physicalDevice(physicalDevice) {}
+            : _deviceContext(deviceContext), _physicalDevice(physicalDevice), _memoryProps(physicalDevice) {}
           void release() noexcept; ///< Destroy device rendering context
           
           inline VkPhysicalDevice device() const noexcept { return this->_physicalDevice; } ///< Get physical rendering device (VkPhysicalDevice)
@@ -67,6 +72,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           inline const CommandQueues& transientCommandQueues() const noexcept { ///< Get queue family for transient command pool
             return _graphicsQueuesPerFamily[_transientQueuesArrayIndex];
           }
+          inline const MemoryProps& memoryProps() const noexcept { return this->_memoryProps; }
           
         private:
           inline void _setGraphicsQueues(DynamicArray<CommandQueues>&& commandQueues) noexcept {
@@ -84,6 +90,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           DynamicArray<CommandQueues> _graphicsQueuesPerFamily; // command queues
           VkCommandPool _transientCommandPool = VK_NULL_HANDLE; // for short-lived operations
           uint32_t _transientQueuesArrayIndex = 0;
+          MemoryProps _memoryProps;
         };
         using DeviceResourceManager = ScopedDeviceContext*; ///< Device resource manager
         
