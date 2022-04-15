@@ -45,7 +45,7 @@ else()
             # └──────────────────────────────────────────────────────────────────┘
             if(NOT EXISTS ${LIBGLSLANG__PATH} OR NOT EXISTS "${LIBGLSLANG__PATH}/CMakeLists.txt")
                 set(_GIT_EXT_REPOSITORY https://github.com/KhronosGroup/glslang.git)
-                set(_GIT_EXT_TAG "11.9.0")
+                set(_GIT_EXT_TAG "11.8.0")
                 set(_GIT_EXT_CACHE ${CWORK_MODULE_DESTINATION}/.cache/glslang)
                 set(_GIT_EXT_DIR ${LIBGLSLANG__PATH})
                 configure_file("${CMAKE_CURRENT_LIST_DIR}/git_external.cmake" "${_GIT_EXT_CACHE}/CMakeLists.txt")
