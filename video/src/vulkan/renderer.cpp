@@ -66,7 +66,9 @@ Includes hpp implementations at the end of the file
 # include "video/vulkan/graphics_pipeline.h"
 # include "video/vulkan/depth_stencil_buffer.h"
 
-# include "video/vulkan/_private/_resource_io.h"
+# include "video/vulkan/_private/_memory.h"
+# include "video/vulkan/device_memory_pool.h"
+# include "video/vulkan/_private/_buffer.h"
 # include "video/vulkan/buffer.h"
 # include "video/vulkan/sampler.h"
 // # include "video/vulkan/texture.h"
@@ -241,6 +243,7 @@ Includes hpp implementations at the end of the file
 
   RequestedAdapterFeatures Renderer::defaultFeatures() noexcept {
     RequestedAdapterFeatures defaultFeatures{};
+    defaultFeatures.depthClipping = VK_TRUE;
     defaultFeatures.customBorderColor = VK_TRUE;
     defaultFeatures.extendedDynamicState = VK_TRUE;
 
@@ -292,9 +295,10 @@ Includes hpp implementations at the end of the file
     }
     
     return (areMainFeaturesSupported
+         && (requested.depthClipping == VK_FALSE || available.depthClipping != VK_FALSE)
          && (requested.customBorderColor == VK_FALSE || available.customBorderColor != VK_FALSE)
-         && (requested.dynamicRendering == VK_FALSE || available.dynamicRendering != VK_FALSE)
-         && (requested.extendedDynamicState == VK_FALSE || available.extendedDynamicState != VK_FALSE) );
+         && (requested.extendedDynamicState == VK_FALSE || available.extendedDynamicState != VK_FALSE)
+         && (requested.dynamicRendering == VK_FALSE || available.dynamicRendering != VK_FALSE) );
   }
 
   // ---
@@ -326,14 +330,15 @@ Includes hpp implementations at the end of the file
   }
 
   template <size_t _ArraySize>
-  static DynamicArray<const char*> __getSupportedDeviceExtensions(VkPhysicalDevice device, const char* extensions[_ArraySize], uint32_t& outExtCount) {
+  static DynamicArray<const char*> __getSupportedDeviceExtensions(VkPhysicalDevice device,
+                                                                  const char* extensions[_ArraySize]) {
     bool results[_ArraySize];
-    outExtCount = (uint32_t)VulkanLoader::instance().findInstanceExtensions(extensions, _ArraySize, results);
-    if (outExtCount == 0)
+    size_t extCount = (uint32_t)VulkanLoader::instance().findInstanceExtensions(extensions, _ArraySize, results);
+    if (extCount == 0)
       return DynamicArray<const char*>{};
     
-    DynamicArray<const char*> supportedExt(outExtCount);
-    if (outExtCount == _ArraySize) {
+    DynamicArray<const char*> supportedExt(extCount);
+    if (extCount == _ArraySize) {
       memcpy(supportedExt.data(), extensions, _ArraySize*sizeof(*extensions));
     }
     else {
@@ -354,29 +359,42 @@ Includes hpp implementations at the end of the file
   }
 
   // List of default/standard device extensions (used if no custom list provided)
-  static DynamicArray<const char*> __defaultDeviceExtensions(VkPhysicalDevice device, uint32_t& outExtCount, uint32_t featureLevel) {
+  static DynamicArray<const char*> __defaultDeviceExtensions(VkPhysicalDevice device, uint32_t featureLevel,
+                                                             const RequestedAdapterFeatures& requestedFeatures) {
+#   if (defined(_VIDEO_VULKAN_VERSION) && _VIDEO_VULKAN_VERSION > 12)
+      if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_3)) {
+        const char* extensions[] {
+          requestedFeatures.customBorderColor ? "VK_EXT_custom_border_color" : "",
+          requestedFeatures.depthClipping ? "VK_EXT_depth_clip_enable" : "",
+          VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+        return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions);
+      }
+#   endif
     if (__P_VK_API_VERSION_NOVARIANT(featureLevel) >= __P_VK_API_VERSION_NOVARIANT(VK_API_VERSION_1_2)) {
       const char* extensions[] {
-        "VK_EXT_extended_dynamic_state",
-        "VK_EXT_depth_clip_enable",
-        "VK_EXT_custom_border_color",
+        requestedFeatures.extendedDynamicState ? "VK_EXT_extended_dynamic_state" : "",
+        requestedFeatures.dynamicRendering ? "VK_KHR_dynamic_rendering" : "",
+        requestedFeatures.customBorderColor ? "VK_EXT_custom_border_color" : "",
+        requestedFeatures.depthClipping ? "VK_EXT_depth_clip_enable" : "",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
-      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions, outExtCount);
+      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions);
     }
-    else if (featureLevel == VK_API_VERSION_1_1) {
+    else if (featureLevel >= VK_API_VERSION_1_1) {
       const char* extensions[] { // extensions promoted to core 1.2 + same as above
         "VK_KHR_8bit_storage",
         "VK_KHR_draw_indirect_count",
         "VK_KHR_shader_float16_int8",
         "VK_KHR_shader_float_controls",
         "VK_KHR_spirv_1_4", // not available in 1.0
-        "VK_EXT_extended_dynamic_state",
-        "VK_EXT_depth_clip_enable",
-        "VK_EXT_custom_border_color",
+        requestedFeatures.extendedDynamicState ? "VK_EXT_extended_dynamic_state" : "",
+        requestedFeatures.dynamicRendering ? "VK_KHR_dynamic_rendering" : "",
+        requestedFeatures.customBorderColor ? "VK_EXT_custom_border_color" : "",
+        requestedFeatures.depthClipping ? "VK_EXT_depth_clip_enable" : "",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
-      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions, outExtCount);
+      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions);
     }
     else { // 1.0
       const char* extensions[] { // extensions promoted to core 1.1 + same as above (when available)
@@ -385,16 +403,19 @@ Includes hpp implementations at the end of the file
         "VK_KHR_bind_memory2",
         "VK_KHR_multiview",
         "VK_KHR_shader_draw_parameters",
+        "VK_KHR_get_memory_requirements2",
+        "VK_KHR_dedicated_allocation",
         "VK_KHR_8bit_storage",
         "VK_KHR_draw_indirect_count",
         "VK_KHR_shader_float16_int8",
         "VK_KHR_shader_float_controls",
-        "VK_EXT_extended_dynamic_state",
-        "VK_EXT_depth_clip_enable",
-        "VK_EXT_custom_border_color",
+        requestedFeatures.extendedDynamicState ? "VK_EXT_extended_dynamic_state" : "",
+        requestedFeatures.dynamicRendering ? "VK_KHR_dynamic_rendering" : "",
+        requestedFeatures.customBorderColor ? "VK_EXT_custom_border_color" : "",
+        requestedFeatures.depthClipping ? "VK_EXT_depth_clip_enable" : "",
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
       };
-      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions, outExtCount);
+      return __getSupportedDeviceExtensions<sizeof(extensions)/sizeof(*extensions)>(device, extensions);
     }
   }
 
@@ -632,8 +653,10 @@ Includes hpp implementations at the end of the file
       deviceInfo.enabledExtensionCount = (uint32_t)extensions.extensionCount;
     }
     else {
-      defaultExt = __defaultDeviceExtensions(physicalDevice, deviceInfo.enabledExtensionCount, this->_instance->featureLevel());
+      defaultExt = __defaultDeviceExtensions(physicalDevice, this->_instance->featureLevel(),
+                                             requestedFeatures);
       deviceInfo.ppEnabledExtensionNames = defaultExt.data();
+      deviceInfo.enabledExtensionCount = (uint32_t)defaultExt.length();
     }
     for (uint32_t i = 0; i < deviceInfo.enabledExtensionCount; ++i)
       this->_deviceExtensions.emplace(deviceInfo.ppEnabledExtensionNames[i]);
@@ -642,6 +665,10 @@ Includes hpp implementations at the end of the file
     this->_features = std::make_unique<AdapterFeatures>();
     VkPhysicalDeviceFeatures* baseFeatures = &(this->_features->features);
 
+    if (requestedFeatures.depthClipping
+    && this->_deviceExtensions.find("VK_EXT_depth_clip_enable") != this->_deviceExtensions.end()) {
+      this->_features->depthClipping = VK_TRUE;
+    }
     if (requestedFeatures.customBorderColor
     && this->_deviceExtensions.find("VK_EXT_custom_border_color") != this->_deviceExtensions.end()) {
       VkPhysicalDeviceFeatures2 featuresExtended{};
@@ -679,7 +706,8 @@ Includes hpp implementations at the end of the file
       }
 #   endif
     this->_features->extendedDynamicState = (__P_VK_API_VERSION_NOVARIANT(this->_instance->featureLevel()) >= __P_VK_API_VERSION_NOVARIANT(VK_MAKE_VERSION(1,3,0))
-                                          || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end());
+                                          || this->_deviceExtensions.find("VK_EXT_extended_dynamic_state") != this->_deviceExtensions.end())
+                                          ? VK_TRUE : VK_FALSE;
     
     deviceInfo.pEnabledFeatures = baseFeatures;
     if (areFeaturesRequired && !__verifyFeatureSupport(requestedFeatures, *(this->_features)))
@@ -796,10 +824,8 @@ Includes hpp implementations at the end of the file
   
   // Read device adapter VRAM size
   bool Renderer::getAdapterVramSize(size_t& outDedicatedRam, size_t& outSharedRam) const noexcept {
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    memoryProperties.memoryHeapCount = 0;
-    vkGetPhysicalDeviceMemoryProperties((VkPhysicalDevice)_deviceContext.device(), &memoryProperties);
-    
+    const VkPhysicalDeviceMemoryProperties& memoryProperties = _deviceContext.memoryProps().props();
+
     VkDeviceSize localByteSize = 0, sharedByteSize = 0;
     uint32_t remainingHeaps = memoryProperties.memoryHeapCount;
     for (const VkMemoryHeap* it = memoryProperties.memoryHeaps; remainingHeaps; --remainingHeaps, ++it) {
@@ -955,9 +981,11 @@ Includes hpp implementations at the end of the file
 # include "./_error.hpp"
 # include "./graphics_pipeline.hpp"
 # include "./depth_stencil_buffer.hpp"
+# include "./_memory.hpp"
+# include "./device_memory_pool.hpp"
 # include "./buffer.hpp"
-# include "./sampler.hpp"
 // # include "./texture.hpp"
+# include "./sampler.hpp"
 # include "./shader.hpp"
 // # include "./camera_utils.hpp"
 # undef __if_constexpr
