@@ -94,8 +94,6 @@ Implementation included in renderer.cpp
 
 // -- buffer read/write -- -----------------------------------------------------
   
-  void pandora::video::vulkan::__throwWriteError() { throw std::runtime_error("Buffer: write error"); }
-  
   // Write dynamic/staging buffer via memory mapping
   bool pandora::video::vulkan::__writeMappedBuffer(DeviceContext context, VkMemoryPropertyFlags memoryUsage,
                                                    VkDeviceMemory allocation, size_t allocOffset,

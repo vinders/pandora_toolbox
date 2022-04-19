@@ -305,7 +305,6 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
         
         /// @brief Data Buffer content type
         enum class BufferType : int/*VkBufferUsageFlagBits*/ {
-          none = 0,
           uniform = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,  ///< Constant/uniform data buffer for shader stage(s):
                                                          ///  * can be bound with any shader stage(s): Renderer.bind<...>ConstantBuffers.
                                                          ///  * should contain data useful as a whole for shaders:
@@ -328,17 +327,13 @@ Vulkan - bindings with native types (same labels/values as other renderers: only
           //storage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT ///< Structured/storage buffer for shader stage(s):
                                                          ///  * can be used to produce or consume values in shaders.
         };
-#       define __P_VULKAN_BUFFERTYPE_ENUM_LENGTH 3
 
         /// @brief Image Buffer content type
-        enum class ImageType : int {
-          none = 0,
-          image1D = 0x1, ///< One-dimensional texture
-          image2D = 0x2, ///< Two-dimensional texture
-          image3D = 0x4, ///< Three-dimensional texture
-          targetImage2D = 0x8 ///< Two-dimensional render-target texture
+        enum class ImageType : int/*VkImageType*/ {
+          image1D = VK_IMAGE_TYPE_1D, ///< One-dimensional texture
+          image2D = VK_IMAGE_TYPE_2D, ///< Two-dimensional texture
+          image3D = VK_IMAGE_TYPE_3D  ///< Three-dimensional texture
         };
-#       define __P_VULKAN_IMAGETYPE_ENUM_LENGTH 4
 
         /// @brief Buffer data transfer mode
         enum class TransferMode : int {

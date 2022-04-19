@@ -75,6 +75,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                  && (isRequired || (isPreferred && bufferSize >= (VkDeviceSize)32768)) ) );
         }
         void __throwMemoryTypeNotFound(); // Throw out_of_range exception if no memory type index could be found
+        void __throwWriteError(); // Throw runtime_error exception if required buffer/texture writing failed
         
         // ---
         

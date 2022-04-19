@@ -65,8 +65,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         bool __copyLocalBuffer(DeviceContext context, VkCommandPool commandPool, VkQueue commandQueue,
                                BufferHandle source, BufferHandle dest,
                                const VkBufferCopy* regions, uint32_t regionCount) noexcept;
-      
-        void __throwWriteError(); // Throw runtime_error exception if required buffer/texture writing failed
       }
     }
   }

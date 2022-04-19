@@ -81,6 +81,7 @@ Implementation included in renderer.cpp
   void pandora::video::vulkan::__throwMemoryTypeNotFound() {
     throw std::out_of_range("Vulkan: no suitable memory type found");
   }
+  void pandora::video::vulkan::__throwWriteError() { throw std::runtime_error("Vulkan: resource write error"); }
 
 
 // -- memory allocation -- -----------------------------------------------------

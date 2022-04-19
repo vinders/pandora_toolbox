@@ -69,6 +69,8 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
         template <ResourceUsage _Usage>
         class BufferParams final {
         public:
+          using Type = BufferParams<_Usage>;
+        
           /// @brief Initialize buffer params
           /// @param type  Type of buffer to create:
           ///              * uniform buffer: global information shared between vertices (material, camera, lighting...).
@@ -107,8 +109,8 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           }
           
           BufferParams() noexcept = default; ///< Empty buffer params -- not usable as is
-          BufferParams(const BufferParams& rhs) noexcept = default;
-          BufferParams& operator=(const BufferParams& rhs) noexcept = default;
+          BufferParams(const Type& rhs) noexcept = default;
+          Type& operator=(const Type& rhs) noexcept = default;
           ~BufferParams() noexcept = default;
           
           // -- buffer type and size --
@@ -117,7 +119,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           /// @param type            Type of buffer to create (see class constructor).
           /// @param specialMemUsage Local=>immutable / Dynamic=>DMA / Staging=>cached (see class constructor).
           /// @param transferMode    Bidirectional / standard (see class constructor).
-          inline BufferParams& type(BufferType type, bool specialMemUsage = false,
+          inline Type& type(BufferType type, bool specialMemUsage = false,
                                     TransferMode transferMode = TransferMode::standard) noexcept {
             _params.usage = _toBufferUsageFlags(type, _Usage, transferMode);
             _preferredUsage = _toPreferredMemoryUsageFlags(_Usage, specialMemUsage);
@@ -127,7 +129,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           /// @param bufferByteSize  Total number of bytes (sizeof structure/array)
           ///                        Must be a multiple of 16 bytes for uniform buffers!
           /// @warning Writing is MUCH more efficient when source data type uses 16-byte alignment (see <system/align.h>).
-          inline BufferParams& size(size_t bufferByteSize) noexcept {
+          inline Type& size(size_t bufferByteSize) noexcept {
             _params.size = (VkDeviceSize)bufferByteSize;
             return *this;
           }
@@ -136,7 +138,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           
           /// @brief Set advanced API-specific flags
           /// @warning For cross-API projects, avoid this method.
-          inline BufferParams& specialFlags(VkBufferCreateFlags flags) noexcept {
+          inline Type& specialFlags(VkBufferCreateFlags flags) noexcept {
             _params.flags = flags;
             return *this;
           }
@@ -145,7 +147,7 @@ Vulkan - Buffer<ResourceUsage::local/dynamic/staging>
           ///                                Set NULL to use exclusive mode (recommended and usually faster).
           /// @param queueCount              Array size of 'concurrentQueueFamilies'.
           /// @warning For cross-API projects, avoid this method.
-          inline BufferParams& sharingMode(uint32_t* concurrentQueueFamilies, uint32_t queueCount) noexcept {
+          inline Type& sharingMode(uint32_t* concurrentQueueFamilies, uint32_t queueCount) noexcept {
             __setBufferSharingMode(_params, concurrentQueueFamilies, queueCount);
             return *this;
           }

@@ -67,12 +67,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
           // -- advanced features --
           
-          /// @brief Set tiling arrangement for image data (optimal/linear)
-          /// @warning For cross-API projects, avoid this method.
-          inline DepthStencilBufferParams& tiling(VkImageTiling mode) noexcept {
-            _params.tiling = mode;
-            return *this;
-          }
           /// @brief Set context sharing mode (exclusive / concurrent)
           /// @param concurrentQueueFamilies Concurrent sharing mode: array of queue family indices with access to buffer.
           ///                                Set NULL to use exclusive mode (recommended and usually faster).
