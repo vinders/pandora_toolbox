@@ -87,9 +87,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     EXPECT_EQ((uint32_t)0, params1.descriptor().queueFamilyIndexCount);
     uint32_t concurrentQueueFamilies[]{ 1, 2, 3 };
     uint32_t queueCount = (uint32_t)sizeof(concurrentQueueFamilies) / sizeof(*concurrentQueueFamilies);
-    params1.tiling(VK_IMAGE_TILING_LINEAR);
     params1.sharingMode(concurrentQueueFamilies, queueCount);
-    EXPECT_EQ((VkImageTiling)VK_IMAGE_TILING_LINEAR, params1.descriptor().tiling);
+    EXPECT_EQ((VkImageTiling)VK_IMAGE_TILING_OPTIMAL, params1.descriptor().tiling);
     EXPECT_EQ((VkSharingMode)VK_SHARING_MODE_CONCURRENT, params1.descriptor().sharingMode);
     EXPECT_TRUE(params1.descriptor().pQueueFamilyIndices == &concurrentQueueFamilies[0]);
     EXPECT_EQ(queueCount, params1.descriptor().queueFamilyIndexCount);
