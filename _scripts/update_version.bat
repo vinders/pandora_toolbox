@@ -6,7 +6,7 @@ set filename="Version.cmake"
 if not exist CMakeLists.txt cd ..
 if not exist CMakeLists.txt (echo "project directory not found in current directory nor in parent directory!" && exit /B 1)
 
-set MAJOR_KEYWORD=major-
+set MAJOR_KEYWORD=break-
 set MINOR_KEYWORD=feat-
 set PATCH_KEYWORD=fix-
 
