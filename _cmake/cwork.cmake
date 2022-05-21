@@ -341,10 +341,16 @@ if(NOT DEFINED _CWORK_PROJECT_TOOLS_FOUND)
         else()
             set(__ORIG_CWORK_BUILD_VERSION ${PROJECT_VERSION})
         endif()
-        cwork_read_version_from_file("${CWORK_SOLUTION_PATH}/build_version.txt" ON)
+        if(EXISTS "${CWORK_SOLUTION_PATH}/Version.cmake")
+            include("${CWORK_SOLUTION_PATH}/Version.cmake")
+        endif()
         
         if(NOT ${link_to_current_project})
-            message("\n————— CUSTOM SOLUTION (${custom_solution_name} - build ${CWORK_BUILD_VERSION}) —————")
+            if(NOT DEFINED CWORK_BUILD_VERSION OR NOT CWORK_BUILD_VERSION)
+                message("\n————— CUSTOM SOLUTION (${custom_solution_name}) —————")
+            else()
+                message("\n————— CUSTOM SOLUTION (${custom_solution_name} - build ${CWORK_BUILD_VERSION}) —————")
+            endif()
         endif()
         
         # project subdirectories

@@ -20,7 +20,7 @@ set(CWORK_VIDEO_OPENGL4 OFF CACHE INTERNAL "" FORCE)
 set(CWORK_SHADER_COMPILERS OFF CACHE INTERNAL "" FORCE)
 
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON)
+include("${PANDORA_TOOLBOX_DIR}/Version.cmake") # version read from file
 
 # -- Solution settings (version read from file) --
 project("example" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
@@ -32,7 +32,7 @@ cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${PANDORA_TOOLBOX_DIR}/_cma
 # --> uncomment if project is placed in separate CMakeLists file
 #cmake_minimum_required(VERSION 3.14)
 #include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-#cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" OFF)
+#include("${PANDORA_TOOLBOX_DIR}/Version.cmake")
 project("${CWORK_SOLUTION_NAME}.base_window" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF

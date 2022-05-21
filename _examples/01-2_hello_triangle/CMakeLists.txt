@@ -20,7 +20,7 @@ set(CWORK_GEOM_STAGE_OFF ON CACHE INTERNAL "" FORCE)   # no geometry shader used
 set(CWORK_TESS_STAGE_OFF ON CACHE INTERNAL "" FORCE)   # no tessellation shader used by project -> disable unused features
 
 include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" ON) # version read from file
+include("${PANDORA_TOOLBOX_DIR}/Version.cmake") # version read from file
 
 # --> solution params (replace "example" with your solution name)
 project("example" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
@@ -32,7 +32,7 @@ cwork_create_solution("${CMAKE_CURRENT_SOURCE_DIR}" "${PANDORA_TOOLBOX_DIR}/_cma
 # --> uncomment if project is placed in separate CMakeLists file
 #cmake_minimum_required(VERSION 3.14)
 #include("${PANDORA_TOOLBOX_DIR}/_cmake/cwork.cmake")
-#cwork_read_version_from_file("${PANDORA_TOOLBOX_DIR}/build_version.txt" OFF)
+#include("${PANDORA_TOOLBOX_DIR}/Version.cmake")
 project("${CWORK_SOLUTION_NAME}.hello_triangle" VERSION ${CWORK_BUILD_VERSION} LANGUAGES C CXX)
 
 cwork_set_custom_libs("${PANDORA_TOOLBOX_DIR}" pandora ON OFF
