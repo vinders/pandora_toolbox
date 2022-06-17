@@ -84,7 +84,8 @@ if [ $NB_BREAK_FEATURES -gt 0 ] || [ $NB_BREAK_FIXES -gt 0 ] || [ $NB_FEATURES -
   fi
   
   if [ -e "$CHANGELOG_FILENAME" ]; then
-    printf "${CHANGES}\n\n---\n$(tail -n +3 ${CHANGELOG_FILENAME})" > "${CHANGELOG_FILENAME}"
+    PREV_DATA=$(tail -n +3 "${CHANGELOG_FILENAME}")
+    printf "${CHANGES}\n\n---\n${PREV_DATA}" > "${CHANGELOG_FILENAME}"
   else
     printf "${CHANGES}\n\n---\n" > "${CHANGELOG_FILENAME}"
   fi
