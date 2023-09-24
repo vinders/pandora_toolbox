@@ -79,33 +79,45 @@ using namespace video_api;
 
 // --> texture & sprite file loaders differ between APIs
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  void readTextureFile(const std::wstring& commonFilePath, const wchar_t* fileSuffix, TextureMapId id,
-                       DeviceHandle device, ID3D11Resource** outTextureRes, ID3D11ShaderResourceView** outResourceView) {
+  Texture2D readTextureFile(const std::wstring& commonFilePath, const wchar_t* fileSuffix,
+                            TextureMapId id, DeviceHandle device) {
     std::wstring texturePath = commonFilePath + fileSuffix;
 
+    ID3D11Resource* imageRes = nullptr;
+    ID3D11ShaderResourceView* resourceView = nullptr;
     auto alphaMode = DirectX::DDS_ALPHA_MODE::DDS_ALPHA_MODE_STRAIGHT;
     if (FAILED(DirectX::CreateDDSTextureFromFileEx(device, texturePath.c_str(), 0, D3D11_USAGE_IMMUTABLE,
                                                    D3D11_BIND_SHADER_RESOURCE, 0, 0, true,
-                                                   outTextureRes, outResourceView, &alphaMode)))
+                                                   &imageRes, &resourceView, &alphaMode))) {
       throw std::runtime_error(std::string("Could not load texture ") + toString(id));
+    }
+    
+    D3D11_TEXTURE2D_DESC descriptor{};
+    ((ID3D11Texture2D*)imageRes)->GetDesc(&descriptor);
+    return Texture2D((TextureHandle)imageRes, (TextureView)resourceView, descriptor.Width*4, descriptor.Height, 1);
   }
-  void readSpriteFile(const wchar_t* imagePath, SpriteId id, DeviceHandle device, 
-                      ID3D11Resource** outImageRes, ID3D11ShaderResourceView** outResourceView) {
+  Texture2D readSpriteFile(const wchar_t* imagePath, SpriteId id, DeviceHandle device) {
+    ID3D11Resource* imageRes = nullptr;
+    ID3D11ShaderResourceView* resourceView = nullptr;
     if (FAILED(DirectX::CreateWICTextureFromFileEx(device, imagePath, 0, D3D11_USAGE_IMMUTABLE,
                                                    D3D11_BIND_SHADER_RESOURCE, 0, 0,
                                                    DirectX::WIC_LOADER_FLAGS::WIC_LOADER_FORCE_RGBA32,
-                                                   outImageRes, outResourceView)))
+                                                   &imageRes, &resourceView))) {
       throw std::runtime_error(std::string("Could not load sprite image ") + toString(id));
+    }
+    
+    D3D11_TEXTURE2D_DESC descriptor{};
+    ((ID3D11Texture2D*)imageRes)->GetDesc(&descriptor);
+    return Texture2D((TextureHandle)imageRes, (TextureView)resourceView, descriptor.Width*4, descriptor.Height, 1);
   }
   
 #else
-  void readTextureFile(const std::string& commonFilePath, const char_t* fileSuffix, TextureMapId id,
-                       DeviceHandle device, TextureHandle* outTextureRes, TextureView* outResourceView) {
+  Texture2D readTextureFile(const std::string& commonFilePath, const char_t* fileSuffix,
+                            TextureMapId id, DeviceHandle device) {
     //vulkan: not yet implemented
     //...
   }
-  void readSpriteFile(const char_t* imagePath, SpriteId id, DeviceHandle device, 
-                      TextureHandle* outImageRes, TextureView* outResourceView) {
+  Texture2D readSpriteFile(const char_t* imagePath, SpriteId id, DeviceHandle device) {
     //vulkan: not yet implemented
     //...
   }

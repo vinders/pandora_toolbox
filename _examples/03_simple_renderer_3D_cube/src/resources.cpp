@@ -168,27 +168,17 @@ void loadMaterial(Renderer& renderer, MaterialId id, ResourceStorage& out) {
 
 // --> texture file loaders differ between APIs
 void loadTexture(Renderer& renderer, TextureMapId id, ResourceStorage& out) {
-  TextureHandle diffuse = nullptr,   normal = nullptr,     specular = nullptr;
-  TextureView diffuseView = nullptr, normalView = nullptr, specularView = nullptr;
-
   try {
     auto textureBasePath = getResourceDirectory() + _RESOURCE_PATH("textures/") + _RESOURCE_STRING(id);
-    readTextureFile(textureBasePath, _RESOURCE_PATH("_diffuse.dds"), id, renderer.device(), &diffuse, &diffuseView);
-    out.textureMaps[id].diffuseMap = Texture2D(diffuse, diffuseView, 128 * 4, 128, 1);
-    readTextureFile(textureBasePath, _RESOURCE_PATH("_normal.dds"), id, renderer.device(), &normal, &normalView);
-    out.textureMaps[id].normalMap = Texture2D(normal, normalView, 128 * 4, 128, 1);
-    readTextureFile(textureBasePath, _RESOURCE_PATH("_specular.dds"), id, renderer.device(), &specular, &specularView);
-    out.textureMaps[id].specularMap = Texture2D(specular, specularView, 128 * 4, 128, 1);
+    out.textureMaps[id].diffuseMap = readTextureFile(textureBasePath, _RESOURCE_PATH("_diffuse.dds"), id, renderer.device());
+    out.textureMaps[id].normalMap  = readTextureFile(textureBasePath, _RESOURCE_PATH("_normal.dds"),  id, renderer.device());
+    out.textureMaps[id].specularMap = readTextureFile(textureBasePath, _RESOURCE_PATH("_specular.dds"), id, renderer.device());
   }
   catch (...) { out.textureMaps.erase(id); throw; }
 }
 
 // --> sprite image file loaders differ between APIs
-void loadSprite(Renderer& renderer, SpriteId id, uint32_t width, uint32_t height, ResourceStorage& out) {
-  TextureHandle image = nullptr;
-  TextureView imageView = nullptr;
-
+void loadSprite(Renderer& renderer, SpriteId id, ResourceStorage& out) {
   auto imagePath = getResourceDirectory() + _RESOURCE_PATH("sprites/") + _RESOURCE_STRING(id) + _RESOURCE_PATH(".png");
-  readSpriteFile(imagePath.c_str(), id, renderer.device(), &image, &imageView);
-  out.sprites[id] = Texture2D(image, imageView, width*4, height, 1);
+  out.sprites[id] = readSpriteFile(imagePath.c_str(), id, renderer.device());
 }

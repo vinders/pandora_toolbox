@@ -43,18 +43,23 @@ using namespace video_api;
 
 // --> sprite file loaders differ between APIs
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  void readImageFile(const wchar_t* imagePath, ImageId id, DeviceHandle device, 
-                     ID3D11Resource** outImageRes, ID3D11ShaderResourceView** outResourceView) {
-    if (FAILED(DirectX::CreateWICTextureFromFileEx(device, imagePath, 0, D3D11_USAGE_IMMUTABLE,
+  Texture2D readImageFile(const wchar_t* imagePath, ImageId id, DeviceHandle device) {
+    ID3D11Resource* imageRes = nullptr;
+    ID3D11ShaderResourceView* resourceView = nullptr;
+    if (FAILED(DirectX::CreateWICTextureFromFileEx((ID3D11Device*)device, imagePath, 0, D3D11_USAGE_IMMUTABLE,
                                                    D3D11_BIND_SHADER_RESOURCE, 0, 0,
                                                    DirectX::WIC_LOADER_FLAGS::WIC_LOADER_FORCE_SRGB,
-                                                   outImageRes, outResourceView)))
+                                                   &imageRes, &resourceView))) {
       throw std::runtime_error(std::string("Could not load image ") + toString(id));
+    }
+    
+    D3D11_TEXTURE2D_DESC descriptor{};
+    ((ID3D11Texture2D*)imageRes)->GetDesc(&descriptor);
+    return Texture2D((TextureHandle)imageRes, (TextureView)resourceView, descriptor.Width*4, descriptor.Height, 1);
   }
   
 #else
-  void readImageFile(const char_t* imagePath, ImageId id, DeviceHandle device, 
-                     TextureHandle* outImageRes, TextureView* outResourceView) {
+  Texture2D readImageFile(const char_t* imagePath, ImageId id, DeviceHandle device) {
     //vulkan: not yet implemented
     //...
   }

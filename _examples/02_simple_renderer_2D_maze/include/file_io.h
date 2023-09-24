@@ -55,9 +55,7 @@ Description : Example - resource file IO (shaders, image files)
 // read texture/sprite data files
 // -> throws runtime_error on failure
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  void readImageFile(const wchar_t* imagePath, ImageId id, video_api::DeviceHandle device, 
-                     ID3D11Resource** outImageRes, ID3D11ShaderResourceView** outResourceView);
+  video_api::Texture2D readImageFile(const wchar_t* imagePath, ImageId id, video_api::DeviceHandle device);
 #else
-  void readImageFile(const char_t* imagePath, ImageId id, video_api::DeviceHandle device, 
-                     video_api::TextureHandle* outImageRes, video_api::TextureView* outResourceView);
+  video_api::Texture2D readImageFile(const char_t* imagePath, ImageId id, video_api::DeviceHandle device);
 #endif

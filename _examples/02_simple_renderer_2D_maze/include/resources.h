@@ -90,5 +90,4 @@ struct ResourceStorage final {
 // -- resource loaders --
 
 void loadPipeline(video_api::Renderer& renderer, ResourceStorage& out);
-void loadImage(video_api::Renderer& renderer, ImageId id,
-               uint32_t width, uint32_t height, ResourceStorage& out);
+void loadImage(video_api::Renderer& renderer, ImageId id, ResourceStorage& out);

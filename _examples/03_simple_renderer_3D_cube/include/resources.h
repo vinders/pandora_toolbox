@@ -182,5 +182,4 @@ void loadPipeline(video_api::Renderer& renderer, PipelineStateId stateId, Shader
                   uint32_t aaSamples, ResourceStorage& out);
 void loadMaterial(video_api::Renderer& renderer, MaterialId id, ResourceStorage& out);
 void loadTexture(video_api::Renderer& renderer, TextureMapId id, ResourceStorage& out);
-void loadSprite(video_api::Renderer& renderer, SpriteId id,
-                uint32_t width, uint32_t height, ResourceStorage& out);
+void loadSprite(video_api::Renderer& renderer, SpriteId id, ResourceStorage& out);

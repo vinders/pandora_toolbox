@@ -78,15 +78,11 @@ Description : Example - resource file IO (shaders, image files)
 // read texture & sprite data files
 // -> throws runtime_error on failure
 #if defined(_WINDOWS) && defined(_VIDEO_D3D11_SUPPORT)
-  void readTextureFile(const std::wstring& commonFilePath, const wchar_t* fileSuffix, TextureMapId id,
-                       video_api::DeviceHandle device, ID3D11Resource** outTextureRes,
-                       ID3D11ShaderResourceView** outResourceView);
-  void readSpriteFile(const wchar_t* imagePath, SpriteId id, video_api::DeviceHandle device, 
-                      ID3D11Resource** outImageRes, ID3D11ShaderResourceView** outResourceView);
+  video_api::Texture2D readTextureFile(const std::wstring& commonFilePath, const wchar_t* fileSuffix,
+                                       TextureMapId id, video_api::DeviceHandle device);
+  video_api::Texture2D readSpriteFile(const wchar_t* imagePath, SpriteId id, video_api::DeviceHandle device);
 #else
-  void readTextureFile(const std::string& commonFilePath, const char_t* fileSuffix, TextureMapId id,
-                       video_api::DeviceHandle device, video_api::TextureHandle* outTextureRes,
-                       video_api::TextureView* outResourceView);
-  void readSpriteFile(const char_t* imagePath, SpriteId id, video_api::DeviceHandle device, 
-                      video_api::TextureHandle* outImageRes, video_api::TextureView* outResourceView);
+  video_api::Texture2D readTextureFile(const std::string& commonFilePath, const char_t* fileSuffix,
+                                       TextureMapId id, video_api::DeviceHandle device);
+  video_api::Texture2D readSpriteFile(const char_t* imagePath, SpriteId id, video_api::DeviceHandle device);
 #endif

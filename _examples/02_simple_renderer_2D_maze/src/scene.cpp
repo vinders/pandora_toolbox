@@ -27,7 +27,7 @@ static void __generateUi(Renderer& renderer, ResourceStorage& outStorage) {
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::title) == outStorage.images.end())
-    loadImage(renderer, ImageId::title, 160, 32, outStorage);
+    loadImage(renderer, ImageId::title, outStorage);
 
   constexpr const float worldSizeX  = 2.f*160.f/(float)__BASE_WINDOW_WIDTH;
   constexpr const float worldSizeY = 2.f*32.f/(float)__BASE_WINDOW_HEIGHT;
@@ -51,7 +51,7 @@ static void __generateGrass(Renderer& renderer, ResourceStorage& outStorage) {
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::grass) == outStorage.images.end())
-    loadImage(renderer, ImageId::grass, 32, 32, outStorage);
+    loadImage(renderer, ImageId::grass, outStorage);
 
   constexpr const float textureSize = 32.f;
   constexpr const float repeatCountX = (float)__BASE_WINDOW_WIDTH/textureSize;
@@ -75,7 +75,7 @@ static void __generateHedge(Renderer& renderer, Maze& maze, float outGameAreaOff
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::hedge) == outStorage.images.end())
-    loadImage(renderer, ImageId::hedge, __MAZE_TILESET_SIZE, __MAZE_TILESET_SIZE, outStorage);
+    loadImage(renderer, ImageId::hedge, outStorage);
 
   // create geometry
   std::vector<float> vertices;
@@ -95,7 +95,7 @@ static void __generatePlayer(Renderer& renderer, float gameAreaOffset[2], Resour
   if (outStorage.pipeline.isEmpty())
     loadPipeline(renderer, outStorage);
   if (outStorage.images.find(ImageId::player) == outStorage.images.end())
-    loadImage(renderer, ImageId::player, 128, 128, outStorage);
+    loadImage(renderer, ImageId::player, outStorage);
 
   constexpr const float spriteSize = 32.f; // size of one orientation / animation state
   constexpr const float worldSizeX = 2.f*spriteSize/(float)__BASE_WINDOW_WIDTH;

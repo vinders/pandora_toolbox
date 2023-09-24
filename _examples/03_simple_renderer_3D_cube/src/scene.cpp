@@ -43,9 +43,9 @@ static void __generateUi(Renderer& renderer, uint32_t clientWidth,
   if (outStorage.pipelines.find(__UI_PIPELINE_ID) == outStorage.pipelines.end())
     loadPipeline(renderer, __UI_STATE_ID, __UI_SHADERS_ID, 1, outStorage);
   if (outStorage.sprites.find(SpriteId::title) == outStorage.sprites.end())
-    loadSprite(renderer, SpriteId::title, 160, 32, outStorage);
+    loadSprite(renderer, SpriteId::title, outStorage);
   if (outStorage.sprites.find(SpriteId::commands) == outStorage.sprites.end())
-    loadSprite(renderer, SpriteId::commands, 128, 48, outStorage);
+    loadSprite(renderer, SpriteId::commands, outStorage);
 
   float texelWidth  = 2.f/(float)clientWidth;
   float texelHeight = 2.f/(float)clientHeight;

@@ -65,12 +65,8 @@ void loadPipeline(Renderer& renderer, ResourceStorage& out) {
 // ---
 
 // --> texture/sprite image file loaders differ between APIs
-void loadImage(Renderer& renderer, ImageId id, uint32_t width, uint32_t height, ResourceStorage& out) {
-  TextureHandle image = nullptr;
-  TextureView imageView = nullptr;
-
+void loadImage(Renderer& renderer, ImageId id, ResourceStorage& out) {
   auto imagePath = getResourceDirectory() + _RESOURCE_PATH("images/")
                    + _RESOURCE_STRING(id) + _RESOURCE_PATH(".png");
-  readImageFile(imagePath.c_str(), id, renderer.device(), &image, &imageView);
-  out.images[id] = Texture2D(image, imageView, width*4, height, 1);
+  out.images[id] = readImageFile(imagePath.c_str(), id, renderer.device());
 }
