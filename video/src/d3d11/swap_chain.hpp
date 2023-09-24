@@ -108,7 +108,7 @@ Implementation included in renderer.cpp
   void SwapChain::_createSwapChain(pandora::video::WindowHandle window, const SwapChain::RefreshRate& rate) { // throws
     if (this->_renderer == nullptr)
       throw std::invalid_argument("SwapChain: NULL renderer");
-    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
+    __refreshDxgiFactory(&(_renderer->_dxgiFactory));
 
     // build swap-chain
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
@@ -221,11 +221,10 @@ Implementation included in renderer.cpp
   void SwapChain::release() noexcept {
     if (this->_swapChain != nullptr) {
       try {
-        if (this->_renderTargetView) {
+        if (this->_renderTargetView != nullptr) {
           this->_renderer->setActiveRenderTarget(nullptr);
           this->_renderer->context()->Flush();
-        }
-        if (this->_renderTargetView != nullptr) {
+          
           this->_renderTargetView->Release();
           this->_renderTargetView = nullptr;
         }
@@ -374,7 +373,7 @@ Implementation included in renderer.cpp
     auto result = ((IDXGISwapChain*)this->_swapChain)->Present(this->_vsyncInterval, this->_tearingSwapFlags);
     if (FAILED(result))
       __processSwapError(result);
-    __refreshDxgiFactory(this->_renderer->_dxgiFactory);
+    __refreshDxgiFactory(&(_renderer->_dxgiFactory));
 
 #   if !defined(_VIDEO_D3D11_VERSION) || _VIDEO_D3D11_VERSION != 110
       // discard content of render target + depth/stencil buffer

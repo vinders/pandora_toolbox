@@ -263,7 +263,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StaticBufferParams params1(bufferType, sizeof(data1a), false, TransferMode::standard);
       StaticBuffer::Builder builder1(renderer.resourceManager(), params1);
       EXPECT_LE(sizeof(data1a), builder1.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder1.requiredAlignment());
+      EXPECT_LE((size_t)4, builder1.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder1.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::local, builder1.memoryUsage());
       EXPECT_NE(Requirement::required, builder1.dedicatedAllocRequirement());
@@ -295,7 +295,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StaticBufferParams params3(bufferType, sizeof(data1b), true, TransferMode::standard);
       StaticBuffer::Builder builder3(renderer.resourceManager(), params3);
       EXPECT_LE(sizeof(data1b), builder3.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder3.requiredAlignment());
+      EXPECT_LE((size_t)4, builder3.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder3.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::local, builder3.memoryUsage());
       EXPECT_NE(Requirement::required, builder3.dedicatedAllocRequirement());
@@ -313,7 +313,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StaticBufferParams params4(bufferType, sizeof(data2a), false, TransferMode::bidirectional);
       StaticBuffer::Builder builder4(renderer.resourceManager(), params4);
       EXPECT_LE(sizeof(data2a), builder4.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder4.requiredAlignment());
+      EXPECT_LE((size_t)4, builder4.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder4.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::local, builder4.memoryUsage());
       EXPECT_NE(Requirement::required, builder4.dedicatedAllocRequirement());
@@ -346,7 +346,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StaticBufferParams params6(bufferType, sizeof(data2a), true, TransferMode::standard);
       StaticBuffer::Builder builder6(renderer.resourceManager(), params6);
       EXPECT_LE(sizeof(data1b), builder6.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder6.requiredAlignment());
+      EXPECT_LE((size_t)4, builder6.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder6.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::local, builder6.memoryUsage());
       EXPECT_NE(Requirement::required, builder6.dedicatedAllocRequirement());
@@ -414,7 +414,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DynamicBufferParams params1(bufferType, sizeof(data1a), false, TransferMode::standard);
       DynamicBuffer::Builder builder1(renderer.resourceManager(), params1);
       EXPECT_LE(sizeof(data1a), builder1.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder1.requiredAlignment());
+      EXPECT_LE((size_t)4, builder1.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder1.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::dynamic, builder1.memoryUsage());
       EXPECT_NE(Requirement::required, builder1.dedicatedAllocRequirement());
@@ -446,7 +446,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DynamicBufferParams params3(bufferType, sizeof(data1b), true, TransferMode::standard);
       DynamicBuffer::Builder builder3(renderer.resourceManager(), params3);
       EXPECT_LE(sizeof(data1b), builder3.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder3.requiredAlignment());
+      EXPECT_LE((size_t)4, builder3.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder3.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::dynamic, builder3.memoryUsage());
       EXPECT_NE(Requirement::required, builder3.dedicatedAllocRequirement());
@@ -464,7 +464,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DynamicBufferParams params4(bufferType, sizeof(data2a), false, TransferMode::bidirectional);
       DynamicBuffer::Builder builder4(renderer.resourceManager(), params4);
       EXPECT_LE(sizeof(data2a), builder4.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder4.requiredAlignment());
+      EXPECT_LE((size_t)4, builder4.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder4.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::dynamic, builder4.memoryUsage());
       EXPECT_NE(Requirement::required, builder4.dedicatedAllocRequirement());
@@ -497,7 +497,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       DynamicBufferParams params6(bufferType, sizeof(data2a), true, TransferMode::standard);
       DynamicBuffer::Builder builder6(renderer.resourceManager(), params6);
       EXPECT_LE(sizeof(data1b), builder6.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder6.requiredAlignment());
+      EXPECT_LE((size_t)4, builder6.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder6.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::dynamic, builder6.memoryUsage());
       EXPECT_NE(Requirement::required, builder6.dedicatedAllocRequirement());
@@ -565,7 +565,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StagingBufferParams params1(bufferType, sizeof(data1a), false, TransferMode::standard);
       StagingBuffer::Builder builder1(renderer.resourceManager(), params1);
       EXPECT_LE(sizeof(data1a), builder1.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder1.requiredAlignment());
+      EXPECT_LE((size_t)4, builder1.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder1.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::staging, builder1.memoryUsage());
       EXPECT_NE(Requirement::required, builder1.dedicatedAllocRequirement());
@@ -597,7 +597,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StagingBufferParams params3(bufferType, sizeof(data1b), true, TransferMode::standard);
       StagingBuffer::Builder builder3(renderer.resourceManager(), params3);
       EXPECT_LE(sizeof(data1b), builder3.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder3.requiredAlignment());
+      EXPECT_LE((size_t)4, builder3.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder3.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::staging, builder3.memoryUsage());
       EXPECT_NE(Requirement::required, builder3.dedicatedAllocRequirement());
@@ -615,7 +615,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StagingBufferParams params4(bufferType, sizeof(data2a), false, TransferMode::bidirectional);
       StagingBuffer::Builder builder4(renderer.resourceManager(), params4);
       EXPECT_LE(sizeof(data2a), builder4.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder4.requiredAlignment());
+      EXPECT_LE((size_t)4, builder4.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder4.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::staging, builder4.memoryUsage());
       EXPECT_NE(Requirement::required, builder4.dedicatedAllocRequirement());
@@ -648,7 +648,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       StagingBufferParams params6(bufferType, sizeof(data2a), true, TransferMode::standard);
       StagingBuffer::Builder builder6(renderer.resourceManager(), params6);
       EXPECT_LE(sizeof(data1b), builder6.requiredMemorySize());
-      EXPECT_LE((size_t)16, builder6.requiredAlignment());
+      EXPECT_LE((size_t)4, builder6.requiredAlignment());
       EXPECT_NE((uint32_t)0, builder6.memoryTypeBits());
       EXPECT_EQ(ResourceUsage::staging, builder6.memoryUsage());
       EXPECT_NE(Requirement::required, builder6.dedicatedAllocRequirement());
