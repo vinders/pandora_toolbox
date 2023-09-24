@@ -52,6 +52,7 @@ if((WIN32 OR WIN64 OR _WIN32 OR _WIN64 OR MSVC) AND NOT TARGET DirectXTK)
     endif()
     if(TARGET xwbtool)
         set_target_properties(xwbtool PROPERTIES FOLDER libs)
+        set_target_properties(xwbtool PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
     endif()
     
     set(directxtk__LINKED DirectXTK)
