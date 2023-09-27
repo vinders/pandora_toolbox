@@ -239,10 +239,10 @@ Includes hpp implementations at the end of the file
   // If output information on DXGI factory is stale, try to create a new one
   static __forceinline void __refreshDxgiFactory(void** dxgiFactory) { // throws
     if (!((IDXGIFactory1*)*dxgiFactory)->IsCurrent()) {
-      SharedResource<IDXGIFactory1> newFactory;
       ((IDXGIFactory1*)*dxgiFactory)->Release();
       *dxgiFactory = nullptr;
       
+      SharedResource<IDXGIFactory1> newFactory;
       __createDxgiFactory(newFactory);
       *dxgiFactory = (void*)newFactory.extract();
     }
