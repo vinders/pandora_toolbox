@@ -339,6 +339,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline TextureHandle1D handle() const noexcept { return this->_texture; } ///< Get Direct3D texture handle
           inline TextureView resourceView() const noexcept { return this->_resourceView; } ///< Get texture resource view handle (or NULL with 'staging' usage)
+          inline const TextureView* resourceViewPtr() const noexcept { return &_resourceView; } ///< Get texture resource view handle (as array of 1 item)
         
           inline bool isEmpty() const noexcept { return (this->_texture == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           inline uint32_t rowBytes() const noexcept { return this->_rowBytes; }        ///< Get byte size of one row of texels
@@ -398,6 +399,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline TextureHandle2D handle() const noexcept { return this->_texture; } ///< Get Direct3D texture handle
           inline TextureView resourceView() const noexcept { return this->_resourceView; } ///< Get texture resource view handle (or NULL with 'staging' usage)
+          inline const TextureView* resourceViewPtr() const noexcept { return &_resourceView; } ///< Get texture resource view handle (as array of 1 item)
         
           inline bool isEmpty() const noexcept { return (this->_texture == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           inline uint32_t rowBytes() const noexcept { return this->_rowBytes; }        ///< Get byte size of one row of texels
@@ -458,6 +460,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           
           inline TextureHandle3D handle() const noexcept { return this->_texture; } ///< Get Direct3D texture handle
           inline TextureView resourceView() const noexcept { return this->_resourceView; } ///< Get texture resource view handle (or NULL with 'staging' usage)
+          inline const TextureView* resourceViewPtr() const noexcept { return &_resourceView; } ///< Get texture resource view handle (as array of 1 item)
         
           inline bool isEmpty() const noexcept { return (this->_texture == nullptr); } ///< Verify if initialized (false) or empty/moved/released (true)
           inline uint32_t rowBytes() const noexcept { return this->_rowBytes; }        ///< Get byte size of one row of texels
