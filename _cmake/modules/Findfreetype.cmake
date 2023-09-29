@@ -18,7 +18,7 @@
 # Source: github.com/vinders/pandora_toolbox
 
 if(NOT TARGET freetype)
-    set(freetype_FOUND ON)
+    set(freetype__FOUND ON)
     set(FREETYPE__PATH ${CWORK_MODULE_DESTINATION}/freetype)
     
     # ┌──────────────────────────────────────────────────────────────────┐
