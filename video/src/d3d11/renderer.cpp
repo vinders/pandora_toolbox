@@ -678,6 +678,8 @@ Includes hpp implementations at the end of the file
 #            endif
              ,"ShaderType enum values inconsistent with Renderer::bindGraphicsPipeline");
 
+    if (this->_attachedPipeline.lastPipeline == pipeline) // same as current
+      return;
     if (pipeline != nullptr) {
       ID3D11DeviceChild** oldShaderStage = this->_attachedPipeline.shaderStages;
       SharedResource<ID3D11DeviceChild>* newShaderStage = pipeline->shaderStages;
