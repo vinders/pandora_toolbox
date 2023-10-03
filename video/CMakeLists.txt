@@ -233,11 +233,11 @@ elseif(CWORK_VIDEO_VULKAN)
 endif()
 
 # build shaders from shader modules
-add_custom_target(${PROJECT_NAME}.build_shaders ALL
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py "${_SHADER_DIR}" 
-                                                                              "${CMAKE_CURRENT_SOURCE_DIR}/_generated" 
-                                                                              "${_INCLUDE_DIR}/_embed"
-    COMMENT "Building shader files..."
-)
-set_target_properties(${PROJECT_NAME}.build_shaders PROPERTIES FOLDER ${CWORK_SOLUTION_NAME}/tools)
+#add_custom_target(${PROJECT_NAME}.build_shaders ALL
+#    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_shaders.py "${_SHADER_DIR}" 
+#                                                                              "${CMAKE_CURRENT_SOURCE_DIR}/_generated" 
+#                                                                              "${_INCLUDE_DIR}/_embed"
+#    COMMENT "Building shader files..."
+#)
+#set_target_properties(${PROJECT_NAME}.build_shaders PROPERTIES FOLDER ${CWORK_SOLUTION_NAME}/tools)
 #add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.build_shaders)
