@@ -60,8 +60,7 @@ Implementation included in renderer.cpp
   
   // Set swap-chain color space
   // returns: color spaces supported (true) or not
-  static __forceinline void __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat, 
-                                            ID3D11Device* device) { // throws
+  static __forceinline void __setColorSpace(IDXGISwapChain* swapChain, DXGI_FORMAT backBufferFormat) { // throws
 #   if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
       DXGI_COLOR_SPACE_TYPE colorSpace = __getColorSpace(backBufferFormat);
 
@@ -198,7 +197,7 @@ Implementation included in renderer.cpp
   // Create/refresh swap-chain render-target view + color space
   void SwapChain::_createOrRefreshTargetView() { // throws
     // find + set color space value (if supported)
-    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat, this->_renderer->device());
+    __setColorSpace((IDXGISwapChain*)this->_swapChain, this->_backBufferFormat);
 
     // create render-target view
     if (this->_renderTargetView == nullptr) {
