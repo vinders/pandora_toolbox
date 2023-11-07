@@ -1727,15 +1727,19 @@ Includes hpp implementations at the end of the file
         
         switch ((int)wParam) {
           case VK_F10: { // F10 key -> might be activation of menu
-            if (message == WM_SYSKEYDOWN && window.hasMenu())
-              eventType = KeyboardEvent::activateMenu;
+            if (window.hasMenu()) {
+              if (message == WM_SYSKEYDOWN)
+                eventType = KeyboardEvent::activateMenu;
+            }
+            else
+              eventType = ((lParam & __P_VK_KEY_UP_FLAG) == 0) ? KeyboardEvent::keyDown : KeyboardEvent::keyUp;
             keyCode = (uint32_t)wParam;
             break;
           }
           case VK_SNAPSHOT: { // VK_SNAPSHOT doesn't send WM_KEYDOWN events -> create them
             keyCode = (uint32_t)wParam;
             if (value == (uint32_t)KeyTransition::up) 
-              window._onKeyboardEvent(&window._container, eventType, keyCode, (uint32_t)KeyTransition::down);
+              window._onKeyboardEvent(&window._container, KeyboardEvent::keyDown, keyCode, (uint32_t)KeyTransition::down);
             break;
           }
           // Alt/Enter/Shift/Ctrl -> identify left/right
