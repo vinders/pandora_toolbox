@@ -1744,7 +1744,7 @@ Includes hpp implementations at the end of the file
           }
           // Alt/Enter/Shift/Ctrl -> identify left/right
           case VK_MENU:    keyCode = (lParam & __P_VK_EXTENDED_FLAG) ? VK_RCONTROL : VK_LCONTROL; break;
-          case VK_RETURN:  keyCode = (lParam & __P_VK_EXTENDED_FLAG) ? VK_RETURN : _P_VK_ENTER_PAD; break;
+          case VK_RETURN:  keyCode = (lParam & __P_VK_EXTENDED_FLAG) ? _P_VK_ENTER_PAD : VK_RETURN; break;
           case VK_SHIFT:   keyCode = (uint32_t)MapVirtualKey( (((UINT)lParam >> __P_VK_KEY_SCANCODE_OFFSET) & 0xFFu), MAPVK_VSC_TO_VK_EX); break;
           case VK_CONTROL: {
             if (lParam & __P_VK_EXTENDED_FLAG)
