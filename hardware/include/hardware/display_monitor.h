@@ -109,6 +109,7 @@ namespace pandora {
 
       /// @brief Get native monitor handle
       inline Handle handle() noexcept { return this->_handle; }
+      inline const Handle handle() const noexcept { return this->_handle; }
       /// @brief Get display attributes of monitor
       inline const Attributes& attributes() const noexcept { return this->_attributes; }
       /// @brief Read associated adapter name/brand
